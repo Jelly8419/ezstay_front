@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import 'mode_selection_page.dart';
 import 'host_home_page.dart';
 import 'guest_home_page.dart';
+import 'user_info_popup.dart';
 
 /// 로그인 페이지
 class LoginPage extends StatefulWidget {
@@ -703,25 +704,16 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     );
 
     if (success && mounted) {
-      // 회원가입 성공 시 사용자 모드에 따라 적절한 페이지로 이동
+      // 회원가입 성공 시 본인인증 정보 팝업으로 이동
       Navigator.of(context).popUntil((route) => route.isFirst); // 먼저 메인으로 돌아가기
 
-      // 사용자 모드에 따라 해당 홈페이지로 이동
-      if (authService.currentUser?.mode == UserMode.host) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HostHomePage(),
-          ),
-        );
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => GuestHomePage(),
-          ),
-        );
-      }
+      // 본인인증 정보 팝업으로 이동
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const UserInfoPopup(isFromSignup: true),
+        ),
+      );
     } else if (mounted) {
       _showErrorSnackBar('회원가입에 실패했습니다. 다시 시도해주세요.');
     }
@@ -736,6 +728,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             final success = await authService.loginWithGoogle(mode);
             if (success && mounted) {
               Navigator.of(context).popUntil((route) => route.isFirst);
+              // 소셜 로그인 성공 시 본인인증 정보 팝업으로 이동
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserInfoPopup(isFromSignup: true),
+                ),
+              );
             } else if (mounted) {
               _showErrorSnackBar('Google 로그인에 실패했습니다. 다시 시도해주세요.');
             }
@@ -754,6 +753,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             final success = await authService.loginWithKakao(mode);
             if (success && mounted) {
               Navigator.of(context).popUntil((route) => route.isFirst);
+              // 카카오 로그인 성공 시 본인인증 정보 팝업으로 이동
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserInfoPopup(isFromSignup: true),
+                ),
+              );
             } else if (mounted) {
               _showErrorSnackBar('카카오 로그인에 실패했습니다. 다시 시도해주세요.');
             }
