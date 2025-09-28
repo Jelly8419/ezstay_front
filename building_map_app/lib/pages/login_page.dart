@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import 'mode_selection_page.dart';
+import 'host_home_page.dart';
+import 'guest_home_page.dart';
 
 /// 로그인 페이지
 class LoginPage extends StatefulWidget {
@@ -17,14 +19,27 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _verificationCodeController = TextEditingController();
 
   late TabController _tabController;
   bool _obscurePassword = true;
+  bool _isCodeSent = false;
+  bool _isSendingCode = false;
+  String _generatedCode = '';
+  bool _isCodeVerified = false;
+  UserMode? _selectedMode; // 선택된 모드 저장
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // 탭 변경 감지 리스너 추가
+    _tabController.addListener(() {
+      if (_tabController.index == 1) { // 회원가입 탭 선택 시
+        _handleSignUpTabSelected();
+      }
+    });
   }
 
   @override
@@ -33,6 +48,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _verificationCodeController.dispose();
     super.dispose();
   }
 
@@ -42,17 +58,57 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('EZStay'),
-        backgroundColor: const Color(0xFF4A90E2),
+        backgroundColor: const Color(0xFF87CEEB),
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          Consumer<AuthService>(
+            builder: (context, authService, child) {
+              if (authService.isLoggedIn) {
+                return PopupMenuButton<String>(
+                  icon: const Icon(Icons.account_circle),
+                  onSelected: (value) {
+                    if (value == 'logout') {
+                      _handleLogout(authService);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem<String>(
+                      value: 'user_info',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.person, size: 18),
+                          const SizedBox(width: 8),
+                          Text(authService.currentUser?.name ?? '사용자'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem<String>(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          Icon(Icons.logout, size: 18),
+                          SizedBox(width: 8),
+                          Text('로그아웃'),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
       ),
       body: Consumer<AuthService>(
         builder: (context, authService, child) {
           if (authService.isLoading) {
             return const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4A90E2)),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF87CEEB)),
               ),
             );
           }
@@ -82,15 +138,43 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF4A90E2).withOpacity(0.1),
-            shape: BoxShape.circle,
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          child: const Icon(
-            Icons.home_outlined,
-            size: 64,
-            color: Color(0xFF4A90E2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF87CEEB), // 블루스카이 색상
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.home,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'EZStay',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 20),
@@ -137,7 +221,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
-                color: const Color(0xFF4A90E2),
+                color: const Color(0xFF87CEEB),
                 borderRadius: BorderRadius.circular(12),
               ),
               indicatorSize: TabBarIndicatorSize.tab,
@@ -152,7 +236,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           ),
           // 탭 내용
           SizedBox(
-            height: 320,
+            height: _isCodeSent ? 350 : 270, // 이름 필드 제거로 높이 감소
             child: TabBarView(
               controller: _tabController,
               children: [
@@ -177,14 +261,14 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
               controller: _emailController,
               decoration: InputDecoration(
                 labelText: '이메일',
-                prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF4A90E2)),
+                prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF87CEEB)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: Colors.grey[300]!),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                  borderSide: const BorderSide(color: Color(0xFF87CEEB), width: 2),
                 ),
                 filled: true,
                 fillColor: Colors.grey[50],
@@ -205,7 +289,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
               obscureText: _obscurePassword,
               decoration: InputDecoration(
                 labelText: '비밀번호',
-                prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF4A90E2)),
+                prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF87CEEB)),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -223,7 +307,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                  borderSide: const BorderSide(color: Color(0xFF87CEEB), width: 2),
                 ),
                 filled: true,
                 fillColor: Colors.grey[50],
@@ -242,7 +326,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
               child: ElevatedButton(
                 onPressed: () => _handleEmailLogin(authService),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A90E2),
+                  backgroundColor: const Color(0xFF87CEEB),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -268,50 +352,182 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Form(
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: '이름',
-                prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF4A90E2)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // 선택된 모드 표시
+              if (_selectedMode != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF87CEEB).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF87CEEB).withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _selectedMode == UserMode.host ? Icons.home_work : Icons.person,
+                        color: const Color(0xFF87CEEB),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '선택된 모드: ${_selectedMode == UserMode.host ? "집을 내놓고 싶어요" : "집을 찾고 있어요"}',
+                        style: const TextStyle(
+                          color: Color(0xFF87CEEB),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedMode = null;
+                          });
+                          _handleSignUpTabSelected();
+                        },
+                        child: const Text(
+                          '변경',
+                          style: TextStyle(
+                            color: Color(0xFF87CEEB),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+            // 이메일 입력란과 인증번호 발송 버튼
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: TextFormField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: '이메일',
+                      prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF87CEEB)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF87CEEB), width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return '이메일을 입력해주세요';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        return '올바른 이메일 형식을 입력해주세요';
+                      }
+                      return null;
+                    },
+                  ),
                 ),
-                filled: true,
-                fillColor: Colors.grey[50],
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: SizedBox(
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _isSendingCode ? null : () => _sendVerificationCode(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF87CEEB),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isSendingCode
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              _isCodeSent ? '재발송' : '발송',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _emailController,
-              decoration: InputDecoration(
-                labelText: '이메일',
-                prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF4A90E2)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+            // 인증번호 입력 필드 (이메일 발송 후 표시)
+            if (_isCodeSent) ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _verificationCodeController,
+                decoration: InputDecoration(
+                  labelText: '인증번호',
+                  prefixIcon: const Icon(Icons.verified_outlined, color: Color(0xFF87CEEB)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF87CEEB), width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
+                validator: (value) {
+                  if (_isCodeSent && (value == null || value.isEmpty)) {
+                    return '인증번호를 입력해주세요';
+                  }
+                  if (_isCodeSent && value != _generatedCode) {
+                    return '인증번호가 일치하지 않습니다';
+                  }
+                  return null;
+                },
+                onChanged: (value) {
+                  if (value == _generatedCode) {
+                    setState(() {
+                      _isCodeVerified = true;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('인증번호가 확인되었습니다'),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    );
+                  } else {
+                    setState(() {
+                      _isCodeVerified = false;
+                    });
+                  }
+                },
               ),
-            ),
+            ],
             const SizedBox(height: 16),
             TextFormField(
               controller: _passwordController,
               obscureText: _obscurePassword,
               decoration: InputDecoration(
                 labelText: '비밀번호',
-                prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF4A90E2)),
+                prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF87CEEB)),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -329,7 +545,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                  borderSide: const BorderSide(color: Color(0xFF87CEEB), width: 2),
                 ),
                 filled: true,
                 fillColor: Colors.grey[50],
@@ -342,7 +558,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
               child: ElevatedButton(
                 onPressed: () => _handleEmailSignUp(authService),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A90E2),
+                  backgroundColor: const Color(0xFF87CEEB),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -359,6 +575,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -450,48 +667,64 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   void _handleEmailLogin(AuthService authService) async {
     if (!_formKey.currentState!.validate()) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ModeSelectionPage(
-          onModeSelected: (mode) async {
-            final success = await authService.loginWithEmail(
-              _emailController.text,
-              _passwordController.text,
-              mode,
-            );
-            if (success && mounted) {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            } else if (mounted) {
-              _showErrorSnackBar('로그인에 실패했습니다. 다시 시도해주세요.');
-            }
-          },
-        ),
-      ),
+    final success = await authService.loginWithEmail(
+      _emailController.text,
+      _passwordController.text,
+      null, // 로그인 시에는 기존 모드 사용
     );
+    if (success && mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else if (mounted) {
+      _showErrorSnackBar('로그인에 실패했습니다. 다시 시도해주세요.');
+    }
   }
 
   void _handleEmailSignUp(AuthService authService) async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ModeSelectionPage(
-          onModeSelected: (mode) async {
-            final success = await authService.signUpWithEmail(
-              _emailController.text,
-              _passwordController.text,
-              _nameController.text,
-              mode,
-            );
-            if (success && mounted) {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            } else if (mounted) {
-              _showErrorSnackBar('회원가입에 실패했습니다. 다시 시도해주세요.');
-            }
-          },
-        ),
-      ),
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_isCodeSent && !_isCodeVerified) {
+      _showErrorSnackBar('인증번호를 확인해주세요.');
+      return;
+    }
+
+    // 선택된 모드가 없다면 에러 표시
+    if (_selectedMode == null) {
+      _showErrorSnackBar('먼저 사용자 모드를 선택해주세요.');
+      return;
+    }
+
+    // 선택된 모드로 회원가입 요청
+    final success = await authService.signUpWithEmail(
+      _emailController.text,
+      _passwordController.text,
+      _selectedMode!,
     );
+
+    if (success && mounted) {
+      // 회원가입 성공 시 사용자 모드에 따라 적절한 페이지로 이동
+      Navigator.of(context).popUntil((route) => route.isFirst); // 먼저 메인으로 돌아가기
+
+      // 사용자 모드에 따라 해당 홈페이지로 이동
+      if (authService.currentUser?.mode == UserMode.host) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HostHomePage(),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => GuestHomePage(),
+          ),
+        );
+      }
+    } else if (mounted) {
+      _showErrorSnackBar('회원가입에 실패했습니다. 다시 시도해주세요.');
+    }
   }
 
   void _handleGoogleLogin(AuthService authService) async {
@@ -530,6 +763,91 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     );
   }
 
+  void _handleLogout(AuthService authService) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('로그아웃'),
+        content: const Text('정말 로그아웃하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF87CEEB),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('로그아웃'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await authService.logout();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('로그아웃되었습니다'),
+            backgroundColor: const Color(0xFF87CEEB),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _sendVerificationCode() async {
+    // 이메일 유효성 검사
+    if (_emailController.text.isEmpty) {
+      _showErrorSnackBar('이메일을 먼저 입력해주세요');
+      return;
+    }
+
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(_emailController.text)) {
+      _showErrorSnackBar('올바른 이메일 형식을 입력해주세요');
+      return;
+    }
+
+    setState(() {
+      _isSendingCode = true;
+    });
+
+    try {
+      // 테스트 환경에서는 고정 인증번호 생성
+      _generatedCode = '123456';
+      await Future.delayed(const Duration(seconds: 2)); // 시뮬레이션
+
+      setState(() {
+        _isCodeSent = true;
+        _isSendingCode = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${_emailController.text}로 인증번호가 발송되었습니다\n테스트용 인증번호: $_generatedCode'),
+          backgroundColor: const Color(0xFF87CEEB),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isSendingCode = false;
+      });
+      _showErrorSnackBar('인증번호 발송에 실패했습니다. 다시 시도해주세요.');
+    }
+  }
+
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -538,6 +856,35 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  void _handleSignUpTabSelected() {
+    // 이미 모드를 선택했다면 더 이상 모드 선택 페이지로 가지 않음
+    if (_selectedMode != null) {
+      return;
+    }
+
+    // 로그인 탭으로 되돌리기 (즉시)
+    _tabController.animateTo(0);
+
+    // 모드 선택 페이지로 이동
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ModeSelectionPage(
+          onModeSelected: (UserMode mode) {
+            _selectedMode = mode;
+            Navigator.pop(context); // ModeSelectionPage 닫기
+            // 잠시 후 회원가입 탭으로 이동
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (mounted) {
+                _tabController.animateTo(1);
+              }
+            });
+          },
         ),
       ),
     );

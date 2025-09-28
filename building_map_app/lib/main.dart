@@ -9,6 +9,7 @@ import 'data/dummy_buildings.dart';
 import 'config/api_config.dart';
 import 'config/kakao_config.dart';
 import 'services/auth_service.dart';
+import 'pages/welcome_page.dart';
 import 'pages/login_page.dart';
 import 'pages/guest_home_page.dart';
 import 'pages/host_home_page.dart';
@@ -66,6 +67,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'EZStay',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF4A90E2),
@@ -112,121 +114,11 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ),
-      home: Consumer<AuthService>(
-        builder: (context, authService, child) {
-          if (!authService.isLoggedIn) {
-            return const LoginPage();
-          }
-
-          final user = authService.currentUser!;
-          if (user.mode == UserMode.guest) {
-            return const GuestHomePage();
-          } else {
-            return const HostHomePage();
-          }
-        },
-      ),
+      home: const WelcomePage(),
     );
   }
 }
 
-/// 홈 화면 위젯
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('EZStay'),
-        backgroundColor: const Color(0xFF4A90E2),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 앱 로고나 제목
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4A90E2).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.home_outlined,
-                  size: 80,
-                  color: const Color(0xFF4A90E2),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'EZStay',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2C3E50),
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                '당신의 완벽한 숙소를 간편하게 찾아보세요\n지도에서 다양한 숙박 옵션을 확인하세요',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF6C7B7F),
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 48),
-              // 매물 검색 버튼
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // 지도 화면으로 이동
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const MapScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4A90E2),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.search),
-                      SizedBox(width: 8),
-                      Text(
-                        '숙소 검색 시작하기',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// 지도 화면을 보여주는 위젯
 class MapScreen extends StatefulWidget {

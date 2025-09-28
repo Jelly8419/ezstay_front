@@ -6,6 +6,8 @@ class User {
   final String? profileImageUrl;
   final UserMode mode;
   final AuthProvider provider;
+  final bool phoneVerified;
+  final bool hasBank;
 
   const User({
     required this.id,
@@ -14,6 +16,8 @@ class User {
     this.profileImageUrl,
     required this.mode,
     required this.provider,
+    this.phoneVerified = false,
+    this.hasBank = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -22,8 +26,16 @@ class User {
       email: json['email'],
       name: json['name'],
       profileImageUrl: json['profileImageUrl'],
-      mode: UserMode.values.firstWhere((mode) => mode.toString() == json['mode']),
-      provider: AuthProvider.values.firstWhere((provider) => provider.toString() == json['provider']),
+      mode: UserMode.values.firstWhere(
+        (mode) => mode.name == json['userMode'],
+        orElse: () => UserMode.guest,
+      ),
+      provider: AuthProvider.values.firstWhere(
+        (provider) => provider.toString() == json['provider'],
+        orElse: () => AuthProvider.email,
+      ),
+      phoneVerified: json['phoneVerified'] ?? false,
+      hasBank: json['hasBank'] ?? false,
     );
   }
 
@@ -33,8 +45,10 @@ class User {
       'email': email,
       'name': name,
       'profileImageUrl': profileImageUrl,
-      'mode': mode.toString(),
+      'userMode': mode.name,
       'provider': provider.toString(),
+      'phoneVerified': phoneVerified,
+      'hasBank': hasBank,
     };
   }
 }

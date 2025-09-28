@@ -27,31 +27,96 @@ class AuthService extends ChangeNotifier {
   }
 
   /// 이메일 로그인
-  Future<bool> loginWithEmail(String email, String password, UserMode mode) async {
+  Future<bool> loginWithEmail(String email, String password, UserMode? mode) async {
+    debugPrint('🚀 [LOGIN] 로그인 시작 - Email: $email, Mode: ${mode?.name ?? 'null'}');
     _setLoading(true);
 
     try {
-      // TODO: 실제 API 호출
-      await Future.delayed(const Duration(seconds: 2)); // 시뮬레이션
+      // 백엔드 로그인 API 호출
+      const String backendUrl = 'http://localhost:8080/api/auth/login';
+
+      final requestBody = json.encode({
+        'email': email,
+        'password': password,
+        if (mode != null) 'user_mode': mode.name, // mode가 null이 아닐 때만 포함
+      });
+
+      debugPrint('🌐 [LOGIN] 백엔드 요청 시작 - URL: $backendUrl');
+      debugPrint('📦 [LOGIN] 요청 데이터: $requestBody');
+
+      final response = await http.post(
+        Uri.parse(backendUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: requestBody,
+      ).timeout(const Duration(seconds: 10));
+
+      debugPrint('📡 [LOGIN] 백엔드 응답 받음 - Status: ${response.statusCode}');
+      debugPrint('📄 [LOGIN] 응답 내용: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        debugPrint('로그인 성공: $data');
+
+        // JWT 토큰 저장
+        if (data['accessToken'] != null) {
+          await _saveTokens(data['accessToken'], data['refreshToken']);
+
+          // 사용자 정보 설정
+          _currentUser = User(
+            id: data['user']['id'].toString(),
+            email: email,
+            name: data['user']['name'] ?? email.split('@')[0],
+            mode: UserMode.values.firstWhere(
+              (m) => m.name == data['user']['mode'],
+              orElse: () => mode ?? UserMode.guest, // null일 때 기본값 사용
+            ),
+            provider: AuthProvider.email,
+          );
+        } else {
+          // 토큰이 없으면 기본 사용자 정보만 설정
+          _currentUser = User(
+            id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+            email: email,
+            name: email.split('@')[0],
+            mode: mode ?? UserMode.guest, // null일 때 기본값 사용
+            provider: AuthProvider.email,
+          );
+        }
+
+        _setLoading(false);
+        return true;
+      } else if (response.statusCode == 401) {
+        debugPrint('로그인 실패: 이메일 또는 비밀번호가 잘못되었습니다');
+        _setLoading(false);
+        return false;
+      } else {
+        debugPrint('로그인 실패: ${response.statusCode} - ${response.body}');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      debugPrint('❌ [LOGIN] 로그인 에러 발생: $e');
+      debugPrint('⚠️ [LOGIN] 백엔드 연결 실패 - 시뮬레이션 모드로 전환');
+      // 백엔드 연결 실패 시 시뮬레이션으로 처리 (개발 환경)
+      await Future.delayed(const Duration(seconds: 1));
 
       _currentUser = User(
         id: 'user_${DateTime.now().millisecondsSinceEpoch}',
         email: email,
         name: email.split('@')[0],
-        mode: mode,
+        mode: mode ?? UserMode.guest,
         provider: AuthProvider.email,
       );
 
       _setLoading(false);
       return true;
-    } catch (e) {
-      _setLoading(false);
-      return false;
     }
   }
 
   /// 구글 로그인
-  Future<bool> loginWithGoogle(UserMode mode) async {
+  Future<bool> loginWithGoogle(UserMode? mode) async {
     _setLoading(true);
 
     try {
@@ -63,7 +128,7 @@ class AuthService extends ChangeNotifier {
         email: 'user@gmail.com',
         name: 'Google User',
         profileImageUrl: 'https://example.com/profile.jpg',
-        mode: mode,
+        mode: mode ?? UserMode.guest,
         provider: AuthProvider.google,
       );
 
@@ -76,7 +141,7 @@ class AuthService extends ChangeNotifier {
   }
 
   /// 카카오 로그인
-  Future<bool> loginWithKakao(UserMode mode) async {
+  Future<bool> loginWithKakao(UserMode? mode) async {
     debugPrint('🚀 [KAKAO] 로그인 시작');
     debugPrint('🔧 [KAKAO] API 키: ${KakaoConfig.restApiKey}');
     debugPrint('🔧 [KAKAO] Redirect URL: ${KakaoConfig.redirectUrl}');
@@ -103,7 +168,7 @@ class AuthService extends ChangeNotifier {
   }
 
   /// 모바일 환경 카카오 로그인
-  Future<bool> _loginWithKakaoMobile(UserMode mode) async {
+  Future<bool> _loginWithKakaoMobile(UserMode? mode) async {
     try {
       // 1. 카카오 로그인 시도
       kakao.OAuthToken? token;
@@ -160,7 +225,7 @@ class AuthService extends ChangeNotifier {
           email: kakaoUser.kakaoAccount?.email ?? 'user@kakao.com',
           name: kakaoUser.kakaoAccount?.profile?.nickname ?? '카카오 사용자',
           profileImageUrl: kakaoUser.kakaoAccount?.profile?.profileImageUrl,
-          mode: mode,
+          mode: mode ?? UserMode.guest,
           provider: AuthProvider.kakao,
         );
 
@@ -178,7 +243,7 @@ class AuthService extends ChangeNotifier {
   }
 
   /// 백엔드와 카카오 토큰 인증 처리
-  Future<bool> _authenticateWithBackend(kakao.OAuthToken token, kakao.User kakaoUser, UserMode mode) async {
+  Future<bool> _authenticateWithBackend(kakao.OAuthToken token, kakao.User kakaoUser, UserMode? mode) async {
     try {
       // 백엔드 API 엔드포인트 (실제 백엔드 URL로 변경 필요)
       const String backendUrl = 'http://localhost:8080/auth/kakao';
@@ -191,7 +256,7 @@ class AuthService extends ChangeNotifier {
         body: json.encode({
           'access_token': token.accessToken,
           'refresh_token': token.refreshToken,
-          'user_mode': mode.name,
+          'user_mode': mode?.name ?? 'guest',
           'kakao_user_id': kakaoUser.id,
           'email': kakaoUser.kakaoAccount?.email,
           'nickname': kakaoUser.kakaoAccount?.profile?.nickname,
@@ -512,26 +577,85 @@ class AuthService extends ChangeNotifier {
   }
 
   /// 회원가입 (이메일)
-  Future<bool> signUpWithEmail(String email, String password, String name, UserMode mode) async {
+  Future<bool> signUpWithEmail(String email, String password, UserMode mode) async {
+    debugPrint('🚀 [SIGNUP] 회원가입 시작 - Email: $email, Mode: ${mode.name}');
     _setLoading(true);
 
     try {
-      // TODO: 실제 API 호출
-      await Future.delayed(const Duration(seconds: 2)); // 시뮬레이션
+      // 백엔드 회원가입 API 호출
+      const String backendUrl = 'http://localhost:8080/api/auth/register';
+
+      final requestBody = json.encode({
+        'email': email,
+        'password': password,
+        'user_mode': mode.name,
+      });
+
+      debugPrint('📦 [SIGNUP] 요청 데이터: $requestBody');
+
+      final response = await http.post(
+        Uri.parse(backendUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: requestBody,
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        debugPrint('회원가입 성공: $data');
+        debugPrint('🔍 [SIGNUP] 백엔드에서 받은 userMode: ${data['data']['user']['userMode']}');
+
+        // 회원가입 성공 시 JWT 토큰이 반환되면 저장
+        if (data['data']['accessToken'] != null) {
+          await _saveTokens(data['data']['accessToken'], data['data']['refreshToken']);
+
+          // 사용자 정보 설정
+          _currentUser = User(
+            id: data['data']['user']['id'].toString(),
+            email: email,
+            name: data['data']['user']['name'] ?? email.split('@')[0],
+            mode: UserMode.values.firstWhere(
+              (m) => m.name == data['data']['user']['userMode'],
+              orElse: () => mode ?? UserMode.guest,
+            ),
+            provider: AuthProvider.email,
+          );
+          debugPrint('✅ [SIGNUP] 생성된 사용자 모드: ${_currentUser?.mode.name}');
+          debugPrint('✅ [SIGNUP] 현재 로그인 상태: $isLoggedIn');
+        } else {
+          // 토큰이 없으면 기본 사용자 정보만 설정
+          _currentUser = User(
+            id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+            email: email,
+            name: email.split('@')[0],
+            mode: mode ?? UserMode.guest,
+            provider: AuthProvider.email,
+          );
+        }
+
+        _setLoading(false);
+        return true;
+      } else {
+        debugPrint('회원가입 실패: ${response.statusCode} - ${response.body}');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      debugPrint('회원가입 에러: $e');
+      // 백엔드 연결 실패 시 시뮬레이션으로 처리 (개발 환경)
+      await Future.delayed(const Duration(seconds: 1));
 
       _currentUser = User(
         id: 'user_${DateTime.now().millisecondsSinceEpoch}',
         email: email,
-        name: name,
-        mode: mode,
+        name: email.split('@')[0],
+        mode: mode ?? UserMode.guest,
         provider: AuthProvider.email,
       );
 
       _setLoading(false);
       return true;
-    } catch (e) {
-      _setLoading(false);
-      return false;
     }
   }
 
