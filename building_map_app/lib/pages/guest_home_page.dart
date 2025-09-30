@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
-import '../main.dart';
 
 /// 게스트 모드 홈 화면
 class GuestHomePage extends StatelessWidget {
@@ -57,11 +57,13 @@ class GuestHomePage extends StatelessWidget {
           final user = authService.currentUser;
 
           return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                   // 사용자 프로필 카드
                   Card(
                     elevation: 0,
@@ -129,14 +131,14 @@ class GuestHomePage extends StatelessWidget {
                     height: 120,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
+                        colors: [Color(0xFF4DB5BD), Color(0xFF667EEA)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF4A90E2).withOpacity(0.3),
+                          color: const Color(0xFF667EEA).withOpacity(0.3),
                           offset: const Offset(0, 8),
                           blurRadius: 16,
                         ),
@@ -144,12 +146,7 @@ class GuestHomePage extends StatelessWidget {
                     ),
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const MapScreen(),
-                          ),
-                        );
+                        context.go('/map');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
@@ -221,9 +218,10 @@ class GuestHomePage extends StatelessWidget {
                           },
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           );

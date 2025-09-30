@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
-import 'login_page.dart';
-import 'mode_selection_page.dart';
-import 'guest_home_page.dart';
-import 'host_home_page.dart';
-import '../main.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
@@ -17,11 +13,11 @@ class WelcomePage extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              Color(0xFF4A90E2),
-              Color(0xFF357ABD),
+              Color(0xFF4DB5BD), // 청록색
+              Color(0xFF667EEA), // 보라색
             ],
           ),
         ),
@@ -89,19 +85,9 @@ class WelcomePage extends StatelessWidget {
                           // 사용자의 모드에 따라 적절한 홈으로 이동
                           debugPrint('🔍 [WELCOME] 현재 사용자 모드: ${authService.currentUser?.mode.name}');
                           if (authService.currentUser?.mode == UserMode.host) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const HostHomePage(),
-                              ),
-                            );
+                            context.go('/host');
                           } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const GuestHomePage(),
-                              ),
-                            );
+                            context.go('/guest');
                           }
                         },
                         child: Text(
@@ -142,12 +128,7 @@ class WelcomePage extends StatelessWidget {
                       ),
                       child: InkWell(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
-                            ),
-                          );
+                          context.go('/login');
                         },
                         child: const Text(
                           '호스트모드',
@@ -162,12 +143,7 @@ class WelcomePage extends StatelessWidget {
                     const SizedBox(width: 12),
                     InkWell(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
-                          ),
-                        );
+                        context.go('/login');
                       },
                       child: const Text(
                         '로그인/회원가입',
@@ -189,11 +165,14 @@ class WelcomePage extends StatelessWidget {
   }
 
   Widget _buildMainContent(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
           const Spacer(),
           // 메인 제목
           const Text(
@@ -283,12 +262,7 @@ class WelcomePage extends StatelessWidget {
                   ),
                   child: InkWell(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MapScreen(),
-                        ),
-                      );
+                      context.go('/map');
                     },
                     child: const Text(
                       '검색',
@@ -428,7 +402,9 @@ class WelcomePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -3,19 +3,20 @@ import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'models/building.dart';
 import 'models/user.dart';
 import 'data/dummy_buildings.dart';
 import 'config/api_config.dart';
 import 'config/kakao_config.dart';
 import 'services/auth_service.dart';
-import 'pages/welcome_page.dart';
-import 'pages/login_page.dart';
-import 'pages/guest_home_page.dart';
-import 'pages/host_home_page.dart';
+import 'router/app_router.dart';
 
 /// 앱의 진입점
 void main() {
+  // 웹에서 URL의 '#' 제거 (path 기반 라우팅 사용)
+  usePathUrlStrategy();
+
   // 카카오 SDK 초기화
   kakao.KakaoSdk.init(
     nativeAppKey: KakaoConfig.restApiKey,
@@ -65,9 +66,13 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final authService = Provider.of<AuthService>(context);
+    final router = AppRouter.createRouter(authService);
+
+    return MaterialApp.router(
       title: 'EZStay',
       debugShowCheckedModeBanner: false,
+      routerConfig: router,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF4A90E2),
@@ -103,7 +108,7 @@ class _MyAppState extends State<MyApp> {
           fillColor: Colors.grey[50],
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF4A90E2),
+          backgroundColor: Color(0xFF4DB5BD),
           foregroundColor: Colors.white,
           elevation: 0,
           centerTitle: true,
@@ -114,7 +119,6 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ),
-      home: const WelcomePage(),
     );
   }
 }

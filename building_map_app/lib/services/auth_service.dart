@@ -74,6 +74,9 @@ class AuthService extends ChangeNotifier {
             ),
             provider: AuthProvider.email,
           );
+
+          // 사용자 정보도 저장
+          await _saveUserInfo(_currentUser!);
         } else {
           // 토큰이 없으면 기본 사용자 정보만 설정
           _currentUser = User(
@@ -83,6 +86,9 @@ class AuthService extends ChangeNotifier {
             mode: mode ?? UserMode.guest, // null일 때 기본값 사용
             provider: AuthProvider.email,
           );
+
+          // 사용자 정보 저장
+          await _saveUserInfo(_currentUser!);
         }
 
         _setLoading(false);
@@ -109,6 +115,9 @@ class AuthService extends ChangeNotifier {
         mode: mode ?? UserMode.guest,
         provider: AuthProvider.email,
       );
+
+      // 사용자 정보 저장
+      await _saveUserInfo(_currentUser!);
 
       _setLoading(false);
       return true;
@@ -292,6 +301,48 @@ class AuthService extends ChangeNotifier {
       await _storage.write(key: 'refresh_token', value: refreshToken);
     }
     debugPrint('토큰 저장 완료');
+  }
+
+  /// 사용자 정보 저장
+  Future<void> _saveUserInfo(User user) async {
+    await _storage.write(key: 'user_id', value: user.id);
+    await _storage.write(key: 'user_email', value: user.email);
+    await _storage.write(key: 'user_name', value: user.name);
+    await _storage.write(key: 'user_mode', value: user.mode.name);
+    await _storage.write(key: 'user_provider', value: user.provider.name);
+    if (user.profileImageUrl != null) {
+      await _storage.write(key: 'user_profile_image', value: user.profileImageUrl);
+    }
+    debugPrint('사용자 정보 저장 완료');
+  }
+
+  /// 저장된 사용자 정보 불러오기
+  Future<User?> _loadUserInfo() async {
+    final id = await _storage.read(key: 'user_id');
+    final email = await _storage.read(key: 'user_email');
+    final name = await _storage.read(key: 'user_name');
+    final modeStr = await _storage.read(key: 'user_mode');
+    final providerStr = await _storage.read(key: 'user_provider');
+    final profileImageUrl = await _storage.read(key: 'user_profile_image');
+
+    if (id == null || email == null || name == null || modeStr == null || providerStr == null) {
+      return null;
+    }
+
+    return User(
+      id: id,
+      email: email,
+      name: name,
+      mode: UserMode.values.firstWhere(
+        (m) => m.name == modeStr,
+        orElse: () => UserMode.guest,
+      ),
+      provider: AuthProvider.values.firstWhere(
+        (p) => p.name == providerStr,
+        orElse: () => AuthProvider.email,
+      ),
+      profileImageUrl: profileImageUrl,
+    );
   }
 
   /// 저장된 토큰 불러오기
@@ -513,13 +564,22 @@ class AuthService extends ChangeNotifier {
 
       if (success) {
         debugPrint('✅ 자동 로그인 성공');
+        return;
       } else {
         debugPrint('❌ 자동 로그인 실패 - 토큰 만료 또는 무효');
         // 만료된 토큰 제거
         await _clearTokens();
       }
+    }
+
+    // 토큰이 없거나 만료된 경우, 저장된 사용자 정보로 복원 시도
+    final userInfo = await _loadUserInfo();
+    if (userInfo != null) {
+      debugPrint('💾 저장된 사용자 정보로 로그인 복원');
+      _currentUser = userInfo;
+      notifyListeners();
     } else {
-      debugPrint('💡 저장된 토큰 없음');
+      debugPrint('💡 저장된 사용자 정보 없음');
     }
   }
 
@@ -528,6 +588,17 @@ class AuthService extends ChangeNotifier {
     await _storage.delete(key: 'access_token');
     await _storage.delete(key: 'refresh_token');
     debugPrint('🗑️ 토큰 삭제 완료');
+  }
+
+  /// 저장된 사용자 정보 제거
+  Future<void> _clearUserInfo() async {
+    await _storage.delete(key: 'user_id');
+    await _storage.delete(key: 'user_email');
+    await _storage.delete(key: 'user_name');
+    await _storage.delete(key: 'user_mode');
+    await _storage.delete(key: 'user_provider');
+    await _storage.delete(key: 'user_profile_image');
+    debugPrint('🗑️ 사용자 정보 삭제 완료');
   }
 
   /// Refresh 토큰으로 Access 토큰 갱신
@@ -621,6 +692,10 @@ class AuthService extends ChangeNotifier {
             ),
             provider: AuthProvider.email,
           );
+
+          // 사용자 정보 저장
+          await _saveUserInfo(_currentUser!);
+
           debugPrint('✅ [SIGNUP] 생성된 사용자 모드: ${_currentUser?.mode.name}');
           debugPrint('✅ [SIGNUP] 현재 로그인 상태: $isLoggedIn');
         } else {
@@ -632,6 +707,9 @@ class AuthService extends ChangeNotifier {
             mode: mode ?? UserMode.guest,
             provider: AuthProvider.email,
           );
+
+          // 사용자 정보 저장
+          await _saveUserInfo(_currentUser!);
         }
 
         _setLoading(false);
@@ -653,6 +731,9 @@ class AuthService extends ChangeNotifier {
         mode: mode ?? UserMode.guest,
         provider: AuthProvider.email,
       );
+
+      // 사용자 정보 저장
+      await _saveUserInfo(_currentUser!);
 
       _setLoading(false);
       return true;
@@ -677,9 +758,10 @@ class AuthService extends ChangeNotifier {
       debugPrint('⚠️ 서버 로그아웃 요청 실패: $e');
     }
 
-    // 로컬 상태 및 토큰 정리
+    // 로컬 상태, 토큰 및 사용자 정보 정리
     _currentUser = null;
     await _clearTokens();
+    await _clearUserInfo();
     notifyListeners();
     debugPrint('👋 로그아웃 완료');
   }

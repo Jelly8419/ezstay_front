@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
-import 'room_registration_page.dart';
 
 /// 호스트 모드 홈 화면
 class HostHomePage extends StatelessWidget {
@@ -56,11 +56,14 @@ class HostHomePage extends StatelessWidget {
         builder: (context, authService, child) {
           final user = authService.currentUser;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 // 사용자 프로필 카드
                 Card(
                   elevation: 0,
@@ -128,14 +131,14 @@ class HostHomePage extends StatelessWidget {
                   height: 120,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF27AE60), Color(0xFF219A52)],
+                      colors: [Color(0xFF4DB5BD), Color(0xFF667EEA)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF27AE60).withOpacity(0.3),
+                        color: const Color(0xFF667EEA).withOpacity(0.3),
                         offset: const Offset(0, 8),
                         blurRadius: 16,
                       ),
@@ -143,12 +146,7 @@ class HostHomePage extends StatelessWidget {
                   ),
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RoomRegistrationPage(),
-                        ),
-                      );
+                      context.go('/host/room-registration');
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
@@ -307,10 +305,12 @@ class HostHomePage extends StatelessWidget {
                       ],
                     ),
                   ),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          );
+          ),
+        );
         },
       ),
     );

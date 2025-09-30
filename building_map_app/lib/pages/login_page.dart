@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import 'mode_selection_page.dart';
-import 'host_home_page.dart';
-import 'guest_home_page.dart';
 import 'user_info_popup.dart';
 
 /// 로그인 페이지
@@ -59,7 +58,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('EZStay'),
-        backgroundColor: const Color(0xFF87CEEB),
+        backgroundColor: const Color(0xFF4DB5BD),
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -114,20 +113,25 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             );
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              children: [
-                const SizedBox(height: 40),
-                // 로고 섹션
-                _buildLogoSection(),
-                const SizedBox(height: 48),
-                // 탭바와 폼
-                _buildAuthForm(authService),
-                const SizedBox(height: 32),
-                // 소셜 로그인 버튼들
-                _buildSocialLoginButtons(authService),
-              ],
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 40),
+                    // 로고 섹션
+                    _buildLogoSection(),
+                    const SizedBox(height: 48),
+                    // 탭바와 폼
+                    _buildAuthForm(authService),
+                    const SizedBox(height: 32),
+                    // 소셜 로그인 버튼들
+                    _buildSocialLoginButtons(authService),
+                  ],
+                ),
+              ),
             ),
           );
         },
@@ -674,7 +678,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       null, // 로그인 시에는 기존 모드 사용
     );
     if (success && mounted) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      context.go('/');
     } else if (mounted) {
       _showErrorSnackBar('로그인에 실패했습니다. 다시 시도해주세요.');
     }
@@ -705,68 +709,29 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
     if (success && mounted) {
       // 회원가입 성공 시 본인인증 정보 팝업으로 이동
-      Navigator.of(context).popUntil((route) => route.isFirst); // 먼저 메인으로 돌아가기
+      context.go('/'); // 먼저 메인으로 돌아가기
 
       // 본인인증 정보 팝업으로 이동
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const UserInfoPopup(isFromSignup: true),
-        ),
-      );
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const UserInfoPopup(isFromSignup: true),
+          ),
+        );
+      }
     } else if (mounted) {
       _showErrorSnackBar('회원가입에 실패했습니다. 다시 시도해주세요.');
     }
   }
 
   void _handleGoogleLogin(AuthService authService) async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ModeSelectionPage(
-          onModeSelected: (mode) async {
-            final success = await authService.loginWithGoogle(mode);
-            if (success && mounted) {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-              // 소셜 로그인 성공 시 본인인증 정보 팝업으로 이동
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserInfoPopup(isFromSignup: true),
-                ),
-              );
-            } else if (mounted) {
-              _showErrorSnackBar('Google 로그인에 실패했습니다. 다시 시도해주세요.');
-            }
-          },
-        ),
-      ),
-    );
+    context.push('/mode-selection', extra: 'google');
   }
 
   void _handleKakaoLogin(AuthService authService) async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ModeSelectionPage(
-          onModeSelected: (mode) async {
-            final success = await authService.loginWithKakao(mode);
-            if (success && mounted) {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-              // 카카오 로그인 성공 시 본인인증 정보 팝업으로 이동
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserInfoPopup(isFromSignup: true),
-                ),
-              );
-            } else if (mounted) {
-              _showErrorSnackBar('카카오 로그인에 실패했습니다. 다시 시도해주세요.');
-            }
-          },
-        ),
-      ),
-    );
+    context.push('/mode-selection', extra: 'kakao');
   }
 
   void _handleLogout(AuthService authService) async {
