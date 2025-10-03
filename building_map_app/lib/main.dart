@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'models/building.dart';
 import 'models/user.dart';
 import 'data/dummy_buildings.dart';
@@ -13,7 +14,12 @@ import 'services/auth_service.dart';
 import 'router/app_router.dart';
 
 /// 앱의 진입점
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // .env 파일 로드
+  await dotenv.load(fileName: ".env");
+
   // 웹에서 URL의 '#' 제거 (path 기반 라우팅 사용)
   usePathUrlStrategy();
 
@@ -34,9 +40,20 @@ void main() {
     debugPrint('API 키: ${KakaoConfig.restApiKey}');
   }
 
+  // AuthService 생성 및 초기화
+  final authService = AuthService();
+
+  // 웹에서 카카오 콜백 확인
+  if (kIsWeb) {
+    await authService.handleKakaoWebCallback();
+  }
+
+  // 자동 로그인 시도 (초기화 완료까지 대기)
+  await authService.tryAutoLogin();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => AuthService(),
+    ChangeNotifierProvider.value(
+      value: authService,
       child: const MyApp(),
     ),
   );
@@ -51,19 +68,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  @override
-  void initState() {
-    super.initState();
-    // 웹에서 카카오 콜백 확인
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      if (kIsWeb) {
-        authService.handleKakaoWebCallback();
-      }
-      authService.tryAutoLogin();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);

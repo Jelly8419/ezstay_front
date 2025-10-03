@@ -14,11 +14,13 @@ import '../config/kakao_config.dart';
 class AuthService extends ChangeNotifier {
   User? _currentUser;
   bool _isLoading = false;
+  bool _isInitialized = false; // 초기화 완료 여부
   static const _storage = FlutterSecureStorage();
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _currentUser != null;
+  bool get isInitialized => _isInitialized; // 초기화 완료 여부 getter
 
   /// 로그인 상태 변경
   void _setLoading(bool loading) {
@@ -556,17 +558,16 @@ class AuthService extends ChangeNotifier {
   /// 앱 시작 시 저장된 토큰으로 자동 로그인 시도
   Future<void> tryAutoLogin() async {
     final accessToken = await getAccessToken();
-    if (accessToken != null) {
-      debugPrint('🔄 저장된 토큰으로 자동 로그인 시도...');
 
+    if (accessToken != null) {
       // 서버에서 토큰 검증 및 사용자 정보 가져오기
       final success = await _authenticateWithToken(accessToken);
 
       if (success) {
-        debugPrint('✅ 자동 로그인 성공');
+        _isInitialized = true;
+        notifyListeners();
         return;
       } else {
-        debugPrint('❌ 자동 로그인 실패 - 토큰 만료 또는 무효');
         // 만료된 토큰 제거
         await _clearTokens();
       }
@@ -574,13 +575,14 @@ class AuthService extends ChangeNotifier {
 
     // 토큰이 없거나 만료된 경우, 저장된 사용자 정보로 복원 시도
     final userInfo = await _loadUserInfo();
+
     if (userInfo != null) {
-      debugPrint('💾 저장된 사용자 정보로 로그인 복원');
       _currentUser = userInfo;
-      notifyListeners();
-    } else {
-      debugPrint('💡 저장된 사용자 정보 없음');
     }
+
+    // 초기화 완료 표시
+    _isInitialized = true;
+    notifyListeners();
   }
 
   /// 저장된 토큰 제거

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/daum_postcode_widget.dart';
+import '../widgets/registration_flow_indicator.dart';
 
 /// 호스트 전용 방 등록 페이지
 class RoomRegistrationPage extends StatefulWidget {
@@ -66,16 +68,20 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
         centerTitle: true,
       ),
       backgroundColor: Colors.grey[50],
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+      body: Column(
+        children: [
+          const RegistrationFlowIndicator(currentStep: 0),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
               // 기본 정보 섹션
               _buildSectionTitle('기본 정보'),
               _buildBasicInfoSection(),
@@ -154,12 +160,15 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                   ),
                 ],
               ),
-              ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
-    ),
     );
   }
 
@@ -345,6 +354,47 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 면적
+            _buildFieldLabel('면적 (㎡)'),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 200,
+              child: TextFormField(
+                controller: _areaController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  hintText: '예) 84.5',
+                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '면적을 입력해주세요';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return '올바른 숫자를 입력해주세요';
+                  }
+                  return null;
+                },
               ),
             ),
 
@@ -1036,23 +1086,10 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
       // TODO: 서버로 데이터 전송
       print('방 등록 데이터: $roomData');
 
-      // 성공 메시지 표시
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            '방이 성공적으로 등록되었습니다! 🎉',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          backgroundColor: const Color(0xFF4A90E2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-
-      // 이전 페이지로 돌아가기
-      Navigator.pop(context);
+      // 요금설정 페이지로 이동
+      if (context.mounted) {
+        context.go('/host/pricing');
+      }
     }
   }
 }

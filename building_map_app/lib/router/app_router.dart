@@ -9,6 +9,10 @@ import '../pages/mode_selection_page.dart';
 import '../pages/guest_home_page.dart';
 import '../pages/host_home_page.dart';
 import '../pages/room_registration_page.dart';
+import '../pages/pricing_page.dart';
+import '../pages/room_amenities_page.dart';
+import '../pages/free_services_page.dart';
+import '../pages/room_description_page.dart';
 import '../pages/user_info_popup.dart';
 import '../main.dart';
 
@@ -18,9 +22,25 @@ class AppRouter {
       initialLocation: '/',
       debugLogDiagnostics: true,
       redirect: (BuildContext context, GoRouterState state) {
+        final isInitialized = authService.isInitialized;
         final isLoggedIn = authService.isLoggedIn;
         final isGoingToLogin = state.matchedLocation == '/login';
         final isGoingToWelcome = state.matchedLocation == '/';
+
+        // 초기화가 완료되지 않았으면 리다이렉트하지 않음 (로딩 중)
+        if (!isInitialized) {
+          return null;
+        }
+
+        // 로그인된 상태에서 로그인 페이지나 웰컴 페이지 접근 시 홈으로 리다이렉트
+        if (isLoggedIn && (isGoingToLogin || isGoingToWelcome)) {
+          final userMode = authService.currentUser?.mode;
+          if (userMode == UserMode.host) {
+            return '/host';
+          } else if (userMode == UserMode.guest) {
+            return '/guest';
+          }
+        }
 
         // 로그인 안 된 상태에서 보호된 페이지 접근 시 로그인으로 리다이렉트
         if (!isLoggedIn && !isGoingToLogin && !isGoingToWelcome) {
@@ -89,6 +109,26 @@ class AppRouter {
           path: '/host/room-registration',
           name: 'room-registration',
           builder: (context, state) => const RoomRegistrationPage(),
+        ),
+        GoRoute(
+          path: '/host/pricing',
+          name: 'pricing',
+          builder: (context, state) => const PricingPage(),
+        ),
+        GoRoute(
+          path: '/host/amenities',
+          name: 'amenities',
+          builder: (context, state) => const RoomAmenitiesPage(),
+        ),
+        GoRoute(
+          path: '/host/free-services',
+          name: 'free-services',
+          builder: (context, state) => const FreeServicesPage(),
+        ),
+        GoRoute(
+          path: '/host/room-description',
+          name: 'room-description',
+          builder: (context, state) => const RoomDescriptionPage(),
         ),
         GoRoute(
           path: '/map',

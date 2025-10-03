@@ -133,7 +133,7 @@ class ModeSelectionPage extends StatelessWidget {
             // 집 올리기와 집 내기 카드들을 가로로 배치
             Row(
               children: [
-                // 집 올리기 카드
+                // 집 찾기
                 Expanded(
                   child: _buildModeCard(
                     context: context,
@@ -150,7 +150,7 @@ class ModeSelectionPage extends StatelessWidget {
 
                 const SizedBox(width: 16),
 
-                // 집 내기 카드
+                // 집 내놓기
                 Expanded(
                   child: _buildModeCard(
                     context: context,

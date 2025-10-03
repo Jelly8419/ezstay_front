@@ -32,13 +32,20 @@
   <title>building_map_app</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Outlined" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Sharp" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Two+Tone" rel="stylesheet">
+
   <!-- API 설정 파일 -->
   <script src="js/api_config.js"></script>
   <!-- Google Maps JavaScript API -->
   <script>
     // API 키 유효성 검사 후 Google Maps API 로드
     if (window.API_CONFIG && window.API_CONFIG.isApiKeyValid()) {
-      document.write('<script src="https://maps.googleapis.com/maps/api/js?key=' + window.API_CONFIG.GOOGLE_MAPS_API_KEY + '"><\/script>');
+      document.write('<script src="https://maps.googleapis.com/maps/api/js?key=' + window.API_CONFIG.GOOGLE_MAPS_API_KEY + '&loading=async"><\/script>');
     } else {
       console.error('Google Maps API 키가 유효하지 않습니다.');
     }
