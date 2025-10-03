@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/registration_flow_indicator.dart';
+import '../services/room_service.dart';
 
 /// 요금 설정 페이지
 class PricingPage extends StatefulWidget {
-  const PricingPage({super.key});
+  final int? roomId;
+  const PricingPage({super.key, this.roomId});
 
   @override
   State<PricingPage> createState() => _PricingPageState();
@@ -13,6 +15,8 @@ class PricingPage extends StatefulWidget {
 
 class _PricingPageState extends State<PricingPage> {
   final _formKey = GlobalKey<FormState>();
+  final _roomService = RoomService();
+  int? _roomId;
 
   // 섹션1
   final _weeklyRentController = TextEditingController();
@@ -35,6 +39,72 @@ class _PricingPageState extends State<PricingPage> {
 
   // 섹션4
   String _refundPolicy = '환불 규정 선택';
+
+  @override
+  void initState() {
+    super.initState();
+    _roomId = widget.roomId;
+    debugPrint('💰 [PRICING] 페이지 초기화 - roomId: $_roomId');
+    if (_roomId != null) {
+      _loadRoomData();
+    } else {
+      debugPrint('⚠️ [PRICING] roomId가 null입니다!');
+    }
+  }
+
+  /// 저장된 방 정보 불러오기
+  Future<void> _loadRoomData() async {
+    if (_roomId == null) return;
+
+    final roomData = await _roomService.getRoom(_roomId!);
+    if (roomData != null && mounted) {
+      setState(() {
+        // 요금 정보가 있으면 채우기
+        if (roomData['weeklyRent'] != null) {
+          _weeklyRentController.text = roomData['weeklyRent'].toString();
+        }
+        if (roomData['longTermWeeks'] != null) {
+          _longTermWeeks = roomData['longTermWeeks'];
+        }
+        if (roomData['longTermDiscount'] != null) {
+          _longTermDiscount = roomData['longTermDiscount'];
+        }
+        if (roomData['quickMoveIn'] != null) {
+          _quickMoveIn = roomData['quickMoveIn'];
+        }
+        if (roomData['quickMoveInDiscount'] != null) {
+          _quickMoveInDiscount = roomData['quickMoveInDiscount'];
+        }
+        if (roomData['maintenanceFee'] != null) {
+          _maintenanceFeeController.text = roomData['maintenanceFee'].toString();
+        }
+        if (roomData['maintenanceDetail'] != null) {
+          _maintenanceDetailController.text = roomData['maintenanceDetail'];
+        }
+        if (roomData['includeElectricity'] != null) {
+          _includeElectricity = roomData['includeElectricity'];
+        }
+        if (roomData['includeWater'] != null) {
+          _includeWater = roomData['includeWater'];
+        }
+        if (roomData['includeGas'] != null) {
+          _includeGas = roomData['includeGas'];
+        }
+        if (roomData['includeInternet'] != null) {
+          _includeInternet = roomData['includeInternet'];
+        }
+        if (roomData['cleaningFee'] != null) {
+          _cleaningFeeController.text = roomData['cleaningFee'].toString();
+        }
+        if (roomData['minContractWeeks'] != null) {
+          _minContractWeeks = roomData['minContractWeeks'];
+        }
+        if (roomData['refundPolicy'] != null) {
+          _refundPolicy = roomData['refundPolicy'];
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -1000,7 +1070,11 @@ class _PricingPageState extends State<PricingPage> {
           height: 56,
           child: OutlinedButton(
             onPressed: () {
-              context.go('/host/room-registration');
+              if (_roomId != null) {
+                context.go('/host/room-registration', extra: _roomId);
+              } else {
+                context.pop();
+              }
             },
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0xFF4A90E2)),
@@ -1023,10 +1097,49 @@ class _PricingPageState extends State<PricingPage> {
           width: 250,
           height: 56,
           child: ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (_formKey.currentState!.validate()) {
-                // TODO: 저장 로직
-                context.push('/host/amenities');
+                debugPrint('💰 [PRICING] 저장 버튼 클릭 - roomId: $_roomId');
+
+                if (_roomId == null) {
+                  debugPrint('❌ [PRICING] roomId가 null입니다!');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('방 ID가 없습니다. 처음부터 다시 시작해주세요.')),
+                  );
+                  return;
+                }
+
+                // 요금 데이터 수집
+                final pricingData = {
+                  'weeklyRent': int.tryParse(_weeklyRentController.text) ?? 0,
+                  'longTermWeeks': _longTermWeeks,
+                  'longTermDiscount': _longTermDiscount,
+                  'quickMoveIn': _quickMoveIn,
+                  'quickMoveInDiscount': _quickMoveInDiscount,
+                  'maintenanceFee': int.tryParse(_maintenanceFeeController.text) ?? 0,
+                  'maintenanceDetail': _maintenanceDetailController.text,
+                  'includeElectricity': _includeElectricity,
+                  'includeWater': _includeWater,
+                  'includeGas': _includeGas,
+                  'includeInternet': _includeInternet,
+                  'cleaningFee': int.tryParse(_cleaningFeeController.text) ?? 0,
+                  'minContractWeeks': _minContractWeeks,
+                  'refundPolicy': _refundPolicy,
+                };
+
+                // 서버로 데이터 전송
+                final success = await _roomService.updatePricing(_roomId!, pricingData);
+
+                if (success && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('요금 정보가 저장되었습니다.')),
+                  );
+                  context.go('/host/amenities', extra: _roomId);
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('요금 정보 저장에 실패했습니다.')),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(

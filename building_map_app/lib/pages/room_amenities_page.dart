@@ -3,11 +3,13 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/registration_flow_indicator.dart';
+import '../services/room_service.dart';
 import 'dart:io';
 
 /// 사진 및 편의시설 페이지
 class RoomAmenitiesPage extends StatefulWidget {
-  const RoomAmenitiesPage({super.key});
+  final int? roomId;
+  const RoomAmenitiesPage({super.key, this.roomId});
 
   @override
   State<RoomAmenitiesPage> createState() => _RoomAmenitiesPageState();
@@ -16,6 +18,8 @@ class RoomAmenitiesPage extends StatefulWidget {
 class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
+  final _roomService = RoomService();
+  int? _roomId;
 
   // 방 사진 목록
   List<XFile> _roomImages = [];
@@ -64,6 +68,91 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
 
   // 반려동물
   bool _petsAllowed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _roomId = widget.roomId;
+    if (_roomId != null) {
+      _loadRoomData();
+    }
+  }
+
+  /// 저장된 방 정보 불러오기
+  Future<void> _loadRoomData() async {
+    if (_roomId == null) return;
+
+    final roomData = await _roomService.getRoom(_roomId!);
+    if (roomData != null && mounted) {
+      setState(() {
+        // 편의시설 정보가 있으면 채우기
+        if (roomData['amenities'] != null) {
+          final amenities = roomData['amenities'];
+
+          // 기본 옵션
+          if (amenities['basicOptions'] != null) {
+            final basic = amenities['basicOptions'];
+            _refrigerator = basic['refrigerator'] ?? false;
+            _washingMachine = basic['washingMachine'] ?? false;
+            _airConditioner = basic['airConditioner'] ?? false;
+            _sink = basic['sink'] ?? false;
+            _bed = basic['bed'] ?? false;
+            _tv = basic['tv'] ?? false;
+            _internet = basic['internet'] ?? false;
+          }
+
+          // 추가 옵션
+          if (amenities['additionalOptions'] != null) {
+            final additional = amenities['additionalOptions'];
+            _doorLock = additional['doorLock'] ?? false;
+            _cctv = additional['cctv'] ?? false;
+            _managementOffice = additional['managementOffice'] ?? false;
+            _gasRange = additional['gasRange'] ?? false;
+            _induction = additional['induction'] ?? false;
+            _microwave = additional['microwave'] ?? false;
+            _diningTable = additional['diningTable'] ?? false;
+            _shoeRack = additional['shoeRack'] ?? false;
+            _wardrobe = additional['wardrobe'] ?? false;
+            _dressRoom = additional['dressRoom'] ?? false;
+            _vanity = additional['vanity'] ?? false;
+            _cableTv = additional['cableTv'] ?? false;
+            _sofa = additional['sofa'] ?? false;
+            _desk = additional['desk'] ?? false;
+            _curtain = additional['curtain'] ?? false;
+            _balcony = additional['balcony'] ?? false;
+          }
+
+          // 편의 옵션
+          if (amenities['convenienceOptions'] != null) {
+            final convenience = amenities['convenienceOptions'];
+            _heatingCooling = convenience['heatingCooling'] ?? false;
+            _heater = convenience['heater'] ?? false;
+            _airPurifier = convenience['airPurifier'] ?? false;
+            _dryer = convenience['dryer'] ?? false;
+            _iron = convenience['iron'] ?? false;
+            _waterPurifier = convenience['waterPurifier'] ?? false;
+            _riceCooker = convenience['riceCooker'] ?? false;
+            _electricKettle = convenience['electricKettle'] ?? false;
+            _dishes = convenience['dishes'] ?? false;
+            _cookware = convenience['cookware'] ?? false;
+            _bathtub = convenience['bathtub'] ?? false;
+            _hairDryer = convenience['hairDryer'] ?? false;
+            _bidet = convenience['bidet'] ?? false;
+          }
+
+          // 반려동물
+          if (amenities['petsAllowed'] != null) {
+            _petsAllowed = amenities['petsAllowed'];
+          }
+        }
+
+        // 사진 정보 - TODO: 나중에 사진 URL에서 XFile로 변환 필요
+        // if (roomData['photos'] != null) {
+        //   // 사진은 URL 형태로 저장되어 있으므로 표시만 가능
+        // }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -729,7 +818,11 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
           height: 56,
           child: OutlinedButton(
             onPressed: () {
-              context.go('/host/pricing');
+              if (_roomId != null) {
+                context.go('/host/pricing', extra: _roomId);
+              } else {
+                context.pop();
+              }
             },
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0xFF4A90E2)),
@@ -752,7 +845,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
           width: 250,
           height: 56,
           child: ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (_roomImages.length < 6) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('방 사진을 최소 6장 이상 등록해주세요')),
@@ -760,9 +853,84 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
                 return;
               }
 
+              if (_roomId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('방 ID가 없습니다. 처음부터 다시 시작해주세요.')),
+                );
+                return;
+              }
+
               if (_formKey.currentState!.validate()) {
-                // TODO: 저장 로직
-                context.go('/host/free-services');
+                // 1. 사진 업로드
+                final photoUrls = await _roomService.uploadPhotos(_roomId!, _roomImages);
+
+                if (photoUrls == null && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('사진 업로드에 실패했습니다.')),
+                  );
+                  return;
+                }
+
+                // 2. 편의시설 데이터 수집
+                final amenitiesData = {
+                  'basicOptions': {
+                    'refrigerator': _refrigerator,
+                    'washingMachine': _washingMachine,
+                    'airConditioner': _airConditioner,
+                    'sink': _sink,
+                    'bed': _bed,
+                    'tv': _tv,
+                    'internet': _internet,
+                  },
+                  'additionalOptions': {
+                    'doorLock': _doorLock,
+                    'cctv': _cctv,
+                    'managementOffice': _managementOffice,
+                    'gasRange': _gasRange,
+                    'induction': _induction,
+                    'microwave': _microwave,
+                    'diningTable': _diningTable,
+                    'shoeRack': _shoeRack,
+                    'wardrobe': _wardrobe,
+                    'dressRoom': _dressRoom,
+                    'vanity': _vanity,
+                    'cableTv': _cableTv,
+                    'sofa': _sofa,
+                    'desk': _desk,
+                    'curtain': _curtain,
+                    'balcony': _balcony,
+                  },
+                  'convenienceOptions': {
+                    'heatingCooling': _heatingCooling,
+                    'heater': _heater,
+                    'airPurifier': _airPurifier,
+                    'dryer': _dryer,
+                    'iron': _iron,
+                    'waterPurifier': _waterPurifier,
+                    'riceCooker': _riceCooker,
+                    'electricKettle': _electricKettle,
+                    'dishes': _dishes,
+                    'cookware': _cookware,
+                    'bathtub': _bathtub,
+                    'hairDryer': _hairDryer,
+                    'bidet': _bidet,
+                  },
+                  'petsAllowed': _petsAllowed,
+                };
+
+                // 3. 편의시설 정보 전송
+                final success = await _roomService.updateAmenities(_roomId!, amenitiesData);
+
+                if (success && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('사진 및 편의시설 정보가 저장되었습니다.')),
+                  );
+                  context.go('/host/free-services', extra: _roomId);
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('편의시설 정보 저장에 실패했습니다.')),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(

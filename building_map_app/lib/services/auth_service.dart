@@ -59,26 +59,68 @@ class AuthService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint('로그인 성공: $data');
+        debugPrint('✅ [LOGIN] 로그인 성공');
+        debugPrint('📦 [LOGIN] 응답 데이터 구조: ${data.keys}');
+        debugPrint('📦 [LOGIN] 전체 응답: $data');
 
-        // JWT 토큰 저장
-        if (data['accessToken'] != null) {
-          await _saveTokens(data['accessToken'], data['refreshToken']);
+        // JWT 토큰 저장 - 다양한 응답 구조 처리
+        String? accessToken;
+        String? refreshToken;
+
+        // 응답 구조 확인 및 토큰 추출
+        if (data['data'] != null && data['data']['accessToken'] != null) {
+          // { success: true, data: { accessToken, refreshToken, user } } 구조
+          accessToken = data['data']['accessToken'];
+          refreshToken = data['data']['refreshToken'];
+          debugPrint('🔑 [LOGIN] 토큰 위치: data 객체 내부');
+        } else if (data['accessToken'] != null) {
+          // { accessToken, refreshToken, user } 구조
+          accessToken = data['accessToken'];
+          refreshToken = data['refreshToken'];
+          debugPrint('🔑 [LOGIN] 토큰 위치: 최상위');
+        }
+
+        if (accessToken != null) {
+          debugPrint('🔑 [LOGIN] Access Token 발견: ${accessToken.substring(0, 20)}...');
+          await _saveTokens(accessToken, refreshToken);
+
+          // 사용자 정보 추출
+          Map<String, dynamic>? userInfo;
+          if (data['data'] != null && data['data']['user'] != null) {
+            userInfo = data['data']['user'];
+            debugPrint('👤 [LOGIN] 사용자 정보 위치: data.user');
+          } else if (data['user'] != null) {
+            userInfo = data['user'];
+            debugPrint('👤 [LOGIN] 사용자 정보 위치: user');
+          }
 
           // 사용자 정보 설정
-          _currentUser = User(
-            id: data['user']['id'].toString(),
-            email: email,
-            name: data['user']['name'] ?? email.split('@')[0],
-            mode: UserMode.values.firstWhere(
-              (m) => m.name == data['user']['mode'],
-              orElse: () => mode ?? UserMode.guest, // null일 때 기본값 사용
-            ),
-            provider: AuthProvider.email,
-          );
+          if (userInfo != null) {
+            final userMode = userInfo['mode'] ?? userInfo['userMode'];
+            _currentUser = User(
+              id: userInfo['id'].toString(),
+              email: email,
+              name: userInfo['name'] ?? email.split('@')[0],
+              mode: UserMode.values.firstWhere(
+                (m) => m.name == userMode,
+                orElse: () => mode ?? UserMode.guest,
+              ),
+              provider: AuthProvider.email,
+            );
+          } else {
+            // 사용자 정보가 없는 경우 기본값 설정
+            _currentUser = User(
+              id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+              email: email,
+              name: email.split('@')[0],
+              mode: mode ?? UserMode.guest,
+              provider: AuthProvider.email,
+            );
+          }
 
           // 사용자 정보도 저장
           await _saveUserInfo(_currentUser!);
+          debugPrint('✅ [LOGIN] 토큰 및 사용자 정보 저장 완료');
         } else {
           // 토큰이 없으면 기본 사용자 정보만 설정
           _currentUser = User(
@@ -298,11 +340,24 @@ class AuthService extends ChangeNotifier {
 
   /// 토큰 저장
   Future<void> _saveTokens(String accessToken, String? refreshToken) async {
+    debugPrint('💾 [TOKEN] 토큰 저장 시작...');
+    debugPrint('💾 [TOKEN] Access Token 길이: ${accessToken.length}');
+    debugPrint('💾 [TOKEN] Access Token 미리보기: ${accessToken.substring(0, accessToken.length > 50 ? 50 : accessToken.length)}...');
+
     await _storage.write(key: 'access_token', value: accessToken);
+    debugPrint('✅ [TOKEN] Access Token 저장 완료');
+
     if (refreshToken != null) {
+      debugPrint('💾 [TOKEN] Refresh Token 길이: ${refreshToken.length}');
       await _storage.write(key: 'refresh_token', value: refreshToken);
+      debugPrint('✅ [TOKEN] Refresh Token 저장 완료');
     }
-    debugPrint('토큰 저장 완료');
+
+    // 저장 확인
+    final savedAccessToken = await _storage.read(key: 'access_token');
+    final savedRefreshToken = await _storage.read(key: 'refresh_token');
+    debugPrint('🔍 [TOKEN] 저장 확인 - Access: ${savedAccessToken != null ? "OK" : "FAIL"}');
+    debugPrint('🔍 [TOKEN] 저장 확인 - Refresh: ${savedRefreshToken != null ? "OK" : "FAIL"}');
   }
 
   /// 사용자 정보 저장

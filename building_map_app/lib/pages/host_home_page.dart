@@ -2,11 +2,147 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
+import '../services/room_service.dart';
 import '../models/user.dart';
 
 /// 호스트 모드 홈 화면
-class HostHomePage extends StatelessWidget {
+class HostHomePage extends StatefulWidget {
   const HostHomePage({super.key});
+
+  @override
+  State<HostHomePage> createState() => _HostHomePageState();
+}
+
+class _HostHomePageState extends State<HostHomePage> {
+  final _roomService = RoomService();
+  Map<String, dynamic>? _inProgressRoom;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInProgressRooms();
+  }
+
+  /// 등록 중인 방 확인
+  Future<void> _checkInProgressRooms() async {
+    debugPrint('🏠 [HOST] 등록 중인 방 확인 시작');
+
+    final rooms = await _roomService.getInProgressRooms();
+    debugPrint('🏠 [HOST] getInProgressRooms 결과: $rooms');
+
+    if (rooms != null) {
+      debugPrint('🏠 [HOST] 반환된 방 개수: ${rooms.length}');
+
+      if (rooms.isNotEmpty) {
+        debugPrint('🏠 [HOST] 첫 번째 방 데이터: ${rooms[0]}');
+
+        // 첫 번째 등록 중인 방 사용 (API는 'id'로 반환)
+        final roomId = rooms[0]['id'] ?? rooms[0]['roomId'];
+        debugPrint('🏠 [HOST] roomId 추출: $roomId');
+
+        final roomDetail = await _roomService.getRoom(roomId);
+        debugPrint('🏠 [HOST] getRoom 결과: $roomDetail');
+
+        if (mounted) {
+          setState(() {
+            // getRoom 결과에 id 필드가 없으므로 수동으로 추가
+            if (roomDetail != null) {
+              _inProgressRoom = {...roomDetail, 'id': roomId};
+            } else {
+              _inProgressRoom = roomDetail;
+            }
+            _isLoading = false;
+          });
+          debugPrint('🏠 [HOST] setState 완료 - _inProgressRoom에 id 추가: ${_inProgressRoom?['id']}');
+        }
+      } else {
+        debugPrint('🏠 [HOST] 등록 중인 방이 없음');
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } else {
+      debugPrint('🏠 [HOST] getInProgressRooms가 null 반환');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+
+    debugPrint('🏠 [HOST] 배너 표시 여부: ${_inProgressRoom != null}');
+  }
+
+  /// 진행 중인 단계에 따라 페이지 이동
+  void _continueRegistration() {
+    if (_inProgressRoom == null) return;
+
+    final roomId = _inProgressRoom!['id'] ?? _inProgressRoom!['roomId'];
+    final progress = _inProgressRoom!['registrationProgress'];
+
+    debugPrint('🚀 [HOST] 등록 계속하기 클릭');
+    debugPrint('🚀 [HOST] roomId: $roomId');
+    debugPrint('🚀 [HOST] progress: $progress');
+
+    if (progress == null) {
+      // 진행 정보가 없으면 기본 정보 페이지로
+      debugPrint('🚀 [HOST] progress 없음 -> /host/room-registration');
+      context.goNamed('room-registration', extra: roomId);
+      return;
+    }
+
+    final currentStep = progress['currentStep'] as String?;
+    final steps = progress['steps'] as Map<String, dynamic>?;
+
+    debugPrint('🚀 [HOST] currentStep: $currentStep');
+    debugPrint('🚀 [HOST] steps: $steps');
+
+    // 현재 단계에 따라 적절한 페이지로 이동
+    if (steps != null) {
+      if (steps['basicInfo'] == false) {
+        debugPrint('🚀 [HOST] basicInfo 미완료 -> /host/room-registration');
+        context.goNamed('room-registration', extra: roomId);
+      } else if (steps['pricing'] == false) {
+        debugPrint('🚀 [HOST] pricing 미완료 -> /host/pricing (roomId: $roomId)');
+        context.goNamed('pricing', extra: roomId);
+      } else if (steps['photosAndAmenities'] == false) {
+        debugPrint('🚀 [HOST] photosAndAmenities 미완료 -> /host/amenities');
+        context.goNamed('amenities', extra: roomId);
+      } else if (steps['freeServices'] == false) {
+        debugPrint('🚀 [HOST] freeServices 미완료 -> /host/free-services');
+        context.goNamed('free-services', extra: roomId);
+      } else if (steps['description'] == false) {
+        debugPrint('🚀 [HOST] description 미완료 -> /host/room-description');
+        context.goNamed('room-description', extra: roomId);
+      } else {
+        // 모든 단계가 완료되었으면 심사 대기 상태
+        debugPrint('🚀 [HOST] 모든 단계 완료 -> /host/room-registration');
+        context.goNamed('room-registration', extra: roomId);
+      }
+    } else {
+      // steps 정보가 없으면 currentStep으로 판단
+      debugPrint('🚀 [HOST] steps 없음, currentStep으로 판단: $currentStep');
+      switch (currentStep) {
+        case 'pricing':
+          context.goNamed('pricing', extra: roomId);
+          break;
+        case 'photosAndAmenities':
+          context.goNamed('amenities', extra: roomId);
+          break;
+        case 'freeServices':
+          context.goNamed('free-services', extra: roomId);
+          break;
+        case 'description':
+          context.goNamed('room-description', extra: roomId);
+          break;
+        default:
+          context.goNamed('room-registration', extra: roomId);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +260,12 @@ class HostHomePage extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 32),
+
+                // 등록 중인 방 알림 (있을 경우만 표시)
+                if (_inProgressRoom != null) ...[
+                  _buildInProgressRoomBanner(),
+                  const SizedBox(height: 16),
+                ],
 
                 // 메인 액션 - 숙소 등록
                 Container(
@@ -407,6 +549,141 @@ class HostHomePage extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
       ],
+    );
+  }
+
+  /// 등록 중인 방 배너 위젯
+  Widget _buildInProgressRoomBanner() {
+    final progress = _inProgressRoom!['registrationProgress'];
+    final completionRate = progress?['completionRate'] ?? 0;
+    final roomName = _inProgressRoom!['roomName'] ?? '등록 중인 방';
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFF39C12).withOpacity(0.9),
+            const Color(0xFFE67E22).withOpacity(0.9),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE67E22).withOpacity(0.3),
+            offset: const Offset(0, 4),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _continueRegistration,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.info_outline,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '등록 중인 방이 있네요!',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '마저 입력하고 게스트에게 방을 보여주세요.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  roomName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // 진행률 바
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          '진행률',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          '$completionRate%',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: completionRate / 100,
+                        backgroundColor: Colors.white.withOpacity(0.3),
+                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        minHeight: 8,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

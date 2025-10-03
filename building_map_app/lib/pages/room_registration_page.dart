@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/daum_postcode_widget.dart';
 import '../widgets/registration_flow_indicator.dart';
+import '../services/room_service.dart';
 
 /// 호스트 전용 방 등록 페이지
 class RoomRegistrationPage extends StatefulWidget {
-  const RoomRegistrationPage({super.key});
+  final int? roomId;
+  const RoomRegistrationPage({super.key, this.roomId});
 
   @override
   State<RoomRegistrationPage> createState() => _RoomRegistrationPageState();
@@ -13,6 +15,9 @@ class RoomRegistrationPage extends StatefulWidget {
 
 class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
   final _formKey = GlobalKey<FormState>();
+  final _roomService = RoomService();
+  int? _currentRoomId; // 생성된 방 ID 저장
+  bool _isLoading = true;
 
   // 폼 컨트롤러들
   final _roomNameController = TextEditingController();
@@ -42,6 +47,86 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
   // 공통 현관 비밀번호
   String _entrancePassword = '';
   bool _useEntrancePassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoomData();
+  }
+
+  /// 저장된 방 정보 불러오기
+  Future<void> _loadRoomData() async {
+    // widget에서 전달받은 roomId가 있으면 사용
+    if (widget.roomId != null) {
+      _currentRoomId = widget.roomId;
+    }
+
+    // roomId가 있으면 서버에서 방 정보 불러오기
+    if (_currentRoomId != null) {
+      final roomData = await _roomService.getRoom(_currentRoomId!);
+      if (roomData != null && mounted) {
+        setState(() {
+          // 기본 정보 채우기
+          if (roomData['roomName'] != null) {
+            _roomNameController.text = roomData['roomName'];
+          }
+          if (roomData['address'] != null) {
+            _addressController.text = roomData['address'];
+          }
+          if (roomData['detailAddress'] != null) {
+            _detailAddressController.text = roomData['detailAddress'];
+          }
+          if (roomData['area'] != null) {
+            _areaController.text = roomData['area'].toString();
+          }
+          if (roomData['floor'] != null) {
+            _floor = roomData['floor'];
+          }
+          if (roomData['buildingType'] != null) {
+            _buildingType = roomData['buildingType'];
+          }
+          if (roomData['parkingAvailable'] != null) {
+            _parkingAvailable = roomData['parkingAvailable'] ? '가능' : '불가능';
+          }
+          if (roomData['parkingInfo'] != null) {
+            _parkingInfoController.text = roomData['parkingInfo'];
+          }
+          if (roomData['elevatorAvailable'] != null) {
+            _elevatorAvailable = roomData['elevatorAvailable'] ? '있음' : '없음';
+          }
+          if (roomData['roomCount'] != null) {
+            _roomCount = roomData['roomCount'];
+          }
+          if (roomData['bathroomCount'] != null) {
+            _bathroomCount = roomData['bathroomCount'];
+          }
+          if (roomData['livingRoomCount'] != null) {
+            _livingRoomCount = roomData['livingRoomCount'];
+          }
+          if (roomData['kitchenCount'] != null) {
+            _kitchenCount = roomData['kitchenCount'];
+          }
+          if (roomData['isDuplex'] != null) {
+            _isDuplex = roomData['isDuplex'];
+          }
+          if (roomData['entrancePassword'] != null) {
+            _entrancePassword = roomData['entrancePassword'];
+            _useEntrancePassword = true;
+          }
+
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -308,34 +393,9 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
 
             const SizedBox(height: 12),
 
-            // 지번주소 입력
-            TextFormField(
-              controller: _detailAddressController,
-              decoration: InputDecoration(
-                hintText: '지번주소 입력해 주세요.',
-                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
             // 상세주소 입력
             TextFormField(
+              controller: _detailAddressController,
               decoration: InputDecoration(
                 hintText: '상세주소 입력해 주세요. 예) 302호, 2층 전체 사용',
                 hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -355,6 +415,12 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return '상세주소를 입력해주세요';
+                }
+                return null;
+              },
             ),
 
             const SizedBox(height: 20),
@@ -1062,8 +1128,11 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
     );
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      // 토큰 확인 (디버깅용)
+      await _roomService.checkToken();
+
       // 폼 데이터 수집
       final roomData = {
         'roomName': _roomNameController.text,
@@ -1071,7 +1140,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
         'detailAddress': _detailAddressController.text,
         'area': double.parse(_areaController.text),
         'floor': _floor,
-        'buildingType': _buildingType,
+        'buildingType': _buildingType == '선택' ? '오피스텔' : _buildingType,
         'parkingAvailable': _parkingAvailable == '가능',
         'parkingInfo': _parkingInfoController.text,
         'elevatorAvailable': _elevatorAvailable == '있음',
@@ -1079,16 +1148,28 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
         'bathroomCount': _bathroomCount,
         'livingRoomCount': _livingRoomCount,
         'kitchenCount': _kitchenCount,
-        'isDuplex': _isDuplex, //복층 여부
-        'entrancePassword': _useEntrancePassword ? _entrancePassword : null, // 공통 현관 비밀번호
+        'isDuplex': _isDuplex,
+        'entrancePassword': _useEntrancePassword ? _entrancePassword : null,
       };
 
-      // TODO: 서버로 데이터 전송
-      print('방 등록 데이터: $roomData');
+      // 서버로 데이터 전송
+      final result = await _roomService.createRoom(roomData);
 
-      // 요금설정 페이지로 이동
-      if (context.mounted) {
-        context.go('/host/pricing');
+      if (!mounted) return;
+
+      if (result != null) {
+        _currentRoomId = result['roomId'];
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('방 기본 정보가 저장되었습니다.')),
+        );
+
+        // 요금설정 페이지로 이동 (roomId 전달)
+        context.go('/host/pricing', extra: _currentRoomId);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('방 등록에 실패했습니다. 다시 시도해주세요.')),
+        );
       }
     }
   }

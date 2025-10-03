@@ -108,27 +108,42 @@ class AppRouter {
         GoRoute(
           path: '/host/room-registration',
           name: 'room-registration',
-          builder: (context, state) => const RoomRegistrationPage(),
+          builder: (context, state) {
+            final roomId = state.extra as int?;
+            return RoomRegistrationPage(roomId: roomId);
+          },
         ),
         GoRoute(
           path: '/host/pricing',
           name: 'pricing',
-          builder: (context, state) => const PricingPage(),
+          builder: (context, state) {
+            final roomId = state.extra as int?;
+            return PricingPage(roomId: roomId);
+          },
         ),
         GoRoute(
           path: '/host/amenities',
           name: 'amenities',
-          builder: (context, state) => const RoomAmenitiesPage(),
+          builder: (context, state) {
+            final roomId = state.extra as int?;
+            return RoomAmenitiesPage(roomId: roomId);
+          },
         ),
         GoRoute(
           path: '/host/free-services',
           name: 'free-services',
-          builder: (context, state) => const FreeServicesPage(),
+          builder: (context, state) {
+            final roomId = state.extra as int?;
+            return FreeServicesPage(roomId: roomId);
+          },
         ),
         GoRoute(
           path: '/host/room-description',
           name: 'room-description',
-          builder: (context, state) => const RoomDescriptionPage(),
+          builder: (context, state) {
+            final roomId = state.extra as int?;
+            return RoomDescriptionPage(roomId: roomId);
+          },
         ),
         GoRoute(
           path: '/map',

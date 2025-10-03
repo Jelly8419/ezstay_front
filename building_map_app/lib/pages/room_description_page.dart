@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/registration_flow_indicator.dart';
+import '../services/room_service.dart';
 
 /// 방 소개 페이지
 class RoomDescriptionPage extends StatefulWidget {
-  const RoomDescriptionPage({super.key});
+  final int? roomId;
+  const RoomDescriptionPage({super.key, this.roomId});
 
   @override
   State<RoomDescriptionPage> createState() => _RoomDescriptionPageState();
@@ -15,6 +17,38 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _transportationController = TextEditingController();
   final TextEditingController _houseRulesController = TextEditingController();
+  final _roomService = RoomService();
+  int? _roomId;
+
+  @override
+  void initState() {
+    super.initState();
+    _roomId = widget.roomId;
+    if (_roomId != null) {
+      _loadRoomData();
+    }
+  }
+
+  /// 저장된 방 정보 불러오기
+  Future<void> _loadRoomData() async {
+    if (_roomId == null) return;
+
+    final roomData = await _roomService.getRoom(_roomId!);
+    if (roomData != null && mounted) {
+      setState(() {
+        // 방 소개 정보가 있으면 채우기
+        if (roomData['description'] != null) {
+          _descriptionController.text = roomData['description'];
+        }
+        if (roomData['transportation'] != null) {
+          _transportationController.text = roomData['transportation'];
+        }
+        if (roomData['houseRules'] != null) {
+          _houseRulesController.text = roomData['houseRules'];
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -302,7 +336,11 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
           height: 56,
           child: OutlinedButton(
             onPressed: () {
-              context.go('/host/free-services');
+              if (_roomId != null) {
+                context.go('/host/free-services', extra: _roomId);
+              } else {
+                context.pop();
+              }
             },
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0xFF4A90E2)),
@@ -325,14 +363,49 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
           width: 250,
           height: 56,
           child: ElevatedButton(
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                // TODO: 심사요청 로직
+            onPressed: () async {
+              if (_roomId == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('심사요청이 완료되었습니다. 검토 후 연락드리겠습니다.')),
+                  const SnackBar(content: Text('방 ID가 없습니다. 처음부터 다시 시작해주세요.')),
                 );
-                // 호스트 홈으로 이동
-                context.go('/host');
+                return;
+              }
+
+              if (_formKey.currentState!.validate()) {
+                // 1. 방 소개 데이터 수집
+                final descriptionData = {
+                  'description': _descriptionController.text,
+                  'transportation': _transportationController.text,
+                  'houseRules': _houseRulesController.text,
+                };
+
+                // 2. 방 소개 정보 전송
+                final descSuccess = await _roomService.updateDescription(_roomId!, descriptionData);
+
+                if (!descSuccess && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('방 소개 정보 저장에 실패했습니다.')),
+                  );
+                  return;
+                }
+
+                // 3. 심사 요청
+                final reviewSuccess = await _roomService.submitReview(_roomId!);
+
+                if (reviewSuccess && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('심사요청이 완료되었습니다. 검토 후 연락드리겠습니다.'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                  // 호스트 홈으로 이동
+                  context.go('/host');
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('심사 요청에 실패했습니다. 필수 정보를 모두 입력했는지 확인해주세요.')),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(

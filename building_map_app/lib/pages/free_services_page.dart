@@ -3,11 +3,13 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/registration_flow_indicator.dart';
+import '../services/room_service.dart';
 import 'dart:io';
 
 /// 무료 부가 서비스 페이지
 class FreeServicesPage extends StatefulWidget {
-  const FreeServicesPage({super.key});
+  final int? roomId;
+  const FreeServicesPage({super.key, this.roomId});
 
   @override
   State<FreeServicesPage> createState() => _FreeServicesPageState();
@@ -17,6 +19,8 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
   final TextEditingController _passwordController = TextEditingController();
+  final _roomService = RoomService();
+  int? _roomId;
 
   // 섹션1: 확인 동의
   bool _agreeTerms = false;
@@ -38,6 +42,57 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
 
   // 섹션5: 비밀번호 자동 변경
   bool _autoPasswordChange = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _roomId = widget.roomId;
+    if (_roomId != null) {
+      _loadRoomData();
+    }
+  }
+
+  /// 저장된 방 정보 불러오기
+  Future<void> _loadRoomData() async {
+    if (_roomId == null) return;
+
+    final roomData = await _roomService.getRoom(_roomId!);
+    if (roomData != null && mounted) {
+      setState(() {
+        // 무료 부가서비스 정보가 있으면 채우기
+        if (roomData['freeServices'] != null) {
+          final services = roomData['freeServices'];
+
+          if (services['agreeTerms'] != null) {
+            _agreeTerms = services['agreeTerms'];
+          }
+          if (services['cleaningService'] != null) {
+            _cleaningService = services['cleaningService'];
+          }
+          // 청소도구 이미지는 URL이므로 표시만 가능 (XFile 변환 불가)
+
+          if (services['hairDryerRental'] != null) {
+            _hairDryerRental = services['hairDryerRental'];
+          }
+          if (services['beddingService'] != null) {
+            _beddingService = services['beddingService'];
+          }
+          if (services['bedSizes'] != null) {
+            final bedSizes = services['bedSizes'] as Map<String, dynamic>;
+            _bedSizes['슈퍼싱글'] = bedSizes['슈퍼싱글'] ?? 0;
+            _bedSizes['퀸'] = bedSizes['퀸'] ?? 0;
+            _bedSizes['킹'] = bedSizes['킹'] ?? 0;
+          }
+          if (services['autoPasswordChange'] != null) {
+            _autoPasswordChange = services['autoPasswordChange'];
+          }
+          if (services['roomPassword'] != null) {
+            _passwordController.text = services['roomPassword'];
+          }
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -802,7 +857,11 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
           height: 56,
           child: OutlinedButton(
             onPressed: () {
-              context.go('/host/amenities');
+              if (_roomId != null) {
+                context.go('/host/amenities', extra: _roomId);
+              } else {
+                context.pop();
+              }
             },
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0xFF4A90E2)),
@@ -825,7 +884,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
           width: 250,
           height: 56,
           child: ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (!_agreeTerms) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('이용 약관에 동의해주세요')),
@@ -833,9 +892,56 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
                 return;
               }
 
+              if (_roomId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('방 ID가 없습니다. 처음부터 다시 시작해주세요.')),
+                );
+                return;
+              }
+
               if (_formKey.currentState!.validate()) {
-                // TODO: 저장 로직
-                context.go('/host/room-description');
+                String? cleaningToolImageUrl;
+
+                // 1. 청소도구 이미지가 있으면 업로드
+                if (_cleaningToolImage != null) {
+                  cleaningToolImageUrl = await _roomService.uploadCleaningToolImage(
+                    _roomId!,
+                    _cleaningToolImage!,
+                  );
+
+                  if (cleaningToolImageUrl == null && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('청소도구 이미지 업로드에 실패했습니다.')),
+                    );
+                    return;
+                  }
+                }
+
+                // 2. 무료 부가서비스 데이터 수집
+                final servicesData = {
+                  'agreeTerms': _agreeTerms,
+                  'cleaningService': _cleaningService,
+                  'cleaningToolImageUrl': cleaningToolImageUrl,
+                  'hairDryerRental': _hairDryerRental,
+                  'beddingService': _beddingService,
+                  'bedSizes': _bedSizes,
+                  'autoPasswordChange': _autoPasswordChange,
+                  'roomPassword': _autoPasswordChange ? _passwordController.text : null,
+                };
+
+                // 3. 서버로 데이터 전송
+                final success = await _roomService.updateFreeServices(_roomId!, servicesData);
+
+                if (success && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('무료 부가서비스 정보가 저장되었습니다.')),
+                  );
+                  context.go('/host/room-description', extra: _roomId);
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('무료 부가서비스 정보 저장에 실패했습니다.')),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(
