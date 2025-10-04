@@ -3,11 +3,13 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
+import 'api_client.dart';
 
 /// 방 등록 API 서비스
 class RoomService {
   static const String baseUrl = 'http://localhost:8080/api/host/rooms';
   static const _storage = FlutterSecureStorage();
+  final _apiClient = ApiClient();
 
   /// 저장된 토큰 확인 (디버깅용)
   Future<void> checkToken() async {
@@ -45,27 +47,18 @@ class RoomService {
       debugPrint('🏠 [ROOM] 방 기본 정보 등록 시작');
       debugPrint('📦 [ROOM] 요청 데이터: $roomData');
 
-      final response = await http.post(
+      final response = await _apiClient.post(
         Uri.parse(baseUrl),
         headers: await _getHeaders(),
         body: json.encode(roomData),
-      ).timeout(const Duration(seconds: 10));
+      );
 
-      debugPrint('📡 [ROOM] 응답 상태: ${response.statusCode}');
-      debugPrint('📄 [ROOM] 응답 내용: ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response != null) {
         final data = json.decode(response.body);
         debugPrint('✅ [ROOM] 방 등록 성공 - roomId: ${data['data']['roomId']}');
         return data['data'];
-      } else if (response.statusCode == 401) {
-        debugPrint('❌ [ROOM] 인증 실패 (401) - 토큰이 유효하지 않거나 만료되었습니다.');
-        debugPrint('📄 [ROOM] 에러 응답: ${response.body}');
-        return null;
-      } else {
-        debugPrint('❌ [ROOM] 방 등록 실패: ${response.statusCode} - ${response.body}');
-        return null;
       }
+      return null;
     } catch (e) {
       debugPrint('❌ [ROOM] 방 등록 에러: $e');
       return null;
@@ -265,21 +258,17 @@ class RoomService {
       debugPrint('📝 [DESCRIPTION] 방 소개 설정 시작 - roomId: $roomId');
       debugPrint('📦 [DESCRIPTION] 요청 데이터: $descriptionData');
 
-      final response = await http.patch(
+      final response = await _apiClient.patch(
         Uri.parse('$baseUrl/$roomId/description'),
         headers: await _getHeaders(),
         body: json.encode(descriptionData),
-      ).timeout(const Duration(seconds: 10));
+      );
 
-      debugPrint('📡 [DESCRIPTION] 응답 상태: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
+      if (response != null) {
         debugPrint('✅ [DESCRIPTION] 방 소개 설정 성공');
         return true;
-      } else {
-        debugPrint('❌ [DESCRIPTION] 방 소개 설정 실패: ${response.statusCode}');
-        return false;
       }
+      return false;
     } catch (e) {
       debugPrint('❌ [DESCRIPTION] 방 소개 설정 에러: $e');
       return false;
@@ -291,20 +280,16 @@ class RoomService {
     try {
       debugPrint('📋 [REVIEW] 심사 요청 시작 - roomId: $roomId');
 
-      final response = await http.post(
+      final response = await _apiClient.post(
         Uri.parse('$baseUrl/$roomId/submit-review'),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 10));
+      );
 
-      debugPrint('📡 [REVIEW] 응답 상태: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
+      if (response != null) {
         debugPrint('✅ [REVIEW] 심사 요청 성공');
         return true;
-      } else {
-        debugPrint('❌ [REVIEW] 심사 요청 실패: ${response.statusCode}');
-        return false;
       }
+      return false;
     } catch (e) {
       debugPrint('❌ [REVIEW] 심사 요청 에러: $e');
       return false;
@@ -367,21 +352,17 @@ class RoomService {
     try {
       debugPrint('🔍 [ROOM] 방 정보 조회 시작 - roomId: $roomId');
 
-      final response = await http.get(
+      final response = await _apiClient.get(
         Uri.parse('$baseUrl/$roomId'),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 10));
+      );
 
-      debugPrint('📡 [ROOM] 응답 상태: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
+      if (response != null) {
         final data = json.decode(response.body);
         debugPrint('✅ [ROOM] 방 정보 조회 성공');
         return data['data'];
-      } else {
-        debugPrint('❌ [ROOM] 방 정보 조회 실패: ${response.statusCode}');
-        return null;
       }
+      return null;
     } catch (e) {
       debugPrint('❌ [ROOM] 방 정보 조회 에러: $e');
       return null;

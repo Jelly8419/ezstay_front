@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../widgets/registration_flow_indicator.dart';
 import '../services/room_service.dart';
 import 'dart:io';
+import 'dart:convert';
 
 /// 사진 및 편의시설 페이지
 class RoomAmenitiesPage extends StatefulWidget {
@@ -23,6 +24,8 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
 
   // 방 사진 목록
   List<XFile> _roomImages = [];
+  // 서버에서 받은 사진 URL 목록 (이미 업로드된 사진)
+  List<Map<String, dynamic>> _existingPhotos = [];
 
   // 기본 옵션
   bool _refrigerator = false;
@@ -78,6 +81,16 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
     }
   }
 
+  /// 서버에서 받은 값을 boolean으로 안전하게 변환
+  bool _toBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is String) {
+      return value.toLowerCase() == 'true' || value == '1';
+    }
+    if (value is int) return value == 1;
+    return false;
+  }
+
   /// 저장된 방 정보 불러오기
   Future<void> _loadRoomData() async {
     if (_roomId == null) return;
@@ -89,69 +102,97 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
         if (roomData['amenities'] != null) {
           final amenities = roomData['amenities'];
 
-          // 기본 옵션
+          // 기본 옵션 (JSON 문자열을 파싱)
           if (amenities['basicOptions'] != null) {
-            final basic = amenities['basicOptions'];
-            _refrigerator = basic['refrigerator'] ?? false;
-            _washingMachine = basic['washingMachine'] ?? false;
-            _airConditioner = basic['airConditioner'] ?? false;
-            _sink = basic['sink'] ?? false;
-            _bed = basic['bed'] ?? false;
-            _tv = basic['tv'] ?? false;
-            _internet = basic['internet'] ?? false;
+            final basicStr = amenities['basicOptions'];
+            final basic = basicStr is String ? json.decode(basicStr) : basicStr;
+            _refrigerator = _toBool(basic['refrigerator']);
+            _washingMachine = _toBool(basic['washingMachine']);
+            _airConditioner = _toBool(basic['airConditioner']);
+            _sink = _toBool(basic['sink']);
+            _bed = _toBool(basic['bed']);
+            _tv = _toBool(basic['tv']);
+            _internet = _toBool(basic['internet']);
           }
 
-          // 추가 옵션
+          // 추가 옵션 (JSON 문자열을 파싱)
           if (amenities['additionalOptions'] != null) {
-            final additional = amenities['additionalOptions'];
-            _doorLock = additional['doorLock'] ?? false;
-            _cctv = additional['cctv'] ?? false;
-            _managementOffice = additional['managementOffice'] ?? false;
-            _gasRange = additional['gasRange'] ?? false;
-            _induction = additional['induction'] ?? false;
-            _microwave = additional['microwave'] ?? false;
-            _diningTable = additional['diningTable'] ?? false;
-            _shoeRack = additional['shoeRack'] ?? false;
-            _wardrobe = additional['wardrobe'] ?? false;
-            _dressRoom = additional['dressRoom'] ?? false;
-            _vanity = additional['vanity'] ?? false;
-            _cableTv = additional['cableTv'] ?? false;
-            _sofa = additional['sofa'] ?? false;
-            _desk = additional['desk'] ?? false;
-            _curtain = additional['curtain'] ?? false;
-            _balcony = additional['balcony'] ?? false;
+            final additionalStr = amenities['additionalOptions'];
+            final additional = additionalStr is String ? json.decode(additionalStr) : additionalStr;
+            _doorLock = _toBool(additional['doorLock']);
+            _cctv = _toBool(additional['cctv']);
+            _managementOffice = _toBool(additional['managementOffice']);
+            _gasRange = _toBool(additional['gasRange']);
+            _induction = _toBool(additional['induction']);
+            _microwave = _toBool(additional['microwave']);
+            _diningTable = _toBool(additional['diningTable']);
+            _shoeRack = _toBool(additional['shoeRack']);
+            _wardrobe = _toBool(additional['wardrobe']);
+            _dressRoom = _toBool(additional['dressRoom']);
+            _vanity = _toBool(additional['vanity']);
+            _cableTv = _toBool(additional['cableTv']);
+            _sofa = _toBool(additional['sofa']);
+            _desk = _toBool(additional['desk']);
+            _curtain = _toBool(additional['curtain']);
+            _balcony = _toBool(additional['balcony']);
           }
 
-          // 편의 옵션
+          // 편의 옵션 (JSON 문자열을 파싱)
           if (amenities['convenienceOptions'] != null) {
-            final convenience = amenities['convenienceOptions'];
-            _heatingCooling = convenience['heatingCooling'] ?? false;
-            _heater = convenience['heater'] ?? false;
-            _airPurifier = convenience['airPurifier'] ?? false;
-            _dryer = convenience['dryer'] ?? false;
-            _iron = convenience['iron'] ?? false;
-            _waterPurifier = convenience['waterPurifier'] ?? false;
-            _riceCooker = convenience['riceCooker'] ?? false;
-            _electricKettle = convenience['electricKettle'] ?? false;
-            _dishes = convenience['dishes'] ?? false;
-            _cookware = convenience['cookware'] ?? false;
-            _bathtub = convenience['bathtub'] ?? false;
-            _hairDryer = convenience['hairDryer'] ?? false;
-            _bidet = convenience['bidet'] ?? false;
+            final convenienceStr = amenities['convenienceOptions'];
+            final convenience = convenienceStr is String ? json.decode(convenienceStr) : convenienceStr;
+            _heatingCooling = _toBool(convenience['heatingCooling']);
+            _heater = _toBool(convenience['heater']);
+            _airPurifier = _toBool(convenience['airPurifier']);
+            _dryer = _toBool(convenience['dryer']);
+            _iron = _toBool(convenience['iron']);
+            _waterPurifier = _toBool(convenience['waterPurifier']);
+            _riceCooker = _toBool(convenience['riceCooker']);
+            _electricKettle = _toBool(convenience['electricKettle']);
+            _dishes = _toBool(convenience['dishes']);
+            _cookware = _toBool(convenience['cookware']);
+            _bathtub = _toBool(convenience['bathtub']);
+            _hairDryer = _toBool(convenience['hairDryer']);
+            _bidet = _toBool(convenience['bidet']);
           }
 
           // 반려동물
           if (amenities['petsAllowed'] != null) {
-            _petsAllowed = amenities['petsAllowed'];
+            _petsAllowed = _toBool(amenities['petsAllowed']);
           }
         }
 
-        // 사진 정보 - TODO: 나중에 사진 URL에서 XFile로 변환 필요
-        // if (roomData['photos'] != null) {
-        //   // 사진은 URL 형태로 저장되어 있으므로 표시만 가능
-        // }
+        // 사진 정보
+        if (roomData['photos'] != null) {
+          _existingPhotos = List<Map<String, dynamic>>.from(roomData['photos']);
+          debugPrint('📷 [AMENITIES] 기존 사진 로드: ${_existingPhotos.length}개');
+        }
       });
     }
+  }
+
+  /// 사진 URL에 경로 prefix 추가
+  String _getPhotoUrl(String url) {
+    // 웹 환경에서는 서버 URL 사용
+    if (kIsWeb) {
+      if (url.startsWith('/uploads/')) {
+        return 'http://localhost:8080$url';
+      }
+      return url;
+    }
+
+    // 모바일/데스크톱 로컬 환경에서는 C:\study 경로 사용
+    // TODO: 테스트서버나 운영서버는 다른 경로 사용
+    if (url.startsWith('/uploads/')) {
+      return 'C:\\study$url';
+    }
+    return url;
+  }
+
+  void _removeExistingPhoto(int photoId) {
+    setState(() {
+      _existingPhotos.removeWhere((photo) => photo['id'] == photoId);
+    });
   }
 
   @override
@@ -160,7 +201,8 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
   }
 
   Future<void> _pickImages() async {
-    if (_roomImages.length >= 20) {
+    final totalPhotos = _existingPhotos.length + _roomImages.length;
+    if (totalPhotos >= 20) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('최대 20장까지 등록 가능합니다')),
       );
@@ -170,7 +212,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
     final List<XFile> images = await _picker.pickMultiImage();
     if (images.isNotEmpty) {
       setState(() {
-        int remainingSlots = 20 - _roomImages.length;
+        int remainingSlots = 20 - totalPhotos;
         _roomImages.addAll(images.take(remainingSlots));
       });
     }
@@ -208,7 +250,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                   // 섹션1: 방 사진 등록
-                  _buildSectionTitle('방 사진 등록 (${_roomImages.length}/20)'),
+                  _buildSectionTitle('방 사진 등록 (${_existingPhotos.length + _roomImages.length}/20)'),
                   _buildPhotoSection(),
                   const SizedBox(height: 24),
 
@@ -308,17 +350,24 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 사진 그리드
-            if (_roomImages.isNotEmpty)
+            if (_existingPhotos.isNotEmpty || _roomImages.isNotEmpty)
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  ..._roomImages.asMap().entries.map((entry) {
+                  // 기존 사진들 (서버에서 받은 것)
+                  ..._existingPhotos.asMap().entries.map((entry) {
                     int index = entry.key;
+                    Map<String, dynamic> photo = entry.value;
+                    return _buildExistingPhotoCard(photo, index);
+                  }),
+                  // 새로 추가한 사진들
+                  ..._roomImages.asMap().entries.map((entry) {
+                    int index = entry.key + _existingPhotos.length;
                     XFile image = entry.value;
                     return _buildDraggableImageCard(image, index);
                   }),
-                  if (_roomImages.length < 20) _buildAddPhotoButton(),
+                  if (_existingPhotos.length + _roomImages.length < 20) _buildAddPhotoButton(),
                 ],
               )
             else
@@ -373,6 +422,119 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildExistingPhotoCard(Map<String, dynamic> photo, int index) {
+    final photoUrl = _getPhotoUrl(photo['url']);
+
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: kIsWeb
+                ? Image.network(
+                    photoUrl,
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    headers: const {
+                      'Access-Control-Allow-Origin': '*',
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      debugPrint('❌ [PHOTO] 이미지 로드 실패: $photoUrl');
+                      debugPrint('❌ [PHOTO] 에러: $error');
+                      debugPrint('❌ [PHOTO] 스택트레이스: $stackTrace');
+                      return Container(
+                        color: Colors.grey[200],
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.broken_image,
+                              size: 30,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Load failed',
+                              style: TextStyle(
+                                fontSize: 8,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                : Image.file(
+                    File(photoUrl),
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      debugPrint('❌ [PHOTO] 이미지 로드 실패: $photoUrl');
+                      debugPrint('❌ [PHOTO] 에러: $error');
+                      return Container(
+                        color: Colors.grey[200],
+                        child: const Icon(
+                          Icons.broken_image,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: InkWell(
+              onTap: () => _removeExistingPhoto(photo['id']),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
+          if (index == 0)
+            Positioned(
+              bottom: 4,
+              left: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4A90E2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  '대표사진',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -819,7 +981,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
           child: OutlinedButton(
             onPressed: () {
               if (_roomId != null) {
-                context.go('/host/pricing', extra: _roomId);
+                context.go('/host/pricing/$_roomId');
               } else {
                 context.pop();
               }
@@ -846,7 +1008,8 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
           height: 56,
           child: ElevatedButton(
             onPressed: () async {
-              if (_roomImages.length < 6) {
+              final totalPhotos = _existingPhotos.length + _roomImages.length;
+              if (totalPhotos < 6) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('방 사진을 최소 6장 이상 등록해주세요')),
                 );
@@ -925,7 +1088,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('사진 및 편의시설 정보가 저장되었습니다.')),
                   );
-                  context.go('/host/free-services', extra: _roomId);
+                  context.go('/host/free-services/$_roomId');
                 } else if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('편의시설 정보 저장에 실패했습니다.')),

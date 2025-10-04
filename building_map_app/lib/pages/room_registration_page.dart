@@ -1165,7 +1165,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
         );
 
         // 요금설정 페이지로 이동 (roomId 전달)
-        context.go('/host/pricing', extra: _currentRoomId);
+        context.go('/host/pricing/$_currentRoomId');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('방 등록에 실패했습니다. 다시 시도해주세요.')),

@@ -90,7 +90,7 @@ class _HostHomePageState extends State<HostHomePage> {
     if (progress == null) {
       // 진행 정보가 없으면 기본 정보 페이지로
       debugPrint('🚀 [HOST] progress 없음 -> /host/room-registration');
-      context.goNamed('room-registration', extra: roomId);
+      context.go('/host/room-registration/$roomId');
       return;
     }
 
@@ -104,42 +104,42 @@ class _HostHomePageState extends State<HostHomePage> {
     if (steps != null) {
       if (steps['basicInfo'] == false) {
         debugPrint('🚀 [HOST] basicInfo 미완료 -> /host/room-registration');
-        context.goNamed('room-registration', extra: roomId);
+        context.go('/host/room-registration/$roomId');
       } else if (steps['pricing'] == false) {
         debugPrint('🚀 [HOST] pricing 미완료 -> /host/pricing (roomId: $roomId)');
-        context.goNamed('pricing', extra: roomId);
+        context.go('/host/pricing/$roomId');
       } else if (steps['photosAndAmenities'] == false) {
         debugPrint('🚀 [HOST] photosAndAmenities 미완료 -> /host/amenities');
-        context.goNamed('amenities', extra: roomId);
+        context.go('/host/amenities/$roomId');
       } else if (steps['freeServices'] == false) {
         debugPrint('🚀 [HOST] freeServices 미완료 -> /host/free-services');
-        context.goNamed('free-services', extra: roomId);
+        context.go('/host/free-services/$roomId');
       } else if (steps['description'] == false) {
         debugPrint('🚀 [HOST] description 미완료 -> /host/room-description');
-        context.goNamed('room-description', extra: roomId);
+        context.go('/host/room-description/$roomId');
       } else {
         // 모든 단계가 완료되었으면 심사 대기 상태
         debugPrint('🚀 [HOST] 모든 단계 완료 -> /host/room-registration');
-        context.goNamed('room-registration', extra: roomId);
+        context.go('/host/room-registration/$roomId');
       }
     } else {
       // steps 정보가 없으면 currentStep으로 판단
       debugPrint('🚀 [HOST] steps 없음, currentStep으로 판단: $currentStep');
       switch (currentStep) {
         case 'pricing':
-          context.goNamed('pricing', extra: roomId);
+          context.go('/host/pricing/$roomId');
           break;
         case 'photosAndAmenities':
-          context.goNamed('amenities', extra: roomId);
+          context.go('/host/amenities/$roomId');
           break;
         case 'freeServices':
-          context.goNamed('free-services', extra: roomId);
+          context.go('/host/free-services/$roomId');
           break;
         case 'description':
-          context.goNamed('room-description', extra: roomId);
+          context.go('/host/room-description/$roomId');
           break;
         default:
-          context.goNamed('room-registration', extra: roomId);
+          context.go('/host/room-registration/$roomId');
       }
     }
   }

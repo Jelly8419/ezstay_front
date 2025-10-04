@@ -11,6 +11,7 @@ import 'data/dummy_buildings.dart';
 import 'config/api_config.dart';
 import 'config/kakao_config.dart';
 import 'services/auth_service.dart';
+import 'services/error_handler_service.dart';
 import 'router/app_router.dart';
 
 /// 앱의 진입점
@@ -68,10 +69,20 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final _errorHandler = ErrorHandlerService();
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
-    final router = AppRouter.createRouter(authService);
+    final router = AppRouter.createRouter(authService, navigatorKey: _navigatorKey);
+
+    // 다음 프레임에서 navigator context 설정
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _navigatorKey.currentContext != null) {
+        _errorHandler.setContext(_navigatorKey.currentContext!);
+      }
+    });
 
     return MaterialApp.router(
       title: 'EZStay',

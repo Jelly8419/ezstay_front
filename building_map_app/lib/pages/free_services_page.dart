@@ -28,6 +28,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
   // 섹션2: 안심 청소
   bool _cleaningService = false;
   XFile? _cleaningToolImage;
+  String? _existingCleaningToolImageUrl; // 서버에서 받은 기존 이미지 URL
 
   // 섹션3: 헤어 드라이기 대여
   bool _hairDryerRental = false;
@@ -42,6 +43,9 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
 
   // 섹션5: 비밀번호 자동 변경
   bool _autoPasswordChange = false;
+
+  // 섹션6: 어메니티 키트 (아직 API 연동 안 됨)
+  bool _amenityKit = false;
 
   @override
   void initState() {
@@ -69,7 +73,11 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
           if (services['cleaningService'] != null) {
             _cleaningService = services['cleaningService'];
           }
-          // 청소도구 이미지는 URL이므로 표시만 가능 (XFile 변환 불가)
+          // 청소도구 이미지 URL 저장
+          if (services['cleaningToolImageUrl'] != null) {
+            _existingCleaningToolImageUrl = services['cleaningToolImageUrl'];
+            debugPrint('🧹 [FREE_SERVICES] 기존 청소도구 이미지: $_existingCleaningToolImageUrl');
+          }
 
           if (services['hairDryerRental'] != null) {
             _hairDryerRental = services['hairDryerRental'];
@@ -94,6 +102,23 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
     }
   }
 
+  /// 이미지 URL에 경로 prefix 추가
+  String _getImageUrl(String url) {
+    // 웹 환경에서는 서버 URL 사용
+    if (kIsWeb) {
+      if (url.startsWith('/uploads/')) {
+        return 'http://localhost:8080$url';
+      }
+      return url;
+    }
+
+    // 모바일/데스크톱 로컬 환경에서는 C:\study 경로 사용
+    if (url.startsWith('/uploads/')) {
+      return 'C:\\study$url';
+    }
+    return url;
+  }
+
   @override
   void dispose() {
     _passwordController.dispose();
@@ -112,6 +137,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
   void _removeCleaningToolImage() {
     setState(() {
       _cleaningToolImage = null;
+      _existingCleaningToolImageUrl = null;
     });
   }
 
@@ -327,8 +353,8 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
           ],
         ),
         const SizedBox(height: 16),
-        // 청소 도구 위치 사진
-        if (_cleaningToolImage != null)
+        // 청소 도구 위치 사진 (새로 선택한 이미지 또는 기존 이미지)
+        if (_cleaningToolImage != null || _existingCleaningToolImageUrl != null)
           Stack(
             children: [
               Container(
@@ -340,19 +366,55 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: kIsWeb
-                      ? Image.network(
-                          _cleaningToolImage!.path,
-                          width: 200,
-                          height: 200,
-                          fit: BoxFit.cover,
-                        )
-                      : Image.file(
-                          File(_cleaningToolImage!.path),
-                          width: 200,
-                          height: 200,
-                          fit: BoxFit.cover,
-                        ),
+                  child: _cleaningToolImage != null
+                      ? (kIsWeb
+                          ? Image.network(
+                              _cleaningToolImage!.path,
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.file(
+                              File(_cleaningToolImage!.path),
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            ))
+                      : (kIsWeb
+                          ? Image.network(
+                              _getImageUrl(_existingCleaningToolImageUrl!),
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                debugPrint('❌ [FREE_SERVICES] 이미지 로드 실패: $_existingCleaningToolImageUrl');
+                                return Container(
+                                  color: Colors.grey[200],
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    size: 40,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            )
+                          : Image.file(
+                              File(_getImageUrl(_existingCleaningToolImageUrl!)),
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                debugPrint('❌ [FREE_SERVICES] 이미지 로드 실패: $_existingCleaningToolImageUrl');
+                                return Container(
+                                  color: Colors.grey[200],
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    size: 40,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            )),
                 ),
               ),
               Positioned(
@@ -645,8 +707,10 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
         Row(
           children: [
             Checkbox(
-              value: false,
-              onChanged: (value) {},
+              value: _amenityKit,
+              onChanged: (value) {
+                setState(() => _amenityKit = value!);
+              },
               activeColor: const Color(0xFF4DB5BD),
             ),
             const Text(
@@ -659,8 +723,10 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
             ),
             const SizedBox(width: 24),
             Checkbox(
-              value: true,
-              onChanged: (value) {},
+              value: !_amenityKit,
+              onChanged: (value) {
+                setState(() => _amenityKit = !value!);
+              },
               activeColor: const Color(0xFF4DB5BD),
             ),
             const Text(
@@ -858,7 +924,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
           child: OutlinedButton(
             onPressed: () {
               if (_roomId != null) {
-                context.go('/host/amenities', extra: _roomId);
+                context.go('/host/amenities/$_roomId');
               } else {
                 context.pop();
               }
@@ -936,7 +1002,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('무료 부가서비스 정보가 저장되었습니다.')),
                   );
-                  context.go('/host/room-description', extra: _roomId);
+                  context.go('/host/room-description/$_roomId');
                 } else if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('무료 부가서비스 정보 저장에 실패했습니다.')),

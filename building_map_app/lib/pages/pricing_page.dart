@@ -1071,7 +1071,7 @@ class _PricingPageState extends State<PricingPage> {
           child: OutlinedButton(
             onPressed: () {
               if (_roomId != null) {
-                context.go('/host/room-registration', extra: _roomId);
+                context.go('/host/room-registration/$_roomId');
               } else {
                 context.pop();
               }
@@ -1134,7 +1134,7 @@ class _PricingPageState extends State<PricingPage> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('요금 정보가 저장되었습니다.')),
                   );
-                  context.go('/host/amenities', extra: _roomId);
+                  context.go('/host/amenities/$_roomId');
                 } else if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('요금 정보 저장에 실패했습니다.')),

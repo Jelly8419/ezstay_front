@@ -337,7 +337,7 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
           child: OutlinedButton(
             onPressed: () {
               if (_roomId != null) {
-                context.go('/host/free-services', extra: _roomId);
+                context.go('/host/free-services/$_roomId');
               } else {
                 context.pop();
               }

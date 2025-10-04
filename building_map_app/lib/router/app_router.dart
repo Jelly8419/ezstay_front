@@ -17,8 +17,9 @@ import '../pages/user_info_popup.dart';
 import '../main.dart';
 
 class AppRouter {
-  static GoRouter createRouter(AuthService authService) {
+  static GoRouter createRouter(AuthService authService, {GlobalKey<NavigatorState>? navigatorKey}) {
     return GoRouter(
+      navigatorKey: navigatorKey,
       initialLocation: '/',
       debugLogDiagnostics: true,
       redirect: (BuildContext context, GoRouterState state) {
@@ -107,41 +108,52 @@ class AppRouter {
         ),
         GoRoute(
           path: '/host/room-registration',
+          builder: (context, state) {
+            return const RoomRegistrationPage(roomId: null);
+          },
+        ),
+        GoRoute(
+          path: '/host/room-registration/:roomId',
           name: 'room-registration',
           builder: (context, state) {
-            final roomId = state.extra as int?;
+            final roomIdStr = state.pathParameters['roomId'];
+            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
             return RoomRegistrationPage(roomId: roomId);
           },
         ),
         GoRoute(
-          path: '/host/pricing',
+          path: '/host/pricing/:roomId',
           name: 'pricing',
           builder: (context, state) {
-            final roomId = state.extra as int?;
+            final roomIdStr = state.pathParameters['roomId'];
+            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
             return PricingPage(roomId: roomId);
           },
         ),
         GoRoute(
-          path: '/host/amenities',
+          path: '/host/amenities/:roomId',
           name: 'amenities',
           builder: (context, state) {
-            final roomId = state.extra as int?;
+            final roomIdStr = state.pathParameters['roomId'];
+            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
             return RoomAmenitiesPage(roomId: roomId);
           },
         ),
         GoRoute(
-          path: '/host/free-services',
+          path: '/host/free-services/:roomId',
           name: 'free-services',
           builder: (context, state) {
-            final roomId = state.extra as int?;
+            final roomIdStr = state.pathParameters['roomId'];
+            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
             return FreeServicesPage(roomId: roomId);
           },
         ),
         GoRoute(
-          path: '/host/room-description',
+          path: '/host/room-description/:roomId',
           name: 'room-description',
           builder: (context, state) {
-            final roomId = state.extra as int?;
+            final roomIdStr = state.pathParameters['roomId'];
+            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
             return RoomDescriptionPage(roomId: roomId);
           },
         ),
