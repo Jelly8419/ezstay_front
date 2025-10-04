@@ -1,7 +1,12 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 /// 카카오 API 설정
 class KakaoConfig {
   /// 카카오 REST API 키
-  static const String restApiKey = '88df9fa560e1447eb0930e5bae9ff017';
+  static String get restApiKey => dotenv.env['KAKAO_REST_API_KEY'] ?? '88df9fa560e1447eb0930e5bae9ff017';
+
+  /// 카카오 JavaScript API 키 (지도용)
+  static String get javascriptKey => dotenv.env['KAKAO_JAVASCRIPT_KEY'] ?? '';
 
   /// 리다이렉트 URL
   static const String redirectUrl = 'http://localhost:8080/api/auth/kakao';
@@ -10,7 +15,7 @@ class KakaoConfig {
   static const String webRedirectUrl = 'http://localhost:8080/api/auth/kakao';
 
   /// 카카오 앱 스킴 (네이티브 앱용)
-  static const String nativeAppKey = 'kakao$restApiKey';
+  static String get nativeAppKey => 'kakao$restApiKey';
 
   /// 카카오 OAuth 인증 URL
   static String get authUrl =>

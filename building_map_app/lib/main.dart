@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:kakao_map_plugin/kakao_map_plugin.dart';
 import 'package:provider/provider.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'models/building.dart';
-import 'models/user.dart';
 import 'data/dummy_buildings.dart';
-import 'config/api_config.dart';
 import 'config/kakao_config.dart';
 import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
 import 'router/app_router.dart';
+import 'widgets/kakao_map_web.dart';
 
 /// 앱의 진입점
 Future<void> main() async {
@@ -30,15 +29,14 @@ Future<void> main() async {
     javaScriptAppKey: KakaoConfig.restApiKey,
   );
 
-  // API 키 유효성 검사
-  if (!ApiConfig.isApiKeyValid()) {
-    debugPrint('경고: Google Maps API 키가 설정되지 않았거나 유효하지 않습니다.');
-    debugPrint('API 키: ${ApiConfig.googleMapsApiKey}');
-  }
+  // 카카오 맵 초기화
+  AuthRepository.initialize(appKey: KakaoConfig.javascriptKey);
 
+  // API 키 유효성 검사
   if (!KakaoConfig.isApiKeyValid()) {
     debugPrint('경고: Kakao API 키가 설정되지 않았거나 유효하지 않습니다.');
-    debugPrint('API 키: ${KakaoConfig.restApiKey}');
+    debugPrint('REST API 키: ${KakaoConfig.restApiKey}');
+    debugPrint('JavaScript 키: ${KakaoConfig.javascriptKey}');
   }
 
   // AuthService 생성 및 초기화
@@ -149,34 +147,34 @@ class MapScreen extends StatefulWidget {
 
 /// 지도 화면의 상태를 관리하는 클래스
 class _MapScreenState extends State<MapScreen> {
-  GoogleMapController? mapController; // 구글 맵 컨트롤러
+  late KakaoMapController mapController; // 카카오 맵 컨트롤러
   Set<Marker> markers = {}; // 지도에 표시할 마커들
-
-  /// 초기 카메라 위치 (서울시청 좌표)
-  static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(37.5666805, 126.9784147), // 서울시청 좌표
-    zoom: 11.0,
-  );
 
   @override
   void initState() {
     super.initState();
-    _createMarkers(); // 마커 생성
   }
 
   /// 건물 데이터를 기반으로 마커를 생성하는 메소드
-  void _createMarkers() {
-    markers = DummyBuildings.buildings.map((building) {
+  List<Marker> _createMarkers() {
+    return DummyBuildings.buildings.map((building) {
       return Marker(
-        markerId: MarkerId(building.id.toString()),
-        position: LatLng(building.latitude, building.longitude),
-        infoWindow: InfoWindow(
-          title: building.name,
-          snippet: building.type,
-        ),
-        onTap: () => _showBuildingDetails(building), // 마커 탭 시 상세 정보 표시
+        markerId: building.id.toString(),
+        latLng: LatLng(building.latitude, building.longitude),
+        width: 30,
+        height: 40,
+        markerImageSrc: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
       );
-    }).toSet();
+    }).toList();
+  }
+
+  /// 마커 탭 이벤트 처리
+  void _onMarkerTap(String markerId, LatLng latLng, int zoomLevel) {
+    final building = DummyBuildings.buildings.firstWhere(
+      (b) => b.id.toString() == markerId,
+      orElse: () => DummyBuildings.buildings.first,
+    );
+    _showBuildingDetails(building);
   }
 
   /// 건물 상세 정보를 모달로 표시하는 메소드
@@ -306,7 +304,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   /// 지도가 생성되었을 때 호출되는 콜백
-  void _onMapCreated(GoogleMapController controller) {
+  void _onMapCreated(KakaoMapController controller) {
     mapController = controller;
   }
 
@@ -317,15 +315,28 @@ class _MapScreenState extends State<MapScreen> {
         title: const Text('EZStay 지도'),
         backgroundColor: const Color(0xFF4A90E2),
       ),
-      body: GoogleMap(
-        onMapCreated: _onMapCreated, // 지도 생성 콜백
-        initialCameraPosition: _initialPosition, // 초기 카메라 위치
-        markers: markers, // 마커 표시
-        myLocationEnabled: true, // 내 위치 표시
-        myLocationButtonEnabled: true, // 내 위치 버튼 활성화
-        zoomControlsEnabled: true, // 줌 컨트롤 활성화
-        mapToolbarEnabled: true, // 지도 툴바 활성화
-      ),
+      body: kIsWeb ? _buildWebMap() : _buildNativeMap(),
+    );
+  }
+
+  /// 웹용 지도 (HTML 기반 카카오 지도)
+  Widget _buildWebMap() {
+    debugPrint('🗺️ [MapScreen] _buildWebMap 호출됨');
+    return KakaoMapWeb(
+      buildings: DummyBuildings.buildings,
+      onMarkerTap: _showBuildingDetails,
+    );
+  }
+
+  /// 네이티브(Android/iOS)용 카카오 지도
+  Widget _buildNativeMap() {
+    return KakaoMap(
+      onMapCreated: _onMapCreated,
+      onMarkerTap: _onMarkerTap,
+      center: LatLng(37.5666805, 126.9784147), // 서울시청 좌표
+      markers: _createMarkers(),
+      currentLevel: 5,
+      zoomControl: true,
     );
   }
 }
