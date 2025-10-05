@@ -4,10 +4,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'api_client.dart';
+import '../config/api_config.dart';
 
 /// 방 등록 API 서비스
 class RoomService {
-  static const String baseUrl = 'http://localhost:8080/api/host/rooms';
   static const _storage = FlutterSecureStorage();
   final _apiClient = ApiClient();
 
@@ -29,10 +29,12 @@ class RoomService {
   /// Authorization 헤더 가져오기
   Future<Map<String, String>> _getHeaders() async {
     final accessToken = await _storage.read(key: 'access_token');
-    debugPrint('🔑 [AUTH] Access Token: ${accessToken != null ? "있음 (${accessToken.substring(0, 20)}...)" : "없음"}');
 
-    if (accessToken == null || accessToken.isEmpty) {
-      debugPrint('⚠️ [AUTH] 액세스 토큰이 없습니다! 로그인을 확인해주세요.');
+    if (!ApiConfig.isProduction) {
+      debugPrint('🔑 [AUTH] Access Token: ${accessToken != null ? "있음" : "없음"}');
+      if (accessToken == null || accessToken.isEmpty) {
+        debugPrint('⚠️ [AUTH] 액세스 토큰이 없습니다! 로그인을 확인해주세요.');
+      }
     }
 
     return {
@@ -48,7 +50,7 @@ class RoomService {
       debugPrint('📦 [ROOM] 요청 데이터: $roomData');
 
       final response = await _apiClient.post(
-        Uri.parse(baseUrl),
+        Uri.parse(ApiConfig.roomsBaseUrl),
         headers: await _getHeaders(),
         body: json.encode(roomData),
       );
@@ -72,10 +74,10 @@ class RoomService {
       debugPrint('📦 [PRICING] 요청 데이터: $pricingData');
 
       final response = await http.patch(
-        Uri.parse('$baseUrl/$roomId/pricing'),
+        Uri.parse(ApiConfig.roomPricingUrl(roomId)),
         headers: await _getHeaders(),
         body: json.encode(pricingData),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.timeout);
 
       debugPrint('📡 [PRICING] 응답 상태: ${response.statusCode}');
       debugPrint('📄 [PRICING] 응답 내용: ${response.body}');
@@ -102,16 +104,21 @@ class RoomService {
       debugPrint('📸 [PHOTOS] 사진 업로드 시작 - roomId: $roomId, 사진 수: ${photos.length}');
 
       final accessToken = await _storage.read(key: 'access_token');
-      debugPrint('🔑 [PHOTOS] Access Token: ${accessToken != null ? "있음 (${accessToken.substring(0, 20)}...)" : "없음"}');
+
+      if (!ApiConfig.isProduction) {
+        debugPrint('🔑 [PHOTOS] Access Token: ${accessToken != null ? "있음" : "없음"}');
+      }
 
       if (accessToken == null || accessToken.isEmpty) {
-        debugPrint('⚠️ [PHOTOS] 액세스 토큰이 없습니다!');
+        if (!ApiConfig.isProduction) {
+          debugPrint('⚠️ [PHOTOS] 액세스 토큰이 없습니다!');
+        }
         return null;
       }
 
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/$roomId/photos'),
+        Uri.parse(ApiConfig.roomPhotosUrl(roomId)),
       );
 
       request.headers['Authorization'] = 'Bearer $accessToken';
@@ -128,7 +135,7 @@ class RoomService {
         debugPrint('📸 [PHOTOS] 파일 추가: ${photo.name}');
       }
 
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+      final streamedResponse = await request.send().timeout(Duration(seconds: ApiConfig.timeoutSeconds * 3));
       final response = await http.Response.fromStream(streamedResponse);
 
       debugPrint('📡 [PHOTOS] 응답 상태: ${response.statusCode}');
@@ -158,10 +165,10 @@ class RoomService {
       debugPrint('📦 [AMENITIES] 요청 데이터: $amenitiesData');
 
       final response = await http.patch(
-        Uri.parse('$baseUrl/$roomId/amenities'),
+        Uri.parse(ApiConfig.roomAmenitiesUrl(roomId)),
         headers: await _getHeaders(),
         body: json.encode(amenitiesData),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.timeout);
 
       debugPrint('📡 [AMENITIES] 응답 상태: ${response.statusCode}');
 
@@ -185,10 +192,10 @@ class RoomService {
       debugPrint('📦 [SERVICES] 요청 데이터: $servicesData');
 
       final response = await http.patch(
-        Uri.parse('$baseUrl/$roomId/free-services'),
+        Uri.parse(ApiConfig.roomFreeServicesUrl(roomId)),
         headers: await _getHeaders(),
         body: json.encode(servicesData),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.timeout);
 
       debugPrint('📡 [SERVICES] 응답 상태: ${response.statusCode}');
 
@@ -211,16 +218,21 @@ class RoomService {
       debugPrint('🧹 [CLEANING] 청소도구 이미지 업로드 시작 - roomId: $roomId');
 
       final accessToken = await _storage.read(key: 'access_token');
-      debugPrint('🔑 [CLEANING] Access Token: ${accessToken != null ? "있음 (${accessToken.substring(0, 20)}...)" : "없음"}');
+
+      if (!ApiConfig.isProduction) {
+        debugPrint('🔑 [CLEANING] Access Token: ${accessToken != null ? "있음" : "없음"}');
+      }
 
       if (accessToken == null || accessToken.isEmpty) {
-        debugPrint('⚠️ [CLEANING] 액세스 토큰이 없습니다!');
+        if (!ApiConfig.isProduction) {
+          debugPrint('⚠️ [CLEANING] 액세스 토큰이 없습니다!');
+        }
         return null;
       }
 
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/$roomId/cleaning-tool-image'),
+        Uri.parse(ApiConfig.roomCleaningToolUrl(roomId)),
       );
 
       request.headers['Authorization'] = 'Bearer $accessToken';
@@ -233,7 +245,7 @@ class RoomService {
       );
       request.files.add(multipartFile);
 
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+      final streamedResponse = await request.send().timeout(Duration(seconds: ApiConfig.timeoutSeconds * 3));
       final response = await http.Response.fromStream(streamedResponse);
 
       debugPrint('📡 [CLEANING] 응답 상태: ${response.statusCode}');
@@ -259,7 +271,7 @@ class RoomService {
       debugPrint('📦 [DESCRIPTION] 요청 데이터: $descriptionData');
 
       final response = await _apiClient.patch(
-        Uri.parse('$baseUrl/$roomId/description'),
+        Uri.parse(ApiConfig.roomDescriptionUrl(roomId)),
         headers: await _getHeaders(),
         body: json.encode(descriptionData),
       );
@@ -281,7 +293,7 @@ class RoomService {
       debugPrint('📋 [REVIEW] 심사 요청 시작 - roomId: $roomId');
 
       final response = await _apiClient.post(
-        Uri.parse('$baseUrl/$roomId/submit-review'),
+        Uri.parse(ApiConfig.roomSubmitReviewUrl(roomId)),
         headers: await _getHeaders(),
       );
 
@@ -302,10 +314,10 @@ class RoomService {
       debugPrint('🔄 [PHOTOS] 사진 순서 변경 시작 - roomId: $roomId');
 
       final response = await http.patch(
-        Uri.parse('$baseUrl/$roomId/photos/reorder'),
+        Uri.parse(ApiConfig.roomPhotosReorderUrl(roomId)),
         headers: await _getHeaders(),
         body: json.encode({'photoIds': photoIds}),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.timeout);
 
       debugPrint('📡 [PHOTOS] 응답 상태: ${response.statusCode}');
 
@@ -328,9 +340,9 @@ class RoomService {
       debugPrint('🗑️ [PHOTOS] 사진 삭제 시작 - roomId: $roomId, photoId: $photoId');
 
       final response = await http.delete(
-        Uri.parse('$baseUrl/$roomId/photos/$photoId'),
+        Uri.parse(ApiConfig.roomPhotoDeleteUrl(roomId, photoId)),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.timeout);
 
       debugPrint('📡 [PHOTOS] 응답 상태: ${response.statusCode}');
 
@@ -353,7 +365,7 @@ class RoomService {
       debugPrint('🔍 [ROOM] 방 정보 조회 시작 - roomId: $roomId');
 
       final response = await _apiClient.get(
-        Uri.parse('$baseUrl/$roomId'),
+        Uri.parse(ApiConfig.roomUrl(roomId)),
         headers: await _getHeaders(),
       );
 
@@ -375,9 +387,9 @@ class RoomService {
       debugPrint('📋 [ROOMS] 등록 중인 방 목록 조회 시작');
 
       final response = await http.get(
-        Uri.parse(baseUrl),
+        Uri.parse(ApiConfig.roomsBaseUrl),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.timeout);
 
       debugPrint('📡 [ROOMS] 응답 상태: ${response.statusCode}');
       debugPrint('📄 [ROOMS] 응답 내용: ${response.body}');

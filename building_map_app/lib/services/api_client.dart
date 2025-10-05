@@ -1,8 +1,10 @@
 import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'error_handler_service.dart';
+import '../config/api_config.dart';
 
 /// HTTP 요청을 래핑하고 에러 핸들링을 자동화하는 API 클라이언트
 class ApiClient {
@@ -12,15 +14,19 @@ class ApiClient {
   Future<http.Response?> get(
     Uri url, {
     Map<String, String>? headers,
-    Duration timeout = const Duration(seconds: 10),
+    Duration? timeout,
     bool showErrorDialog = true,
   }) async {
     try {
-      debugPrint('🌐 [API] GET: $url');
+      if (!ApiConfig.isProduction) {
+        debugPrint('🌐 [API] GET: $url');
+      }
 
-      final response = await http.get(url, headers: headers).timeout(timeout);
+      final response = await http.get(url, headers: headers).timeout(timeout ?? ApiConfig.timeout);
 
-      debugPrint('📡 [API] Response: ${response.statusCode}');
+      if (!ApiConfig.isProduction) {
+        debugPrint('📡 [API] Response: ${response.statusCode}');
+      }
 
       return _handleResponse(response, showErrorDialog);
     } on TimeoutException {
@@ -29,15 +35,28 @@ class ApiClient {
         _errorHandler.handleTimeoutError();
       }
       return null;
-    } catch (e) {
-      debugPrint('❌ [API] Error: $e');
+    } on SocketException catch (e) {
+      debugPrint('❌ [API] Network Error: $e');
       if (showErrorDialog) {
-        if (e.toString().contains('SocketException') ||
-            e.toString().contains('NetworkException')) {
-          _errorHandler.handleNetworkError();
-        } else {
-          _errorHandler.handleException(e as Exception);
-        }
+        _errorHandler.handleNetworkError();
+      }
+      return null;
+    } on HttpException catch (e) {
+      debugPrint('❌ [API] HTTP Exception: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleException(e);
+      }
+      return null;
+    } on FormatException catch (e) {
+      debugPrint('❌ [API] Format Exception: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleException(e);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ [API] Unknown Error: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleUnknownError(e);
       }
       return null;
     }
@@ -48,20 +67,24 @@ class ApiClient {
     Uri url, {
     Map<String, String>? headers,
     Object? body,
-    Duration timeout = const Duration(seconds: 10),
+    Duration? timeout,
     bool showErrorDialog = true,
   }) async {
     try {
-      debugPrint('🌐 [API] POST: $url');
-      debugPrint('📦 [API] Body: $body');
+      if (!ApiConfig.isProduction) {
+        debugPrint('🌐 [API] POST: $url');
+        debugPrint('📦 [API] Body: $body');
+      }
 
       final response = await http.post(
         url,
         headers: headers,
         body: body,
-      ).timeout(timeout);
+      ).timeout(timeout ?? ApiConfig.timeout);
 
-      debugPrint('📡 [API] Response: ${response.statusCode}');
+      if (!ApiConfig.isProduction) {
+        debugPrint('📡 [API] Response: ${response.statusCode}');
+      }
 
       return _handleResponse(response, showErrorDialog);
     } on TimeoutException {
@@ -70,15 +93,28 @@ class ApiClient {
         _errorHandler.handleTimeoutError();
       }
       return null;
-    } catch (e) {
-      debugPrint('❌ [API] Error: $e');
+    } on SocketException catch (e) {
+      debugPrint('❌ [API] Network Error: $e');
       if (showErrorDialog) {
-        if (e.toString().contains('SocketException') ||
-            e.toString().contains('NetworkException')) {
-          _errorHandler.handleNetworkError();
-        } else {
-          _errorHandler.handleException(e as Exception);
-        }
+        _errorHandler.handleNetworkError();
+      }
+      return null;
+    } on HttpException catch (e) {
+      debugPrint('❌ [API] HTTP Exception: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleException(e);
+      }
+      return null;
+    } on FormatException catch (e) {
+      debugPrint('❌ [API] Format Exception: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleException(e);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ [API] Unknown Error: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleUnknownError(e);
       }
       return null;
     }
@@ -89,20 +125,24 @@ class ApiClient {
     Uri url, {
     Map<String, String>? headers,
     Object? body,
-    Duration timeout = const Duration(seconds: 10),
+    Duration? timeout,
     bool showErrorDialog = true,
   }) async {
     try {
-      debugPrint('🌐 [API] PUT: $url');
-      debugPrint('📦 [API] Body: $body');
+      if (!ApiConfig.isProduction) {
+        debugPrint('🌐 [API] PUT: $url');
+        debugPrint('📦 [API] Body: $body');
+      }
 
       final response = await http.put(
         url,
         headers: headers,
         body: body,
-      ).timeout(timeout);
+      ).timeout(timeout ?? ApiConfig.timeout);
 
-      debugPrint('📡 [API] Response: ${response.statusCode}');
+      if (!ApiConfig.isProduction) {
+        debugPrint('📡 [API] Response: ${response.statusCode}');
+      }
 
       return _handleResponse(response, showErrorDialog);
     } on TimeoutException {
@@ -111,15 +151,28 @@ class ApiClient {
         _errorHandler.handleTimeoutError();
       }
       return null;
-    } catch (e) {
-      debugPrint('❌ [API] Error: $e');
+    } on SocketException catch (e) {
+      debugPrint('❌ [API] Network Error: $e');
       if (showErrorDialog) {
-        if (e.toString().contains('SocketException') ||
-            e.toString().contains('NetworkException')) {
-          _errorHandler.handleNetworkError();
-        } else {
-          _errorHandler.handleException(e as Exception);
-        }
+        _errorHandler.handleNetworkError();
+      }
+      return null;
+    } on HttpException catch (e) {
+      debugPrint('❌ [API] HTTP Exception: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleException(e);
+      }
+      return null;
+    } on FormatException catch (e) {
+      debugPrint('❌ [API] Format Exception: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleException(e);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ [API] Unknown Error: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleUnknownError(e);
       }
       return null;
     }
@@ -130,20 +183,24 @@ class ApiClient {
     Uri url, {
     Map<String, String>? headers,
     Object? body,
-    Duration timeout = const Duration(seconds: 10),
+    Duration? timeout,
     bool showErrorDialog = true,
   }) async {
     try {
-      debugPrint('🌐 [API] PATCH: $url');
-      debugPrint('📦 [API] Body: $body');
+      if (!ApiConfig.isProduction) {
+        debugPrint('🌐 [API] PATCH: $url');
+        debugPrint('📦 [API] Body: $body');
+      }
 
       final response = await http.patch(
         url,
         headers: headers,
         body: body,
-      ).timeout(timeout);
+      ).timeout(timeout ?? ApiConfig.timeout);
 
-      debugPrint('📡 [API] Response: ${response.statusCode}');
+      if (!ApiConfig.isProduction) {
+        debugPrint('📡 [API] Response: ${response.statusCode}');
+      }
 
       return _handleResponse(response, showErrorDialog);
     } on TimeoutException {
@@ -152,15 +209,28 @@ class ApiClient {
         _errorHandler.handleTimeoutError();
       }
       return null;
-    } catch (e) {
-      debugPrint('❌ [API] Error: $e');
+    } on SocketException catch (e) {
+      debugPrint('❌ [API] Network Error: $e');
       if (showErrorDialog) {
-        if (e.toString().contains('SocketException') ||
-            e.toString().contains('NetworkException')) {
-          _errorHandler.handleNetworkError();
-        } else {
-          _errorHandler.handleException(e as Exception);
-        }
+        _errorHandler.handleNetworkError();
+      }
+      return null;
+    } on HttpException catch (e) {
+      debugPrint('❌ [API] HTTP Exception: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleException(e);
+      }
+      return null;
+    } on FormatException catch (e) {
+      debugPrint('❌ [API] Format Exception: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleException(e);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ [API] Unknown Error: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleUnknownError(e);
       }
       return null;
     }
@@ -171,19 +241,23 @@ class ApiClient {
     Uri url, {
     Map<String, String>? headers,
     Object? body,
-    Duration timeout = const Duration(seconds: 10),
+    Duration? timeout,
     bool showErrorDialog = true,
   }) async {
     try {
-      debugPrint('🌐 [API] DELETE: $url');
+      if (!ApiConfig.isProduction) {
+        debugPrint('🌐 [API] DELETE: $url');
+      }
 
       final response = await http.delete(
         url,
         headers: headers,
         body: body,
-      ).timeout(timeout);
+      ).timeout(timeout ?? ApiConfig.timeout);
 
-      debugPrint('📡 [API] Response: ${response.statusCode}');
+      if (!ApiConfig.isProduction) {
+        debugPrint('📡 [API] Response: ${response.statusCode}');
+      }
 
       return _handleResponse(response, showErrorDialog);
     } on TimeoutException {
@@ -192,15 +266,28 @@ class ApiClient {
         _errorHandler.handleTimeoutError();
       }
       return null;
-    } catch (e) {
-      debugPrint('❌ [API] Error: $e');
+    } on SocketException catch (e) {
+      debugPrint('❌ [API] Network Error: $e');
       if (showErrorDialog) {
-        if (e.toString().contains('SocketException') ||
-            e.toString().contains('NetworkException')) {
-          _errorHandler.handleNetworkError();
-        } else {
-          _errorHandler.handleException(e as Exception);
-        }
+        _errorHandler.handleNetworkError();
+      }
+      return null;
+    } on HttpException catch (e) {
+      debugPrint('❌ [API] HTTP Exception: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleException(e);
+      }
+      return null;
+    } on FormatException catch (e) {
+      debugPrint('❌ [API] Format Exception: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleException(e);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ [API] Unknown Error: $e');
+      if (showErrorDialog) {
+        _errorHandler.handleUnknownError(e);
       }
       return null;
     }

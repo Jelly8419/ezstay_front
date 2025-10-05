@@ -96,6 +96,17 @@ class ErrorHandlerService {
     _showErrorDialog(errorMessage, null);
   }
 
+  /// 알 수 없는 에러 처리
+  void handleUnknownError(Object error, {String? customMessage}) {
+    if (_context == null || !_context!.mounted) return;
+
+    String errorMessage = customMessage ?? '예기치 않은 오류가 발생했습니다.';
+
+    debugPrint('❌ [ERROR] Unknown Error: $error');
+
+    _showErrorDialog(errorMessage, null);
+  }
+
   /// 에러 다이얼로그 표시
   void _showErrorDialog(String message, int? statusCode, {bool shouldRedirect = false}) {
     if (_context == null || !_context!.mounted) return;
