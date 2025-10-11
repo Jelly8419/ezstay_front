@@ -14,7 +14,7 @@ import '../pages/room_amenities_page.dart';
 import '../pages/free_services_page.dart';
 import '../pages/room_description_page.dart';
 import '../pages/user_info_popup.dart';
-import '../main.dart';
+import '../pages/map_screen.dart';
 
 class AppRouter {
   static GoRouter createRouter(AuthService authService, {GlobalKey<NavigatorState>? navigatorKey}) {

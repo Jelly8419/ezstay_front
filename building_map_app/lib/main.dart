@@ -5,11 +5,11 @@ import 'package:provider/provider.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'models/building.dart';
-import 'data/dummy_buildings.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'config/kakao_config.dart';
 import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
+import 'services/room_service.dart';
 import 'router/app_router.dart';
 import 'widgets/kakao_map_web.dart';
 
@@ -19,6 +19,9 @@ Future<void> main() async {
 
   // .env 파일 로드
   await dotenv.load(fileName: ".env");
+
+  // 한국어 날짜 포맷 초기화 (table_calendar를 위함)
+  await initializeDateFormatting('ko_KR', null);
 
   // 웹에서 URL의 '#' 제거 (path 기반 라우팅 사용)
   usePathUrlStrategy();
@@ -149,36 +152,79 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   late KakaoMapController mapController; // 카카오 맵 컨트롤러
   Set<Marker> markers = {}; // 지도에 표시할 마커들
+  final _roomService = RoomService();
+  List<Map<String, dynamic>> _rooms = []; // 서버에서 가져온 방 목록
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _loadRooms();
   }
 
-  /// 건물 데이터를 기반으로 마커를 생성하는 메소드
+  /// 서버에서 공개된 방 목록을 불러오기
+  Future<void> _loadRooms() async {
+    try {
+      final rooms = await _roomService.getPublishedRooms();
+      if (mounted) {
+        setState(() {
+          _rooms = rooms ?? [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ [MAP] 방 목록 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// 방 데이터를 기반으로 마커를 생성하는 메소드
   List<Marker> _createMarkers() {
-    return DummyBuildings.buildings.map((building) {
+    if (_rooms.isEmpty) {
+      return [];
+    }
+
+    return _rooms.where((room) {
+      // latitude와 longitude가 존재하고 유효한 경우만 마커 생성
+      return room['latitude'] != null &&
+             room['longitude'] != null &&
+             room['latitude'].toString().isNotEmpty &&
+             room['longitude'].toString().isNotEmpty;
+    }).map((room) {
+      final lat = double.tryParse(room['latitude'].toString());
+      final lng = double.tryParse(room['longitude'].toString());
+
+      if (lat == null || lng == null) {
+        return null;
+      }
+
       return Marker(
-        markerId: building.id.toString(),
-        latLng: LatLng(building.latitude, building.longitude),
+        markerId: room['id'].toString(),
+        latLng: LatLng(lat, lng),
         width: 30,
         height: 40,
         markerImageSrc: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
       );
-    }).toList();
+    }).whereType<Marker>().toList();
   }
 
   /// 마커 탭 이벤트 처리
   void _onMarkerTap(String markerId, LatLng latLng, int zoomLevel) {
-    final building = DummyBuildings.buildings.firstWhere(
-      (b) => b.id.toString() == markerId,
-      orElse: () => DummyBuildings.buildings.first,
+    final room = _rooms.firstWhere(
+      (r) => r['id'].toString() == markerId,
+      orElse: () => {},
     );
-    _showBuildingDetails(building);
+    if (room.isNotEmpty) {
+      _showRoomDetails(room);
+    }
   }
 
-  /// 건물 상세 정보를 모달로 표시하는 메소드
-  void _showBuildingDetails(Building building) {
+  /// 방 상세 정보를 모달로 표시하는 메소드
+  void _showRoomDetails(Map<String, dynamic> room) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -192,111 +238,148 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 핸들바
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              // 건물명
-              Text(
-                building.name,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2C3E50),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // 건물 타입
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4A90E2).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  building.type,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF4A90E2),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              // 주소 정보
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 핸들바
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4A90E2).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.location_on,
-                      color: Color(0xFF4A90E2),
-                      size: 20,
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      building.address,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF2C3E50),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // 건물 설명
-              Text(
-                building.description,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Color(0xFF6C7B7F),
-                  height: 1.5,
                 ),
-              ),
-              const SizedBox(height: 24),
-              // 닫기 버튼
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4A90E2),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
+                const SizedBox(height: 20),
+                // 방 이름
+                Text(
+                  room['roomName'] ?? '이름 없음',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2C3E50),
                   ),
-                  child: const Text(
-                    '닫기',
-                    style: TextStyle(
-                      fontSize: 16,
+                ),
+                const SizedBox(height: 12),
+                // 건물 타입
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4A90E2).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    room['buildingType'] ?? '알 수 없음',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF4A90E2),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 20),
+                // 주소 정보
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4A90E2).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Color(0xFF4A90E2),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        room['address'] ?? '주소 없음',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF2C3E50),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // 요금 정보
+                if (room['weeklyRent'] != null)
+                  Row(
+                    children: [
+                      const Icon(Icons.attach_money, color: Color(0xFF4A90E2), size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        '주간 요금: ${room['weeklyRent']}원',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2C3E50),
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 12),
+                // 방 정보
+                Row(
+                  children: [
+                    if (room['roomCount'] != null) ...[
+                      const Icon(Icons.bed, color: Color(0xFF4A90E2), size: 20),
+                      const SizedBox(width: 4),
+                      Text('방 ${room['roomCount']}개'),
+                      const SizedBox(width: 16),
+                    ],
+                    if (room['bathroomCount'] != null) ...[
+                      const Icon(Icons.bathroom, color: Color(0xFF4A90E2), size: 20),
+                      const SizedBox(width: 4),
+                      Text('욕실 ${room['bathroomCount']}개'),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // 방 설명
+                if (room['description'] != null && room['description'].toString().isNotEmpty)
+                  Text(
+                    room['description'],
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF6C7B7F),
+                      height: 1.5,
+                    ),
+                  ),
+                const SizedBox(height: 24),
+                // 닫기 버튼
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4A90E2),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      '닫기',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -321,10 +404,17 @@ class _MapScreenState extends State<MapScreen> {
 
   /// 웹용 지도 (HTML 기반 카카오 지도)
   Widget _buildWebMap() {
-    debugPrint('🗺️ [MapScreen] _buildWebMap 호출됨');
+    debugPrint('🗺️ [MapScreen] _buildWebMap 호출됨, 방 개수: ${_rooms.length}');
+
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
     return KakaoMapWeb(
-      buildings: DummyBuildings.buildings,
-      onMarkerTap: _showBuildingDetails,
+      rooms: _rooms,
+      onMarkerTap: _showRoomDetails,
     );
   }
 

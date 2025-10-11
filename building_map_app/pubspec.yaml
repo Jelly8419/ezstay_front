@@ -73,6 +73,12 @@ dependencies:
   # 네트워크 이미지 캐싱
   cached_network_image: ^3.4.1
 
+  # 캘린더
+  table_calendar: ^3.1.2
+
+  # 국제화 및 로케일
+  intl: ^0.19.0
+
 
 dev_dependencies:
   flutter_test:
