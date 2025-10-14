@@ -1,7 +1,25 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter:*)"
+      "Bash(flutter:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\n에러 핸들링 개선 및 Repository 패턴 적용\n\n- 타입 안전 에러 핸들링 (SocketException, HttpException 등)\n- UserRepository 분리로 관심사 분리\n- AuthService 코드 간소화 (840줄 → 리팩토링)\n- ApiClient에서 구체적 예외 타입 처리\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nUI 컴포넌트 표준화 및 이미지/반응형 유틸리티 추가\n\n- AppConstants로 디자인 시스템 통일\n- 재사용 가능한 CustomButton, CustomTextField 위젯\n- ImageService로 이미지 압축 및 최적화\n- ResponsiveUtil로 반응형 레이아웃 지원\n- 테스트 코드 8개 추가\n- claude.md 프로젝트 문서 추가\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(where flutter)",
+      "Read(//c/Users/user/AppData/Roaming/Code/User/**)",
+      "Read(//tmp/**)",
+      "Bash(timeout 10 flutter run -d chrome --web-port=3000 --web-hostname=localhost)",
+      "Bash(if [ -f \"building_map_app/.vscode/settings.json\" ])",
+      "Bash(then cat building_map_app/.vscode/settings.json)",
+      "Bash(else echo \"{}\")",
+      "Bash(fi)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(git checkout:*)",
+      "Bash(git commit:*)",
+      "Bash(cat:*)",
+      "Bash(timeout 5 nc localhost 3000)"
     ],
     "deny": [],
     "ask": []

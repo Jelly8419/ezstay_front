@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
@@ -162,7 +161,7 @@ class AuthService extends ChangeNotifier {
       );
 
       // 사용자 정보 저장
-      await _saveUserInfo(_currentUser!);
+      await UserRepository.saveUser(_currentUser!);
 
       _setLoading(false);
       return true;
@@ -463,10 +462,7 @@ class AuthService extends ChangeNotifier {
           );
 
           // 검증된 토큰 저장
-          await _storage.write(key: 'access_token', value: token);
-          if (data['refreshToken'] != null) {
-            await _storage.write(key: 'refresh_token', value: data['refreshToken']);
-          }
+          await TokenService.saveTokens(token, data['refreshToken']);
 
           notifyListeners();
           debugPrint('✅ 서버 검증 완료 - 사용자: ${user['name']}');
@@ -721,7 +717,7 @@ class AuthService extends ChangeNotifier {
       );
 
       // 사용자 정보 저장
-      await _saveUserInfo(_currentUser!);
+      await UserRepository.saveUser(_currentUser!);
 
       _setLoading(false);
       return true;

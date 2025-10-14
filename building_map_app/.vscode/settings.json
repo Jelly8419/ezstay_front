@@ -1,0 +1,10 @@
+{
+    "dart.flutterRunAdditionalArgs": [
+        "--web-port",
+        "3000",
+        "--web-hostname",
+        "localhost"
+    ],
+    "dart.debugExternalPackageLibraries": false,
+    "dart.debugSdkLibraries": false
+}

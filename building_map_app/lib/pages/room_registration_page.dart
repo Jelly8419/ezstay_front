@@ -31,7 +31,6 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
   final _kitchenCountController = TextEditingController();
 
   // 셀렉트 박스 값들
-  String _SelectDefault = '선택';
   String _buildingType = '오피스텔';
   String _parkingAvailable = '가능';
   String _elevatorAvailable = '있음';
@@ -543,7 +542,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
             SizedBox(
               width: 300,
               child: DropdownButtonFormField<String>(
-                value: _SelectDefault,
+                value: _buildingType,
                 decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -561,7 +560,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
-              items: ['선택','오피스텔', '아파트', '단독주택', '기타']
+              items: ['오피스텔', '아파트', '단독주택', '기타']
                   .map((type) => DropdownMenuItem(
                         value: type,
                         child: Text(type),
@@ -583,7 +582,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
             SizedBox(
               width: 200,
               child: DropdownButtonFormField<String>(
-              value: _SelectDefault,
+              value: _parkingAvailable,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -601,7 +600,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
-              items: ['선택','가능', '불가능']
+              items: ['가능', '불가능']
                   .map((option) => DropdownMenuItem(
                         value: option,
                         child: Text(option),
@@ -652,7 +651,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
             SizedBox(
               width: 200,
               child: DropdownButtonFormField<String>(
-                value: _SelectDefault,
+                value: _elevatorAvailable,
                 decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -670,7 +669,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
-              items: ['선택','있음', '없음']
+              items: ['있음', '없음']
                   .map((option) => DropdownMenuItem(
                         value: option,
                         child: Text(option),
@@ -1152,23 +1151,43 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
         'entrancePassword': _useEntrancePassword ? _entrancePassword : null,
       };
 
-      // 서버로 데이터 전송
-      final result = await _roomService.createRoom(roomData);
+      Map<String, dynamic>? result;
+
+      // 수정 모드인 경우 (roomId가 이미 존재)
+      if (_currentRoomId != null) {
+        debugPrint('🔄 [ROOM] 수정 모드 - roomId: $_currentRoomId');
+        result = await _roomService.updateRoom(_currentRoomId!, roomData);
+      } else {
+        // 생성 모드인 경우
+        debugPrint('➕ [ROOM] 생성 모드');
+        result = await _roomService.createRoom(roomData);
+      }
 
       if (!mounted) return;
 
       if (result != null) {
-        _currentRoomId = result['roomId'];
+        // 생성 모드일 때만 roomId 업데이트 (null-aware assignment)
+        _currentRoomId ??= result['roomId'];
 
+        final isUpdateMode = widget.roomId != null;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('방 기본 정보가 저장되었습니다.')),
+          SnackBar(
+            content: Text(isUpdateMode
+              ? '방 기본 정보가 수정되었습니다.'
+              : '방 기본 정보가 저장되었습니다.'),
+          ),
         );
 
         // 요금설정 페이지로 이동 (roomId 전달)
         context.go('/host/pricing/$_currentRoomId');
       } else {
+        final isUpdateMode = widget.roomId != null;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('방 등록에 실패했습니다. 다시 시도해주세요.')),
+          SnackBar(
+            content: Text(isUpdateMode
+              ? '방 수정에 실패했습니다. 다시 시도해주세요.'
+              : '방 등록에 실패했습니다. 다시 시도해주세요.'),
+          ),
         );
       }
     }

@@ -67,6 +67,30 @@ class RoomService {
     }
   }
 
+  /// 1-1. 기본 정보 수정
+  Future<Map<String, dynamic>?> updateRoom(int roomId, Map<String, dynamic> roomData) async {
+    try {
+      debugPrint('🏠 [ROOM] 방 기본 정보 수정 시작 - roomId: $roomId');
+      debugPrint('📦 [ROOM] 요청 데이터: $roomData');
+
+      final response = await _apiClient.patch(
+        Uri.parse(ApiConfig.roomUrl(roomId)),
+        headers: await _getHeaders(),
+        body: json.encode(roomData),
+      );
+
+      if (response != null) {
+        final data = json.decode(response.body);
+        debugPrint('✅ [ROOM] 방 수정 성공 - roomId: $roomId');
+        return data['data'];
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ [ROOM] 방 수정 에러: $e');
+      return null;
+    }
+  }
+
   /// 2. 요금 설정
   Future<bool> updatePricing(int roomId, Map<String, dynamic> pricingData) async {
     try {
@@ -381,7 +405,7 @@ class RoomService {
     }
   }
 
-  /// 12. 등록 중인 방 목록 조회
+  /// 12. 등록 중인 방 목록 조회 (호스트용)
   Future<List<Map<String, dynamic>>?> getInProgressRooms() async {
     try {
       debugPrint('📋 [ROOMS] 등록 중인 방 목록 조회 시작');
@@ -420,6 +444,104 @@ class RoomService {
       }
     } catch (e) {
       debugPrint('❌ [ROOMS] 방 목록 조회 에러: $e');
+      return null;
+    }
+  }
+
+  /// 13. 공개된 방 목록 조회 (게스트용 - 인증 불필요)
+  Future<List<Map<String, dynamic>>?> getPublishedRooms() async {
+    try {
+      debugPrint('🏘️ [ROOMS] 공개된 방 목록 조회 시작');
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/rooms'),
+      ).timeout(ApiConfig.timeout);
+
+      debugPrint('📡 [ROOMS] 응답 상태: ${response.statusCode}');
+      debugPrint('📄 [ROOMS] 응답 내용: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        debugPrint('✅ [ROOMS] 공개된 방 목록 조회 성공');
+
+        // API 응답 구조: data 배열 직접 반환
+        if (data['data'] != null && data['data'] is List) {
+          final rooms = List<Map<String, dynamic>>.from(data['data']);
+          debugPrint('📊 [ROOMS] 공개된 방 개수: ${rooms.length}개');
+
+          // 위도/경도 로그 출력 (디버깅용)
+          for (var room in rooms) {
+            debugPrint('📍 [ROOM] ${room['roomName']} - lat: ${room['latitude']}, lng: ${room['longitude']}');
+          }
+
+          return rooms;
+        }
+        return [];
+      } else {
+        debugPrint('❌ [ROOMS] 공개된 방 목록 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('❌ [ROOMS] 공개된 방 목록 조회 에러: $e');
+      return null;
+    }
+  }
+
+  /// 14. 지도 영역 기반 방 검색 (게스트용 - 인증 불필요)
+  Future<Map<String, dynamic>?> getRoomsByMapBounds({
+    required double swLat,
+    required double swLng,
+    required double neLat,
+    required double neLng,
+    int? zoom,
+  }) async {
+    try {
+      debugPrint('🗺️ [MAP] 지도 영역 기반 방 검색 시작');
+      debugPrint('📍 [MAP] SW: ($swLat, $swLng) - NE: ($neLat, $neLng)');
+      if (zoom != null) {
+        debugPrint('🔍 [MAP] 줌 레벨: $zoom');
+      }
+
+      final queryParams = {
+        'swLat': swLat.toString(),
+        'swLng': swLng.toString(),
+        'neLat': neLat.toString(),
+        'neLng': neLng.toString(),
+      };
+
+      // 줌 레벨이 있으면 추가
+      if (zoom != null) {
+        queryParams['zoom'] = zoom.toString();
+      }
+
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/rooms/map').replace(
+        queryParameters: queryParams,
+      );
+
+      debugPrint('📡 [MAP] 요청 URL: $uri');
+
+      final response = await http.get(uri).timeout(ApiConfig.timeout);
+
+      debugPrint('📡 [MAP] 응답 상태: ${response.statusCode}');
+      //debugPrint('📄 [MAP] 응답 내용: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        debugPrint('✅ [MAP] 방 검색 성공 - 총 ${data['data']['count']}개');
+        return data['data'];
+      } else {
+        debugPrint('❌ [MAP] 방 검색 실패: ${response.statusCode}');
+        try {
+          final errorData = json.decode(response.body);
+          debugPrint('❌ [MAP] 에러: ${errorData['error']['message']}');
+        } catch (e) {
+          debugPrint('❌ [MAP] 에러 응답 파싱 실패: ${response.body}');
+        }
+        return null;
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ [MAP] 방 검색 에러: $e');
+      debugPrint('❌ [MAP] 스택트레이스: $stackTrace');
       return null;
     }
   }

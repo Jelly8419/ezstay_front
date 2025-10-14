@@ -185,6 +185,8 @@ class _PropertyCardState extends State<PropertyCard> {
                     height: 200,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
+                      debugPrint('❌ [PROPERTY_CARD] 이미지 로드 실패: ${widget.room.photos[_currentPhotoIndex]}');
+                      debugPrint('❌ [PROPERTY_CARD] 에러: $error');
                       return _buildPlaceholder();
                     },
                   )
