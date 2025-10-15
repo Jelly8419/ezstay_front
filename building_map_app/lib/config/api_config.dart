@@ -46,6 +46,9 @@ class ApiConfig {
   static String roomPhotosReorderUrl(int roomId) => '$roomsBaseUrl/$roomId/photos/reorder';
   static String roomPhotoDeleteUrl(int roomId, int photoId) => '$roomsBaseUrl/$roomId/photos/$photoId';
 
+  //게스트 방 조회 API 엔드포인트
+  static String getRoomById(int roomId) => '$baseUrl/api/rooms/$roomId';
+
   /// API 설정 유효성 검사
   static bool isConfigValid() {
     return baseUrl.isNotEmpty &&

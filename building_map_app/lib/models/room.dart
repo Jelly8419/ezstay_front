@@ -1,184 +1,392 @@
-/// 방/숙소 정보 모델
+import 'room_photo.dart';
+import 'room_amenity.dart';
+import 'room_free_service.dart';
+
+/// 방/숙소 정보 모델 (API 응답 기준)
 class Room {
+  // 기본 정보
   final int id;
-  final String name;
+  final String roomName;
   final String address;
-  final String addressDetail;
   final double latitude;
   final double longitude;
-  final String buildingType; // 아파트, 오피스텔, 주택, 호텔, 고시원
-  final int bedrooms; // 방 개수
-  final int bathrooms; // 화장실 개수
-  final int beds; // 침대 개수
-  final int maxGuests; // 최대 인원
-  final int weeklyPrice; // 주 임대료
-  final int monthlyPrice; // 월 임대료
-  final List<String> photos; // 사진 URL 리스트
-  final List<String> amenities; // 편의시설
-  final List<String> freeServices; // 무료 부가서비스
-  final bool isParkingAvailable; // 주차 가능
-  final bool isPetFriendly; // 반려동물 가능
-  final bool isNearSubway; // 역세권
-  final int? discount; // 할인율 (%)
-  final String description; // 방 설명
-  final String hostName; // 호스트 이름
-  final int hostId; // 호스트 ID
-  final String status; // 방 상태 (available, booked, pending)
+  final String area; // 전용면적 (제곱미터)
+  final String floor; // 층수
+  final String buildingType; // 타운하우스, 아파트, 오피스텔 등
+  final bool parkingAvailable;
+  final String? parkingInfo;
+  final bool elevatorAvailable;
+  final int roomCount; // 방 개수
+  final int bathroomCount; // 화장실 개수
+  final int livingRoomCount; // 거실 개수
+  final int kitchenCount; // 주방 개수
+  final bool isDuplex; // 복층 여부
+
+  // 가격 정보
+  final int weeklyRent; // 주 임대료
+  final int longTermWeeks; // 장기계약 기준 주수
+  final int longTermDiscount; // 장기계약 할인율 (%)
+  final String? quickMoveIn; // 빠른 입주 가능일 (ISO 8601)
+  final int quickMoveInDiscount; // 빠른 입주 할인율 (%)
+  final int maintenanceFee; // 관리비
+  final String? maintenanceDetail; // 관리비 상세 설명
+  final bool includeElectricity; // 관리비에 전기 포함 여부
+  final bool includeWater; // 관리비에 수도 포함 여부
+  final bool includeGas; // 관리비에 가스 포함 여부
+  final bool includeInternet; // 관리비에 인터넷 포함 여부
+  final int cleaningFee; // 청소비
+
+  // 계약 정보
+  final int minContractWeeks; // 최소 계약 주수
+  final String refundPolicy; // 환불 규정 (flexible, moderate, strict)
+  final String? description; // 방 설명
+  final String? transportation; // 교통 정보
+  final String? houseRules; // 하우스 룰
+
+  // 날짜 정보
+  final DateTime? submittedAt;
+  final DateTime? approvedAt;
+  final DateTime? publishedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  // 연관 데이터
+  final List<RoomPhoto> photos;
+  final RoomAmenity? amenity;
+  final RoomFreeService? freeService;
+
+  // UI 전용 필드
+  final bool isNearSubway; // 역세권 (프론트에서 계산)
+  final String? hostProfileImage;
+  final bool? hostPhoneVerified;
+  final bool? hostAccountVerified;
+  final String? hostName;
+  final int? hostId;
+  final String status; // 방 상태 (draft, submitted, approved, rejected, published)
 
   const Room({
     required this.id,
-    required this.name,
+    required this.roomName,
     required this.address,
-    required this.addressDetail,
     required this.latitude,
     required this.longitude,
+    required this.area,
+    required this.floor,
     required this.buildingType,
-    required this.bedrooms,
-    required this.bathrooms,
-    required this.beds,
-    required this.maxGuests,
-    required this.weeklyPrice,
-    required this.monthlyPrice,
+    required this.parkingAvailable,
+    this.parkingInfo,
+    required this.elevatorAvailable,
+    required this.roomCount,
+    required this.bathroomCount,
+    required this.livingRoomCount,
+    required this.kitchenCount,
+    required this.isDuplex,
+    required this.weeklyRent,
+    required this.longTermWeeks,
+    required this.longTermDiscount,
+    this.quickMoveIn,
+    required this.quickMoveInDiscount,
+    required this.maintenanceFee,
+    this.maintenanceDetail,
+    required this.includeElectricity,
+    required this.includeWater,
+    required this.includeGas,
+    required this.includeInternet,
+    required this.cleaningFee,
+    required this.minContractWeeks,
+    required this.refundPolicy,
+    this.description,
+    this.transportation,
+    this.houseRules,
+    this.submittedAt,
+    this.approvedAt,
+    this.publishedAt,
+    required this.createdAt,
+    required this.updatedAt,
     required this.photos,
-    required this.amenities,
-    required this.freeServices,
-    required this.isParkingAvailable,
-    required this.isPetFriendly,
-    required this.isNearSubway,
-    this.discount,
-    required this.description,
-    required this.hostName,
-    required this.hostId,
-    this.status = 'available',
+    this.amenity,
+    this.freeService,
+    this.isNearSubway = false,
+    this.hostProfileImage,
+    this.hostPhoneVerified,
+    this.hostAccountVerified,
+    this.hostName,
+    this.hostId,
+    this.status = 'draft',
   });
 
+
+
   factory Room.fromJson(Map<String, dynamic> json) {
+    // photos 파싱
+    List<RoomPhoto> photoList = [];
+    if (json['photos'] != null) {
+      final photosData = json['photos'] as List<dynamic>;
+      photoList = photosData.map((e) => RoomPhoto.fromJson(e as Map<String, dynamic>)).toList();
+    }
+
     return Room(
+      // 기본 정보
       id: json['id'] as int,
-      name: json['name'] as String,
-      address: json['address'] as String,
-      addressDetail: json['addressDetail'] as String? ?? '',
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
-      buildingType: json['buildingType'] as String,
-      bedrooms: json['bedrooms'] as int,
-      bathrooms: json['bathrooms'] as int,
-      beds: json['beds'] as int,
-      maxGuests: json['maxGuests'] as int,
-      weeklyPrice: json['weeklyPrice'] as int,
-      monthlyPrice: json['monthlyPrice'] as int,
-      photos: (json['photos'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
-      amenities: (json['amenities'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
-      freeServices: (json['freeServices'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
-      isParkingAvailable: json['isParkingAvailable'] as bool? ?? false,
-      isPetFriendly: json['isPetFriendly'] as bool? ?? false,
+      roomName: json['roomName'] as String? ?? '',
+      address: json['address'] as String? ?? '',
+      latitude: _parseDouble(json['latitude']),
+      longitude: _parseDouble(json['longitude']),
+      area: json['area']?.toString() ?? '0',
+      floor: json['floor']?.toString() ?? '1',
+      buildingType: json['buildingType'] as String? ?? '',
+      parkingAvailable: json['parkingAvailable'] as bool? ?? false,
+      parkingInfo: json['parkingInfo'] as String?,
+      elevatorAvailable: json['elevatorAvailable'] as bool? ?? false,
+      roomCount: json['roomCount'] as int? ?? 0,
+      bathroomCount: json['bathroomCount'] as int? ?? 0,
+      livingRoomCount: json['livingRoomCount'] as int? ?? 0,
+      kitchenCount: json['kitchenCount'] as int? ?? 0,
+      isDuplex: json['isDuplex'] as bool? ?? false,
+
+      // 가격 정보
+      weeklyRent: json['weeklyRent'] as int? ?? 0,
+      longTermWeeks: json['longTermWeeks'] as int? ?? 12,
+      longTermDiscount: json['longTermDiscount'] as int? ?? 0,
+      quickMoveIn: json['quickMoveIn'] as String?,
+      quickMoveInDiscount: json['quickMoveInDiscount'] as int? ?? 0,
+      maintenanceFee: json['maintenanceFee'] as int? ?? 0,
+      maintenanceDetail: json['maintenanceDetail'] as String?,
+      includeElectricity: json['includeElectricity'] as bool? ?? false,
+      includeWater: json['includeWater'] as bool? ?? false,
+      includeGas: json['includeGas'] as bool? ?? false,
+      includeInternet: json['includeInternet'] as bool? ?? false,
+      cleaningFee: json['cleaningFee'] as int? ?? 0,
+
+      // 계약 정보
+      minContractWeeks: json['minContractWeeks'] as int? ?? 4,
+      refundPolicy: json['refundPolicy'] as String? ?? 'moderate',
+      description: json['description'] as String?,
+      transportation: json['transportation'] as String?,
+      houseRules: json['houseRules'] as String?,
+
+      // 날짜 정보
+      submittedAt: json['submittedAt'] != null ? DateTime.parse(json['submittedAt'] as String) : null,
+      approvedAt: json['approvedAt'] != null ? DateTime.parse(json['approvedAt'] as String) : null,
+      publishedAt: json['publishedAt'] != null ? DateTime.parse(json['publishedAt'] as String) : null,
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : DateTime.now(),
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : DateTime.now(),
+
+      // 연관 데이터
+      photos: photoList,
+      amenity: json['amenity'] != null ? RoomAmenity.fromJson(json['amenity'] as Map<String, dynamic>) : null,
+      freeService: json['freeService'] != null ? RoomFreeService.fromJson(json['freeService'] as Map<String, dynamic>) : null,
+
+      // UI 전용 필드
       isNearSubway: json['isNearSubway'] as bool? ?? false,
-      discount: json['discount'] as int?,
-      description: json['description'] as String? ?? '',
-      hostName: json['hostName'] as String,
-      hostId: json['hostId'] as int,
-      status: json['status'] as String? ?? 'available',
+      hostProfileImage: json['hostProfileImage'] as String?,
+      hostPhoneVerified: json['hostPhoneVerified'] as bool?,
+      hostAccountVerified: json['hostAccountVerified'] as bool?,
+      hostName: json['hostName'] as String?,
+      hostId: json['hostId'] as int?,
+      status: json['status'] as String? ?? 'draft',
     );
+  }
+
+  /// latitude/longitude를 String 또는 num에서 double로 안전하게 파싱
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
+      'roomName': roomName,
       'address': address,
-      'addressDetail': addressDetail,
       'latitude': latitude,
       'longitude': longitude,
+      'area': area,
+      'floor': floor,
       'buildingType': buildingType,
-      'bedrooms': bedrooms,
-      'bathrooms': bathrooms,
-      'beds': beds,
-      'maxGuests': maxGuests,
-      'weeklyPrice': weeklyPrice,
-      'monthlyPrice': monthlyPrice,
-      'photos': photos,
-      'amenities': amenities,
-      'freeServices': freeServices,
-      'isParkingAvailable': isParkingAvailable,
-      'isPetFriendly': isPetFriendly,
-      'isNearSubway': isNearSubway,
-      'discount': discount,
+      'parkingAvailable': parkingAvailable,
+      'parkingInfo': parkingInfo,
+      'elevatorAvailable': elevatorAvailable,
+      'roomCount': roomCount,
+      'bathroomCount': bathroomCount,
+      'livingRoomCount': livingRoomCount,
+      'kitchenCount': kitchenCount,
+      'isDuplex': isDuplex,
+      'weeklyRent': weeklyRent,
+      'longTermWeeks': longTermWeeks,
+      'longTermDiscount': longTermDiscount,
+      'quickMoveIn': quickMoveIn,
+      'quickMoveInDiscount': quickMoveInDiscount,
+      'maintenanceFee': maintenanceFee,
+      'maintenanceDetail': maintenanceDetail,
+      'includeElectricity': includeElectricity,
+      'includeWater': includeWater,
+      'includeGas': includeGas,
+      'includeInternet': includeInternet,
+      'cleaningFee': cleaningFee,
+      'minContractWeeks': minContractWeeks,
+      'refundPolicy': refundPolicy,
       'description': description,
+      'transportation': transportation,
+      'houseRules': houseRules,
+      'submittedAt': submittedAt?.toIso8601String(),
+      'approvedAt': approvedAt?.toIso8601String(),
+      'publishedAt': publishedAt?.toIso8601String(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'photos': photos.map((p) => p.toJson()).toList(),
+      'amenity': amenity?.toJson(),
+      'freeService': freeService?.toJson(),
+      'isNearSubway': isNearSubway,
+      'hostProfileImage': hostProfileImage,
+      'hostPhoneVerified': hostPhoneVerified,
+      'hostAccountVerified': hostAccountVerified,
       'hostName': hostName,
       'hostId': hostId,
       'status': status,
     };
   }
 
-  /// 주소에서 동까지만 추출 (상세 주소 제외)
-  String get addressWithoutDetail {
-    return address;
+  // === 계산 프로퍼티 (Computed Properties) ===
+
+  /// 장기 계약 할인 적용된 주 임대료
+  int get longTermDiscountedRent {
+    if (longTermDiscount > 0) {
+      return (weeklyRent * (100 - longTermDiscount) / 100).round();
+    }
+    return weeklyRent;
   }
 
-  /// 할인 적용된 주 임대료
-  int get discountedWeeklyPrice {
-    if (discount != null && discount! > 0) {
-      return (weeklyPrice * (100 - discount!) / 100).round();
+  /// 빠른 입주 할인 적용된 주 임대료
+  int get quickMoveInDiscountedRent {
+    if (quickMoveInDiscount > 0) {
+      return (weeklyRent * (100 - quickMoveInDiscount) / 100).round();
     }
-    return weeklyPrice;
+    return weeklyRent;
   }
 
-  /// 할인 적용된 월 임대료
-  int get discountedMonthlyPrice {
-    if (discount != null && discount! > 0) {
-      return (monthlyPrice * (100 - discount!) / 100).round();
-    }
-    return monthlyPrice;
+  /// 월 임대료 (주 임대료 × 4.3)
+  int get monthlyRent => (weeklyRent * 4.3).round();
+
+  /// 장기 계약 할인 적용된 월 임대료
+  int get longTermDiscountedMonthlyRent => (longTermDiscountedRent * 4.3).round();
+
+  /// 총 침대 수 (freeService의 bed 정보에서 계산)
+  int get totalBeds {
+    if (freeService == null) return 0;
+    return freeService!.bedSizeSuperSingle +
+           freeService!.bedSizeQueen +
+           freeService!.bedSizeKing;
   }
+
+  /// 편의시설 평탄화 리스트 (UI용)
+  List<String> get amenitiesList => amenity?.toFlatList() ?? [];
+
+  /// 무료 서비스 평탄화 리스트 (UI용)
+  List<String> get freeServicesList => freeService?.toFlatList() ?? [];
+
+  /// 반려동물 동반 가능 여부
+  bool get isPetFriendly => amenity?.petsAllowed ?? false;
 
   Room copyWith({
     int? id,
-    String? name,
+    String? roomName,
     String? address,
-    String? addressDetail,
     double? latitude,
     double? longitude,
+    String? area,
+    String? floor,
     String? buildingType,
-    int? bedrooms,
-    int? bathrooms,
-    int? beds,
-    int? maxGuests,
-    int? weeklyPrice,
-    int? monthlyPrice,
-    List<String>? photos,
-    List<String>? amenities,
-    List<String>? freeServices,
-    bool? isParkingAvailable,
-    bool? isPetFriendly,
-    bool? isNearSubway,
-    int? discount,
+    bool? parkingAvailable,
+    String? parkingInfo,
+    bool? elevatorAvailable,
+    int? roomCount,
+    int? bathroomCount,
+    int? livingRoomCount,
+    int? kitchenCount,
+    bool? isDuplex,
+    int? weeklyRent,
+    int? longTermWeeks,
+    int? longTermDiscount,
+    String? quickMoveIn,
+    int? quickMoveInDiscount,
+    int? maintenanceFee,
+    String? maintenanceDetail,
+    bool? includeElectricity,
+    bool? includeWater,
+    bool? includeGas,
+    bool? includeInternet,
+    int? cleaningFee,
+    int? minContractWeeks,
+    String? refundPolicy,
     String? description,
+    String? transportation,
+    String? houseRules,
+    DateTime? submittedAt,
+    DateTime? approvedAt,
+    DateTime? publishedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<RoomPhoto>? photos,
+    RoomAmenity? amenity,
+    RoomFreeService? freeService,
+    bool? isNearSubway,
+    String? hostProfileImage,
+    bool? hostPhoneVerified,
+    bool? hostAccountVerified,
     String? hostName,
     int? hostId,
     String? status,
   }) {
     return Room(
       id: id ?? this.id,
-      name: name ?? this.name,
+      roomName: roomName ?? this.roomName,
       address: address ?? this.address,
-      addressDetail: addressDetail ?? this.addressDetail,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      area: area ?? this.area,
+      floor: floor ?? this.floor,
       buildingType: buildingType ?? this.buildingType,
-      bedrooms: bedrooms ?? this.bedrooms,
-      bathrooms: bathrooms ?? this.bathrooms,
-      beds: beds ?? this.beds,
-      maxGuests: maxGuests ?? this.maxGuests,
-      weeklyPrice: weeklyPrice ?? this.weeklyPrice,
-      monthlyPrice: monthlyPrice ?? this.monthlyPrice,
-      photos: photos ?? this.photos,
-      amenities: amenities ?? this.amenities,
-      freeServices: freeServices ?? this.freeServices,
-      isParkingAvailable: isParkingAvailable ?? this.isParkingAvailable,
-      isPetFriendly: isPetFriendly ?? this.isPetFriendly,
-      isNearSubway: isNearSubway ?? this.isNearSubway,
-      discount: discount ?? this.discount,
+      parkingAvailable: parkingAvailable ?? this.parkingAvailable,
+      parkingInfo: parkingInfo ?? this.parkingInfo,
+      elevatorAvailable: elevatorAvailable ?? this.elevatorAvailable,
+      roomCount: roomCount ?? this.roomCount,
+      bathroomCount: bathroomCount ?? this.bathroomCount,
+      livingRoomCount: livingRoomCount ?? this.livingRoomCount,
+      kitchenCount: kitchenCount ?? this.kitchenCount,
+      isDuplex: isDuplex ?? this.isDuplex,
+      weeklyRent: weeklyRent ?? this.weeklyRent,
+      longTermWeeks: longTermWeeks ?? this.longTermWeeks,
+      longTermDiscount: longTermDiscount ?? this.longTermDiscount,
+      quickMoveIn: quickMoveIn ?? this.quickMoveIn,
+      quickMoveInDiscount: quickMoveInDiscount ?? this.quickMoveInDiscount,
+      maintenanceFee: maintenanceFee ?? this.maintenanceFee,
+      maintenanceDetail: maintenanceDetail ?? this.maintenanceDetail,
+      includeElectricity: includeElectricity ?? this.includeElectricity,
+      includeWater: includeWater ?? this.includeWater,
+      includeGas: includeGas ?? this.includeGas,
+      includeInternet: includeInternet ?? this.includeInternet,
+      cleaningFee: cleaningFee ?? this.cleaningFee,
+      minContractWeeks: minContractWeeks ?? this.minContractWeeks,
+      refundPolicy: refundPolicy ?? this.refundPolicy,
       description: description ?? this.description,
+      transportation: transportation ?? this.transportation,
+      houseRules: houseRules ?? this.houseRules,
+      submittedAt: submittedAt ?? this.submittedAt,
+      approvedAt: approvedAt ?? this.approvedAt,
+      publishedAt: publishedAt ?? this.publishedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      photos: photos ?? this.photos,
+      amenity: amenity ?? this.amenity,
+      freeService: freeService ?? this.freeService,
+      isNearSubway: isNearSubway ?? this.isNearSubway,
+      hostProfileImage: hostProfileImage ?? this.hostProfileImage,
+      hostPhoneVerified: hostPhoneVerified ?? this.hostPhoneVerified,
+      hostAccountVerified: hostAccountVerified ?? this.hostAccountVerified,
       hostName: hostName ?? this.hostName,
       hostId: hostId ?? this.hostId,
       status: status ?? this.status,

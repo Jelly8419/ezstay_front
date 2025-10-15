@@ -73,7 +73,7 @@ class _PropertyCardState extends State<PropertyCard> {
                   children: [
                     // 방 이름
                     Text(
-                      widget.room.name,
+                      widget.room.roomName,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -84,9 +84,9 @@ class _PropertyCardState extends State<PropertyCard> {
                     ),
                     const SizedBox(height: 4),
 
-                    // 주소 (동까지만)
+                    // 주소
                     Text(
-                      widget.room.addressWithoutDetail,
+                      widget.room.address,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[600],
@@ -99,9 +99,9 @@ class _PropertyCardState extends State<PropertyCard> {
                     // 가격
                     Row(
                       children: [
-                        if (widget.room.discount != null) ...[
+                        if (widget.room.longTermDiscount > 0) ...[
                           Text(
-                            '${widget.room.discount}%',
+                            '${widget.room.longTermDiscount}%',
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -111,7 +111,7 @@ class _PropertyCardState extends State<PropertyCard> {
                           const SizedBox(width: 4),
                         ],
                         Text(
-                          '${_formatPrice(widget.room.discountedWeeklyPrice)}/주',
+                          '${_formatPrice(widget.room.weeklyRent)}/주',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -122,21 +122,21 @@ class _PropertyCardState extends State<PropertyCard> {
                     ),
                     const SizedBox(height: 8),
 
-                    // 방 정보 (인원, 침대, 화장실, 방)
+                    // 방 정보 (침대, 화장실, 방)
                     Row(
                       children: [
-                        _buildIconInfo(Icons.people, '${widget.room.maxGuests}명'),
+                        if (widget.room.totalBeds > 0) ...[
+                          _buildIconInfo(Icons.bed, '침대 ${widget.room.totalBeds}'),
+                          const SizedBox(width: 12),
+                        ],
+                        _buildIconInfo(Icons.bathroom, '욕실 ${widget.room.bathroomCount}'),
                         const SizedBox(width: 12),
-                        _buildIconInfo(Icons.bed, '침대 ${widget.room.beds}'),
-                        const SizedBox(width: 12),
-                        _buildIconInfo(Icons.bathroom, '화장실 ${widget.room.bathrooms}'),
-                        const SizedBox(width: 12),
-                        _buildIconInfo(Icons.door_sliding, '방 ${widget.room.bedrooms}'),
+                        _buildIconInfo(Icons.door_sliding, '방 ${widget.room.roomCount}'),
                       ],
                     ),
 
                     // 할인 정보 (있을 경우)
-                    if (widget.room.discount != null) ...[
+                    if (widget.room.longTermDiscount > 0) ...[
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -145,7 +145,7 @@ class _PropertyCardState extends State<PropertyCard> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '${widget.room.discount}% 할인 중',
+                          '${widget.room.longTermDiscount}% 할인 중',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.error,
@@ -180,12 +180,12 @@ class _PropertyCardState extends State<PropertyCard> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             child: hasPhotos
                 ? Image.network(
-                    widget.room.photos[_currentPhotoIndex],
+                    widget.room.photos[_currentPhotoIndex].url,
                     width: double.infinity,
                     height: 200,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      debugPrint('❌ [PROPERTY_CARD] 이미지 로드 실패: ${widget.room.photos[_currentPhotoIndex]}');
+                      debugPrint('❌ [PROPERTY_CARD] 이미지 로드 실패: ${widget.room.photos[_currentPhotoIndex].url}');
                       debugPrint('❌ [PROPERTY_CARD] 에러: $error');
                       return _buildPlaceholder();
                     },

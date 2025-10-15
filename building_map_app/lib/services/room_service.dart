@@ -523,7 +523,7 @@ class RoomService {
       final response = await http.get(uri).timeout(ApiConfig.timeout);
 
       debugPrint('📡 [MAP] 응답 상태: ${response.statusCode}');
-      //debugPrint('📄 [MAP] 응답 내용: ${response.body}');
+      debugPrint('📄 [MAP] 응답 내용: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

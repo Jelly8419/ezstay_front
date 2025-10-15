@@ -1,3 +1,4 @@
+import 'package:building_map_app/pages/room_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -100,6 +101,34 @@ class AppRouter {
           path: '/guest',
           name: 'guest',
           builder: (context, state) => const GuestHomePage(),
+        ),
+        GoRoute(
+          path: '/guest/room/detail/:roomId',
+          name: 'room-detail',
+          builder: (context, state) {
+            final roomIdStr = state.pathParameters['roomId'];
+            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
+             if (roomId == null) {
+              // roomId가 없으면 에러 페이지 또는 이전 페이지로
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('잘못된 접근입니다.'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => context.go('/map'),
+                        child: const Text('지도로 돌아가기'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return RoomDetailPage(roomId: roomId);
+          } 
         ),
         GoRoute(
           path: '/host',

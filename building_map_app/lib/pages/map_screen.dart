@@ -10,6 +10,7 @@ import '../widgets/kakao_map_web.dart';
 import '../widgets/property_card.dart';
 import '../widgets/search_filter_bar.dart';
 import '../constants/app_constants.dart';
+import 'room_detail_page.dart';
 
 /// 지도 기반 숙소 검색 화면
 class MapScreen extends StatefulWidget {
@@ -325,28 +326,39 @@ class _MapScreenState extends State<MapScreen> {
 
         final roomJson = {
           'id': roomData['id'] ?? 0,
-          'name': roomData['roomName'] ?? '',
+          'roomName': roomData['roomName'] ?? '',
           'address': roomData['address'] ?? '',
-          'addressDetail': '',
           'latitude': roomData['latitude'] ?? 0.0,
           'longitude': roomData['longitude'] ?? 0.0,
+          'area': '0',
+          'floor': '1',
           'buildingType': roomData['buildingType'] ?? '오피스텔',
-          'bedrooms': roomData['roomCount'] ?? 1,
-          'bathrooms': roomData['bathroomCount'] ?? 1,
-          'beds': 1,
-          'maxGuests': 2,
-          'weeklyPrice': roomData['weeklyRent'] ?? 0,
-          'monthlyPrice': (roomData['weeklyRent'] ?? 0) * 4,
-          'photos': photos,
-          'amenities': [],
-          'freeServices': [],
-          'isParkingAvailable': false,
-          'isPetFriendly': false,
+          'parkingAvailable': false,
+          'elevatorAvailable': false,
+          'roomCount': roomData['roomCount'] ?? 1,
+          'bathroomCount': roomData['bathroomCount'] ?? 1,
+          'livingRoomCount': 1,
+          'kitchenCount': 1,
+          'isDuplex': false,
+          'weeklyRent': roomData['weeklyRent'] ?? 0,
+          'longTermWeeks': 12,
+          'longTermDiscount': 0,
+          'quickMoveInDiscount': 0,
+          'maintenanceFee': 0,
+          'includeElectricity': false,
+          'includeWater': false,
+          'includeGas': false,
+          'includeInternet': false,
+          'cleaningFee': 0,
+          'minContractWeeks': 4,
+          'refundPolicy': 'moderate',
+          'createdAt': DateTime.now().toIso8601String(),
+          'updatedAt': DateTime.now().toIso8601String(),
+          'photos': photos.map((url) => {'id': 0, 'url': url, 'order': 1}).toList(),
           'isNearSubway': false,
-          'description': '',
           'hostName': '호스트',
           'hostId': 1,
-          'status': 'available',
+          'status': 'published',
         };
 
         final room = Room.fromJson(roomJson);
@@ -356,7 +368,15 @@ class _MapScreenState extends State<MapScreen> {
           child: PropertyCard(
             room: room,
             isSelected: _selectedRoom?.id == room.id,
-            onTap: () => _onRoomSelected(room, focusMap: true),
+            onTap: () {
+              // 상세 페이지로 이동
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RoomDetailPage(roomId: room.id),
+                ),
+              );
+            },
             onHover: (isHovered) {
               if (isHovered) {
                 _onRoomSelected(room, focusMap: false);
@@ -402,28 +422,39 @@ class _MapScreenState extends State<MapScreen> {
 
           final roomJson = {
             'id': selectedRoomData['id'] ?? 0,
-            'name': selectedRoomData['roomName'] ?? '',
+            'roomName': selectedRoomData['roomName'] ?? '',
             'address': selectedRoomData['address'] ?? '',
-            'addressDetail': '',
             'latitude': selectedRoomData['latitude'] ?? 0.0,
             'longitude': selectedRoomData['longitude'] ?? 0.0,
+            'area': '0',
+            'floor': '1',
             'buildingType': selectedRoomData['buildingType'] ?? '오피스텔',
-            'bedrooms': selectedRoomData['roomCount'] ?? 1,
-            'bathrooms': selectedRoomData['bathroomCount'] ?? 1,
-            'beds': 1,
-            'maxGuests': 2,
-            'weeklyPrice': selectedRoomData['weeklyRent'] ?? 0,
-            'monthlyPrice': (selectedRoomData['weeklyRent'] ?? 0) * 4,
-            'photos': photos,
-            'amenities': [],
-            'freeServices': [],
-            'isParkingAvailable': false,
-            'isPetFriendly': false,
+            'parkingAvailable': false,
+            'elevatorAvailable': false,
+            'roomCount': selectedRoomData['roomCount'] ?? 1,
+            'bathroomCount': selectedRoomData['bathroomCount'] ?? 1,
+            'livingRoomCount': 1,
+            'kitchenCount': 1,
+            'isDuplex': false,
+            'weeklyRent': selectedRoomData['weeklyRent'] ?? 0,
+            'longTermWeeks': 12,
+            'longTermDiscount': 0,
+            'quickMoveInDiscount': 0,
+            'maintenanceFee': 0,
+            'includeElectricity': false,
+            'includeWater': false,
+            'includeGas': false,
+            'includeInternet': false,
+            'cleaningFee': 0,
+            'minContractWeeks': 4,
+            'refundPolicy': 'moderate',
+            'createdAt': DateTime.now().toIso8601String(),
+            'updatedAt': DateTime.now().toIso8601String(),
+            'photos': photos.map((url) => {'id': 0, 'url': url, 'order': 1}).toList(),
             'isNearSubway': false,
-            'description': '',
             'hostName': '호스트',
             'hostId': 1,
-            'status': 'available',
+            'status': 'published',
           };
 
           _onRoomSelected(Room.fromJson(roomJson), focusMap: false);
