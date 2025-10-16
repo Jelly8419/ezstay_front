@@ -19,7 +19,9 @@
       "Bash(git checkout:*)",
       "Bash(git commit:*)",
       "Bash(cat:*)",
-      "Bash(timeout 5 nc localhost 3000)"
+      "Bash(timeout 5 nc localhost 3000)",
+      "Read(//c/study/**)",
+      "Bash(timeout 15 ping:*)"
     ],
     "deny": [],
     "ask": []

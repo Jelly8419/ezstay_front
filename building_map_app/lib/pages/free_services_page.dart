@@ -44,7 +44,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
   // 섹션5: 비밀번호 자동 변경
   bool _autoPasswordChange = false;
 
-  // 섹션6: 어메니티 키트 (아직 API 연동 안 됨)
+  // 섹션6: 어메니티 키트
   bool _amenityKit = false;
 
   @override
@@ -90,6 +90,9 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
             _bedSizes['슈퍼싱글'] = bedSizes['슈퍼싱글'] ?? 0;
             _bedSizes['퀸'] = bedSizes['퀸'] ?? 0;
             _bedSizes['킹'] = bedSizes['킹'] ?? 0;
+          }
+          if (services['amenityKit'] != null) {
+            _amenityKit = services['amenityKit'];
           }
           if (services['autoPasswordChange'] != null) {
             _autoPasswordChange = services['autoPasswordChange'];
@@ -185,8 +188,8 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
                   _buildBeddingCard(),
                   const SizedBox(height: 24),
 
-                  // 섹션5: 어메니티 키트
-                  _buildSectionTitle('어메니티 키트 (게스트가 입주 시 필요하면 결제)'),
+                  // 섹션5: 타올, 어메니티 키트
+                  _buildSectionTitle('타올, 어메니티 키트 (게스트가 입주 시 필요하면 결제)'),
                   _buildAmenityKitCard(),
                   const SizedBox(height: 24),
 
@@ -741,8 +744,9 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
         ),
         const SizedBox(height: 16),
         _buildBlueInfoBox([
-          '• 게스트는 계약 시 생활에 필요한 물품들이 포함된 어메니티 키트를 함께 구매할 수 있습니다.',
-          '• 이지스테이의 어메니티 키트는 폼클렌징, 샴푸, 바디워시, 비누, 빗 으로 구성되어 있습니다.',
+          '• 게스트는 계약 시 생활에 필요한 물품들이 포함된 타올 세트와 어메니티 키트를 함께 구매할 수 있습니다.',
+          '• 타올 세트: 대형 타올 2장, 소형 타올 2장',
+          '• 어메니티 키트: 폼클렌징, 샴푸, 바디워시, 비누, 빗 으로 구성되어 있습니다.',
         ]),
       ],
     );
@@ -991,6 +995,8 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
                   'hairDryerRental': _hairDryerRental,
                   'beddingService': _beddingService,
                   'bedSizes': _bedSizes,
+                  'amenityKit': _amenityKit,
+                  'towelSetRental': _amenityKit, // amenityKit와 동일한 값
                   'autoPasswordChange': _autoPasswordChange,
                   'roomPassword': _autoPasswordChange ? _passwordController.text : null,
                 };

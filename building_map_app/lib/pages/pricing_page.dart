@@ -18,15 +18,15 @@ class _PricingPageState extends State<PricingPage> {
   final _roomService = RoomService();
   int? _roomId;
 
-  // 섹션1
-  final _weeklyRentController = TextEditingController();
+  // 섹션1 - 1박당 임대료로 변경
+  final _dailyRentController = TextEditingController();
   int _longTermWeeks = 0;
   int _longTermDiscount = 0;
   String _quickMoveIn = '0일';
   int _quickMoveInDiscount = 0;
 
-  // 섹션2
-  final _maintenanceFeeController = TextEditingController();
+  // 섹션2 - 1박당 관리비로 변경
+  final _dailyMaintenanceFeeController = TextEditingController();
   final _maintenanceDetailController = TextEditingController();
   bool _includeElectricity = false;
   bool _includeWater = false;
@@ -59,9 +59,9 @@ class _PricingPageState extends State<PricingPage> {
     final roomData = await _roomService.getRoom(_roomId!);
     if (roomData != null && mounted) {
       setState(() {
-        // 요금 정보가 있으면 채우기
-        if (roomData['weeklyRent'] != null) {
-          _weeklyRentController.text = roomData['weeklyRent'].toString();
+        // API에서 dailyRent와 dailyMaintenanceFee로 직접 받음
+        if (roomData['dailyRent'] != null) {
+          _dailyRentController.text = roomData['dailyRent'].toString();
         }
         if (roomData['longTermWeeks'] != null) {
           _longTermWeeks = roomData['longTermWeeks'];
@@ -75,8 +75,8 @@ class _PricingPageState extends State<PricingPage> {
         if (roomData['quickMoveInDiscount'] != null) {
           _quickMoveInDiscount = roomData['quickMoveInDiscount'];
         }
-        if (roomData['maintenanceFee'] != null) {
-          _maintenanceFeeController.text = roomData['maintenanceFee'].toString();
+        if (roomData['dailyMaintenanceFee'] != null) {
+          _dailyMaintenanceFeeController.text = roomData['dailyMaintenanceFee'].toString();
         }
         if (roomData['maintenanceDetail'] != null) {
           _maintenanceDetailController.text = roomData['maintenanceDetail'];
@@ -108,11 +108,23 @@ class _PricingPageState extends State<PricingPage> {
 
   @override
   void dispose() {
-    _weeklyRentController.dispose();
-    _maintenanceFeeController.dispose();
+    _dailyRentController.dispose();
+    _dailyMaintenanceFeeController.dispose();
     _maintenanceDetailController.dispose();
     _cleaningFeeController.dispose();
     super.dispose();
+  }
+
+  /// 1박 임대료로 1주일 금액 계산
+  int get _weeklyRent {
+    final daily = int.tryParse(_dailyRentController.text) ?? 0;
+    return (daily * 7 / 1000).round() * 1000; // 1000원 단위로 반올림
+  }
+
+  /// 1박 관리비로 1주일 금액 계산
+  int get _weeklyMaintenanceFee {
+    final daily = int.tryParse(_dailyMaintenanceFeeController.text) ?? 0;
+    return (daily * 7 / 1000).round() * 1000; // 1000원 단위로 반올림
   }
 
   @override
@@ -236,44 +248,70 @@ class _PricingPageState extends State<PricingPage> {
             const SizedBox(height: 12),
             SizedBox(
               width: 400,
-              child: TextFormField(
-                controller: _weeklyRentController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    controller: _dailyRentController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    decoration: InputDecoration(
+                      hintText: '36,000',
+                      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      suffixText: '원 / 1박',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    onChanged: (value) {
+                      setState(() {}); // 주간 계산 갱신
+                    },
+                  ),
+                  if (_dailyRentController.text.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '1주일 임대료: ${_weeklyRent.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}원',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-                decoration: InputDecoration(
-                  hintText: '250,000',
-                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                  suffixText: '원 / 1주',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              '1주당에 책정 하는 임대료를 입력해 주세요.',
+              '1박당 임대료를 입력해 주세요. (1주일 임대료가 자동 계산됩니다)',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[600],
               ),
             ),
             Text(
-              '임대료는 계약 기간에 따라 자동으로 게산되어 산출로 요청됩니다.',
+              '임대료는 계약 기간에 따라 자동으로 계산되어 산출로 요청됩니다.',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[600],
@@ -521,32 +559,58 @@ class _PricingPageState extends State<PricingPage> {
             const SizedBox(height: 12),
             SizedBox(
               width: 400,
-              child: TextFormField(
-                controller: _maintenanceFeeController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    controller: _dailyMaintenanceFeeController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    decoration: InputDecoration(
+                      hintText: '7,000',
+                      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      suffixText: '원 / 1박',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    onChanged: (value) {
+                      setState(() {}); // 주간 계산 갱신
+                    },
+                  ),
+                  if (_dailyMaintenanceFeeController.text.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '1주일 관리비: ${_weeklyMaintenanceFee.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}원',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-                decoration: InputDecoration(
-                  hintText: '50,000',
-                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                  suffixText: '원 / 1주',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -1109,14 +1173,14 @@ class _PricingPageState extends State<PricingPage> {
                   return;
                 }
 
-                // 요금 데이터 수집
+                // 요금 데이터 수집 (1박당 입력 → 1주일 금액으로 변환하여 저장)
                 final pricingData = {
-                  'weeklyRent': int.tryParse(_weeklyRentController.text) ?? 0,
+                  'weeklyRent': _weeklyRent, // 계산된 주간 임대료
                   'longTermWeeks': _longTermWeeks,
                   'longTermDiscount': _longTermDiscount,
                   'quickMoveIn': _quickMoveIn,
                   'quickMoveInDiscount': _quickMoveInDiscount,
-                  'maintenanceFee': int.tryParse(_maintenanceFeeController.text) ?? 0,
+                  'maintenanceFee': _weeklyMaintenanceFee, // 계산된 주간 관리비
                   'maintenanceDetail': _maintenanceDetailController.text,
                   'includeElectricity': _includeElectricity,
                   'includeWater': _includeWater,

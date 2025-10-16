@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 import '../models/room.dart';
 import '../models/search_filters.dart';
 import '../services/room_service.dart';
@@ -10,7 +11,6 @@ import '../widgets/kakao_map_web.dart';
 import '../widgets/property_card.dart';
 import '../widgets/search_filter_bar.dart';
 import '../constants/app_constants.dart';
-import 'room_detail_page.dart';
 
 /// 지도 기반 숙소 검색 화면
 class MapScreen extends StatefulWidget {
@@ -340,11 +340,11 @@ class _MapScreenState extends State<MapScreen> {
           'livingRoomCount': 1,
           'kitchenCount': 1,
           'isDuplex': false,
-          'weeklyRent': roomData['weeklyRent'] ?? 0,
+          'dailyRent': roomData['dailyRent'] ?? 0,
           'longTermWeeks': 12,
           'longTermDiscount': 0,
           'quickMoveInDiscount': 0,
-          'maintenanceFee': 0,
+          'dailyMaintenanceFee': 0,
           'includeElectricity': false,
           'includeWater': false,
           'includeGas': false,
@@ -369,13 +369,8 @@ class _MapScreenState extends State<MapScreen> {
             room: room,
             isSelected: _selectedRoom?.id == room.id,
             onTap: () {
-              // 상세 페이지로 이동
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => RoomDetailPage(roomId: room.id),
-                ),
-              );
+              // 상세 페이지로 이동 (GoRouter 사용)
+              context.go('/guest/room/detail/${room.id}');
             },
             onHover: (isHovered) {
               if (isHovered) {
@@ -394,12 +389,16 @@ class _MapScreenState extends State<MapScreen> {
     if (kIsWeb) {
       // 백엔드 API 응답 데이터를 카카오맵에 맞게 변환
       final roomsForKakaoMap = _roomsForMap.map((roomData) {
+        // dailyRent를 weeklyRent로 계산 (1000원 단위 반올림)
+        final dailyRent = roomData['dailyRent'] ?? 0;
+        final weeklyRent = ((dailyRent * 7) / 1000).round() * 1000;
+
         return {
           'id': roomData['id'],
           'latitude': roomData['latitude'],
           'longitude': roomData['longitude'],
           'roomName': roomData['roomName'],
-          'weeklyRent': roomData['weeklyRent'],  // 필드명 수정: weeklyPrice → weeklyRent
+          'weeklyRent': weeklyRent,  // 계산된 주간 임대료
         };
       }).toList();
 
@@ -436,11 +435,11 @@ class _MapScreenState extends State<MapScreen> {
             'livingRoomCount': 1,
             'kitchenCount': 1,
             'isDuplex': false,
-            'weeklyRent': selectedRoomData['weeklyRent'] ?? 0,
+            'dailyRent': selectedRoomData['dailyRent'] ?? 0,
             'longTermWeeks': 12,
             'longTermDiscount': 0,
             'quickMoveInDiscount': 0,
-            'maintenanceFee': 0,
+            'dailyMaintenanceFee': 0,
             'includeElectricity': false,
             'includeWater': false,
             'includeGas': false,

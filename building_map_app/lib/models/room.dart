@@ -1,6 +1,7 @@
 import 'room_photo.dart';
 import 'room_amenity.dart';
 import 'room_free_service.dart';
+import 'rental_item.dart';
 
 /// 방/숙소 정보 모델 (API 응답 기준)
 class Room {
@@ -23,12 +24,12 @@ class Room {
   final bool isDuplex; // 복층 여부
 
   // 가격 정보
-  final int weeklyRent; // 주 임대료
+  final int dailyRent; // 일 임대료
   final int longTermWeeks; // 장기계약 기준 주수
   final int longTermDiscount; // 장기계약 할인율 (%)
   final String? quickMoveIn; // 빠른 입주 가능일 (ISO 8601)
   final int quickMoveInDiscount; // 빠른 입주 할인율 (%)
-  final int maintenanceFee; // 관리비
+  final int dailyMaintenanceFee; // 일 관리비
   final String? maintenanceDetail; // 관리비 상세 설명
   final bool includeElectricity; // 관리비에 전기 포함 여부
   final bool includeWater; // 관리비에 수도 포함 여부
@@ -54,6 +55,7 @@ class Room {
   final List<RoomPhoto> photos;
   final RoomAmenity? amenity;
   final RoomFreeService? freeService;
+  final AvailableRentalItems? availableRentalItems;
 
   // UI 전용 필드
   final bool isNearSubway; // 역세권 (프론트에서 계산)
@@ -81,12 +83,12 @@ class Room {
     required this.livingRoomCount,
     required this.kitchenCount,
     required this.isDuplex,
-    required this.weeklyRent,
+    required this.dailyRent,
     required this.longTermWeeks,
     required this.longTermDiscount,
     this.quickMoveIn,
     required this.quickMoveInDiscount,
-    required this.maintenanceFee,
+    required this.dailyMaintenanceFee,
     this.maintenanceDetail,
     required this.includeElectricity,
     required this.includeWater,
@@ -106,6 +108,7 @@ class Room {
     required this.photos,
     this.amenity,
     this.freeService,
+    this.availableRentalItems,
     this.isNearSubway = false,
     this.hostProfileImage,
     this.hostPhoneVerified,
@@ -145,12 +148,12 @@ class Room {
       isDuplex: json['isDuplex'] as bool? ?? false,
 
       // 가격 정보
-      weeklyRent: json['weeklyRent'] as int? ?? 0,
+      dailyRent: json['dailyRent'] as int? ?? 0,
       longTermWeeks: json['longTermWeeks'] as int? ?? 12,
       longTermDiscount: json['longTermDiscount'] as int? ?? 0,
       quickMoveIn: json['quickMoveIn'] as String?,
       quickMoveInDiscount: json['quickMoveInDiscount'] as int? ?? 0,
-      maintenanceFee: json['maintenanceFee'] as int? ?? 0,
+      dailyMaintenanceFee: json['dailyMaintenanceFee'] as int? ?? 0,
       maintenanceDetail: json['maintenanceDetail'] as String?,
       includeElectricity: json['includeElectricity'] as bool? ?? false,
       includeWater: json['includeWater'] as bool? ?? false,
@@ -176,14 +179,16 @@ class Room {
       photos: photoList,
       amenity: json['amenity'] != null ? RoomAmenity.fromJson(json['amenity'] as Map<String, dynamic>) : null,
       freeService: json['freeService'] != null ? RoomFreeService.fromJson(json['freeService'] as Map<String, dynamic>) : null,
+      availableRentalItems: json['availableRentalItems'] != null ? AvailableRentalItems.fromJson(json['availableRentalItems'] as Map<String, dynamic>) : null,
 
       // UI 전용 필드
       isNearSubway: json['isNearSubway'] as bool? ?? false,
-      hostProfileImage: json['hostProfileImage'] as String?,
-      hostPhoneVerified: json['hostPhoneVerified'] as bool?,
-      hostAccountVerified: json['hostAccountVerified'] as bool?,
-      hostName: json['hostName'] as String?,
-      hostId: json['hostId'] as int?,
+      // host 객체에서 정보 추출
+      hostProfileImage: json['host'] != null ? json['host']['profileImageUrl'] as String? : json['hostProfileImage'] as String?,
+      hostPhoneVerified: json['host'] != null ? json['host']['phoneVerified'] as bool? : json['hostPhoneVerified'] as bool?,
+      hostAccountVerified: json['host'] != null ? json['host']['accountVerified'] as bool? : json['hostAccountVerified'] as bool?,
+      hostName: json['host'] != null ? json['host']['name'] as String? : json['hostName'] as String?,
+      hostId: json['host'] != null ? json['host']['id'] as int? : json['hostId'] as int?,
       status: json['status'] as String? ?? 'draft',
     );
   }
@@ -215,12 +220,12 @@ class Room {
       'livingRoomCount': livingRoomCount,
       'kitchenCount': kitchenCount,
       'isDuplex': isDuplex,
-      'weeklyRent': weeklyRent,
+      'dailyRent': dailyRent,
       'longTermWeeks': longTermWeeks,
       'longTermDiscount': longTermDiscount,
       'quickMoveIn': quickMoveIn,
       'quickMoveInDiscount': quickMoveInDiscount,
-      'maintenanceFee': maintenanceFee,
+      'dailyMaintenanceFee': dailyMaintenanceFee,
       'maintenanceDetail': maintenanceDetail,
       'includeElectricity': includeElectricity,
       'includeWater': includeWater,
@@ -240,6 +245,7 @@ class Room {
       'photos': photos.map((p) => p.toJson()).toList(),
       'amenity': amenity?.toJson(),
       'freeService': freeService?.toJson(),
+      'availableRentalItems': availableRentalItems?.toJson(),
       'isNearSubway': isNearSubway,
       'hostProfileImage': hostProfileImage,
       'hostPhoneVerified': hostPhoneVerified,
@@ -251,6 +257,12 @@ class Room {
   }
 
   // === 계산 프로퍼티 (Computed Properties) ===
+
+  /// 1일 임대료로 1주일 임대료 계산
+  int get weeklyRent => (dailyRent * 7 / 1000).round() * 1000;
+
+  /// 1일 관리비로 1주일 관리비 계산
+  int get maintenanceFee => (dailyMaintenanceFee * 7 / 1000).round() * 1000;
 
   /// 장기 계약 할인 적용된 주 임대료
   int get longTermDiscountedRent {
@@ -308,12 +320,12 @@ class Room {
     int? livingRoomCount,
     int? kitchenCount,
     bool? isDuplex,
-    int? weeklyRent,
+    int? dailyRent,
     int? longTermWeeks,
     int? longTermDiscount,
     String? quickMoveIn,
     int? quickMoveInDiscount,
-    int? maintenanceFee,
+    int? dailyMaintenanceFee,
     String? maintenanceDetail,
     bool? includeElectricity,
     bool? includeWater,
@@ -333,6 +345,7 @@ class Room {
     List<RoomPhoto>? photos,
     RoomAmenity? amenity,
     RoomFreeService? freeService,
+    AvailableRentalItems? availableRentalItems,
     bool? isNearSubway,
     String? hostProfileImage,
     bool? hostPhoneVerified,
@@ -358,12 +371,12 @@ class Room {
       livingRoomCount: livingRoomCount ?? this.livingRoomCount,
       kitchenCount: kitchenCount ?? this.kitchenCount,
       isDuplex: isDuplex ?? this.isDuplex,
-      weeklyRent: weeklyRent ?? this.weeklyRent,
+      dailyRent: dailyRent ?? this.dailyRent,
       longTermWeeks: longTermWeeks ?? this.longTermWeeks,
       longTermDiscount: longTermDiscount ?? this.longTermDiscount,
       quickMoveIn: quickMoveIn ?? this.quickMoveIn,
       quickMoveInDiscount: quickMoveInDiscount ?? this.quickMoveInDiscount,
-      maintenanceFee: maintenanceFee ?? this.maintenanceFee,
+      dailyMaintenanceFee: dailyMaintenanceFee ?? this.dailyMaintenanceFee,
       maintenanceDetail: maintenanceDetail ?? this.maintenanceDetail,
       includeElectricity: includeElectricity ?? this.includeElectricity,
       includeWater: includeWater ?? this.includeWater,
@@ -383,6 +396,7 @@ class Room {
       photos: photos ?? this.photos,
       amenity: amenity ?? this.amenity,
       freeService: freeService ?? this.freeService,
+      availableRentalItems: availableRentalItems ?? this.availableRentalItems,
       isNearSubway: isNearSubway ?? this.isNearSubway,
       hostProfileImage: hostProfileImage ?? this.hostProfileImage,
       hostPhoneVerified: hostPhoneVerified ?? this.hostPhoneVerified,
