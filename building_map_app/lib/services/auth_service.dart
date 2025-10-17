@@ -344,9 +344,13 @@ class AuthService extends ChangeNotifier {
   }
 
 
-  /// 저장된 토큰 불러오기
-  Future<String?> getAccessToken() async {
-    return await TokenService.getAccessToken();
+  /// 저장된 토큰 불러오기 (자동 갱신 포함)
+  Future<String?> getAccessToken({bool autoRefresh = true}) async {
+    if (autoRefresh) {
+      return await TokenService.getValidAccessToken(autoRefresh: true);
+    } else {
+      return await TokenService.getAccessToken();
+    }
   }
 
   /// 저장된 리프레시 토큰 불러오기
@@ -547,7 +551,19 @@ class AuthService extends ChangeNotifier {
 
   /// 앱 시작 시 저장된 토큰으로 자동 로그인 시도
   Future<void> tryAutoLogin() async {
-    final accessToken = await getAccessToken();
+    if (!ApiConfig.isProduction) {
+      debugPrint('');
+      debugPrint('═══════════════════════════════════════════════');
+      debugPrint('🔄 [AUTO_LOGIN] 자동 로그인 프로세스 시작');
+      debugPrint('═══════════════════════════════════════════════');
+    }
+
+    // 자동 갱신 활성화하여 토큰 가져오기
+    final accessToken = await getAccessToken(autoRefresh: true);
+
+    if (!ApiConfig.isProduction) {
+      debugPrint('📊 [AUTO_LOGIN] Access Token 상태: ${accessToken != null ? "✅ 있음" : "❌ 없음"}');
+    }
 
     if (accessToken != null) {
       // 서버에서 토큰 검증 및 사용자 정보 가져오기
@@ -558,7 +574,7 @@ class AuthService extends ChangeNotifier {
         notifyListeners();
         return;
       } else {
-        // 만료된 토큰 제거
+        // 토큰 검증 실패 - 토큰 제거
         await _clearTokens();
       }
     }
@@ -568,6 +584,10 @@ class AuthService extends ChangeNotifier {
 
     if (userInfo != null) {
       _currentUser = userInfo;
+      if (!ApiConfig.isProduction) {
+        debugPrint('✅ [AUTO_LOGIN] 저장된 사용자 정보 복원: ${userInfo.email}');
+        debugPrint('⚠️ [AUTO_LOGIN] 토큰이 없어 API 호출은 불가능합니다. 다시 로그인이 필요합니다.');
+      }
     }
 
     // 초기화 완료 표시

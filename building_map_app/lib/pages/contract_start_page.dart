@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/room.dart';
 import '../constants/app_constants.dart';
+import '../services/contract_service.dart';
 import 'package:intl/intl.dart';
 
 /// 계약 시작하기 페이지
@@ -37,6 +38,23 @@ class ContractStartPage extends StatefulWidget {
 class _ContractStartPageState extends State<ContractStartPage> {
   final _currencyFormat = NumberFormat('#,###');
   final _messageController = TextEditingController();
+  late final ContractService _contractService;
+  bool _isLoading = false;
+
+  // 약관 동의
+  bool _serviceTermsAgreed = false;
+  bool _cancellationPolicyAgreed = false;
+  bool _refundPolicyAgreed = false;
+
+  // 전체 동의
+  bool get _allTermsAgreed =>
+      _serviceTermsAgreed && _cancellationPolicyAgreed && _refundPolicyAgreed;
+
+  @override
+  void initState() {
+    super.initState();
+    _contractService = ContractService();
+  }
 
   @override
   void dispose() {
@@ -94,12 +112,23 @@ class _ContractStartPageState extends State<ContractStartPage> {
     return 0;
   }
 
-  /// 최종 금액 계산
+  /// 플랫폼 수수료 계산 (임대료 + 관리비의 10%)
+  int _calculatePlatformFee() {
+    final rentalTotal = _calculateRentalTotal();
+    final maintenanceTotal = _calculateMaintenanceTotal();
+
+    // 계약 수수료: (임대료 + 관리비)의 10%
+    final baseForContractFee = rentalTotal + maintenanceTotal;
+    return (baseForContractFee * 0.1).round();
+  }
+
+  /// 최종 금액 계산 (수수료 포함)
   int _calculateFinalTotal() {
     return _calculateRentalTotal() +
            _calculateMaintenanceTotal() +
            widget.room.cleaningFee +
-           _calculateOptionsTotal() -
+           _calculateOptionsTotal() +
+           _calculatePlatformFee() -
            _calculateDiscount();
   }
 
@@ -162,6 +191,10 @@ class _ContractStartPageState extends State<ContractStartPage> {
 
                       // 안내사항
                       _buildNotice(),
+                      const SizedBox(height: 24),
+
+                      // 약관 동의
+                      _buildTermsAgreement(),
                       const SizedBox(height: 100), // 하단 여백
                     ],
                   ),
@@ -443,12 +476,54 @@ class _ContractStartPageState extends State<ContractStartPage> {
             ),
           ),
           const SizedBox(height: 12),
-          Text(
-            '${DateFormat('yyyy-MM-dd (E)', 'ko_KR').format(widget.checkInDate)} - ${DateFormat('yyyy-MM-dd (E)', 'ko_KR').format(widget.checkOutDate)}',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 60,
+                child: Text(
+                  '체크인',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  '${DateFormat('yyyy-MM-dd (E)', 'ko_KR').format(widget.checkInDate)} ${widget.room.checkInTime}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 60,
+                child: Text(
+                  '체크아웃',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  '${DateFormat('yyyy-MM-dd (E)', 'ko_KR').format(widget.checkOutDate)} ${widget.room.checkOutTime}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -461,6 +536,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
     final maintenanceTotal = _calculateMaintenanceTotal();
     final cleaningFee = widget.room.cleaningFee;
     final optionsTotal = _calculateOptionsTotal();
+    final platformFee = _calculatePlatformFee();
     final discount = _calculateDiscount();
     final finalTotal = _calculateFinalTotal();
     const deposit = 330000;
@@ -489,8 +565,10 @@ class _ContractStartPageState extends State<ContractStartPage> {
           _buildPriceRow('청소비용', cleaningFee),
           if (optionsTotal > 0) ...[
             const SizedBox(height: 8),
-            _buildPriceRow('계약 수수료', optionsTotal),
+            _buildPriceRow('렌탈 아이템', optionsTotal),
           ],
+          const SizedBox(height: 8),
+          _buildPriceRow('계약 수수료 (임대료의 10%)', platformFee),
           if (discount > 0) ...[
             const Divider(height: 24),
             _buildPriceRow(
@@ -646,6 +724,110 @@ class _ContractStartPageState extends State<ContractStartPage> {
     );
   }
 
+  /// 약관 동의
+  Widget _buildTermsAgreement() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '약관 동의',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 전체 동의
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: _allTermsAgreed,
+                  onChanged: (value) {
+                    setState(() {
+                      _serviceTermsAgreed = value ?? false;
+                      _cancellationPolicyAgreed = value ?? false;
+                      _refundPolicyAgreed = value ?? false;
+                    });
+                  },
+                  activeColor: AppColors.primary,
+                ),
+                const Text(
+                  '전체 동의',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 개별 약관
+          _buildTermCheckbox(
+            '서비스 이용약관 동의 (필수)',
+            _serviceTermsAgreed,
+            (value) => setState(() => _serviceTermsAgreed = value ?? false),
+          ),
+          _buildTermCheckbox(
+            '취소 및 환불 규정 동의 (필수)',
+            _cancellationPolicyAgreed,
+            (value) => setState(() => _cancellationPolicyAgreed = value ?? false),
+          ),
+          _buildTermCheckbox(
+            '환불 정책 동의 (필수)',
+            _refundPolicyAgreed,
+            (value) => setState(() => _refundPolicyAgreed = value ?? false),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 약관 체크박스
+  Widget _buildTermCheckbox(String label, bool value, ValueChanged<bool?> onChanged) {
+    return Row(
+      children: [
+        Checkbox(
+          value: value,
+          onChanged: onChanged,
+          activeColor: AppColors.primary,
+        ),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 14),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            // TODO: 약관 상세 페이지 이동
+          },
+          child: const Text(
+            '보기',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.primary,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   /// 계약 승인 요청하기 버튼
   Widget _buildSubmitButton() {
@@ -653,25 +835,35 @@ class _ContractStartPageState extends State<ContractStartPage> {
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: () {
-          // TODO: 계약 승인 요청 API 호출
-          _showContractRequestDialog();
-        },
+        onPressed: _allTermsAgreed && !_isLoading
+            ? () {
+                _showContractRequestDialog();
+              }
+            : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: _allTermsAgreed ? AppColors.primary : Colors.grey[300],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
           elevation: 0,
         ),
-        child: const Text(
-          '계약 승인 요청하기',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(
+                _allTermsAgreed ? '계약 승인 요청하기' : '약관에 동의해주세요',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _allTermsAgreed ? Colors.white : Colors.grey[600],
+                ),
+              ),
       ),
     );
   }
@@ -691,15 +883,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: 계약 승인 요청 API 호출
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('계약 승인 요청이 완료되었습니다.'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              // 이전 페이지로 이동
-              Navigator.of(context).pop();
+              _requestContract();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -709,5 +893,105 @@ class _ContractStartPageState extends State<ContractStartPage> {
         ],
       ),
     );
+  }
+
+  /// 계약 승인 요청 API 호출
+  Future<void> _requestContract() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final rentalTotal = _calculateRentalTotal();
+      final maintenanceTotal = _calculateMaintenanceTotal();
+      final cleaningFee = widget.room.cleaningFee;
+      final rentalItemsFee = _calculateOptionsTotal();
+      final platformFee = _calculatePlatformFee();
+      final discount = _calculateDiscount();
+      final finalTotal = _calculateFinalTotal();
+      const deposit = 330000;
+
+      final totalDays = widget.checkOutDate.difference(widget.checkInDate).inDays;
+      final totalWeeks = (totalDays / 7).ceil();
+
+      final subtotal = rentalTotal + maintenanceTotal + cleaningFee + rentalItemsFee;
+
+      // 렌탈 아이템 데이터 구성
+      Map<String, dynamic>? rentalItemsData;
+      if (rentalItemsFee > 0) {
+        rentalItemsData = {};
+        if (widget.selectedHairDryerId != null) {
+          rentalItemsData['hairDryerId'] = widget.selectedHairDryerId;
+        }
+        if (widget.selectedBeddingSetId != null) {
+          rentalItemsData['beddingSetId'] = widget.selectedBeddingSetId;
+          rentalItemsData['beddingSetQuantity'] = widget.beddingSetQuantity;
+        }
+        if (widget.selectedAmenityKitId != null) {
+          rentalItemsData['amenityKitId'] = widget.selectedAmenityKitId;
+          rentalItemsData['amenityKitQuantity'] = widget.amenityKitQuantity;
+        }
+        if (widget.selectedTowelSetId != null) {
+          rentalItemsData['towelSetId'] = widget.selectedTowelSetId;
+          rentalItemsData['towelSetQuantity'] = widget.towelSetQuantity;
+        }
+      }
+
+      final result = await _contractService.requestContract(
+        roomId: widget.room.id,
+        checkInDate: widget.checkInDate,
+        checkOutDate: widget.checkOutDate,
+        totalDays: totalDays,
+        totalWeeks: totalWeeks,
+        rentalFee: rentalTotal,
+        maintenanceFee: maintenanceTotal,
+        cleaningFee: cleaningFee,
+        rentalItemsFee: rentalItemsFee,
+        platformFee: platformFee,
+        discountAmount: discount,
+        subtotal: subtotal,
+        totalUsageFee: finalTotal,
+        deposit: deposit,
+        finalTotalAmount: finalTotal + deposit,
+        rentalItems: rentalItemsData,
+        guestMessage: _messageController.text.trim().isNotEmpty
+            ? _messageController.text.trim()
+            : null,
+        serviceTermsAgreed: _serviceTermsAgreed,
+        cancellationPolicyAgreed: _cancellationPolicyAgreed,
+        refundPolicyAgreed: _refundPolicyAgreed,
+        dailyRentalFee: widget.room.dailyRent.toDouble(),
+        dailyMaintenanceFee: widget.room.dailyMaintenanceFee.toDouble(),
+        platformFeeRate: 0.1,
+        depositRate: 0.0,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('계약 승인 요청이 완료되었습니다.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('계약 요청 실패: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }

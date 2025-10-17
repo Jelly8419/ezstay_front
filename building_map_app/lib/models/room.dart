@@ -43,6 +43,8 @@ class Room {
   final String? description; // 방 설명
   final String? transportation; // 교통 정보
   final String? houseRules; // 하우스 룰
+  final String checkInTime; // 체크인 시간 (예: "15:00")
+  final String checkOutTime; // 체크아웃 시간 (예: "11:00")
 
   // 날짜 정보
   final DateTime? submittedAt;
@@ -100,6 +102,8 @@ class Room {
     this.description,
     this.transportation,
     this.houseRules,
+    this.checkInTime = '15:00',
+    this.checkOutTime = '11:00',
     this.submittedAt,
     this.approvedAt,
     this.publishedAt,
@@ -167,6 +171,8 @@ class Room {
       description: json['description'] as String?,
       transportation: json['transportation'] as String?,
       houseRules: json['houseRules'] as String?,
+      checkInTime: json['checkInTime'] as String? ?? '15:00',
+      checkOutTime: json['checkOutTime'] as String? ?? '11:00',
 
       // 날짜 정보
       submittedAt: json['submittedAt'] != null ? DateTime.parse(json['submittedAt'] as String) : null,
@@ -237,6 +243,8 @@ class Room {
       'description': description,
       'transportation': transportation,
       'houseRules': houseRules,
+      'checkInTime': checkInTime,
+      'checkOutTime': checkOutTime,
       'submittedAt': submittedAt?.toIso8601String(),
       'approvedAt': approvedAt?.toIso8601String(),
       'publishedAt': publishedAt?.toIso8601String(),
@@ -337,6 +345,8 @@ class Room {
     String? description,
     String? transportation,
     String? houseRules,
+    String? checkInTime,
+    String? checkOutTime,
     DateTime? submittedAt,
     DateTime? approvedAt,
     DateTime? publishedAt,
@@ -388,6 +398,8 @@ class Room {
       description: description ?? this.description,
       transportation: transportation ?? this.transportation,
       houseRules: houseRules ?? this.houseRules,
+      checkInTime: checkInTime ?? this.checkInTime,
+      checkOutTime: checkOutTime ?? this.checkOutTime,
       submittedAt: submittedAt ?? this.submittedAt,
       approvedAt: approvedAt ?? this.approvedAt,
       publishedAt: publishedAt ?? this.publishedAt,
