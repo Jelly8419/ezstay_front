@@ -3,6 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/registration_flow_indicator.dart';
 import '../services/room_service.dart';
+import '../widgets/common/responsive_page_layout.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_text_styles.dart';
+import '../core/theme/app_spacing.dart';
+import '../shared/widgets/app_buttons.dart';
 
 /// 요금 설정 페이지
 class PricingPage extends StatefulWidget {
@@ -130,10 +135,9 @@ class _PricingPageState extends State<PricingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('요금설정'),
-        backgroundColor: const Color(0xFF4DB5BD),
+        backgroundColor: AppColors.primary600,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -142,10 +146,8 @@ class _PricingPageState extends State<PricingPage> {
         children: [
           const RegistrationFlowIndicator(currentStep: 1),
           Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: Form(
+            child: ResponsivePageLayout(
+              child: Form(
                   key: _formKey,
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(20.0),
@@ -176,7 +178,6 @@ class _PricingPageState extends State<PricingPage> {
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -200,7 +201,7 @@ class _PricingPageState extends State<PricingPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -218,7 +219,7 @@ class _PricingPageState extends State<PricingPage> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF2C3E50),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -242,7 +243,7 @@ class _PricingPageState extends State<PricingPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -271,7 +272,7 @@ class _PricingPageState extends State<PricingPage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                        borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                       ),
                       filled: true,
                       fillColor: Colors.white,
@@ -325,7 +326,7 @@ class _PricingPageState extends State<PricingPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -369,7 +370,7 @@ class _PricingPageState extends State<PricingPage> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                              borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                             ),
                             filled: true,
                             fillColor: Colors.white,
@@ -405,7 +406,7 @@ class _PricingPageState extends State<PricingPage> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                              borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                             ),
                             filled: true,
                             fillColor: Colors.white,
@@ -463,7 +464,7 @@ class _PricingPageState extends State<PricingPage> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                              borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                             ),
                             filled: true,
                             fillColor: Colors.white,
@@ -503,7 +504,7 @@ class _PricingPageState extends State<PricingPage> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                              borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                             ),
                             filled: true,
                             fillColor: Colors.white,
@@ -553,7 +554,7 @@ class _PricingPageState extends State<PricingPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -582,7 +583,7 @@ class _PricingPageState extends State<PricingPage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                        borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                       ),
                       filled: true,
                       fillColor: Colors.white,
@@ -631,7 +632,7 @@ class _PricingPageState extends State<PricingPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -690,7 +691,7 @@ class _PricingPageState extends State<PricingPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -711,7 +712,7 @@ class _PricingPageState extends State<PricingPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -730,7 +731,7 @@ class _PricingPageState extends State<PricingPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -758,7 +759,7 @@ class _PricingPageState extends State<PricingPage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                        borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                       ),
                       filled: true,
                       fillColor: Colors.white,
@@ -774,7 +775,7 @@ class _PricingPageState extends State<PricingPage> {
                   child: const Text(
                     '예시',
                     style: TextStyle(
-                      color: Color(0xFF4DB5BD),
+                      color: AppColors.primary600,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -830,7 +831,7 @@ class _PricingPageState extends State<PricingPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -850,7 +851,7 @@ class _PricingPageState extends State<PricingPage> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                    borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                   ),
                   filled: true,
                   fillColor: Colors.white,
@@ -900,7 +901,7 @@ class _PricingPageState extends State<PricingPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -920,7 +921,7 @@ class _PricingPageState extends State<PricingPage> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF4DB5BD), width: 1.5),
+                    borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                   ),
                   filled: true,
                   fillColor: Colors.white,
@@ -1041,14 +1042,14 @@ class _PricingPageState extends State<PricingPage> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF2C3E50),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             border: Border.all(
-              color: isSelected ? const Color(0xFF4DB5BD) : Colors.grey[300]!,
+              color: isSelected ? AppColors.primary600 : AppColors.neutral300,
               width: 1.5,
             ),
             borderRadius: BorderRadius.circular(8),
@@ -1065,7 +1066,7 @@ class _PricingPageState extends State<PricingPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF4DB5BD) : Colors.white,
+                      color: isSelected ? AppColors.primary600 : AppColors.neutral0,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(6),
                         bottomLeft: Radius.circular(6),
@@ -1087,7 +1088,7 @@ class _PricingPageState extends State<PricingPage> {
               Container(
                 width: 1.5,
                 height: 44,
-                color: isSelected ? const Color(0xFF4DB5BD) : Colors.grey[300],
+                color: isSelected ? AppColors.primary600 : AppColors.neutral300,
               ),
               Expanded(
                 child: InkWell(
@@ -1111,7 +1112,7 @@ class _PricingPageState extends State<PricingPage> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: !isSelected ? const Color(0xFF2C3E50) : Colors.grey[400],
+                          color: !isSelected ? AppColors.textPrimary : AppColors.neutral400,
                         ),
                       ),
                     ),
@@ -1141,7 +1142,7 @@ class _PricingPageState extends State<PricingPage> {
               }
             },
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF4A90E2)),
+              side: BorderSide(color: AppColors.primary600),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1151,7 +1152,7 @@ class _PricingPageState extends State<PricingPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF4A90E2),
+                color: AppColors.primary600,
               ),
             ),
           ),
@@ -1207,7 +1208,7 @@ class _PricingPageState extends State<PricingPage> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
+              backgroundColor: AppColors.primary600,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

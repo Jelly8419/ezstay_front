@@ -5,6 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../widgets/registration_flow_indicator.dart';
 import '../services/room_service.dart';
 import 'dart:io';
+import '../widgets/common/responsive_page_layout.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_text_styles.dart';
+import '../core/theme/app_spacing.dart';
+import '../shared/widgets/app_buttons.dart';
 
 /// 무료 부가 서비스 페이지
 class FreeServicesPage extends StatefulWidget {
@@ -147,10 +152,9 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('무료 부가 서비스'),
-        backgroundColor: const Color(0xFF4DB5BD),
+        backgroundColor: AppColors.primary600,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -159,10 +163,8 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
         children: [
           const RegistrationFlowIndicator(currentStep: 3),
           Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: Form(
+            child: ResponsivePageLayout(
+              child: Form(
                   key: _formKey,
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(20.0),
@@ -213,7 +215,6 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -228,7 +229,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
             width: 4,
             height: 24,
             decoration: BoxDecoration(
-              color: const Color(0xFF4A90E2),
+              color: AppColors.primary600,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -266,7 +267,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               onChanged: (value) {
                 setState(() => _agreeTerms = value!);
               },
-              activeColor: const Color(0xFF4DB5BD),
+              activeColor: AppColors.primary600,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -327,7 +328,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               onChanged: (value) {
                 setState(() => _cleaningService = value!);
               },
-              activeColor: const Color(0xFF4DB5BD),
+              activeColor: AppColors.primary600,
             ),
             const Text(
               '사용',
@@ -343,7 +344,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               onChanged: (value) {
                 setState(() => _cleaningService = !value!);
               },
-              activeColor: const Color(0xFF4DB5BD),
+              activeColor: AppColors.primary600,
             ),
             const Text(
               '미사용',
@@ -519,7 +520,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               onChanged: (value) {
                 setState(() => _hairDryerRental = value!);
               },
-              activeColor: const Color(0xFF4DB5BD),
+              activeColor: AppColors.primary600,
             ),
             const Text(
               '사용',
@@ -535,7 +536,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               onChanged: (value) {
                 setState(() => _hairDryerRental = !value!);
               },
-              activeColor: const Color(0xFF4DB5BD),
+              activeColor: AppColors.primary600,
             ),
             const Text(
               '미사용',
@@ -577,7 +578,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               onChanged: (value) {
                 setState(() => _beddingService = value!);
               },
-              activeColor: const Color(0xFF4DB5BD),
+              activeColor: AppColors.primary600,
             ),
             const Text(
               '사용',
@@ -593,7 +594,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               onChanged: (value) {
                 setState(() => _beddingService = !value!);
               },
-              activeColor: const Color(0xFF4DB5BD),
+              activeColor: AppColors.primary600,
             ),
             const Text(
               '미사용',
@@ -649,7 +650,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
                           }
                         },
                         icon: const Icon(Icons.remove_circle_outline),
-                        color: const Color(0xFF4A90E2),
+                        color: AppColors.primary600,
                       ),
                       Container(
                         width: 50,
@@ -669,7 +670,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
                           });
                         },
                         icon: const Icon(Icons.add_circle_outline),
-                        color: const Color(0xFF4A90E2),
+                        color: AppColors.primary600,
                       ),
                     ],
                   ),
@@ -714,7 +715,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               onChanged: (value) {
                 setState(() => _amenityKit = value!);
               },
-              activeColor: const Color(0xFF4DB5BD),
+              activeColor: AppColors.primary600,
             ),
             const Text(
               '사용',
@@ -730,7 +731,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               onChanged: (value) {
                 setState(() => _amenityKit = !value!);
               },
-              activeColor: const Color(0xFF4DB5BD),
+              activeColor: AppColors.primary600,
             ),
             const Text(
               '미사용',
@@ -778,7 +779,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               onChanged: (value) {
                 setState(() => _autoPasswordChange = value!);
               },
-              activeColor: const Color(0xFF4DB5BD),
+              activeColor: AppColors.primary600,
             ),
             const Text(
               '사용',
@@ -794,7 +795,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               onChanged: (value) {
                 setState(() => _autoPasswordChange = !value!);
               },
-              activeColor: const Color(0xFF4DB5BD),
+              activeColor: AppColors.primary600,
             ),
             const Text(
               '미사용',
@@ -866,7 +867,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A90E2),
+                backgroundColor: AppColors.primary600,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -934,7 +935,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               }
             },
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF4A90E2)),
+              side: BorderSide(color: AppColors.primary600),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1017,7 +1018,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
+              backgroundColor: AppColors.primary600,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

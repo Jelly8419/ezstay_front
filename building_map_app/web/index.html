@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -17,19 +17,44 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+
+  <!-- SEO 메타 태그 -->
+  <title>EZStay - 단기임대 No.1, 편리하고 안전한 단기 숙소 찾기</title>
+  <meta name="description" content="출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 찾아보세요.">
+  <meta name="keywords" content="단기임대, 한달살기, 원룸, 오피스텔, 단기숙소, 출장숙소, EZStay">
+  <meta name="author" content="EZStay">
+
+  <!-- Open Graph (소셜 미디어 공유) -->
+  <meta property="og:title" content="EZStay - 단기임대 No.1, 편리하고 안전한 단기 숙소 찾기">
+  <meta property="og:description" content="출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게">
+  <meta property="og:image" content="/icons/Icon-512.png">
+  <meta property="og:url" content="https://ezstay.com">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="EZStay">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="EZStay - 단기임대 No.1">
+  <meta name="twitter:description" content="편리하고 안전한 단기 숙소 찾기">
+  <meta name="twitter:image" content="/icons/Icon-512.png">
+
+  <!-- HTTPS 강제 -->
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="building_map_app">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EZStay">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/Icon-512.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>building_map_app</title>
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png"/>
   <link rel="manifest" href="manifest.json">
 
   <!-- Material Icons -->
@@ -47,8 +72,82 @@
 
   <!-- Daum Postcode API -->
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+
+  <style>
+    /* 로딩 스플래시 스크린 */
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #FAFAFA;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease-out;
+    }
+    #loading.fade-out {
+      opacity: 0;
+    }
+    .loading-content {
+      text-align: center;
+    }
+    .loading-logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 20px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .loading-text {
+      color: #2196F3;
+      font-size: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin-top: 20px;
+    }
+    .loading-spinner {
+      border: 3px solid #E3F2FD;
+      border-top: 3px solid #2196F3;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+  </style>
 </head>
 <body>
+  <!-- 로딩 스플래시 -->
+  <div id="loading">
+    <div class="loading-content">
+      <img src="icons/Icon-192.png" alt="EZStay" class="loading-logo">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">로딩 중...</div>
+    </div>
+  </div>
+
+  <script>
+    // Flutter 첫 프레임 렌더링 후 로딩 화면 제거
+    window.addEventListener('flutter-first-frame', function() {
+      var loadingElement = document.getElementById('loading');
+      if (loadingElement) {
+        loadingElement.classList.add('fade-out');
+        setTimeout(function() {
+          loadingElement.style.display = 'none';
+        }, 300);
+      }
+    });
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

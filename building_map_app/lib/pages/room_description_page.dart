@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/registration_flow_indicator.dart';
 import '../services/room_service.dart';
+import '../widgets/common/responsive_page_layout.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_text_styles.dart';
+import '../core/theme/app_spacing.dart';
+import '../shared/widgets/app_buttons.dart';
 
 /// 방 소개 페이지
 class RoomDescriptionPage extends StatefulWidget {
@@ -61,10 +66,9 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('방 소개'),
-        backgroundColor: const Color(0xFF4DB5BD),
+        title: Text('방 소개', style: AppTextStyles.headingMedium.copyWith(color: Colors.white)),
+        backgroundColor: AppColors.primary600,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -73,10 +77,8 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
         children: [
           const RegistrationFlowIndicator(currentStep: 4),
           Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: Form(
+            child: ResponsivePageLayout(
+              child: Form(
                   key: _formKey,
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(20.0),
@@ -106,7 +108,6 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -114,41 +115,35 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
+      padding: EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
         children: [
           Container(
             width: 4,
             height: 24,
             decoration: BoxDecoration(
-              color: const Color(0xFF4A90E2),
-              borderRadius: BorderRadius.circular(2),
+              color: AppColors.primary600,
+              borderRadius: AppRadius.radiusXs,
             ),
           ),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF2C3E50),
-            ),
-          ),
+          SizedBox(width: AppSpacing.sm),
+          Text(title, style: AppTextStyles.headingLarge),
         ],
       ),
     );
   }
 
   Widget _buildDescriptionCard() {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[300]!, width: 1),
+    return Container(
+      padding: AppSpacing.paddingLg,
+      decoration: BoxDecoration(
+        color: AppColors.neutral0,
+        borderRadius: AppRadius.radiusMd,
+        border: Border.all(color: AppColors.neutral200, width: 1),
+        boxShadow: AppShadows.shadowSm,
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: AppSpacing.paddingLg,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -158,20 +153,20 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
               maxLength: 1000,
               decoration: InputDecoration(
                 hintText: '방에 대한 자세한 설명을 입력하세요\n\n예시:\n- 방의 특징 및 장점\n- 주변 환경 및 편의시설\n- 게스트가 알아야 할 중요한 정보',
-                hintStyle: TextStyle(color: Colors.grey[400]),
+                hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral400),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderRadius: AppRadius.radiusMd,
+                  borderSide: BorderSide(color: AppColors.neutral300),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderRadius: AppRadius.radiusMd,
+                  borderSide: BorderSide(color: AppColors.neutral300),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                  borderRadius: AppRadius.radiusMd,
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 2),
                 ),
-                contentPadding: const EdgeInsets.all(16),
+                contentPadding: AppSpacing.paddingMd,
                 counterText: '${_descriptionController.text.length}/1000',
               ),
               validator: (value) {
@@ -200,15 +195,16 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
   }
 
   Widget _buildTransportationCard() {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[300]!, width: 1),
+    return Container(
+      padding: AppSpacing.paddingLg,
+      decoration: BoxDecoration(
+        color: AppColors.neutral0,
+        borderRadius: AppRadius.radiusMd,
+        border: Border.all(color: AppColors.neutral200, width: 1),
+        boxShadow: AppShadows.shadowSm,
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: AppSpacing.paddingLg,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -251,12 +247,13 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
   }
 
   Widget _buildHouseRulesCard() {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[300]!, width: 1),
+    return Container(
+      padding: AppSpacing.paddingLg,
+      decoration: BoxDecoration(
+        color: AppColors.neutral0,
+        borderRadius: AppRadius.radiusMd,
+        border: Border.all(color: AppColors.neutral200, width: 1),
+        boxShadow: AppShadows.shadowSm,
       ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -303,21 +300,20 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
 
   Widget _buildBlueInfoBox(List<String> items) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingMd,
       decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.info50,
+        borderRadius: AppRadius.radiusMd,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: items.map((item) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 4.0),
+            padding: EdgeInsets.only(bottom: AppSpacing.xs),
             child: Text(
               item,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.blue[900],
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.info700,
                 height: 1.6,
               ),
             ),
@@ -333,8 +329,8 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
       children: [
         SizedBox(
           width: 250,
-          height: 56,
-          child: OutlinedButton(
+          child: AppSecondaryButton(
+            text: '이전으로',
             onPressed: () {
               if (_roomId != null) {
                 context.go('/host/free-services/$_roomId');
@@ -342,31 +338,20 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
                 context.pop();
               }
             },
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF4A90E2)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              '이전으로',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF4A90E2),
-              ),
-            ),
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: AppSpacing.md),
         SizedBox(
           width: 250,
-          height: 56,
-          child: ElevatedButton(
+          child: AppPrimaryButton(
+            text: '심사요청',
             onPressed: () async {
               if (_roomId == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('방 ID가 없습니다. 처음부터 다시 시작해주세요.')),
+                  SnackBar(
+                    content: const Text('방 ID가 없습니다. 처음부터 다시 시작해주세요.'),
+                    backgroundColor: AppColors.error500,
+                  ),
                 );
                 return;
               }
@@ -384,7 +369,10 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
 
                 if (!descSuccess && mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('방 소개 정보 저장에 실패했습니다.')),
+                    SnackBar(
+                      content: const Text('방 소개 정보 저장에 실패했습니다.'),
+                      backgroundColor: AppColors.error500,
+                    ),
                   );
                   return;
                 }
@@ -394,35 +382,24 @@ class _RoomDescriptionPageState extends State<RoomDescriptionPage> {
 
                 if (reviewSuccess && mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('심사요청이 완료되었습니다. 검토 후 연락드리겠습니다.'),
-                      duration: Duration(seconds: 3),
+                    SnackBar(
+                      content: const Text('심사요청이 완료되었습니다. 검토 후 연락드리겠습니다.'),
+                      backgroundColor: AppColors.success500,
+                      duration: const Duration(seconds: 3),
                     ),
                   );
                   // 호스트 홈으로 이동
                   context.go('/host');
                 } else if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('심사 요청에 실패했습니다. 필수 정보를 모두 입력했는지 확인해주세요.')),
+                    SnackBar(
+                      content: const Text('심사 요청에 실패했습니다. 필수 정보를 모두 입력했는지 확인해주세요.'),
+                      backgroundColor: AppColors.error500,
+                    ),
                   );
                 }
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 0,
-            ),
-            child: const Text(
-              '심사요청',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
           ),
         ),
       ],

@@ -3,10 +3,16 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_text_styles.dart';
+import '../core/theme/app_spacing.dart';
+import '../shared/widgets/app_buttons.dart';
+import '../shared/widgets/app_inputs.dart';
+import '../features/web/web_layout.dart';
 import 'mode_selection_page.dart';
 import 'user_info_popup.dart';
 
-/// 로그인 페이지
+/// 로그인 페이지 - 새 디자인 시스템 적용
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -18,25 +24,24 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
   final _verificationCodeController = TextEditingController();
 
   late TabController _tabController;
-  bool _obscurePassword = true;
   bool _isCodeSent = false;
   bool _isSendingCode = false;
   String _generatedCode = '';
   bool _isCodeVerified = false;
-  UserMode? _selectedMode; // 선택된 모드 저장
+  UserMode? _selectedMode;
+  bool _isLoggingIn = false;
+  bool _isSigningUp = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
 
-    // 탭 변경 감지 리스너 추가
     _tabController.addListener(() {
-      if (_tabController.index == 1) { // 회원가입 탭 선택 시
+      if (_tabController.index == 1) {
         _handleSignUpTabSelected();
       }
     });
@@ -47,7 +52,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     _tabController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _nameController.dispose();
     _verificationCodeController.dispose();
     super.dispose();
   }
@@ -55,86 +59,59 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('EZStay'),
-        backgroundColor: const Color(0xFF4DB5BD),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          Consumer<AuthService>(
-            builder: (context, authService, child) {
-              if (authService.isLoggedIn) {
-                return PopupMenuButton<String>(
-                  icon: const Icon(Icons.account_circle),
-                  onSelected: (value) {
-                    if (value == 'logout') {
-                      _handleLogout(authService);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem<String>(
-                      value: 'user_info',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.person, size: 18),
-                          const SizedBox(width: 8),
-                          Text(authService.currentUser?.name ?? '사용자'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuDivider(),
-                    const PopupMenuItem<String>(
-                      value: 'logout',
-                      child: Row(
-                        children: [
-                          Icon(Icons.logout, size: 18),
-                          SizedBox(width: 8),
-                          Text('로그아웃'),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.background,
       body: Consumer<AuthService>(
         builder: (context, authService, child) {
           if (authService.isLoading) {
-            return const Center(
+            return Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF87CEEB)),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary500),
               ),
             );
           }
 
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 40),
-                    // 로고 섹션
-                    _buildLogoSection(),
-                    const SizedBox(height: 48),
-                    // 탭바와 폼
-                    _buildAuthForm(authService),
-                    const SizedBox(height: 32),
-                    // 소셜 로그인 버튼들
-                    _buildSocialLoginButtons(authService),
-                  ],
-                ),
-              ),
-            ),
+          return ResponsiveLayout(
+            mobile: _buildMobileLayout(authService),
+            desktop: _buildDesktopLayout(authService),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(AuthService authService) {
+    return SingleChildScrollView(
+      padding: AppSpacing.pagePadding,
+      child: Column(
+        children: [
+          SizedBox(height: AppSpacing.xxl),
+          _buildLogoSection(),
+          SizedBox(height: AppSpacing.xl),
+          _buildAuthCard(authService),
+          SizedBox(height: AppSpacing.lg),
+          _buildSocialLoginButtons(authService),
+          SizedBox(height: AppSpacing.xxl),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout(AuthService authService) {
+    return WebContainer(
+      maxWidth: 480,
+      child: SingleChildScrollView(
+        padding: AppSpacing.pagePadding,
+        child: Column(
+          children: [
+            SizedBox(height: AppSpacing.xxxl),
+            _buildLogoSection(),
+            SizedBox(height: AppSpacing.xl),
+            _buildAuthCard(authService),
+            SizedBox(height: AppSpacing.lg),
+            _buildSocialLoginButtons(authService),
+            SizedBox(height: AppSpacing.xxxl),
+          ],
+        ),
       ),
     );
   }
@@ -142,61 +119,35 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   Widget _buildLogoSection() {
     return Column(
       children: [
+        // 로고
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: AppColors.primary50,
+            borderRadius: AppRadius.radiusXl,
+            boxShadow: AppShadows.shadowMd,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF87CEEB), // 블루스카이 색상
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.home,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'EZStay',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
+          child: Icon(
+            Icons.home,
+            size: 48,
+            color: AppColors.primary600,
           ),
         ),
-        const SizedBox(height: 20),
-        const Text(
-          'EZStay에 오신걸 환영합니다',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF2C3E50),
-          ),
+        SizedBox(height: AppSpacing.lg),
+
+        // 타이틀
+        Text(
+          'EZStay에 오신 것을 환영합니다',
+          style: AppTextStyles.displayMedium,
+          textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: AppSpacing.sm),
+
+        // 서브타이틀
         Text(
           '간편하게 로그인하고 완벽한 숙소를 찾아보세요',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[600],
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: AppColors.textSecondary,
           ),
           textAlign: TextAlign.center,
         ),
@@ -204,44 +155,46 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildAuthForm(AuthService authService) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey[200]!, width: 1),
+  Widget _buildAuthCard(AuthService authService) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.radiusLg,
+        boxShadow: AppShadows.shadowMd,
       ),
       child: Column(
         children: [
           // 탭바
           Container(
             decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
+              color: AppColors.neutral100,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(AppRadius.lg),
+                topRight: Radius.circular(AppRadius.lg),
               ),
             ),
+            padding: EdgeInsets.all(AppSpacing.xs),
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
-                color: const Color(0xFF87CEEB),
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.primary500,
+                borderRadius: AppRadius.radiusMd,
               ),
               indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.grey[600],
-              labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+              labelColor: AppColors.neutral0,
+              unselectedLabelColor: AppColors.neutral600,
+              labelStyle: AppTextStyles.labelMedium,
+              dividerColor: Colors.transparent,
               tabs: const [
                 Tab(text: '로그인'),
                 Tab(text: '회원가입'),
               ],
             ),
           ),
+
           // 탭 내용
           SizedBox(
-            height: _isCodeSent ? 350 : 270, // 이름 필드 제거로 높이 감소
+            height: _isCodeSent ? 420 : 340,
             child: TabBarView(
               controller: _tabController,
               children: [
@@ -257,95 +210,36 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
   Widget _buildLoginForm(AuthService authService) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppSpacing.paddingLg,
       child: Form(
         key: _formKey,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextFormField(
+            // 이메일
+            AppTextField(
+              label: '이메일',
+              hintText: 'email@example.com',
               controller: _emailController,
-              decoration: InputDecoration(
-                labelText: '이메일',
-                prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF87CEEB)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF87CEEB), width: 2),
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return '이메일을 입력해주세요';
-                }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                  return '올바른 이메일 형식을 입력해주세요';
-                }
-                return null;
-              },
+              prefixIcon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
             ),
-            const SizedBox(height: 16),
-            TextFormField(
+            SizedBox(height: AppSpacing.md),
+
+            // 비밀번호
+            AppPasswordField(
+              label: '비밀번호',
+              hintText: '비밀번호를 입력하세요',
               controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: '비밀번호',
-                prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF87CEEB)),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.grey[600],
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF87CEEB), width: 2),
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return '비밀번호를 입력해주세요';
-                }
-                return null;
-              },
             ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () => _handleEmailLogin(authService),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF87CEEB),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  '로그인',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+            SizedBox(height: AppSpacing.lg),
+
+            // 로그인 버튼
+            AppPrimaryButton(
+              text: '로그인',
+              onPressed: () => _handleEmailLogin(authService),
+              isLoading: _isLoggingIn,
+              icon: Icons.login,
             ),
           ],
         ),
@@ -355,231 +249,126 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
   Widget _buildSignUpForm(AuthService authService) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppSpacing.paddingLg,
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 선택된 모드 표시
-              if (_selectedMode != null)
+              if (_selectedMode != null) ...[
                 Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: AppSpacing.paddingMd,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF87CEEB).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF87CEEB).withOpacity(0.3)),
+                    color: AppColors.primary50,
+                    borderRadius: AppRadius.radiusMd,
+                    border: Border.all(color: AppColors.primary200),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         _selectedMode == UserMode.host ? Icons.home_work : Icons.person,
-                        color: const Color(0xFF87CEEB),
-                        size: 20,
+                        color: AppColors.primary600,
+                        size: AppSizes.iconSm,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '선택된 모드: ${_selectedMode == UserMode.host ? "집을 내놓고 싶어요" : "집을 찾고 있어요"}',
-                        style: const TextStyle(
-                          color: Color(0xFF87CEEB),
-                          fontWeight: FontWeight.w600,
+                      SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          _selectedMode == UserMode.host ? "집을 내놓고 싶어요" : "집을 찾고 있어요",
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.primary700,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                      const Spacer(),
-                      TextButton(
+                      AppTextButton(
+                        text: '변경',
                         onPressed: () {
                           setState(() {
                             _selectedMode = null;
                           });
                           _handleSignUpTabSelected();
                         },
-                        child: const Text(
-                          '변경',
-                          style: TextStyle(
-                            color: Color(0xFF87CEEB),
-                            fontSize: 12,
-                          ),
-                        ),
                       ),
                     ],
                   ),
                 ),
-            // 이메일 입력란과 인증번호 발송 버튼
-            Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: TextFormField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: '이메일',
-                      prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF87CEEB)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF87CEEB), width: 2),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '이메일을 입력해주세요';
-                      }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                        return '올바른 이메일 형식을 입력해주세요';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 1,
-                  child: SizedBox(
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isSendingCode ? null : () => _sendVerificationCode(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF87CEEB),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: _isSendingCode
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              _isCodeSent ? '재발송' : '발송',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                  ),
-                ),
+                SizedBox(height: AppSpacing.md),
               ],
-            ),
-            // 인증번호 입력 필드 (이메일 발송 후 표시)
-            if (_isCodeSent) ...[
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _verificationCodeController,
-                decoration: InputDecoration(
-                  labelText: '인증번호',
-                  prefixIcon: const Icon(Icons.verified_outlined, color: Color(0xFF87CEEB)),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+
+              // 이메일과 인증번호 발송
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: AppTextField(
+                      label: '이메일',
+                      hintText: 'email@example.com',
+                      controller: _emailController,
+                      prefixIcon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF87CEEB), width: 2),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                ),
-                validator: (value) {
-                  if (_isCodeSent && (value == null || value.isEmpty)) {
-                    return '인증번호를 입력해주세요';
-                  }
-                  if (_isCodeSent && value != _generatedCode) {
-                    return '인증번호가 일치하지 않습니다';
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  if (value == _generatedCode) {
-                    setState(() {
-                      _isCodeVerified = true;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('인증번호가 확인되었습니다'),
-                        backgroundColor: Colors.green,
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(height: 28), // 라벨 높이만큼 공간 확보
+                        AppPrimaryButton(
+                          text: _isCodeSent ? '재발송' : '발송',
+                          onPressed: _isSendingCode ? null : _sendVerificationCode,
+                          isLoading: _isSendingCode,
+                          fullWidth: true,
+                          height: AppSizes.inputHeightMd,
                         ),
-                      ),
-                    );
-                  } else {
-                    setState(() {
-                      _isCodeVerified = false;
-                    });
-                  }
-                },
-              ),
-            ],
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: '비밀번호',
-                prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF87CEEB)),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.grey[600],
+                      ],
+                    ),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
+                ],
+              ),
+
+              // 인증번호 입력
+              if (_isCodeSent) ...[
+                SizedBox(height: AppSpacing.md),
+                AppTextField(
+                  label: '인증번호',
+                  hintText: '6자리 숫자',
+                  controller: _verificationCodeController,
+                  prefixIcon: Icons.verified_outlined,
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) {
+                    if (value == _generatedCode) {
+                      setState(() => _isCodeVerified = true);
+                      _showSuccessSnackBar('인증번호가 확인되었습니다');
+                    } else {
+                      setState(() => _isCodeVerified = false);
+                    }
                   },
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF87CEEB), width: 2),
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
+              ],
+
+              SizedBox(height: AppSpacing.md),
+
+              // 비밀번호
+              AppPasswordField(
+                label: '비밀번호',
+                hintText: '8자 이상 입력하세요',
+                controller: _passwordController,
               ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
+
+              SizedBox(height: AppSpacing.lg),
+
+              // 회원가입 버튼
+              AppPrimaryButton(
+                text: '회원가입',
                 onPressed: () => _handleEmailSignUp(authService),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF87CEEB),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  '회원가입',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                isLoading: _isSigningUp,
+                icon: Icons.person_add,
               ),
-            ),
-          ],
+            ],
           ),
         ),
       ),
@@ -589,94 +378,73 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   Widget _buildSocialLoginButtons(AuthService authService) {
     return Column(
       children: [
+        // 구분선
         Row(
           children: [
-            Expanded(child: Divider(color: Colors.grey[300])),
+            Expanded(child: Divider(color: AppColors.divider)),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                '또는',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
-              ),
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: Text('또는', style: AppTextStyles.bodySmallSecondary),
             ),
-            Expanded(child: Divider(color: Colors.grey[300])),
+            Expanded(child: Divider(color: AppColors.divider)),
           ],
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: AppSpacing.lg),
+
         // 구글 로그인
-        _buildSocialButton(
+        AppSecondaryButton(
+          text: 'Google로 계속하기',
           onPressed: () => _handleGoogleLogin(authService),
           icon: Icons.g_mobiledata,
-          text: 'Google로 계속하기',
-          color: Colors.white,
-          textColor: Colors.black87,
-          borderColor: Colors.grey[300]!,
         ),
-        const SizedBox(height: 12),
-        // 카카오 로그인
-        _buildSocialButton(
-          onPressed: () => _handleKakaoLogin(authService),
-          icon: Icons.chat_bubble,
-          text: '카카오로 계속하기',
-          color: const Color(0xFFFFE812),
-          textColor: const Color(0xFF3C1E1E),
-        ),
-      ],
-    );
-  }
+        SizedBox(height: AppSpacing.sm),
 
-  Widget _buildSocialButton({
-    required VoidCallback onPressed,
-    required IconData icon,
-    required String text,
-    required Color color,
-    required Color textColor,
-    Color? borderColor,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: textColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: borderColor != null ? BorderSide(color: borderColor) : BorderSide.none,
-          ),
-          elevation: 0,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 20),
-            const SizedBox(width: 12),
-            Text(
-              text,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: textColor,
+        // 카카오 로그인
+        SizedBox(
+          width: double.infinity,
+          height: AppSizes.buttonHeightMd,
+          child: ElevatedButton(
+            onPressed: () => _handleKakaoLogin(authService),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFE812),
+              foregroundColor: const Color(0xFF3C1E1E),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadius.radiusMd,
               ),
             ),
-          ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.chat_bubble, size: AppSizes.iconSm),
+                SizedBox(width: AppSpacing.sm),
+                Text(
+                  '카카오로 계속하기',
+                  style: AppTextStyles.buttonText.copyWith(
+                    color: const Color(0xFF3C1E1E),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
   void _handleEmailLogin(AuthService authService) async {
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _isLoggingIn = true);
+
     final success = await authService.loginWithEmail(
       _emailController.text,
       _passwordController.text,
-      null, // 로그인 시에는 기존 모드 사용
+      null,
     );
+
+    setState(() => _isLoggingIn = false);
+
     if (success && mounted) {
       context.go('/');
     } else if (mounted) {
@@ -685,33 +453,30 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   }
 
   void _handleEmailSignUp(AuthService authService) async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     if (_isCodeSent && !_isCodeVerified) {
       _showErrorSnackBar('인증번호를 확인해주세요.');
       return;
     }
 
-    // 선택된 모드가 없다면 에러 표시
     if (_selectedMode == null) {
       _showErrorSnackBar('먼저 사용자 모드를 선택해주세요.');
       return;
     }
 
-    // 선택된 모드로 회원가입 요청
+    setState(() => _isSigningUp = true);
+
     final success = await authService.signUpWithEmail(
       _emailController.text,
       _passwordController.text,
       _selectedMode!,
     );
 
-    if (success && mounted) {
-      // 회원가입 성공 시 본인인증 정보 팝업으로 이동
-      context.go('/'); // 먼저 메인으로 돌아가기
+    setState(() => _isSigningUp = false);
 
-      // 본인인증 정보 팝업으로 이동
+    if (success && mounted) {
+      context.go('/');
       await Future.delayed(const Duration(milliseconds: 100));
       if (mounted) {
         Navigator.push(
@@ -734,48 +499,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     context.push('/mode-selection', extra: 'kakao');
   }
 
-  void _handleLogout(AuthService authService) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('로그아웃'),
-        content: const Text('정말 로그아웃하시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF87CEEB),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('로그아웃'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await authService.logout();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('로그아웃되었습니다'),
-            backgroundColor: const Color(0xFF87CEEB),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
   void _sendVerificationCode() async {
-    // 이메일 유효성 검사
     if (_emailController.text.isEmpty) {
       _showErrorSnackBar('이메일을 먼저 입력해주세요');
       return;
@@ -786,35 +510,20 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       return;
     }
 
-    setState(() {
-      _isSendingCode = true;
-    });
+    setState(() => _isSendingCode = true);
 
     try {
-      // 테스트 환경에서는 고정 인증번호 생성
       _generatedCode = '123456';
-      await Future.delayed(const Duration(seconds: 2)); // 시뮬레이션
+      await Future.delayed(const Duration(seconds: 2));
 
       setState(() {
         _isCodeSent = true;
         _isSendingCode = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${_emailController.text}로 인증번호가 발송되었습니다\n테스트용 인증번호: $_generatedCode'),
-          backgroundColor: const Color(0xFF87CEEB),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      _showSuccessSnackBar('${_emailController.text}로 인증번호가 발송되었습니다\n테스트용 인증번호: $_generatedCode');
     } catch (e) {
-      setState(() {
-        _isSendingCode = false;
-      });
+      setState(() => _isSendingCode = false);
       _showErrorSnackBar('인증번호 발송에 실패했습니다. 다시 시도해주세요.');
     }
   }
@@ -823,33 +532,40 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.error500,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.radiusMd,
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.success500,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.radiusMd,
         ),
       ),
     );
   }
 
   void _handleSignUpTabSelected() {
-    // 이미 모드를 선택했다면 더 이상 모드 선택 페이지로 가지 않음
-    if (_selectedMode != null) {
-      return;
-    }
+    if (_selectedMode != null) return;
 
-    // 로그인 탭으로 되돌리기 (즉시)
     _tabController.animateTo(0);
 
-    // 모드 선택 페이지로 이동
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ModeSelectionPage(
           onModeSelected: (UserMode mode) {
             _selectedMode = mode;
-            Navigator.pop(context); // ModeSelectionPage 닫기
-            // 잠시 후 회원가입 탭으로 이동
+            Navigator.pop(context);
             Future.delayed(const Duration(milliseconds: 100), () {
               if (mounted) {
                 _tabController.animateTo(1);

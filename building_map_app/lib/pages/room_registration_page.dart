@@ -3,6 +3,12 @@ import 'package:go_router/go_router.dart';
 import '../widgets/daum_postcode_widget.dart';
 import '../widgets/registration_flow_indicator.dart';
 import '../services/room_service.dart';
+import '../widgets/common/responsive_page_layout.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_text_styles.dart';
+import '../core/theme/app_spacing.dart';
+import '../shared/widgets/app_buttons.dart';
+import '../shared/widgets/app_inputs.dart';
 
 /// 호스트 전용 방 등록 페이지
 class RoomRegistrationPage extends StatefulWidget {
@@ -146,26 +152,21 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('방 등록하기'),
-        backgroundColor: const Color(0xFF4DB5BD),
+        backgroundColor: AppColors.primary600,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
-      backgroundColor: Colors.grey[50],
       body: Column(
         children: [
           const RegistrationFlowIndicator(currentStep: 0),
           Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+            child: ResponsivePageLayout(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               // 기본 정보 섹션
               _buildSectionTitle('기본 정보'),
               _buildBasicInfoSection(),
@@ -203,7 +204,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                         Navigator.pop(context);
                       },
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF4A90E2)),
+                        side: BorderSide(color: AppColors.primary600),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -213,7 +214,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF4A90E2),
+                          color: AppColors.primary600,
                         ),
                       ),
                     ),
@@ -226,7 +227,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                     child: ElevatedButton(
                       onPressed: _submitForm,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4A90E2),
+                        backgroundColor: AppColors.primary600,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -244,9 +245,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                   ),
                 ],
               ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -265,7 +264,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
             width: 4,
             height: 24,
             decoration: BoxDecoration(
-              color: const Color(0xFF4A90E2),
+              color: AppColors.primary600,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -275,7 +274,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF2C3E50),
+              color: AppColors.textPrimary,
             ),
           ),
         ],
@@ -316,7 +315,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -355,7 +354,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                        borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                       ),
                       filled: true,
                       fillColor: Colors.white,
@@ -408,7 +407,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -445,7 +444,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                    borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                   ),
                   filled: true,
                   fillColor: Colors.white,
@@ -483,7 +482,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -518,7 +517,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
       style: const TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: Color(0xFF2C3E50),
+        color: AppColors.textPrimary,
       ),
     );
   }
@@ -554,7 +553,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -594,7 +593,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -635,7 +634,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -663,7 +662,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -733,7 +732,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                            borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -774,7 +773,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                            borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -822,7 +821,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                            borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -863,7 +862,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                            borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -899,13 +898,13 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                       _isDuplex = value ?? false;
                     });
                   },
-                  activeColor: const Color(0xFF4A90E2),
+                  activeColor: AppColors.primary600,
                 ),
                 const Text(
                   '복층 구조',
                   style: TextStyle(
                     fontSize: 15,
-                    color: Color(0xFF2C3E50),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -1085,9 +1084,9 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
       backgroundColor = Colors.grey[400]!;
       textColor = Colors.white;
     } else if (isSpecial) {
-      backgroundColor = const Color(0xFFB3E5FC); // 연한 파란색
+      backgroundColor = AppColors.primary100; // 연한 파란색
     } else {
-      backgroundColor = const Color(0xFFB3E5FC); // 연한 파란색
+      backgroundColor = AppColors.primary100; // 연한 파란색
     }
 
     return Expanded(

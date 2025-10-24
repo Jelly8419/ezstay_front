@@ -6,6 +6,11 @@ import '../widgets/registration_flow_indicator.dart';
 import '../services/room_service.dart';
 import 'dart:io';
 import 'dart:convert';
+import '../widgets/common/responsive_page_layout.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_text_styles.dart';
+import '../core/theme/app_spacing.dart';
+import '../shared/widgets/app_buttons.dart';
 
 /// 사진 및 편의시설 페이지
 class RoomAmenitiesPage extends StatefulWidget {
@@ -227,10 +232,9 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('사진 및 편의시설'),
-        backgroundColor: const Color(0xFF4DB5BD),
+        backgroundColor: AppColors.primary600,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -239,10 +243,8 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
         children: [
           const RegistrationFlowIndicator(currentStep: 2),
           Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: Form(
+            child: ResponsivePageLayout(
+              child: Form(
                   key: _formKey,
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(20.0),
@@ -303,7 +305,6 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -318,7 +319,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
             width: 4,
             height: 24,
             decoration: BoxDecoration(
-              color: const Color(0xFF4A90E2),
+              color: AppColors.primary600,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -328,7 +329,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF2C3E50),
+              color: AppColors.textPrimary,
             ),
           ),
         ],
@@ -403,7 +404,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF2C3E50),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -521,7 +522,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4A90E2),
+                  color: AppColors.primary600,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
@@ -603,7 +604,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: candidateData.isNotEmpty
-                    ? const Color(0xFF4A90E2)
+                    ? AppColors.primary600
                     : Colors.grey[300]!,
                 width: candidateData.isNotEmpty ? 2 : 1,
               ),
@@ -665,7 +666,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4A90E2),
+                        color: AppColors.primary600,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: const Text(
@@ -954,19 +955,19 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF2C3E50),
+            color: AppColors.textPrimary,
           ),
         ),
         value: value,
         onChanged: onChanged,
         controlAffinity: ListTileControlAffinity.leading,
-        activeColor: const Color(0xFF4DB5BD),
+        activeColor: AppColors.primary600,
         contentPadding: const EdgeInsets.symmetric(horizontal: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: Colors.grey[300]!),
         ),
-        tileColor: value ? const Color(0xFF4DB5BD).withOpacity(0.05) : Colors.white,
+        tileColor: value ? AppColors.primary50 : AppColors.neutral0,
       ),
     );
   }
@@ -987,7 +988,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
               }
             },
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF4A90E2)),
+              side: BorderSide(color: AppColors.primary600),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -997,7 +998,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF4A90E2),
+                color: AppColors.primary600,
               ),
             ),
           ),
@@ -1097,7 +1098,7 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
+              backgroundColor: AppColors.primary600,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

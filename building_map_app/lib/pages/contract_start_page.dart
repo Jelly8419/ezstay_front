@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/room.dart';
-import '../constants/app_constants.dart';
+import '../constants/app_constants.dart' hide AppColors;
 import '../services/contract_service.dart';
 import 'package:intl/intl.dart';
+import '../widgets/common/responsive_page_layout.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_text_styles.dart';
+import '../core/theme/app_spacing.dart';
+import '../shared/widgets/app_buttons.dart';
 
 /// 계약 시작하기 페이지
 class ContractStartPage extends StatefulWidget {
@@ -139,17 +144,16 @@ class _ContractStartPageState extends State<ContractStartPage> {
     final isWideScreen = screenWidth > 1200;
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('계약 시작하기'),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
       ),
-      body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 1400),
-          child: Row(
+      body: ResponsivePageLayout(
+        maxWidth: 1400,
+        scrollable: false,
+        child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 왼쪽: 메인 컨텐츠
@@ -215,7 +219,6 @@ class _ContractStartPageState extends State<ContractStartPage> {
             ],
           ),
         ),
-      ),
       // 모바일/태블릿용 하단 고정 버튼
       bottomNavigationBar: !isWideScreen
           ? Container(
@@ -258,7 +261,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.05),
+              color: AppColors.primary600.withValues(alpha: 0.05),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -305,7 +308,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: AppColors.primary600,
                   ),
                 ),
               ],
@@ -345,7 +348,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                      borderSide: const BorderSide(color: AppColors.primary600, width: 2),
                     ),
                     contentPadding: const EdgeInsets.all(12),
                   ),
@@ -603,7 +606,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
             finalTotal + deposit,
             isBold: true,
             fontSize: 18,
-            valueColor: AppColors.primary,
+            valueColor: AppColors.primary600,
           ),
         ],
       ),
@@ -748,7 +751,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.05),
+              color: AppColors.primary600.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -762,7 +765,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                       _refundPolicyAgreed = value ?? false;
                     });
                   },
-                  activeColor: AppColors.primary,
+                  activeColor: AppColors.primary600,
                 ),
                 const Text(
                   '전체 동의',
@@ -804,7 +807,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
         Checkbox(
           value: value,
           onChanged: onChanged,
-          activeColor: AppColors.primary,
+          activeColor: AppColors.primary600,
         ),
         Expanded(
           child: Text(
@@ -820,7 +823,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
             '보기',
             style: TextStyle(
               fontSize: 13,
-              color: AppColors.primary,
+              color: AppColors.primary600,
               decoration: TextDecoration.underline,
             ),
           ),
@@ -841,7 +844,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
               }
             : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _allTermsAgreed ? AppColors.primary : Colors.grey[300],
+          backgroundColor: _allTermsAgreed ? AppColors.primary600 : Colors.grey[300],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -886,7 +889,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
               _requestContract();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.primary600,
             ),
             child: const Text('확인', style: TextStyle(color: Colors.white)),
           ),
