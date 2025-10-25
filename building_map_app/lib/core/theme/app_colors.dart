@@ -59,22 +59,27 @@ class AppColors {
   // ============= Semantic Colors (의미 색상) =============
   /// 성공
   static const Color success50 = Color(0xFFE8F5E9);
+  static const Color success100 = Color(0xFFC8E6C9);
   static const Color success500 = Color(0xFF4CAF50);
+  static const Color success600 = Color(0xFF43A047);
   static const Color success700 = Color(0xFF388E3C);
 
   /// 에러
   static const Color error50 = Color(0xFFFFEBEE);
   static const Color error500 = Color(0xFFF44336);
+  static const Color error600 = Color(0xFFE53935);
   static const Color error700 = Color(0xFFD32F2F);
 
   /// 경고
   static const Color warning50 = Color(0xFFFFF8E1);
   static const Color warning500 = Color(0xFFFFC107);
+  static const Color warning600 = Color(0xFFFFB300);
   static const Color warning700 = Color(0xFFFFA000);
 
   /// 정보
   static const Color info50 = Color(0xFFE3F2FD);
   static const Color info500 = Color(0xFF2196F3);
+  static const Color info600 = Color(0xFF1E88E5);
   static const Color info700 = Color(0xFF1976D2);
 
   // ============= Special Colors (특수 색상) =============

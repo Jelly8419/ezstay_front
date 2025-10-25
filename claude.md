@@ -1,4 +1,4 @@
-# LiveMoment Front - EZStay
+# EZStay Front - EZStay
 
 ## 프로젝트 개요
 
@@ -88,6 +88,7 @@ building_map_app/
 - `custom_text_field.dart` - 재사용 가능한 텍스트 입력 필드
 - `custom_button.dart` - 재사용 가능한 버튼 (로딩 상태 지원)
 - `custom_dropdown.dart` - 재사용 가능한 드롭다운
+- `responsive_page_layout.dart` - 반응형 페이지 레이아웃 래퍼
 
 ### `/lib/router/`
 - `app_router.dart` - GoRouter 기반 앱 라우팅 설정
@@ -227,6 +228,152 @@ GoRouter 기반 라우팅:
 - Provider 패턴 사용
 - `ChangeNotifier`를 상속받아 상태 관리 클래스 구현
 
+### UI/디자인 가이드라인
+
+#### 1. 테마 시스템 사용 (필수)
+모든 페이지와 위젯에서 **통합된 테마 시스템**을 사용해야 합니다.
+
+**색상:**
+```dart
+import '../constants/app_constants.dart';
+
+// ✅ 올바른 방법
+Container(color: AppColors.primary)
+Text('텍스트', style: TextStyle(color: AppColors.textPrimary))
+
+// ❌ 잘못된 방법
+Container(color: Color(0xFF4A90E2))  // 하드코딩 금지
+Text('텍스트', style: TextStyle(color: Colors.black))
+```
+
+**텍스트 스타일:**
+```dart
+// ✅ 올바른 방법
+Text('제목', style: AppTextStyles.heading1)
+Text('본문', style: AppTextStyles.bodyLarge)
+
+// ❌ 잘못된 방법
+Text('제목', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold))
+```
+
+**상수값:**
+```dart
+// ✅ 올바른 방법
+BorderRadius.circular(AppConstants.defaultRadius)
+EdgeInsets.all(AppConstants.defaultPadding)
+
+// ❌ 잘못된 방법
+BorderRadius.circular(12)
+EdgeInsets.all(16)
+```
+
+#### 2. 반응형 페이지 레이아웃 (필수)
+모든 새 페이지는 **ResponsivePageLayout** 또는 **ResponsiveScaffold**를 사용해야 합니다.
+
+**방법 1: ResponsiveScaffold (권장)**
+```dart
+import '../widgets/common/responsive_page_layout.dart';
+
+ResponsiveScaffold(
+  title: '페이지 제목',
+  actions: [
+    IconButton(icon: Icon(Icons.settings), onPressed: () {}),
+  ],
+  body: Column(
+    children: [
+      Text('컨텐츠'),
+    ],
+  ),
+)
+```
+
+**방법 2: ResponsivePageLayout (커스텀 AppBar가 필요한 경우)**
+```dart
+import '../widgets/common/responsive_page_layout.dart';
+
+Scaffold(
+  appBar: AppBar(title: Text('페이지')),
+  body: ResponsivePageLayout(
+    child: Column(
+      children: [
+        Text('컨텐츠'),
+      ],
+    ),
+  ),
+)
+```
+
+**특수 케이스:**
+```dart
+// 자체 스크롤을 처리하는 경우 (ListView 등)
+ResponsivePageLayout(
+  scrollable: false,
+  usePadding: false,
+  child: ListView(...),
+)
+
+// 최대 너비 커스터마이징
+ResponsivePageLayout(
+  maxWidth: 800,  // 기본값: 1200
+  child: Column(...),
+)
+```
+
+**❌ 하지 말아야 할 것:**
+```dart
+// 직접 레이아웃 래퍼 작성 금지
+Center(
+  child: ConstrainedBox(
+    constraints: BoxConstraints(maxWidth: 1200),
+    child: SingleChildScrollView(...),
+  ),
+)
+```
+
+#### 3. 공통 위젯 사용
+재사용 가능한 공통 위젯을 활용하세요:
+
+```dart
+// CustomButton
+CustomButton(
+  text: '버튼',
+  onPressed: () {},
+  isLoading: false,
+)
+
+// CustomTextField
+CustomTextField(
+  label: '이메일',
+  hint: 'email@example.com',
+  controller: controller,
+)
+
+// CustomDropdown
+CustomDropdown(
+  label: '선택',
+  value: selectedValue,
+  items: items,
+  onChanged: (value) {},
+)
+```
+
+#### 4. 반응형 값 가져오기
+화면 크기에 따라 다른 값을 사용해야 할 때:
+
+```dart
+import '../utils/responsive_util.dart';
+
+// 화면 크기 확인
+if (ResponsiveUtil.isDesktop(context)) { ... }
+if (ResponsiveUtil.isTablet(context)) { ... }
+if (ResponsiveUtil.isMobile(context)) { ... }
+
+// 반응형 값
+final padding = ResponsiveUtil.getPadding(context);  // 24/20/16
+final maxWidth = ResponsiveUtil.getMaxContentWidth(context);  // 1200/900/screen
+final gridColumns = ResponsiveUtil.getGridCrossAxisCount(context);  // 4/3/2
+```
+
 ## Git 브랜치 전략
 
 - `main` - 프로덕션 브랜치
@@ -234,6 +381,13 @@ GoRouter 기반 라우팅:
 - 현재 브랜치: `feature/host-room-registration`
 
 ## 최근 작업 내역
+
+### 2025-10-23: 디자인 시스템 통합 및 반응형 레이아웃 적용
+- ✅ 디자인 테마 시스템 통합 (AppTheme.lightTheme())
+- ✅ 전역 색상, 텍스트 스타일, 위젯 테마를 AppConstants에 중앙화
+- ✅ ResponsivePageLayout 위젯 생성 (최대 너비 제한, 반응형 패딩)
+- ✅ 모든 페이지에 ResponsivePageLayout 적용 (11개 페이지)
+- ✅ CLAUDE.md에 UI/디자인 가이드라인 추가
 
 ### 2025-10-05: 대규모 코드 품질 개선
 - ✅ 하드코딩된 URL 및 API 키를 환경 변수로 이동
@@ -332,6 +486,8 @@ flutter test
 2. ✅ 이미지 최적화 (압축, 캐싱)
 3. ✅ 반응형 디자인 (모바일/태블릿/데스크톱)
 4. ✅ 전역 상수 관리 (AppConstants)
+5. ✅ 디자인 시스템 통합 (AppTheme, AppColors, AppTextStyles)
+6. ✅ 반응형 페이지 레이아웃 표준화 (ResponsivePageLayout)
 
 ## 향후 개선 사항
 

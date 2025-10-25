@@ -7,6 +7,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'config/kakao_config.dart';
+import 'constants/app_constants.dart';
 import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
 import 'services/room_service.dart';
@@ -89,52 +90,7 @@ class _MyAppState extends State<MyApp> {
       title: 'EZStay',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4A90E2),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.grey[50],
-        cardTheme: const CardThemeData(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(16)),
-          ),
-          color: Colors.white,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey[300]!),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-          ),
-          filled: true,
-          fillColor: Colors.grey[50],
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF4DB5BD),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-      ),
+      theme: AppTheme.lightTheme(),
     );
   }
 }
@@ -249,7 +205,7 @@ class _MapScreenState extends State<MapScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.grey300,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -258,25 +214,20 @@ class _MapScreenState extends State<MapScreen> {
                 // 방 이름
                 Text(
                   room['roomName'] ?? '이름 없음',
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF2C3E50),
-                  ),
+                  style: AppTextStyles.heading1,
                 ),
                 const SizedBox(height: 12),
                 // 건물 타입
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4A90E2).withValues(alpha: 0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     room['buildingType'] ?? '알 수 없음',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF4A90E2),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -288,12 +239,12 @@ class _MapScreenState extends State<MapScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4A90E2).withValues(alpha: 0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
                         Icons.location_on,
-                        color: Color(0xFF4A90E2),
+                        color: AppColors.primary,
                         size: 20,
                       ),
                     ),
@@ -301,10 +252,7 @@ class _MapScreenState extends State<MapScreen> {
                     Expanded(
                       child: Text(
                         room['address'] ?? '주소 없음',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF2C3E50),
-                        ),
+                        style: AppTextStyles.bodyLarge,
                       ),
                     ),
                   ],
@@ -314,14 +262,12 @@ class _MapScreenState extends State<MapScreen> {
                 if (room['weeklyRent'] != null)
                   Row(
                     children: [
-                      const Icon(Icons.attach_money, color: Color(0xFF4A90E2), size: 20),
+                      const Icon(Icons.attach_money, color: AppColors.primary, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         '주간 요금: ${room['weeklyRent']}원',
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF2C3E50),
                         ),
                       ),
                     ],
@@ -331,13 +277,13 @@ class _MapScreenState extends State<MapScreen> {
                 Row(
                   children: [
                     if (room['roomCount'] != null) ...[
-                      const Icon(Icons.bed, color: Color(0xFF4A90E2), size: 20),
+                      const Icon(Icons.bed, color: AppColors.primary, size: 20),
                       const SizedBox(width: 4),
                       Text('방 ${room['roomCount']}개'),
                       const SizedBox(width: 16),
                     ],
                     if (room['bathroomCount'] != null) ...[
-                      const Icon(Icons.bathroom, color: Color(0xFF4A90E2), size: 20),
+                      const Icon(Icons.bathroom, color: AppColors.primary, size: 20),
                       const SizedBox(width: 4),
                       Text('욕실 ${room['bathroomCount']}개'),
                     ],
@@ -348,9 +294,8 @@ class _MapScreenState extends State<MapScreen> {
                 if (room['description'] != null && room['description'].toString().isNotEmpty)
                   Text(
                     room['description'],
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF6C7B7F),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
                       height: 1.5,
                     ),
                   ),
@@ -362,20 +307,10 @@ class _MapScreenState extends State<MapScreen> {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4A90E2),
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
                     ),
-                    child: const Text(
-                      '닫기',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: const Text('닫기'),
                   ),
                 ),
               ],
@@ -396,7 +331,6 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('EZStay 지도'),
-        backgroundColor: const Color(0xFF4A90E2),
       ),
       body: kIsWeb ? _buildWebMap() : _buildNativeMap(),
     );

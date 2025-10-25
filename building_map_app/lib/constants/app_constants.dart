@@ -85,3 +85,169 @@ class AppTextStyles {
     fontWeight: FontWeight.w600,
   );
 }
+
+/// 앱 테마
+class AppTheme {
+  /// 라이트 테마 생성
+  static ThemeData lightTheme() {
+    return ThemeData(
+      // Material 3 사용
+      useMaterial3: true,
+
+      // 색상 스킴
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
+        brightness: Brightness.light,
+        primary: AppColors.primary,
+        secondary: AppColors.accent,
+        surface: Colors.white,
+        error: AppColors.error,
+      ),
+
+      // 배경색
+      scaffoldBackgroundColor: AppColors.background,
+
+      // 카드 테마
+      cardTheme: CardThemeData(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        color: Colors.white,
+      ),
+
+      // 버튼 테마
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+          ),
+          textStyle: AppTextStyles.button,
+        ),
+      ),
+
+      // 아웃라인 버튼 테마
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+          ),
+          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          textStyle: AppTextStyles.button,
+        ),
+      ),
+
+      // 텍스트 버튼 테마
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          textStyle: AppTextStyles.button,
+        ),
+      ),
+
+      // 입력 필드 테마
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+          borderSide: BorderSide(color: AppColors.grey300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+          borderSide: BorderSide(color: AppColors.grey300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+          borderSide: const BorderSide(color: AppColors.error, width: 2),
+        ),
+        filled: true,
+        fillColor: AppColors.grey50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        hintStyle: TextStyle(color: AppColors.textHint),
+      ),
+
+      // 앱바 테마
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.accent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: AppTextStyles.heading3.copyWith(color: Colors.white),
+      ),
+
+      // 플로팅 액션 버튼 테마
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+
+      // 다이얼로그 테마
+      dialogTheme: DialogThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        elevation: 8,
+        backgroundColor: Colors.white,
+      ),
+
+      // 스낵바 테마
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+        ),
+        backgroundColor: AppColors.textPrimary,
+        contentTextStyle: const TextStyle(color: Colors.white),
+      ),
+
+      // 칩 테마
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.grey100,
+        deleteIconColor: AppColors.textSecondary,
+        labelStyle: AppTextStyles.bodyMedium,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+
+      // 디바이더 테마
+      dividerTheme: DividerThemeData(
+        color: AppColors.grey200,
+        thickness: 1,
+        space: 1,
+      ),
+
+      // 아이콘 테마
+      iconTheme: IconThemeData(
+        color: AppColors.primary,
+        size: 24,
+      ),
+
+      // 텍스트 테마
+      textTheme: TextTheme(
+        displayLarge: AppTextStyles.heading1,
+        displayMedium: AppTextStyles.heading2,
+        displaySmall: AppTextStyles.heading3,
+        bodyLarge: AppTextStyles.bodyLarge,
+        bodyMedium: AppTextStyles.bodyMedium,
+        bodySmall: AppTextStyles.bodySmall,
+        labelLarge: AppTextStyles.button,
+      ),
+    );
+  }
+}

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
+import '../widgets/common/responsive_page_layout.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
@@ -165,14 +166,11 @@ class WelcomePage extends StatelessWidget {
   }
 
   Widget _buildMainContent(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+    return ResponsivePageLayout(
+      scrollable: false,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
           const Spacer(),
           // 메인 제목
           const Text(
@@ -401,11 +399,9 @@ class WelcomePage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
+        const SizedBox(height: 20),
+      ],
+    ),
     );
   }
 }

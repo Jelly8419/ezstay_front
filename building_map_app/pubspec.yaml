@@ -116,12 +116,13 @@ flutter:
   # in this "flutter" section. Each entry in this list should have a
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font.
-  fonts:
-    - family: Pretendard
-      fonts:
-        - asset: assets/fonts/Pretendard-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Pretendard-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Pretendard-Bold.ttf
-          weight: 700
+  # TODO: Pretendard 폰트 파일 다운로드 필요
+  # fonts:
+  #   - family: Pretendard
+  #     fonts:
+  #       - asset: assets/fonts/Pretendard-Regular.ttf
+  #         weight: 400
+  #       - asset: assets/fonts/Pretendard-SemiBold.ttf
+  #         weight: 600
+  #       - asset: assets/fonts/Pretendard-Bold.ttf
+  #         weight: 700

@@ -32,6 +32,7 @@ class ApiConfig {
   static String get authKakaoWebUrl => '$baseUrl/api/auth/kakao';
   static String get authProfileUrl => '$baseUrl/api/auth/profile';
   static String get authRefreshUrl => '$baseUrl/api/auth/refresh';
+  static String authDevBypassUrl(String userId) => '$baseUrl/api/auth/dev-bypass/$userId';
 
   /// 방 관리 API 엔드포인트
   static String get roomsBaseUrl => '$baseUrl/api/host/rooms';

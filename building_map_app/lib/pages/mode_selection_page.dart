@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../widgets/common/responsive_page_layout.dart';
 
 /// 사용자 모드 선택 페이지
 class ModeSelectionPage extends StatelessWidget {
@@ -15,7 +16,6 @@ class ModeSelectionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('로그인 & 회원가입'),
         backgroundColor: const Color(0xFF87CEEB),
@@ -63,8 +63,7 @@ class ModeSelectionPage extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+      body: ResponsivePageLayout(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

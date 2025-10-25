@@ -21,9 +21,26 @@
       "Bash(cat:*)",
       "Bash(timeout 5 nc localhost 3000)",
       "Read(//c/study/**)",
-      "Bash(timeout 15 ping:*)"
+      "Bash(timeout 15 ping:*)",
+      "Bash(for file in lib/pages/free_services_page.dart lib/pages/room_description_page.dart lib/pages/contract_start_page.dart)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(done)",
+      "Bash(for file in lib/pages/contract_start_page.dart lib/pages/guest_contracts_page.dart lib/pages/host_contracts_page.dart)",
+      "Bash(head:*)",
+      "Bash(for file in lib/pages/guest_contracts_page.dart lib/pages/host_contracts_page.dart)",
+      "Bash(tasklist:*)",
+      "Bash(nc:*)",
+      "Read(//c/Users/user/**)",
+      "Bash(mkdir:*)",
+      "Bash(npx -y @modelcontextprotocol/server-playwright)",
+      "Bash(echo:*)",
+      "Bash(if [ -d \"Ezstay_front\" ])",
+      "Bash(then echo \"Directory already exists\")",
+      "Bash(else mv livemoment_front Ezstay_front)",
+      "Bash(git remote set-url:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true
 }

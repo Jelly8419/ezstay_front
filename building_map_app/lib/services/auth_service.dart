@@ -28,6 +28,109 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 개발자 바이패스 로그인 (개발 환경 전용)
+  ///
+  /// 백엔드의 /api/auth/dev-bypass/:userId 엔드포인트를 호출하여
+  /// 비밀번호 없이 특정 사용자로 로그인합니다.
+  ///
+  /// [userId] 로그인할 사용자 ID
+  ///
+  /// Returns: 로그인 성공 여부
+  Future<bool> loginWithDevBypass(String userId) async {
+    if (ApiConfig.isProduction) {
+      debugPrint('❌ [DEV_BYPASS] 프로덕션 환경에서는 개발자 바이패스를 사용할 수 없습니다');
+      return false;
+    }
+
+    debugPrint('🚀 [DEV_BYPASS] 개발자 바이패스 로그인 시작 - User ID: $userId');
+    _setLoading(true);
+
+    try {
+      final backendUrl = ApiConfig.authDevBypassUrl(userId);
+      debugPrint('🌐 [DEV_BYPASS] 요청 URL: $backendUrl');
+
+      final response = await http.get(
+        Uri.parse(backendUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      ).timeout(ApiConfig.timeout);
+
+      debugPrint('📡 [DEV_BYPASS] 응답 상태: ${response.statusCode}');
+      debugPrint('📄 [DEV_BYPASS] 응답 내용: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        debugPrint('✅ [DEV_BYPASS] 로그인 성공');
+
+        // JWT 토큰 저장
+        String? accessToken;
+        String? refreshToken;
+
+        if (data['data'] != null && data['data']['accessToken'] != null) {
+          accessToken = data['data']['accessToken'];
+          refreshToken = data['data']['refreshToken'];
+        } else if (data['accessToken'] != null) {
+          accessToken = data['accessToken'];
+          refreshToken = data['refreshToken'];
+        }
+
+        if (accessToken != null) {
+          debugPrint('🔑 [DEV_BYPASS] Access Token 저장');
+          debugPrint('🔑 [DEV_BYPASS] Access Token 길이: ${accessToken.length}');
+          debugPrint('🔑 [DEV_BYPASS] Access Token 앞부분: ${accessToken.substring(0, accessToken.length > 30 ? 30 : accessToken.length)}...');
+          await _saveTokens(accessToken, refreshToken);
+
+          // 저장 확인
+          final savedToken = await TokenService.getAccessToken(skipExpiryCheck: true);
+          debugPrint('🔍 [DEV_BYPASS] 저장 후 토큰 확인: ${savedToken != null ? "성공 (${savedToken.length}자)" : "실패 ⚠️"}');
+          if (savedToken != null) {
+            debugPrint('🔍 [DEV_BYPASS] 저장된 토큰 앞부분: ${savedToken.substring(0, savedToken.length > 30 ? 30 : savedToken.length)}...');
+          }
+
+          // 사용자 정보 추출
+          Map<String, dynamic>? userInfo;
+          if (data['data'] != null && data['data']['user'] != null) {
+            userInfo = data['data']['user'];
+          } else if (data['user'] != null) {
+            userInfo = data['user'];
+          }
+
+          if (userInfo != null) {
+            final userMode = userInfo['mode'] ?? userInfo['userMode'];
+            _currentUser = User(
+              id: userInfo['id'].toString(),
+              email: userInfo['email'] ?? 'dev@test.com',
+              name: userInfo['name'] ?? 'Dev User',
+              mode: UserMode.values.firstWhere(
+                (m) => m.name == userMode,
+                orElse: () => UserMode.guest,
+              ),
+              provider: AuthProvider.email,
+              profileImageUrl: userInfo['profileImageUrl'],
+            );
+
+            // 사용자 정보 저장
+            await UserRepository.saveUser(_currentUser!);
+            debugPrint('✅ [DEV_BYPASS] 사용자 정보 저장 완료');
+            debugPrint('👤 [DEV_BYPASS] 사용자: ${_currentUser!.email} (${_currentUser!.mode.name})');
+          }
+        }
+
+        _setLoading(false);
+        return true;
+      } else {
+        debugPrint('❌ [DEV_BYPASS] 로그인 실패: ${response.statusCode} - ${response.body}');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      debugPrint('❌ [DEV_BYPASS] 로그인 에러: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
   /// 이메일 로그인
   Future<bool> loginWithEmail(String email, String password, UserMode? mode) async {
     debugPrint('🚀 [LOGIN] 로그인 시작 - Email: $email, Mode: ${mode?.name ?? 'null'}');
