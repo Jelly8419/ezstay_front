@@ -82,8 +82,8 @@
 
   <!-- Firebase Configuration -->
   <script>
-    // Firebase 설정
-    const firebaseConfig = {
+    // Flutter firebase_core_web이 읽을 수 있도록 전역 변수로 설정 노출
+    window.firebaseConfig = {
       apiKey: "AIzaSyBDwxJU7ivdjfdMOJeA7N_buRjdJLfdKUs",
       authDomain: "ezstay-864bc.firebaseapp.com",
       projectId: "ezstay-864bc",
@@ -93,11 +93,8 @@
       measurementId: "G-1QZK8YMFEV"
     };
 
-    // Firebase 초기화
-    // Flutter firebase_core_web이 이미 초기화된 앱을 찾을 수 있도록 미리 초기화
-    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
+    console.log('🔥 [FIREBASE] Firebase SDK 로드 확인:', typeof firebase !== 'undefined' ? 'OK' : 'FAILED');
+    console.log('🔥 [FIREBASE] Firebase Config 설정 완료:', window.firebaseConfig);
   </script>
 
   <style>
