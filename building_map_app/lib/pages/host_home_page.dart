@@ -347,6 +347,12 @@ class _HostHomePageState extends State<HostHomePage> {
         onPressed: () => _showComingSoonDialog(context),
       ),
       SizedBox(width: AppSpacing.sm),
+      AppTextButton(
+        text: '채팅',
+        icon: Icons.chat_bubble_outline,
+        onPressed: () => context.push('/chat-list'),
+      ),
+      SizedBox(width: AppSpacing.sm),
       PopupMenuButton<String>(
         icon: Icon(Icons.account_circle, color: AppColors.success600),
         onSelected: (value) {
@@ -843,6 +849,14 @@ class _HostHomePageState extends State<HostHomePage> {
               onTap: () {
                 Navigator.pop(context);
                 context.go('/host/contracts');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.chat_bubble_outline, color: AppColors.primary600),
+              title: Text('채팅', style: AppTextStyles.bodyLarge),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/chat-list');
               },
             ),
             ListTile(

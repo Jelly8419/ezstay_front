@@ -19,6 +19,8 @@ import '../pages/map_screen.dart';
 import '../pages/guest_contracts_page.dart';
 import '../pages/host_contracts_page.dart';
 import '../pages/contract_detail_page.dart';
+import '../pages/chat_list_page.dart';
+import '../pages/chat_detail_page.dart';
 
 class AppRouter {
   static GoRouter createRouter(AuthService authService, {GlobalKey<NavigatorState>? navigatorKey}) {
@@ -231,6 +233,44 @@ class AppRouter {
               },
             ),
           ],
+        ),
+        GoRoute(
+          path: '/chat-list',
+          name: 'chat-list',
+          builder: (context, state) => const ChatListPage(),
+        ),
+        GoRoute(
+          path: '/chat-detail',
+          name: 'chat-detail',
+          builder: (context, state) {
+            final args = state.extra as Map<String, dynamic>?;
+            final chatRoomId = args?['chatRoomId'] as String?;
+            final contractId = args?['contractId'] as int?;
+
+            if (chatRoomId == null) {
+              // chatRoomId가 없으면 채팅 목록으로 리다이렉트
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('잘못된 접근입니다.'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => context.go('/chat-list'),
+                        child: const Text('채팅 목록으로 돌아가기'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return ChatDetailPage(
+              chatRoomId: chatRoomId,
+              contractId: contractId,
+            );
+          },
         ),
         GoRoute(
           path: '/bypass/:userId',
