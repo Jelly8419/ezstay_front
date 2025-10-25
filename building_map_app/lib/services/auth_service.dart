@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
@@ -6,24 +5,130 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'dart:html' as html;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user.dart';
 import '../config/kakao_config.dart';
+import '../config/api_config.dart';
+import 'token_service.dart';
+import '../repositories/user_repository.dart';
 
 /// 인증 서비스 클래스
 class AuthService extends ChangeNotifier {
   User? _currentUser;
   bool _isLoading = false;
-  static const _storage = FlutterSecureStorage();
+  bool _isInitialized = false; // 초기화 완료 여부
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _currentUser != null;
+  bool get isInitialized => _isInitialized; // 초기화 완료 여부 getter
 
   /// 로그인 상태 변경
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
+  }
+
+  /// 개발자 바이패스 로그인 (개발 환경 전용)
+  ///
+  /// 백엔드의 /api/auth/dev-bypass/:userId 엔드포인트를 호출하여
+  /// 비밀번호 없이 특정 사용자로 로그인합니다.
+  ///
+  /// [userId] 로그인할 사용자 ID
+  ///
+  /// Returns: 로그인 성공 여부
+  Future<bool> loginWithDevBypass(String userId) async {
+    if (ApiConfig.isProduction) {
+      debugPrint('❌ [DEV_BYPASS] 프로덕션 환경에서는 개발자 바이패스를 사용할 수 없습니다');
+      return false;
+    }
+
+    debugPrint('🚀 [DEV_BYPASS] 개발자 바이패스 로그인 시작 - User ID: $userId');
+    _setLoading(true);
+
+    try {
+      final backendUrl = ApiConfig.authDevBypassUrl(userId);
+      debugPrint('🌐 [DEV_BYPASS] 요청 URL: $backendUrl');
+
+      final response = await http.get(
+        Uri.parse(backendUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      ).timeout(ApiConfig.timeout);
+
+      debugPrint('📡 [DEV_BYPASS] 응답 상태: ${response.statusCode}');
+      debugPrint('📄 [DEV_BYPASS] 응답 내용: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        debugPrint('✅ [DEV_BYPASS] 로그인 성공');
+
+        // JWT 토큰 저장
+        String? accessToken;
+        String? refreshToken;
+
+        if (data['data'] != null && data['data']['accessToken'] != null) {
+          accessToken = data['data']['accessToken'];
+          refreshToken = data['data']['refreshToken'];
+        } else if (data['accessToken'] != null) {
+          accessToken = data['accessToken'];
+          refreshToken = data['refreshToken'];
+        }
+
+        if (accessToken != null) {
+          debugPrint('🔑 [DEV_BYPASS] Access Token 저장');
+          debugPrint('🔑 [DEV_BYPASS] Access Token 길이: ${accessToken.length}');
+          debugPrint('🔑 [DEV_BYPASS] Access Token 앞부분: ${accessToken.substring(0, accessToken.length > 30 ? 30 : accessToken.length)}...');
+          await _saveTokens(accessToken, refreshToken);
+
+          // 저장 확인
+          final savedToken = await TokenService.getAccessToken(skipExpiryCheck: true);
+          debugPrint('🔍 [DEV_BYPASS] 저장 후 토큰 확인: ${savedToken != null ? "성공 (${savedToken.length}자)" : "실패 ⚠️"}');
+          if (savedToken != null) {
+            debugPrint('🔍 [DEV_BYPASS] 저장된 토큰 앞부분: ${savedToken.substring(0, savedToken.length > 30 ? 30 : savedToken.length)}...');
+          }
+
+          // 사용자 정보 추출
+          Map<String, dynamic>? userInfo;
+          if (data['data'] != null && data['data']['user'] != null) {
+            userInfo = data['data']['user'];
+          } else if (data['user'] != null) {
+            userInfo = data['user'];
+          }
+
+          if (userInfo != null) {
+            final userMode = userInfo['mode'] ?? userInfo['userMode'];
+            _currentUser = User(
+              id: userInfo['id'].toString(),
+              email: userInfo['email'] ?? 'dev@test.com',
+              name: userInfo['name'] ?? 'Dev User',
+              mode: UserMode.values.firstWhere(
+                (m) => m.name == userMode,
+                orElse: () => UserMode.guest,
+              ),
+              provider: AuthProvider.email,
+              profileImageUrl: userInfo['profileImageUrl'],
+            );
+
+            // 사용자 정보 저장
+            await UserRepository.saveUser(_currentUser!);
+            debugPrint('✅ [DEV_BYPASS] 사용자 정보 저장 완료');
+            debugPrint('👤 [DEV_BYPASS] 사용자: ${_currentUser!.email} (${_currentUser!.mode.name})');
+          }
+        }
+
+        _setLoading(false);
+        return true;
+      } else {
+        debugPrint('❌ [DEV_BYPASS] 로그인 실패: ${response.statusCode} - ${response.body}');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      debugPrint('❌ [DEV_BYPASS] 로그인 에러: $e');
+      _setLoading(false);
+      return false;
+    }
   }
 
   /// 이메일 로그인
@@ -33,7 +138,7 @@ class AuthService extends ChangeNotifier {
 
     try {
       // 백엔드 로그인 API 호출
-      const String backendUrl = 'http://localhost:8080/api/auth/login';
+      final backendUrl = ApiConfig.authLoginUrl;
 
       final requestBody = json.encode({
         'email': email,
@@ -50,30 +155,75 @@ class AuthService extends ChangeNotifier {
           'Content-Type': 'application/json',
         },
         body: requestBody,
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.timeout);
 
       debugPrint('📡 [LOGIN] 백엔드 응답 받음 - Status: ${response.statusCode}');
       debugPrint('📄 [LOGIN] 응답 내용: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint('로그인 성공: $data');
+        debugPrint('✅ [LOGIN] 로그인 성공');
+        debugPrint('📦 [LOGIN] 응답 데이터 구조: ${data.keys}');
+        debugPrint('📦 [LOGIN] 전체 응답: $data');
 
-        // JWT 토큰 저장
-        if (data['accessToken'] != null) {
-          await _saveTokens(data['accessToken'], data['refreshToken']);
+        // JWT 토큰 저장 - 다양한 응답 구조 처리
+        String? accessToken;
+        String? refreshToken;
+
+        // 응답 구조 확인 및 토큰 추출
+        if (data['data'] != null && data['data']['accessToken'] != null) {
+          // { success: true, data: { accessToken, refreshToken, user } } 구조
+          accessToken = data['data']['accessToken'];
+          refreshToken = data['data']['refreshToken'];
+          debugPrint('🔑 [LOGIN] 토큰 위치: data 객체 내부');
+        } else if (data['accessToken'] != null) {
+          // { accessToken, refreshToken, user } 구조
+          accessToken = data['accessToken'];
+          refreshToken = data['refreshToken'];
+          debugPrint('🔑 [LOGIN] 토큰 위치: 최상위');
+        }
+
+        if (accessToken != null) {
+          debugPrint('🔑 [LOGIN] Access Token 발견: ${accessToken.substring(0, 20)}...');
+          await _saveTokens(accessToken, refreshToken);
+
+          // 사용자 정보 추출
+          Map<String, dynamic>? userInfo;
+          if (data['data'] != null && data['data']['user'] != null) {
+            userInfo = data['data']['user'];
+            debugPrint('👤 [LOGIN] 사용자 정보 위치: data.user');
+          } else if (data['user'] != null) {
+            userInfo = data['user'];
+            debugPrint('👤 [LOGIN] 사용자 정보 위치: user');
+          }
 
           // 사용자 정보 설정
-          _currentUser = User(
-            id: data['user']['id'].toString(),
-            email: email,
-            name: data['user']['name'] ?? email.split('@')[0],
-            mode: UserMode.values.firstWhere(
-              (m) => m.name == data['user']['mode'],
-              orElse: () => mode ?? UserMode.guest, // null일 때 기본값 사용
-            ),
-            provider: AuthProvider.email,
-          );
+          if (userInfo != null) {
+            final userMode = userInfo['mode'] ?? userInfo['userMode'];
+            _currentUser = User(
+              id: userInfo['id'].toString(),
+              email: email,
+              name: userInfo['name'] ?? email.split('@')[0],
+              mode: UserMode.values.firstWhere(
+                (m) => m.name == userMode,
+                orElse: () => mode ?? UserMode.guest,
+              ),
+              provider: AuthProvider.email,
+            );
+          } else {
+            // 사용자 정보가 없는 경우 기본값 설정
+            _currentUser = User(
+              id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+              email: email,
+              name: email.split('@')[0],
+              mode: mode ?? UserMode.guest,
+              provider: AuthProvider.email,
+            );
+          }
+
+          // 사용자 정보도 저장
+          await UserRepository.saveUser(_currentUser!);
+          debugPrint('✅ [LOGIN] 토큰 및 사용자 정보 저장 완료');
         } else {
           // 토큰이 없으면 기본 사용자 정보만 설정
           _currentUser = User(
@@ -83,6 +233,9 @@ class AuthService extends ChangeNotifier {
             mode: mode ?? UserMode.guest, // null일 때 기본값 사용
             provider: AuthProvider.email,
           );
+
+          // 사용자 정보 저장
+          await UserRepository.saveUser(_currentUser!);
         }
 
         _setLoading(false);
@@ -109,6 +262,9 @@ class AuthService extends ChangeNotifier {
         mode: mode ?? UserMode.guest,
         provider: AuthProvider.email,
       );
+
+      // 사용자 정보 저장
+      await UserRepository.saveUser(_currentUser!);
 
       _setLoading(false);
       return true;
@@ -245,8 +401,8 @@ class AuthService extends ChangeNotifier {
   /// 백엔드와 카카오 토큰 인증 처리
   Future<bool> _authenticateWithBackend(kakao.OAuthToken token, kakao.User kakaoUser, UserMode? mode) async {
     try {
-      // 백엔드 API 엔드포인트 (실제 백엔드 URL로 변경 필요)
-      const String backendUrl = 'http://localhost:8080/auth/kakao';
+      // 백엔드 API 엔드포인트
+      final backendUrl = ApiConfig.authKakaoUrl;
 
       final response = await http.post(
         Uri.parse(backendUrl),
@@ -287,21 +443,22 @@ class AuthService extends ChangeNotifier {
 
   /// 토큰 저장
   Future<void> _saveTokens(String accessToken, String? refreshToken) async {
-    await _storage.write(key: 'access_token', value: accessToken);
-    if (refreshToken != null) {
-      await _storage.write(key: 'refresh_token', value: refreshToken);
-    }
-    debugPrint('토큰 저장 완료');
+    await TokenService.saveTokens(accessToken, refreshToken);
   }
 
-  /// 저장된 토큰 불러오기
-  Future<String?> getAccessToken() async {
-    return await _storage.read(key: 'access_token');
+
+  /// 저장된 토큰 불러오기 (자동 갱신 포함)
+  Future<String?> getAccessToken({bool autoRefresh = true}) async {
+    if (autoRefresh) {
+      return await TokenService.getValidAccessToken(autoRefresh: true);
+    } else {
+      return await TokenService.getAccessToken();
+    }
   }
 
   /// 저장된 리프레시 토큰 불러오기
   Future<String?> getRefreshToken() async {
-    return await _storage.read(key: 'refresh_token');
+    return await TokenService.getRefreshToken();
   }
 
   /// 웹에서 카카오 로그인 콜백 처리 (JWT 토큰 기반)
@@ -380,12 +537,12 @@ class AuthService extends ChangeNotifier {
 
       // 토큰 유효성 검증 및 사용자 정보 요청
       final response = await http.get(
-        Uri.parse('http://localhost:8080/api/auth/profile'),
+        Uri.parse(ApiConfig.authProfileUrl),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-      ).timeout(const Duration(seconds: 10)); // 타임아웃 설정
+      ).timeout(ApiConfig.timeout);
 
       if (response.statusCode == 200) {
         debugPrint('🔍 서버 응답: ${response.body}');
@@ -412,10 +569,7 @@ class AuthService extends ChangeNotifier {
           );
 
           // 검증된 토큰 저장
-          await _storage.write(key: 'access_token', value: token);
-          if (data['refreshToken'] != null) {
-            await _storage.write(key: 'refresh_token', value: data['refreshToken']);
-          }
+          await TokenService.saveTokens(token, data['refreshToken']);
 
           notifyListeners();
           debugPrint('✅ 서버 검증 완료 - 사용자: ${user['name']}');
@@ -458,11 +612,7 @@ class AuthService extends ChangeNotifier {
 
   /// JWT 토큰 형식 검증 (기본적인 형식만 확인)
   bool _isValidTokenFormat(String token) {
-    // JWT는 일반적으로 header.payload.signature 형태
-    final parts = token.split('.');
-    return parts.length == 3 &&
-           parts.every((part) => part.isNotEmpty) &&
-           token.length > 10; // 최소 길이 확인
+    return !TokenService.isTokenExpired(token);
   }
 
   /// 사용자 데이터 유효성 검증
@@ -477,7 +627,7 @@ class AuthService extends ChangeNotifier {
   Future<bool> _handleKakaoAuthCode(String code) async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:8080/api/auth/kakao?code=$code'),
+        Uri.parse('${ApiConfig.authKakaoWebUrl}?code=$code'),
         headers: {'Accept': 'application/json'},
       );
 
@@ -504,30 +654,58 @@ class AuthService extends ChangeNotifier {
 
   /// 앱 시작 시 저장된 토큰으로 자동 로그인 시도
   Future<void> tryAutoLogin() async {
-    final accessToken = await getAccessToken();
-    if (accessToken != null) {
-      debugPrint('🔄 저장된 토큰으로 자동 로그인 시도...');
+    if (!ApiConfig.isProduction) {
+      debugPrint('');
+      debugPrint('═══════════════════════════════════════════════');
+      debugPrint('🔄 [AUTO_LOGIN] 자동 로그인 프로세스 시작');
+      debugPrint('═══════════════════════════════════════════════');
+    }
 
+    // 자동 갱신 활성화하여 토큰 가져오기
+    final accessToken = await getAccessToken(autoRefresh: true);
+
+    if (!ApiConfig.isProduction) {
+      debugPrint('📊 [AUTO_LOGIN] Access Token 상태: ${accessToken != null ? "✅ 있음" : "❌ 없음"}');
+    }
+
+    if (accessToken != null) {
       // 서버에서 토큰 검증 및 사용자 정보 가져오기
       final success = await _authenticateWithToken(accessToken);
 
       if (success) {
-        debugPrint('✅ 자동 로그인 성공');
+        _isInitialized = true;
+        notifyListeners();
+        return;
       } else {
-        debugPrint('❌ 자동 로그인 실패 - 토큰 만료 또는 무효');
-        // 만료된 토큰 제거
+        // 토큰 검증 실패 - 토큰 제거
         await _clearTokens();
       }
-    } else {
-      debugPrint('💡 저장된 토큰 없음');
     }
+
+    // 토큰이 없거나 만료된 경우, 저장된 사용자 정보로 복원 시도
+    final userInfo = await UserRepository.loadUser();
+
+    if (userInfo != null) {
+      _currentUser = userInfo;
+      if (!ApiConfig.isProduction) {
+        debugPrint('✅ [AUTO_LOGIN] 저장된 사용자 정보 복원: ${userInfo.email}');
+        debugPrint('⚠️ [AUTO_LOGIN] 토큰이 없어 API 호출은 불가능합니다. 다시 로그인이 필요합니다.');
+      }
+    }
+
+    // 초기화 완료 표시
+    _isInitialized = true;
+    notifyListeners();
   }
 
   /// 저장된 토큰 제거
   Future<void> _clearTokens() async {
-    await _storage.delete(key: 'access_token');
-    await _storage.delete(key: 'refresh_token');
-    debugPrint('🗑️ 토큰 삭제 완료');
+    await TokenService.clearTokens();
+  }
+
+  /// 저장된 사용자 정보 제거
+  Future<void> _clearUserInfo() async {
+    await UserRepository.clearUser();
   }
 
   /// Refresh 토큰으로 Access 토큰 갱신
@@ -542,12 +720,12 @@ class AuthService extends ChangeNotifier {
       debugPrint('🔄 Access 토큰 갱신 시도...');
 
       final response = await http.post(
-        Uri.parse('http://localhost:8080/api/auth/refresh'),
+        Uri.parse(ApiConfig.authRefreshUrl),
         headers: {
           'Authorization': 'Bearer $refreshToken',
           'Content-Type': 'application/json',
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.timeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -583,7 +761,7 @@ class AuthService extends ChangeNotifier {
 
     try {
       // 백엔드 회원가입 API 호출
-      const String backendUrl = 'http://localhost:8080/api/auth/register';
+      final backendUrl = ApiConfig.authRegisterUrl;
 
       final requestBody = json.encode({
         'email': email,
@@ -599,7 +777,7 @@ class AuthService extends ChangeNotifier {
           'Content-Type': 'application/json',
         },
         body: requestBody,
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.timeout);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
@@ -621,6 +799,10 @@ class AuthService extends ChangeNotifier {
             ),
             provider: AuthProvider.email,
           );
+
+          // 사용자 정보 저장
+          await UserRepository.saveUser(_currentUser!);
+
           debugPrint('✅ [SIGNUP] 생성된 사용자 모드: ${_currentUser?.mode.name}');
           debugPrint('✅ [SIGNUP] 현재 로그인 상태: $isLoggedIn');
         } else {
@@ -632,6 +814,9 @@ class AuthService extends ChangeNotifier {
             mode: mode ?? UserMode.guest,
             provider: AuthProvider.email,
           );
+
+          // 사용자 정보 저장
+          await UserRepository.saveUser(_currentUser!);
         }
 
         _setLoading(false);
@@ -654,6 +839,9 @@ class AuthService extends ChangeNotifier {
         provider: AuthProvider.email,
       );
 
+      // 사용자 정보 저장
+      await UserRepository.saveUser(_currentUser!);
+
       _setLoading(false);
       return true;
     }
@@ -666,7 +854,7 @@ class AuthService extends ChangeNotifier {
       final accessToken = await getAccessToken();
       if (accessToken != null) {
         await http.post(
-          Uri.parse('http://localhost:8080/api/auth/logout'),
+          Uri.parse(ApiConfig.authLogoutUrl),
           headers: {
             'Authorization': 'Bearer $accessToken',
             'Content-Type': 'application/json',
@@ -677,15 +865,16 @@ class AuthService extends ChangeNotifier {
       debugPrint('⚠️ 서버 로그아웃 요청 실패: $e');
     }
 
-    // 로컬 상태 및 토큰 정리
+    // 로컬 상태, 토큰 및 사용자 정보 정리
     _currentUser = null;
     await _clearTokens();
+    await _clearUserInfo();
     notifyListeners();
     debugPrint('👋 로그아웃 완료');
   }
 
   /// 사용자 모드 변경
-  void switchUserMode(UserMode newMode) {
+  Future<void> switchUserMode(UserMode newMode) async {
     if (_currentUser != null) {
       _currentUser = User(
         id: _currentUser!.id,
@@ -695,6 +884,7 @@ class AuthService extends ChangeNotifier {
         mode: newMode,
         provider: _currentUser!.provider,
       );
+      await UserRepository.updateUserMode(newMode);
       notifyListeners();
     }
   }

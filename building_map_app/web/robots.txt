@@ -1,0 +1,11 @@
+# robots.txt for EZStay
+User-agent: *
+Allow: /
+
+# 크롤링 방지 경로 (개인정보 보호)
+Disallow: /api/
+Disallow: /admin/
+Disallow: /user/
+
+# Sitemap
+Sitemap: https://ezstay.com/sitemap.xml

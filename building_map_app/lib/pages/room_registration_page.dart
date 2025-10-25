@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/daum_postcode_widget.dart';
+import '../widgets/registration_flow_indicator.dart';
+import '../services/room_service.dart';
+import '../widgets/common/responsive_page_layout.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_text_styles.dart';
+import '../core/theme/app_spacing.dart';
+import '../shared/widgets/app_buttons.dart';
+import '../shared/widgets/app_inputs.dart';
 
 /// 호스트 전용 방 등록 페이지
 class RoomRegistrationPage extends StatefulWidget {
-  const RoomRegistrationPage({super.key});
+  final int? roomId;
+  const RoomRegistrationPage({super.key, this.roomId});
 
   @override
   State<RoomRegistrationPage> createState() => _RoomRegistrationPageState();
@@ -11,12 +21,16 @@ class RoomRegistrationPage extends StatefulWidget {
 
 class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
   final _formKey = GlobalKey<FormState>();
+  final _roomService = RoomService();
+  int? _currentRoomId; // 생성된 방 ID 저장
+  bool _isLoading = true;
 
   // 폼 컨트롤러들
   final _roomNameController = TextEditingController();
   final _addressController = TextEditingController();
   final _detailAddressController = TextEditingController();
   final _areaController = TextEditingController();
+  final _parkingInfoController = TextEditingController();
   final _roomCountController = TextEditingController();
   final _bathroomCountController = TextEditingController();
   final _livingRoomCountController = TextEditingController();
@@ -24,11 +38,100 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
 
   // 셀렉트 박스 값들
   String _buildingType = '오피스텔';
-  String _parkingAvailable = '유';
-  String _elevatorAvailable = '유';
+  String _parkingAvailable = '가능';
+  String _elevatorAvailable = '있음';
+  String _floor = '1층';
+  int _roomCount = 1;
+  int _bathroomCount = 1;
+  int _livingRoomCount = 0;
+  int _kitchenCount = 0;
 
   // 체크박스 값
   bool _isDuplex = false;
+
+  // 공통 현관 비밀번호
+  String _entrancePassword = '';
+  bool _useEntrancePassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoomData();
+  }
+
+  /// 저장된 방 정보 불러오기
+  Future<void> _loadRoomData() async {
+    // widget에서 전달받은 roomId가 있으면 사용
+    if (widget.roomId != null) {
+      _currentRoomId = widget.roomId;
+    }
+
+    // roomId가 있으면 서버에서 방 정보 불러오기
+    if (_currentRoomId != null) {
+      final roomData = await _roomService.getRoom(_currentRoomId!);
+      if (roomData != null && mounted) {
+        setState(() {
+          // 기본 정보 채우기
+          if (roomData['roomName'] != null) {
+            _roomNameController.text = roomData['roomName'];
+          }
+          if (roomData['address'] != null) {
+            _addressController.text = roomData['address'];
+          }
+          if (roomData['detailAddress'] != null) {
+            _detailAddressController.text = roomData['detailAddress'];
+          }
+          if (roomData['area'] != null) {
+            _areaController.text = roomData['area'].toString();
+          }
+          if (roomData['floor'] != null) {
+            _floor = roomData['floor'];
+          }
+          if (roomData['buildingType'] != null) {
+            _buildingType = roomData['buildingType'];
+          }
+          if (roomData['parkingAvailable'] != null) {
+            _parkingAvailable = roomData['parkingAvailable'] ? '가능' : '불가능';
+          }
+          if (roomData['parkingInfo'] != null) {
+            _parkingInfoController.text = roomData['parkingInfo'];
+          }
+          if (roomData['elevatorAvailable'] != null) {
+            _elevatorAvailable = roomData['elevatorAvailable'] ? '있음' : '없음';
+          }
+          if (roomData['roomCount'] != null) {
+            _roomCount = roomData['roomCount'];
+          }
+          if (roomData['bathroomCount'] != null) {
+            _bathroomCount = roomData['bathroomCount'];
+          }
+          if (roomData['livingRoomCount'] != null) {
+            _livingRoomCount = roomData['livingRoomCount'];
+          }
+          if (roomData['kitchenCount'] != null) {
+            _kitchenCount = roomData['kitchenCount'];
+          }
+          if (roomData['isDuplex'] != null) {
+            _isDuplex = roomData['isDuplex'];
+          }
+          if (roomData['entrancePassword'] != null) {
+            _entrancePassword = roomData['entrancePassword'];
+            _useEntrancePassword = true;
+          }
+
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -36,6 +139,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
     _addressController.dispose();
     _detailAddressController.dispose();
     _areaController.dispose();
+    _parkingInfoController.dispose();
     _roomCountController.dispose();
     _bathroomCountController.dispose();
     _livingRoomCountController.dispose();
@@ -47,20 +151,22 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('숙소 등록하기'),
-        backgroundColor: const Color(0xFF4A90E2),
+        title: const Text('방 등록하기'),
+        backgroundColor: AppColors.primary600,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
-      backgroundColor: Colors.grey[50],
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      body: Column(
+        children: [
+          const RegistrationFlowIndicator(currentStep: 0),
+          Expanded(
+            child: ResponsivePageLayout(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               // 기본 정보 섹션
               _buildSectionTitle('기본 정보'),
               _buildBasicInfoSection(),
@@ -79,47 +185,72 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
 
               const SizedBox(height: 32),
 
-              // 등록 버튼
-              Container(
-                width: double.infinity,
-                height: 60,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF4A90E2).withOpacity(0.3),
-                      offset: const Offset(0, 4),
-                      blurRadius: 8,
+              // 공통 현관 비밀번호 섹션
+              _buildSectionTitle('공통 현관 비밀번호'),
+              _buildEntrancePasswordSection(),
+
+              const SizedBox(height: 32),
+
+              // 버튼들
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // 이전으로 버튼
+                  SizedBox(
+                    width: 250,
+                    height: 56,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.primary600),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        '이전으로',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary600,
+                        ),
+                      ),
                     ),
+                  ),
+                  const SizedBox(width: 16),
+                  // 저장 후 다음으로 버튼
+                  SizedBox(
+                    width: 250,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _submitForm,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary600,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        '저장 후 다음으로',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
                   ],
                 ),
-                child: ElevatedButton(
-                  onPressed: _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    '숙소 등록하기',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -133,7 +264,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
             width: 4,
             height: 24,
             decoration: BoxDecoration(
-              color: const Color(0xFF4A90E2),
+              color: AppColors.primary600,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -143,7 +274,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF2C3E50),
+              color: AppColors.textPrimary,
             ),
           ),
         ],
@@ -156,141 +287,237 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey[200]!, width: 1),
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey[300]!, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 숙소 이름
-            TextFormField(
+            // 방이름
+            _buildFieldLabel('방이름'),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 400,
+              child: TextFormField(
               controller: _roomNameController,
               decoration: InputDecoration(
-                labelText: '숙소 이름',
-                hintText: '예: 강남역 근처 깨끗한 원룸',
+                hintText: '방 이름을 입력해 주세요. (최대 12자)',
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey[300]!),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                 ),
-                prefixIcon: const Icon(Icons.home_outlined, color: Color(0xFF4A90E2)),
                 filled: true,
-                fillColor: Colors.grey[50],
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return '숙소 이름을 입력해주세요';
+                  return '방 이름을 입력해주세요';
                 }
                 return null;
               },
+              ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            // 주소 (다음 우편번호 검색)
-            TextFormField(
-              controller: _addressController,
-              readOnly: true,
-              onTap: _openAddressSearch,
-              decoration: InputDecoration(
-                labelText: '주소',
-                hintText: '주소 검색 버튼을 눌러주세요',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-                ),
-                prefixIcon: const Icon(Icons.location_on, color: Color(0xFF4A90E2)),
-                suffixIcon: Container(
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4A90E2),
-                    borderRadius: BorderRadius.circular(8),
+            // 주소
+            _buildFieldLabel('주소'),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _addressController,
+                    readOnly: true,
+                    decoration: InputDecoration(
+                      hintText: '도로명 주소를 입력해 주세요.',
+                      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return '주소를 입력해주세요';
+                      }
+                      return null;
+                    },
                   ),
-                  child: IconButton(
-                    icon: const Icon(Icons.search, color: Colors.white),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  height: 48,
+                  child: OutlinedButton(
                     onPressed: _openAddressSearch,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.grey[400]!),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: Text(
+                      '주소 찾기',
+                      style: TextStyle(color: Colors.grey[800], fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
-                filled: true,
-                fillColor: Colors.grey[50],
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return '주소를 입력해주세요';
-                }
-                return null;
-              },
+              ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
-            // 상세 주소
+            // 상세주소 입력
             TextFormField(
               controller: _detailAddressController,
               decoration: InputDecoration(
-                labelText: '상세 주소',
-                hintText: '예: 101동 501호, 3층 등',
+                hintText: '상세주소 입력해 주세요. 예) 302호, 2층 전체 사용',
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey[300]!),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                 ),
-                prefixIcon: const Icon(Icons.location_city, color: Color(0xFF4A90E2)),
                 filled: true,
-                fillColor: Colors.grey[50],
-              ),
-              validator: (value) {
-                // 상세 주소는 선택사항이므로 유효성 검사 없음
-                return null;
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            // 전용면적
-            TextFormField(
-              controller: _areaController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: '전용면적 (평)',
-                hintText: '예: 10',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-                ),
-                prefixIcon: const Icon(Icons.square_foot, color: Color(0xFF4A90E2)),
-                suffixText: '평',
-                filled: true,
-                fillColor: Colors.grey[50],
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return '전용면적을 입력해주세요';
-                }
-                final area = double.tryParse(value);
-                if (area == null || area <= 0) {
-                  return '올바른 면적을 입력해주세요';
+                  return '상세주소를 입력해주세요';
                 }
                 return null;
               },
             ),
+
+            const SizedBox(height: 20),
+
+            // 면적
+            _buildFieldLabel('면적 (㎡)'),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 200,
+              child: TextFormField(
+                controller: _areaController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  hintText: '예) 84.5',
+                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '면적을 입력해주세요';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return '올바른 숫자를 입력해주세요';
+                  }
+                  return null;
+                },
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 층
+            _buildFieldLabel('층'),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 200,
+              child: DropdownButtonFormField<String>(
+                value: _floor,
+                decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+              items: [
+                const DropdownMenuItem(value: '지하', child: Text('지하')),
+                const DropdownMenuItem(value: '반지하', child: Text('반지하')),
+                ...List.generate(100, (index) => index + 1)
+                    .map((floor) => DropdownMenuItem(
+                          value: '${floor}층',
+                          child: Text('${floor}층'),
+                        ))
+                    .toList(),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _floor = value!;
+                });
+              },
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFieldLabel(String label) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
       ),
     );
   }
@@ -300,29 +527,37 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey[200]!, width: 1),
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey[300]!, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 건물유형
-            DropdownButtonFormField<String>(
-              value: _buildingType,
-              decoration: InputDecoration(
-                labelText: '건물유형',
+            _buildFieldLabel('건물유형'),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 300,
+              child: DropdownButtonFormField<String>(
+                value: _buildingType,
+                decoration: InputDecoration(
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey[300]!),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
                 ),
-                prefixIcon: const Icon(Icons.apartment, color: Color(0xFF4A90E2)),
                 filled: true,
-                fillColor: Colors.grey[50],
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
               items: ['오피스텔', '아파트', '단독주택', '기타']
                   .map((type) => DropdownMenuItem(
@@ -335,78 +570,116 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                   _buildingType = value!;
                 });
               },
+              ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            Row(
-              children: [
-                // 주차여부
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _parkingAvailable,
-                    decoration: InputDecoration(
-                      labelText: '주차여부',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-                      ),
-                      prefixIcon: const Icon(Icons.local_parking, color: Color(0xFF4A90E2)),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    items: ['유', '무']
-                        .map((option) => DropdownMenuItem(
-                              value: option,
-                              child: Text(option),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _parkingAvailable = value!;
-                      });
-                    },
-                  ),
+            // 주차여부
+            _buildFieldLabel('주차 가능 여부'),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 200,
+              child: DropdownButtonFormField<String>(
+              value: _parkingAvailable,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
                 ),
-
-                const SizedBox(width: 16),
-
-                // 엘리베이터
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _elevatorAvailable,
-                    decoration: InputDecoration(
-                      labelText: '엘리베이터',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-                      ),
-                      prefixIcon: const Icon(Icons.elevator, color: Color(0xFF4A90E2)),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    items: ['유', '무']
-                        .map((option) => DropdownMenuItem(
-                              value: option,
-                              child: Text(option),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _elevatorAvailable = value!;
-                      });
-                    },
-                  ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
                 ),
-              ],
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+              items: ['가능', '불가능']
+                  .map((option) => DropdownMenuItem(
+                        value: option,
+                        child: Text(option),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _parkingAvailable = value!;
+                });
+              },
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 주차 정보 (선택사항)
+            _buildFieldLabel('주차 정보 (선택)'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _parkingInfoController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: '주차와 관련된 안내를 입력해 주세요. (예: 최대 2대, 선착순)',
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 엘리베이터
+            _buildFieldLabel('엘리베이터'),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 200,
+              child: DropdownButtonFormField<String>(
+                value: _elevatorAvailable,
+                decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+              items: ['있음', '없음']
+                  .map((option) => DropdownMenuItem(
+                        value: option,
+                        child: Text(option),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _elevatorAvailable = value!;
+                });
+              },
+              ),
             ),
           ],
         ),
@@ -419,191 +692,222 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey[200]!, width: 1),
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey[300]!, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                // 방 수
-                Expanded(
-                  child: TextFormField(
-                    controller: _roomCountController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: '방 수',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-                      ),
-                      prefixIcon: const Icon(Icons.bed, color: Color(0xFF4A90E2)),
-                      suffixText: '개',
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '방 수를 입력해주세요';
-                      }
-                      final count = int.tryParse(value);
-                      if (count == null || count <= 0) {
-                        return '올바른 수를 입력해주세요';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-
-                const SizedBox(width: 16),
-
-                // 화장실 수
-                Expanded(
-                  child: TextFormField(
-                    controller: _bathroomCountController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: '화장실 수',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-                      ),
-                      prefixIcon: const Icon(Icons.wc, color: Color(0xFF4A90E2)),
-                      suffixText: '개',
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '화장실 수를 입력해주세요';
-                      }
-                      final count = int.tryParse(value);
-                      if (count == null || count <= 0) {
-                        return '올바른 수를 입력해주세요';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                // 거실 수
-                Expanded(
-                  child: TextFormField(
-                    controller: _livingRoomCountController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: '거실 수',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-                      ),
-                      prefixIcon: const Icon(Icons.weekend, color: Color(0xFF4A90E2)),
-                      suffixText: '개',
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '거실 수를 입력해주세요';
-                      }
-                      final count = int.tryParse(value);
-                      if (count == null || count <= 0) {
-                        return '올바른 수를 입력해주세요';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-
-                const SizedBox(width: 16),
-
-                // 주방 수
-                Expanded(
-                  child: TextFormField(
-                    controller: _kitchenCountController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: '주방 수',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-                      ),
-                      prefixIcon: const Icon(Icons.kitchen, color: Color(0xFF4A90E2)),
-                      suffixText: '개',
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '주방 수를 입력해주세요';
-                      }
-                      final count = int.tryParse(value);
-                      if (count == null || count <= 0) {
-                        return '올바른 수를 입력해주세요';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // 복층 여부
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!),
-                borderRadius: BorderRadius.circular(12),
+            // 구조 정보 안내
+            Text(
+              '게스트가 이용하는 공간 내에서 입력해주세요.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
               ),
-              child: CheckboxListTile(
-                title: const Text(
-                  '복층 여부',
+            ),
+            const SizedBox(height: 20),
+
+            // 방 수 & 화장실 수
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildFieldLabel('방 수'),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<int>(
+                        value: _roomCount,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                        items: List.generate(10, (index) => index)
+                            .map((count) => DropdownMenuItem(
+                                  value: count,
+                                  child: Text(count.toString()),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _roomCount = value!;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildFieldLabel('화장실 수'),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<int>(
+                        value: _bathroomCount,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                        items: List.generate(10, (index) => index)
+                            .map((count) => DropdownMenuItem(
+                                  value: count,
+                                  child: Text(count.toString()),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _bathroomCount = value!;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // 거실 수 & 주방 수
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildFieldLabel('거실 수'),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<int>(
+                        value: _livingRoomCount,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                        items: List.generate(10, (index) => index)
+                            .map((count) => DropdownMenuItem(
+                                  value: count,
+                                  child: Text(count.toString()),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _livingRoomCount = value!;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildFieldLabel('주방 수'),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<int>(
+                        value: _kitchenCount,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                        items: List.generate(10, (index) => index)
+                            .map((count) => DropdownMenuItem(
+                                  value: count,
+                                  child: Text(count.toString()),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _kitchenCount = value!;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // 복층 구조
+            Row(
+              children: [
+                Checkbox(
+                  value: _isDuplex,
+                  onChanged: (value) {
+                    setState(() {
+                      _isDuplex = value ?? false;
+                    });
+                  },
+                  activeColor: AppColors.primary600,
+                ),
+                const Text(
+                  '복층 구조',
                   style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2C3E50),
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-                subtitle: const Text(
-                  '복층 구조인 경우 체크해주세요',
-                  style: TextStyle(color: Color(0xFF6C7B7F)),
-                ),
-                value: _isDuplex,
-                onChanged: (value) {
-                  setState(() {
-                    _isDuplex = value ?? false;
-                  });
-                },
-                controlAffinity: ListTileControlAffinity.leading,
-                activeColor: const Color(0xFF4A90E2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+              ],
             ),
           ],
         ),
@@ -654,44 +958,237 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
     );
   }
 
-  void _submitForm() {
+  // 공통 현관 비밀번호 섹션
+  Widget _buildEntrancePasswordSection() {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey[300]!, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _buildFieldLabel('건물 공통현관 비밀번호'),
+                const SizedBox(width: 8),
+                Checkbox(
+                  value: !_useEntrancePassword,
+                  onChanged: (value) {
+                    setState(() {
+                      _useEntrancePassword = !value!;
+                      if (!_useEntrancePassword) {
+                        _entrancePassword = '';
+                      }
+                    });
+                  },
+                ),
+                Text(
+                  '없어요',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_useEntrancePassword)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 입력된 비밀번호 표시
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: Text(
+                        _entrancePassword.isEmpty ? '비밀번호를 입력하세요' : _entrancePassword,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: _entrancePassword.isEmpty ? Colors.grey[400] : Colors.black,
+                          letterSpacing: _entrancePassword.isEmpty ? 0 : 2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // 숫자 패드
+                    _buildPasswordKeypad(),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 공통 현관 비밀번호 입력 키패드 위젯
+  Widget _buildPasswordKeypad() {
+    return Column(
+      children: [
+        // 첫 번째 줄: 🔑, 🔔, 👮, *, #, 1, 2, 3
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildKeypadButton('🔑', isSpecial: true),
+            _buildKeypadButton('🔔', isSpecial: true),
+            _buildKeypadButton('👮', isSpecial: true),
+            _buildKeypadButton('*'),
+            _buildKeypadButton('#'),
+            _buildKeypadButton('1'),
+            _buildKeypadButton('2'),
+            _buildKeypadButton('3'),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // 두 번째 줄: 4, 5, 6, 7, 8, 9, 0, X
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildKeypadButton('4'),
+            _buildKeypadButton('5'),
+            _buildKeypadButton('6'),
+            _buildKeypadButton('7'),
+            _buildKeypadButton('8'),
+            _buildKeypadButton('9'),
+            _buildKeypadButton('0'),
+            _buildKeypadButton('X', isDelete: true),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 키패드 버튼 위젯
+  Widget _buildKeypadButton(String value, {bool isSpecial = false, bool isDelete = false}) {
+    Color backgroundColor;
+    Color textColor = Colors.black;
+
+    if (isDelete) {
+      backgroundColor = Colors.grey[400]!;
+      textColor = Colors.white;
+    } else if (isSpecial) {
+      backgroundColor = AppColors.primary100; // 연한 파란색
+    } else {
+      backgroundColor = AppColors.primary100; // 연한 파란색
+    }
+
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              if (isDelete) {
+                if (_entrancePassword.isNotEmpty) {
+                  _entrancePassword = _entrancePassword.substring(0, _entrancePassword.length - 1);
+                }
+              } else {
+                _entrancePassword += value;
+              }
+            });
+          },
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: isSpecial ? 20 : 16,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      // 토큰 확인 (디버깅용)
+      await _roomService.checkToken();
+
       // 폼 데이터 수집
       final roomData = {
         'roomName': _roomNameController.text,
-        'address': _addressController.text, 
+        'address': _addressController.text,
         'detailAddress': _detailAddressController.text,
         'area': double.parse(_areaController.text),
-        'buildingType': _buildingType,
-        'parkingAvailable': _parkingAvailable == '유',
-        'elevatorAvailable': _elevatorAvailable == '유',
-        'roomCount': int.parse(_roomCountController.text),
-        'bathroomCount': int.parse(_bathroomCountController.text),
-        'livingRoomCount': int.parse(_livingRoomCountController.text),
-        'kitchenCount': int.parse(_kitchenCountController.text),
-        'isDuplex': _isDuplex, //복층 여부
+        'floor': _floor,
+        'buildingType': _buildingType == '선택' ? '오피스텔' : _buildingType,
+        'parkingAvailable': _parkingAvailable == '가능',
+        'parkingInfo': _parkingInfoController.text,
+        'elevatorAvailable': _elevatorAvailable == '있음',
+        'roomCount': _roomCount,
+        'bathroomCount': _bathroomCount,
+        'livingRoomCount': _livingRoomCount,
+        'kitchenCount': _kitchenCount,
+        'isDuplex': _isDuplex,
+        'entrancePassword': _useEntrancePassword ? _entrancePassword : null,
       };
 
-      // TODO: 서버로 데이터 전송
-      print('방 등록 데이터: $roomData');
+      Map<String, dynamic>? result;
 
-      // 성공 메시지 표시
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            '숙소가 성공적으로 등록되었습니다! 🎉',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          backgroundColor: const Color(0xFF4A90E2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      // 수정 모드인 경우 (roomId가 이미 존재)
+      if (_currentRoomId != null) {
+        debugPrint('🔄 [ROOM] 수정 모드 - roomId: $_currentRoomId');
+        result = await _roomService.updateRoom(_currentRoomId!, roomData);
+      } else {
+        // 생성 모드인 경우
+        debugPrint('➕ [ROOM] 생성 모드');
+        result = await _roomService.createRoom(roomData);
+      }
 
-      // 이전 페이지로 돌아가기
-      Navigator.pop(context);
+      if (!mounted) return;
+
+      if (result != null) {
+        // 생성 모드일 때만 roomId 업데이트 (null-aware assignment)
+        _currentRoomId ??= result['roomId'];
+
+        final isUpdateMode = widget.roomId != null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isUpdateMode
+              ? '방 기본 정보가 수정되었습니다.'
+              : '방 기본 정보가 저장되었습니다.'),
+          ),
+        );
+
+        // 요금설정 페이지로 이동 (roomId 전달)
+        context.go('/host/pricing/$_currentRoomId');
+      } else {
+        final isUpdateMode = widget.roomId != null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isUpdateMode
+              ? '방 수정에 실패했습니다. 다시 시도해주세요.'
+              : '방 등록에 실패했습니다. 다시 시도해주세요.'),
+          ),
+        );
+      }
     }
   }
 }

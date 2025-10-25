@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../widgets/common/responsive_page_layout.dart';
 
 /// 사용자 모드 선택 페이지
 class ModeSelectionPage extends StatelessWidget {
@@ -15,7 +16,6 @@ class ModeSelectionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('로그인 & 회원가입'),
         backgroundColor: const Color(0xFF87CEEB),
@@ -63,8 +63,7 @@ class ModeSelectionPage extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+      body: ResponsivePageLayout(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -133,7 +132,7 @@ class ModeSelectionPage extends StatelessWidget {
             // 집 올리기와 집 내기 카드들을 가로로 배치
             Row(
               children: [
-                // 집 올리기 카드
+                // 집 찾기
                 Expanded(
                   child: _buildModeCard(
                     context: context,
@@ -150,7 +149,7 @@ class ModeSelectionPage extends StatelessWidget {
 
                 const SizedBox(width: 16),
 
-                // 집 내기 카드
+                // 집 내놓기
                 Expanded(
                   child: _buildModeCard(
                     context: context,
