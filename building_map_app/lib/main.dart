@@ -24,9 +24,33 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
 
   // Firebase 초기화
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  debugPrint('🔥 [MAIN] Firebase 초기화 시작...');
+  try {
+    if (kIsWeb) {
+      // 웹에서는 명시적으로 설정 전달
+      debugPrint('🔥 [MAIN] 웹 플랫폼 감지 - 수동 Firebase 초기화');
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: 'AIzaSyBDwxJU7ivdjfdMOJeA7N_buRjdJLfdKUs',
+          appId: '1:922042336723:web:054fdbcc6b9b219aed1b26',
+          messagingSenderId: '922042336723',
+          projectId: 'ezstay-864bc',
+          authDomain: 'ezstay-864bc.firebaseapp.com',
+          storageBucket: 'ezstay-864bc.firebasestorage.app',
+          measurementId: 'G-1QZK8YMFEV',
+        ),
+      );
+    } else {
+      debugPrint('🔥 [MAIN] 네이티브 플랫폼 - 기본 Firebase 초기화');
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+    debugPrint('✅ [MAIN] Firebase 초기화 성공');
+  } catch (e) {
+    debugPrint('❌ [MAIN] Firebase 초기화 실패: $e');
+    rethrow;
+  }
 
   // 한국어 날짜 포맷 초기화 (table_calendar를 위함)
   await initializeDateFormatting('ko_KR', null);
