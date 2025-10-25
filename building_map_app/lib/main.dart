@@ -6,6 +6,8 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'config/kakao_config.dart';
 import 'constants/app_constants.dart';
 import 'services/auth_service.dart';
@@ -20,6 +22,11 @@ Future<void> main() async {
 
   // .env 파일 로드
   await dotenv.load(fileName: ".env");
+
+  // Firebase 초기화
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // 한국어 날짜 포맷 초기화 (table_calendar를 위함)
   await initializeDateFormatting('ko_KR', null);
