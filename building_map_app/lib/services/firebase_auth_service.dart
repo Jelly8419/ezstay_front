@@ -57,17 +57,28 @@ class FirebaseAuthService {
       final uid = response['data']['uid'].toString();
 
       debugPrint('✅ [FIREBASE_AUTH] Custom Token 발급 성공: UID=$uid');
+      debugPrint('🔑 [FIREBASE_AUTH] Custom Token 길이: ${customToken.length}자');
+      debugPrint('🔑 [FIREBASE_AUTH] Custom Token 앞부분: ${customToken.substring(0, customToken.length > 50 ? 50 : customToken.length)}...');
 
       // 3. Custom Token으로 Firebase Authentication 로그인
-      final userCredential =
-          await _firebaseAuth.signInWithCustomToken(customToken);
+      try {
+        final userCredential =
+            await _firebaseAuth.signInWithCustomToken(customToken);
 
-      debugPrint(
-          '✅ [FIREBASE_AUTH] Firebase 로그인 성공: ${userCredential.user?.uid}');
+        debugPrint(
+            '✅ [FIREBASE_AUTH] Firebase 로그인 성공: ${userCredential.user?.uid}');
 
-      return userCredential.user;
-    } catch (e) {
+        return userCredential.user;
+      } on firebase_auth.FirebaseAuthException catch (e) {
+        debugPrint('❌ [FIREBASE_AUTH] FirebaseAuthException 발생');
+        debugPrint('   - 코드: ${e.code}');
+        debugPrint('   - 메시지: ${e.message}');
+        debugPrint('   - 상세: ${e.toString()}');
+        rethrow;
+      }
+    } catch (e, stackTrace) {
       debugPrint('❌ [FIREBASE_AUTH] Firebase 로그인 실패: $e');
+      debugPrint('❌ [FIREBASE_AUTH] StackTrace: $stackTrace');
       rethrow;
     }
   }
