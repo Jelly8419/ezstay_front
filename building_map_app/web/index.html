@@ -80,6 +80,26 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
 
+  <!-- Firebase Configuration -->
+  <script>
+    // Firebase 설정
+    const firebaseConfig = {
+      apiKey: "AIzaSyBDwxJU7ivdjfdMOJeA7N_buRjdJLfdKUs",
+      authDomain: "ezstay-864bc.firebaseapp.com",
+      projectId: "ezstay-864bc",
+      storageBucket: "ezstay-864bc.firebasestorage.app",
+      messagingSenderId: "922042336723",
+      appId: "1:922042336723:web:054fdbcc6b9b219aed1b26",
+      measurementId: "G-1QZK8YMFEV"
+    };
+
+    // Firebase 초기화
+    // Flutter firebase_core_web이 이미 초기화된 앱을 찾을 수 있도록 미리 초기화
+    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+  </script>
+
   <style>
     /* 로딩 스플래시 스크린 */
     #loading {
