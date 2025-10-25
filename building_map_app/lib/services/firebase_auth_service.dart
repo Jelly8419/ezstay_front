@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
 import 'api_client.dart';
+import 'token_service.dart';
 import '../config/api_config.dart';
 
 /// Firebase 인증 서비스
@@ -26,9 +27,21 @@ class FirebaseAuthService {
     try {
       debugPrint('🔐 [FIREBASE_AUTH] Custom Token 발급 요청 중...');
 
-      // 1. 백엔드에서 Firebase Custom Token 발급
+      // 1. 액세스 토큰 가져오기
+      final accessToken = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (accessToken == null) {
+        throw Exception('액세스 토큰이 없습니다. 먼저 로그인하세요.');
+      }
+
+      // 2. 백엔드에서 Firebase Custom Token 발급 (Authorization 헤더 포함)
       final url = Uri.parse('${ApiConfig.baseUrl}/api/chats/custom-token');
-      final httpResponse = await _apiClient.get(url);
+      final httpResponse = await _apiClient.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (httpResponse == null) {
         throw Exception('서버 응답이 없습니다');
@@ -45,7 +58,7 @@ class FirebaseAuthService {
 
       debugPrint('✅ [FIREBASE_AUTH] Custom Token 발급 성공: UID=$uid');
 
-      // 2. Custom Token으로 Firebase Authentication 로그인
+      // 3. Custom Token으로 Firebase Authentication 로그인
       final userCredential =
           await _firebaseAuth.signInWithCustomToken(customToken);
 

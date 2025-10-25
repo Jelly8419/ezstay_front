@@ -5,6 +5,7 @@ import '../models/chat_message.dart';
 import '../models/chat_room.dart';
 import 'firebase_auth_service.dart';
 import 'api_client.dart';
+import 'token_service.dart';
 import '../config/api_config.dart';
 
 /// 채팅 서비스
@@ -15,6 +16,18 @@ class ChatService {
   final FirebaseAuthService _firebaseAuth = FirebaseAuthService();
   final ApiClient _apiClient = ApiClient();
 
+  /// Authorization 헤더 생성
+  Future<Map<String, String>> _getAuthHeaders() async {
+    final accessToken = await TokenService.getValidAccessToken(autoRefresh: true);
+    if (accessToken == null) {
+      throw Exception('액세스 토큰이 없습니다. 먼저 로그인하세요.');
+    }
+    return {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+  }
+
   // ============================================
   // 1. 백엔드 API - 채팅방 관리
   // ============================================
@@ -24,8 +37,9 @@ class ChatService {
     try {
       debugPrint('📋 [CHAT] 채팅방 목록 조회 시작');
 
+      final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/chats/rooms');
-      final response = await _apiClient.get(url);
+      final response = await _apiClient.get(url, headers: headers);
 
       if (response == null) {
         throw Exception('서버 응답이 없습니다');
@@ -53,8 +67,9 @@ class ChatService {
     try {
       debugPrint('📋 [CHAT] 채팅방 상세 조회: $firebaseChatRoomId');
 
+      final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/chats/rooms/$firebaseChatRoomId');
-      final response = await _apiClient.get(url);
+      final response = await _apiClient.get(url, headers: headers);
 
       if (response == null) {
         throw Exception('서버 응답이 없습니다');
@@ -80,10 +95,11 @@ class ChatService {
     try {
       debugPrint('🆕 [CHAT] 채팅방 생성: contractId=$contractId');
 
+      final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/chats/rooms');
       final response = await _apiClient.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode({'contractId': contractId}),
       );
 
