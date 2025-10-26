@@ -74,6 +74,8 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
       case ContractStatus.approvalExpired:
         return Colors.grey;
       case ContractStatus.approved:
+      case ContractStatus.paymentExpired:
+        return Colors.grey.shade600;
         return Colors.blue;
       case ContractStatus.paymentCompleted:
         return Colors.green;

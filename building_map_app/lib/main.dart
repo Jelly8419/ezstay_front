@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
@@ -7,14 +8,17 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:go_router/go_router.dart';
 import 'firebase_options.dart';
 import 'config/kakao_config.dart';
 import 'constants/app_constants.dart';
 import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
 import 'services/room_service.dart';
+import 'providers/chat_provider.dart';
 import 'router/app_router.dart';
 import 'widgets/kakao_map_web.dart';
+import 'widgets/splash_screen.dart';
 
 /// 앱의 진입점
 Future<void> main() async {
@@ -23,34 +27,8 @@ Future<void> main() async {
   // .env 파일 로드
   await dotenv.load(fileName: ".env");
 
-  // Firebase 초기화
-  debugPrint('🔥 [MAIN] Firebase 초기화 시작...');
-  try {
-    if (kIsWeb) {
-      // 웹에서는 명시적으로 설정 전달
-      debugPrint('🔥 [MAIN] 웹 플랫폼 감지 - 수동 Firebase 초기화');
-      await Firebase.initializeApp(
-        options: const FirebaseOptions(
-          apiKey: 'AIzaSyBDwxJU7ivdjfdMOJeA7N_buRjdJLfdKUs',
-          appId: '1:922042336723:web:054fdbcc6b9b219aed1b26',
-          messagingSenderId: '922042336723',
-          projectId: 'ezstay-864bc',
-          authDomain: 'ezstay-864bc.firebaseapp.com',
-          storageBucket: 'ezstay-864bc.firebasestorage.app',
-          measurementId: 'G-1QZK8YMFEV',
-        ),
-      );
-    } else {
-      debugPrint('🔥 [MAIN] 네이티브 플랫폼 - 기본 Firebase 초기화');
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
-    debugPrint('✅ [MAIN] Firebase 초기화 성공');
-  } catch (e) {
-    debugPrint('❌ [MAIN] Firebase 초기화 실패: $e');
-    rethrow;
-  }
+  // 🔥 Firebase 초기화를 백그라운드로 이동 (await 제거)
+  final firebaseInitFuture = _initializeFirebase();
 
   // 한국어 날짜 포맷 초기화 (table_calendar를 위함)
   await initializeDateFormatting('ko_KR', null);
@@ -82,15 +60,53 @@ Future<void> main() async {
     await authService.handleKakaoWebCallback();
   }
 
-  // 자동 로그인 시도 (초기화 완료까지 대기)
-  await authService.tryAutoLogin();
+  // 🔥 자동 로그인을 백그라운드로 실행 (await 제거)
+  unawaited(authService.tryAutoLogin());
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: authService,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: authService),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        // Firebase 초기화 Future 제공
+        Provider<Future<FirebaseApp>>.value(value: firebaseInitFuture),
+      ],
       child: const MyApp(),
     ),
   );
+}
+
+/// Firebase 초기화를 별도 함수로 분리 (백그라운드 실행)
+Future<FirebaseApp> _initializeFirebase() async {
+  debugPrint('🔥 [MAIN] Firebase 초기화 시작 (백그라운드)...');
+  try {
+    late FirebaseApp app;
+    if (kIsWeb) {
+      // 웹에서는 명시적으로 설정 전달
+      debugPrint('🔥 [MAIN] 웹 플랫폼 감지 - 수동 Firebase 초기화');
+      app = await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: 'AIzaSyBDwxJU7ivdjfdMOJeA7N_buRjdJLfdKUs',
+          appId: '1:922042336723:web:054fdbcc6b9b219aed1b26',
+          messagingSenderId: '922042336723',
+          projectId: 'ezstay-864bc',
+          authDomain: 'ezstay-864bc.firebaseapp.com',
+          storageBucket: 'ezstay-864bc.firebasestorage.app',
+          measurementId: 'G-1QZK8YMFEV',
+        ),
+      );
+    } else {
+      debugPrint('🔥 [MAIN] 네이티브 플랫폼 - 기본 Firebase 초기화');
+      app = await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+    debugPrint('✅ [MAIN] Firebase 초기화 완료 (백그라운드)');
+    return app;
+  } catch (e) {
+    debugPrint('❌ [MAIN] Firebase 초기화 실패: $e');
+    rethrow;
+  }
 }
 
 /// 메인 앱 클래스
@@ -104,11 +120,14 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _errorHandler = ErrorHandlerService();
   final _navigatorKey = GlobalKey<NavigatorState>();
+  GoRouter? _router;
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context);
-    final router = AppRouter.createRouter(authService, navigatorKey: _navigatorKey);
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    // GoRouter를 한 번만 생성
+    _router ??= AppRouter.createRouter(authService, navigatorKey: _navigatorKey);
 
     // 다음 프레임에서 navigator context 설정
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -117,11 +136,24 @@ class _MyAppState extends State<MyApp> {
       }
     });
 
-    return MaterialApp.router(
-      title: 'EZStay',
-      debugShowCheckedModeBanner: false,
-      routerConfig: router,
-      theme: AppTheme.lightTheme(),
+    // 🔥 초기화 중에는 스플래시 화면 표시
+    return Consumer<AuthService>(
+      builder: (context, authService, child) {
+        if (!authService.isInitialized) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme(),
+            home: const SplashScreen(),
+          );
+        }
+
+        return MaterialApp.router(
+          title: 'EZStay',
+          debugShowCheckedModeBanner: false,
+          routerConfig: _router!,
+          theme: AppTheme.lightTheme(),
+        );
+      },
     );
   }
 }

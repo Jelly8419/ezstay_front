@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/room.dart';
-import '../constants/app_constants.dart';
+import '../core/theme/app_spacing.dart';
+import '../core/theme/app_colors.dart' as theme;
+import '../core/theme/app_text_styles.dart' as theme;
 
-/// 매물 카드 위젯
+/// 매물 카드 위젯 (모던 인터랙티브 호버 효과 적용)
 class PropertyCard extends StatefulWidget {
   final Room room;
   final bool isSelected;
@@ -27,6 +29,8 @@ class _PropertyCardState extends State<PropertyCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isActive = _isHovered || widget.isSelected;
+
     return MouseRegion(
       onEnter: (_) {
         setState(() => _isHovered = true);
@@ -36,28 +40,31 @@ class _PropertyCardState extends State<PropertyCard> {
         setState(() => _isHovered = false);
         widget.onHover?.call(false);
       },
+      cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: AppDurations.hoverCard,
+          curve: AppCurves.hoverCard,
+          transform: _isHovered
+              ? Matrix4.translationValues(0, -8, 0)
+              : Matrix4.identity(),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            color: theme.AppColors.surface,
+            borderRadius: AppRadius.radiusMd,
             border: Border.all(
-              color: widget.isSelected || _isHovered
-                  ? AppColors.primary
-                  : Colors.grey[300]!,
+              color: widget.isSelected
+                  ? theme.AppColors.primary500
+                  : _isHovered
+                      ? theme.AppColors.primary300
+                      : theme.AppColors.border,
               width: widget.isSelected ? 2 : 1,
             ),
-            boxShadow: _isHovered
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
+            boxShadow: isActive
+                ? (widget.isSelected
+                    ? AppShadows.cardSelected
+                    : AppShadows.cardHover)
+                : AppShadows.cardDefault,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,34 +74,27 @@ class _PropertyCardState extends State<PropertyCard> {
 
               // 정보 영역
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: AppSpacing.paddingMd,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // 방 이름
                     Text(
                       widget.room.roomName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                      style: theme.AppTextStyles.headingSmall,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: AppSpacing.xs),
 
                     // 주소
                     Text(
                       widget.room.address,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
+                      style: theme.AppTextStyles.bodyMediumSecondary,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: AppSpacing.sm),
 
                     // 가격
                     Row(
@@ -102,54 +102,49 @@ class _PropertyCardState extends State<PropertyCard> {
                         if (widget.room.longTermDiscount > 0) ...[
                           Text(
                             '${widget.room.longTermDiscount}%',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.error,
+                            style: theme.AppTextStyles.labelMedium.copyWith(
+                              color: theme.AppColors.error500,
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: AppSpacing.xs),
                         ],
                         Text(
                           '${_formatPrice(widget.room.weeklyRent)}/주',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
+                          style: theme.AppTextStyles.priceText,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: AppSpacing.sm),
 
                     // 방 정보 (침대, 화장실, 방)
                     Row(
                       children: [
                         if (widget.room.totalBeds > 0) ...[
                           _buildIconInfo(Icons.bed, '침대 ${widget.room.totalBeds}'),
-                          const SizedBox(width: 12),
+                          SizedBox(width: AppSpacing.md),
                         ],
                         _buildIconInfo(Icons.bathroom, '욕실 ${widget.room.bathroomCount}'),
-                        const SizedBox(width: 12),
+                        SizedBox(width: AppSpacing.md),
                         _buildIconInfo(Icons.door_sliding, '방 ${widget.room.roomCount}'),
                       ],
                     ),
 
                     // 할인 정보 (있을 경우)
                     if (widget.room.longTermDiscount > 0) ...[
-                      const SizedBox(height: 8),
+                      SizedBox(height: AppSpacing.sm),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xs,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          color: theme.AppColors.error50,
+                          borderRadius: AppRadius.radiusSm,
                         ),
                         child: Text(
                           '${widget.room.longTermDiscount}% 할인 중',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.error,
-                            fontWeight: FontWeight.w600,
+                          style: theme.AppTextStyles.labelSmall.copyWith(
+                            color: theme.AppColors.error500,
                           ),
                         ),
                       ),
@@ -170,14 +165,14 @@ class _PropertyCardState extends State<PropertyCard> {
     return Container(
       height: 200,
       decoration: BoxDecoration(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-        color: Colors.grey[200],
+        borderRadius: AppRadius.radiusTopMd,
+        color: theme.AppColors.neutral200,
       ),
       child: Stack(
         children: [
           // 사진 또는 플레이스홀더
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            borderRadius: AppRadius.radiusTopMd,
             child: hasPhotos
                 ? Image.network(
                     widget.room.photos[_currentPhotoIndex].url,
@@ -261,18 +256,15 @@ class _PropertyCardState extends State<PropertyCard> {
     return Container(
       width: double.infinity,
       height: 200,
-      color: Colors.grey[300],
+      color: theme.AppColors.neutral200,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.home, size: 48, color: Colors.grey[500]),
-          const SizedBox(height: 8),
+          Icon(Icons.home, size: 48, color: theme.AppColors.neutral400),
+          SizedBox(height: AppSpacing.sm),
           Text(
             '사진 없음',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
+            style: theme.AppTextStyles.bodyMediumSecondary,
           ),
         ],
       ),
@@ -286,16 +278,11 @@ class _PropertyCardState extends State<PropertyCard> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.9),
+          color: theme.AppColors.neutral0.withValues(alpha: 0.9),
           shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 4,
-            ),
-          ],
+          boxShadow: AppShadows.shadowMd,
         ),
-        child: Icon(icon, size: 20, color: Colors.black87),
+        child: Icon(icon, size: 20, color: theme.AppColors.neutral800),
       ),
     );
   }
@@ -303,13 +290,12 @@ class _PropertyCardState extends State<PropertyCard> {
   Widget _buildIconInfo(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
-        const SizedBox(width: 4),
+        Icon(icon, size: 16, color: theme.AppColors.neutral600),
+        SizedBox(width: AppSpacing.xs),
         Text(
           text,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[700],
+          style: theme.AppTextStyles.bodySmall.copyWith(
+            color: theme.AppColors.neutral700,
           ),
         ),
       ],

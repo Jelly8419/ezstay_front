@@ -48,7 +48,9 @@ class ChatRoom {
       roomId: json['roomId'],
       isActive: json['isActive'] ?? true,
       lastMessageAt: json['lastMessageAt'] != null
-          ? DateTime.parse(json['lastMessageAt'])
+          ? (json['lastMessageAt'] is String
+              ? DateTime.parse(json['lastMessageAt'])
+              : null)
           : null,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
@@ -58,7 +60,9 @@ class ChatRoom {
       room: json['room'] != null ? Room.fromJson(json['room']) : null,
       host: json['host'] != null ? User.fromJson(json['host']) : null,
       guest: json['guest'] != null ? User.fromJson(json['guest']) : null,
-      lastMessage: json['lastMessage'],
+      lastMessage: json['lastMessage'] is String
+          ? json['lastMessage']
+          : (json['lastMessage'] is Map ? json['lastMessage']['text'] : null),
       unreadCount: json['unreadCount'],
     );
   }
@@ -144,8 +148,8 @@ class Room {
   factory Room.fromJson(Map<String, dynamic> json) {
     return Room(
       id: json['id'],
-      name: json['name'],
-      roadAddress: json['roadAddress'],
+      name: json['roomName'] ?? json['name'],
+      roadAddress: json['address'] ?? json['roadAddress'],
       detailAddress: json['detailAddress'],
     );
   }
@@ -170,10 +174,10 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      profileImageUrl: json['profileImageUrl'],
-      phoneNumber: json['phoneNumber'],
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      profileImageUrl: json['profileImageUrl'] ?? json['profileImage'],
+      phoneNumber: json['phoneNumber'] ?? json['phone'],
     );
   }
 }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/chat_message.dart';
 import '../models/chat_room.dart';
 import '../services/chat_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/auth_service.dart';
+import '../providers/chat_provider.dart';
+import '../utils/responsive_util.dart';
 import '../constants/app_constants.dart';
 
 /// 채팅 상세 페이지
@@ -25,13 +28,13 @@ class ChatDetailPage extends StatefulWidget {
 class _ChatDetailPageState extends State<ChatDetailPage> {
   final ChatService _chatService = ChatService();
   final FirebaseAuthService _firebaseAuth = FirebaseAuthService();
-  final AuthService _authService = AuthService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ValueNotifier<bool> _isSendingNotifier = ValueNotifier<bool>(false);
 
   ChatRoom? _chatRoom;
+  int? _currentUserId;  // 현재 사용자 ID 저장
   bool _isLoading = true;
-  bool _isSending = false;
   String? _error;
 
   @override
@@ -44,6 +47,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _isSendingNotifier.dispose();
     super.dispose();
   }
 
@@ -55,19 +59,26 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         _error = null;
       });
 
-      // 1. Firebase 인증 확인
+      // 1. Provider에서 전역 AuthService 가져오기 (await 전에 가져와야 함)
+      final authService = Provider.of<AuthService>(context, listen: false);
+
+      // 2. Firebase 인증 확인
       await _firebaseAuth.ensureAuthenticated();
 
-      // 2. 채팅방 정보 로드
+      // 3. 현재 사용자 ID 가져오기 및 저장
+      final currentUserIdStr = authService.currentUser?.id;
+      if (currentUserIdStr != null) {
+        _currentUserId = int.tryParse(currentUserIdStr) ?? 0;
+      }
+
+      // 4. 채팅방 정보 로드
       final chatRoom = await _chatService.getChatRoomDetail(widget.chatRoomId);
 
-      // 3. 읽음 처리
-      final currentUserIdStr = _authService.currentUser?.id;
-      if (currentUserIdStr != null) {
-        final currentUserId = int.tryParse(currentUserIdStr) ?? 0;
+      // 4. 읽음 처리
+      if (_currentUserId != null) {
         await _chatService.markAsRead(
           chatRoomId: widget.chatRoomId,
-          userId: currentUserId,
+          userId: _currentUserId!,
         );
       }
 
@@ -87,22 +98,19 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   /// 메시지 전송
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty || _isSending) return;
+    if (text.isEmpty || _isSendingNotifier.value) return;
 
     try {
-      setState(() {
-        _isSending = true;
-      });
+      _isSendingNotifier.value = true;
 
-      final currentUserIdStr = _authService.currentUser?.id;
-      if (currentUserIdStr == null) {
+      // 저장된 사용자 ID 사용
+      if (_currentUserId == null) {
         throw Exception('로그인이 필요합니다');
       }
-      final currentUserId = int.tryParse(currentUserIdStr) ?? 0;
 
       await _chatService.sendMessage(
         chatRoomId: widget.chatRoomId,
-        senderId: currentUserId,
+        senderId: _currentUserId!,
         text: text,
       );
 
@@ -121,11 +129,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSending = false;
-        });
-      }
+      _isSendingNotifier.value = false;
     }
   }
 
@@ -146,6 +150,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 사이드바에서 렌더링될 때는 body만 반환 (AppBar는 ChatSidebarWidget에서 처리)
+    final chatProvider = Provider.of<ChatProvider>(context);
+    if (chatProvider.isOpen && ResponsiveUtil.isDesktop(context)) {
+      return _buildBody();
+    }
+
+    // 전체 화면일 때는 Scaffold 사용
     return Scaffold(
       appBar: _buildAppBar(),
       body: _buildBody(),
@@ -153,9 +164,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   }
 
   PreferredSizeWidget _buildAppBar() {
-    final currentUserIdStr = _authService.currentUser?.id;
-    final currentUserId = currentUserIdStr != null ? (int.tryParse(currentUserIdStr) ?? 0) : 0;
-    final otherUser = _chatRoom?.getOtherUser(currentUserId);
+    final otherUser = _currentUserId != null
+        ? _chatRoom?.getOtherUser(_currentUserId!)
+        : null;
 
     return AppBar(
       title: _isLoading
@@ -174,7 +185,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                   Text(
                     _chatRoom!.getRoomDisplayName(),
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                     ),
                   ),
               ],
@@ -240,8 +251,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   /// 메시지 목록
   Widget _buildMessageList() {
-    final currentUserId = _authService.currentUser?.id ?? 0;
-
     return StreamBuilder<List<ChatMessage>>(
       stream: _chatService.getMessages(widget.chatRoomId),
       builder: (context, snapshot) {
@@ -273,7 +282,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 Icon(
                   Icons.chat_bubble_outline,
                   size: 80,
-                  color: AppColors.textSecondary.withOpacity(0.5),
+                  color: AppColors.textSecondary.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -298,7 +307,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           itemCount: messages.length,
           itemBuilder: (context, index) {
             final message = messages[index];
-            final isMe = message.senderId == currentUserId;
+            final isMe = _currentUserId != null && message.senderId == _currentUserId;
             final showDate = index == 0 ||
                 !_isSameDay(messages[index - 1].timestamp, message.timestamp);
 
@@ -341,69 +350,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   /// 메시지 입력 필드
   Widget _buildMessageInput() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _messageController,
-                decoration: InputDecoration(
-                  hintText: '메시지를 입력하세요...',
-                  filled: true,
-                  fillColor: AppColors.background,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                maxLines: 5,
-                minLines: 1,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendMessage(),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                onPressed: _isSending ? null : _sendMessage,
-                icon: _isSending
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Icon(Icons.send, color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return _MessageInputField(
+      controller: _messageController,
+      isSendingNotifier: _isSendingNotifier,
+      onSend: _sendMessage,
     );
   }
 
@@ -475,11 +425,18 @@ class _ChatBubble extends StatelessWidget {
       decoration: BoxDecoration(
         color: isMe ? AppColors.primary : AppColors.grey200,
         borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(18),
-          topRight: const Radius.circular(18),
-          bottomLeft: isMe ? const Radius.circular(18) : const Radius.circular(4),
-          bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(18),
+          topLeft: const Radius.circular(20),
+          topRight: const Radius.circular(20),
+          bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
+          bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Text(
         message.text,
@@ -496,6 +453,137 @@ class _ChatBubble extends StatelessWidget {
       style: AppTextStyles.bodySmall.copyWith(
         color: AppColors.textSecondary,
         fontSize: 11,
+      ),
+    );
+  }
+}
+
+/// 메시지 입력 필드 위젯 (포커스 유지를 위해 별도 StatefulWidget으로 분리)
+class _MessageInputField extends StatefulWidget {
+  final TextEditingController controller;
+  final ValueNotifier<bool> isSendingNotifier;
+  final VoidCallback onSend;
+
+  const _MessageInputField({
+    required this.controller,
+    required this.isSendingNotifier,
+    required this.onSend,
+  });
+
+  @override
+  State<_MessageInputField> createState() => _MessageInputFieldState();
+}
+
+class _MessageInputFieldState extends State<_MessageInputField> {
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleSend() {
+    widget.onSend();
+    // 메시지 전송 후 포커스 복원
+    Future.microtask(() {
+      if (mounted && _focusNode.canRequestFocus) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: widget.controller,
+                focusNode: _focusNode,
+                decoration: InputDecoration(
+                  hintText: '메시지를 입력하세요...',
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(28),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(28),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(28),
+                    borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                maxLines: 5,
+                minLines: 1,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _handleSend(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ValueListenableBuilder<bool>(
+              valueListenable: widget.isSendingNotifier,
+              builder: (context, isSending, child) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    onPressed: isSending ? null : _handleSend,
+                    icon: isSending
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.send, color: Colors.white),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

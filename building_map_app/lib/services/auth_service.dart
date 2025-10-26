@@ -652,50 +652,63 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// 앱 시작 시 저장된 토큰으로 자동 로그인 시도
+  /// 앱 시작 시 저장된 토큰으로 자동 로그인 시도 (Non-Blocking)
   Future<void> tryAutoLogin() async {
-    if (!ApiConfig.isProduction) {
-      debugPrint('');
-      debugPrint('═══════════════════════════════════════════════');
-      debugPrint('🔄 [AUTO_LOGIN] 자동 로그인 프로세스 시작');
-      debugPrint('═══════════════════════════════════════════════');
-    }
-
-    // 자동 갱신 활성화하여 토큰 가져오기
-    final accessToken = await getAccessToken(autoRefresh: true);
-
-    if (!ApiConfig.isProduction) {
-      debugPrint('📊 [AUTO_LOGIN] Access Token 상태: ${accessToken != null ? "✅ 있음" : "❌ 없음"}');
-    }
-
-    if (accessToken != null) {
-      // 서버에서 토큰 검증 및 사용자 정보 가져오기
-      final success = await _authenticateWithToken(accessToken);
-
-      if (success) {
-        _isInitialized = true;
-        notifyListeners();
-        return;
-      } else {
-        // 토큰 검증 실패 - 토큰 제거
-        await _clearTokens();
-      }
-    }
-
-    // 토큰이 없거나 만료된 경우, 저장된 사용자 정보로 복원 시도
-    final userInfo = await UserRepository.loadUser();
-
-    if (userInfo != null) {
-      _currentUser = userInfo;
+    try {
       if (!ApiConfig.isProduction) {
-        debugPrint('✅ [AUTO_LOGIN] 저장된 사용자 정보 복원: ${userInfo.email}');
-        debugPrint('⚠️ [AUTO_LOGIN] 토큰이 없어 API 호출은 불가능합니다. 다시 로그인이 필요합니다.');
+        debugPrint('');
+        debugPrint('═══════════════════════════════════════════════');
+        debugPrint('🔄 [AUTO_LOGIN] 자동 로그인 프로세스 시작 (백그라운드)');
+        debugPrint('═══════════════════════════════════════════════');
+      }
+
+      // 자동 갱신 활성화하여 토큰 가져오기
+      final accessToken = await getAccessToken(autoRefresh: true);
+
+      if (!ApiConfig.isProduction) {
+        debugPrint('📊 [AUTO_LOGIN] Access Token 상태: ${accessToken != null ? "✅ 있음" : "❌ 없음"}');
+      }
+
+      if (accessToken != null) {
+        // 서버에서 토큰 검증 및 사용자 정보 가져오기
+        final success = await _authenticateWithToken(accessToken);
+
+        if (success) {
+          if (!ApiConfig.isProduction) {
+            debugPrint('✅ [AUTO_LOGIN] 자동 로그인 성공');
+          }
+          return;
+        } else {
+          // 토큰 검증 실패 - 토큰 제거
+          await _clearTokens();
+        }
+      }
+
+      // 토큰이 없거나 만료된 경우, 저장된 사용자 정보로 복원 시도
+      final userInfo = await UserRepository.loadUser();
+
+      if (userInfo != null) {
+        _currentUser = userInfo;
+        if (!ApiConfig.isProduction) {
+          debugPrint('✅ [AUTO_LOGIN] 저장된 사용자 정보 복원: ${userInfo.email}');
+          debugPrint('⚠️ [AUTO_LOGIN] 토큰이 없어 API 호출은 불가능합니다. 다시 로그인이 필요합니다.');
+        }
+      } else {
+        if (!ApiConfig.isProduction) {
+          debugPrint('ℹ️ [AUTO_LOGIN] 저장된 사용자 정보 없음');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [AUTO_LOGIN] 자동 로그인 실패: $e');
+    } finally {
+      // 🔥 성공/실패 무관하게 초기화 완료 표시 (앱 시작 보장)
+      _isInitialized = true;
+      notifyListeners();
+
+      if (!ApiConfig.isProduction) {
+        debugPrint('✅ [AUTO_LOGIN] 초기화 완료');
       }
     }
-
-    // 초기화 완료 표시
-    _isInitialized = true;
-    notifyListeners();
   }
 
   /// 저장된 토큰 제거

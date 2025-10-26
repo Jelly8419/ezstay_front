@@ -39,9 +39,9 @@ class CustomButton extends StatelessWidget {
           onPressed: isLoading ? null : onPressed,
           style: OutlinedButton.styleFrom(
             foregroundColor: effectiveBackgroundColor,
-            side: BorderSide(color: effectiveBackgroundColor),
+            side: BorderSide(color: effectiveBackgroundColor, width: 1.5),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+              borderRadius: BorderRadius.circular(AppConstants.cardRadius),
             ),
           ),
           child: _buildContent(effectiveBackgroundColor),
@@ -49,17 +49,30 @@ class CustomButton extends StatelessWidget {
       );
     }
 
-    return SizedBox(
+    return Container(
       width: width,
       height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+        boxShadow: (isLoading || onPressed == null)
+            ? null
+            : [
+                BoxShadow(
+                  color: effectiveBackgroundColor.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: effectiveBackgroundColor,
           foregroundColor: effectiveForegroundColor,
           elevation: 0,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+            borderRadius: BorderRadius.circular(AppConstants.cardRadius),
           ),
         ),
         child: _buildContent(effectiveForegroundColor),

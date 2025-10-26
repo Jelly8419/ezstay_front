@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../providers/chat_provider.dart';
+import '../utils/responsive_util.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../models/chat_room.dart';
 import '../services/chat_service.dart';
 import '../services/firebase_auth_service.dart';
@@ -18,7 +23,6 @@ class ChatListPage extends StatefulWidget {
 class _ChatListPageState extends State<ChatListPage> {
   final ChatService _chatService = ChatService();
   final FirebaseAuthService _firebaseAuth = FirebaseAuthService();
-  final AuthService _authService = AuthService();
 
   List<ChatRoom> _chatRooms = [];
   bool _isLoading = true;
@@ -59,7 +63,16 @@ class _ChatListPageState extends State<ChatListPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 사이드바에서 렌더링될 때는 body만 반환
+    final chatProvider = Provider.of<ChatProvider>(context);
+    if (chatProvider.isOpen && ResponsiveUtil.isDesktop(context)) {
+      return _buildBody();
+    }
+
+    // 전체 화면일 때는 Scaffold 사용
     return ResponsiveScaffold(
+      scrollable: false,  // ListView가 자체 스크롤을 처리하므로 false
+      usePadding: false,  // ListView가 자체 패딩을 처리하므로 false
       title: '채팅',
       body: _buildBody(),
     );
@@ -114,7 +127,7 @@ class _ChatListPageState extends State<ChatListPage> {
             Icon(
               Icons.chat_bubble_outline,
               size: 80,
-              color: AppColors.textSecondary.withOpacity(0.5),
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 24),
             Text(
@@ -141,7 +154,8 @@ class _ChatListPageState extends State<ChatListPage> {
         separatorBuilder: (context, index) => const Divider(height: 1),
         itemBuilder: (context, index) {
           final chatRoom = _chatRooms[index];
-          final currentUserIdStr = _authService.currentUser?.id;
+          final authService = Provider.of<AuthService>(context, listen: false);
+          final currentUserIdStr = authService.currentUser?.id;
           final currentUserId = currentUserIdStr != null ? (int.tryParse(currentUserIdStr) ?? 0) : 0;
           return _ChatRoomTile(
             chatRoom: chatRoom,
@@ -155,14 +169,19 @@ class _ChatListPageState extends State<ChatListPage> {
 
   /// 채팅 상세 페이지로 이동
   void _navigateToChatDetail(ChatRoom chatRoom) {
-    Navigator.pushNamed(
-      context,
-      '/chat-detail',
-      arguments: {
-        'chatRoomId': chatRoom.firebaseChatRoomId,
-        'contractId': chatRoom.contractId,
-      },
-    );
+    // 데스크톱에서는 사이드바에서 열기, 모바일에서는 전체 화면으로 이동
+    if (ResponsiveUtil.isDesktop(context)) {
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      chatProvider.openChatDetail(chatRoom);
+    } else {
+      context.push(
+        '/chat-detail',
+        extra: {
+          'chatRoomId': chatRoom.firebaseChatRoomId,
+          'contractId': chatRoom.contractId,
+        },
+      );
+    }
   }
 }
 
@@ -191,7 +210,7 @@ class _ChatRoomTile extends StatelessWidget {
       ),
       leading: CircleAvatar(
         radius: 28,
-        backgroundColor: AppColors.primary.withOpacity(0.1),
+        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
         backgroundImage: otherUser?.profileImageUrl != null
             ? NetworkImage(otherUser!.profileImageUrl!)
             : null,
@@ -252,12 +271,19 @@ class _ChatRoomTile extends StatelessWidget {
       trailing: hasUnread
           ? Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
+                horizontal: 10,
+                vertical: 6,
               ),
               decoration: BoxDecoration(
                 color: AppColors.primary,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Text(
                 '${chatRoom.unreadCount}',

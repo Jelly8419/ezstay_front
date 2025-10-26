@@ -10,6 +10,8 @@ import '../shared/widgets/app_inputs.dart';
 import '../shared/widgets/app_buttons.dart';
 import '../shared/widgets/property_card.dart';
 import '../features/web/web_layout.dart';
+import '../providers/chat_provider.dart';
+import '../widgets/chat_sidebar_widget.dart';
 
 /// 게스트 모드 홈 화면 - 새 디자인 시스템 적용
 class GuestHomePage extends StatefulWidget {
@@ -27,10 +29,10 @@ class _GuestHomePageState extends State<GuestHomePage> {
   RangeValues _priceRange = const RangeValues(0, 1000000);
   String? _selectedPropertyType;
 
-  // 더미 데이터
+  // 더미 데이터 (이미지 없이 플레이스홀더 사용)
   final List<Map<String, dynamic>> _mockProperties = [
     {
-      'imageUrl': 'https://via.placeholder.com/400x300',
+      'imageUrl': '', // 외부 이미지 제거 (네트워크 요청 없음)
       'title': '강남역 도보 5분 신축 원룸',
       'location': '서울시 강남구 역삼동',
       'rating': 4.8,
@@ -40,7 +42,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       'badges': ['신규', '할인'],
     },
     {
-      'imageUrl': 'https://via.placeholder.com/400x300',
+      'imageUrl': '', // 외부 이미지 제거
       'title': '홍대입구역 인근 깔끔한 투룸',
       'location': '서울시 마포구 서교동',
       'rating': 4.5,
@@ -50,7 +52,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       'badges': ['프리미엄'],
     },
     {
-      'imageUrl': 'https://via.placeholder.com/400x300',
+      'imageUrl': '', // 외부 이미지 제거
       'title': '판교 테크노밸리 오피스텔',
       'location': '경기도 성남시 분당구',
       'rating': 4.9,
@@ -60,7 +62,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       'badges': ['인증', '신규'],
     },
     {
-      'imageUrl': 'https://via.placeholder.com/400x300',
+      'imageUrl': '', // 외부 이미지 제거
       'title': '잠실역 초역세권 아파트',
       'location': '서울시 송파구 잠실동',
       'rating': 4.7,
@@ -70,7 +72,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       'badges': [],
     },
     {
-      'imageUrl': 'https://via.placeholder.com/400x300',
+      'imageUrl': '', // 외부 이미지 제거
       'title': '선릉역 도보 3분 오피스텔',
       'location': '서울시 강남구 선릉로',
       'rating': 4.6,
@@ -80,7 +82,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       'badges': ['할인'],
     },
     {
-      'imageUrl': 'https://via.placeholder.com/400x300',
+      'imageUrl': '', // 외부 이미지 제거
       'title': '신촌 대학가 원룸',
       'location': '서울시 서대문구 신촌동',
       'rating': 4.3,
@@ -309,6 +311,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
                 // 스크롤 탑 버튼
                 ScrollToTopButton(scrollController: _scrollController),
+               // 채팅 사이드바 (오버레이)
+                ChatSidebarWidget(),
               ],
             ),
           ),
@@ -354,6 +358,25 @@ class _GuestHomePageState extends State<GuestHomePage> {
   }
 
   List<Widget> _buildDesktopActions(AuthService authService) {
+    // 로그인 안 된 상태
+    if (!authService.isLoggedIn) {
+      return [
+        AppTextButton(
+          text: '로그인',
+          icon: Icons.login,
+          onPressed: () => context.go('/login'),
+        ),
+        SizedBox(width: AppSpacing.sm),
+        AppPrimaryButton(
+          text: '회원가입',
+          onPressed: () => context.go('/login'),
+          fullWidth: false,
+        ),
+        SizedBox(width: AppSpacing.md),
+      ];
+    }
+
+    // 로그인된 상태
     return [
       AppTextButton(
         text: '계약 관리',
@@ -370,7 +393,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       AppTextButton(
         text: '채팅',
         icon: Icons.chat_bubble_outline,
-        onPressed: () => context.push('/chat-list'),
+        onPressed: () { final chatProvider = Provider.of<ChatProvider>(context, listen: false); chatProvider.openChatList(); },
       ),
       SizedBox(width: AppSpacing.sm),
       PopupMenuButton<String>(
@@ -791,9 +814,12 @@ class _GuestHomePageState extends State<GuestHomePage> {
             ),
             AppPrimaryButton(
               text: '전환하기',
-              onPressed: () {
-                authService.switchUserMode(UserMode.host);
-                Navigator.pop(context);
+              onPressed: () async {
+                Navigator.pop(context); // 먼저 다이얼로그 닫기
+                await authService.switchUserMode(UserMode.host); // 모드 변경
+                if (context.mounted) {
+                  context.go('/host'); // 호스트 홈으로 이동 (올바른 경로)
+                }
               },
               fullWidth: false,
             ),

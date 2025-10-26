@@ -127,6 +127,7 @@ class AppRadius {
 }
 
 /// Shadow (그림자) 시스템
+/// 모던 플랫폼 스타일의 부드러운 그림자 효과를 포함합니다.
 class AppShadows {
   AppShadows._();
 
@@ -187,9 +188,80 @@ class AppShadows {
       spreadRadius: 0,
     ),
   ];
+
+  // ============= 인터랙티브 카드 그림자 (Interactive Card Shadows) =============
+
+  /// 카드 기본 상태 그림자 (미세한 떠있는 느낌)
+  static const List<BoxShadow> cardDefault = [
+    BoxShadow(
+      color: Color(0x0A000000), // 4% 검정
+      offset: Offset(0, 2),
+      blurRadius: 8,
+      spreadRadius: 0,
+    ),
+  ];
+
+  /// 카드 호버 상태 그림자 (강조된 떠있는 느낌)
+  static const List<BoxShadow> cardHover = [
+    BoxShadow(
+      color: Color(0x14000000), // 8% 검정
+      offset: Offset(0, 8),
+      blurRadius: 20,
+      spreadRadius: 0,
+    ),
+    BoxShadow(
+      color: Color(0x1A2196F3), // 10% Primary 색상
+      offset: Offset(0, 12),
+      blurRadius: 30,
+      spreadRadius: -5,
+    ),
+  ];
+
+  /// 카드 선택 상태 그림자 (더 강조된 느낌)
+  static const List<BoxShadow> cardSelected = [
+    BoxShadow(
+      color: Color(0x1A000000), // 10% 검정
+      offset: Offset(0, 10),
+      blurRadius: 24,
+      spreadRadius: 0,
+    ),
+    BoxShadow(
+      color: Color(0x332196F3), // 20% Primary 색상
+      offset: Offset(0, 14),
+      blurRadius: 32,
+      spreadRadius: -5,
+    ),
+  ];
+
+  /// 플로팅 버튼 그림자 (강한 강조)
+  static const List<BoxShadow> floatingButton = [
+    BoxShadow(
+      color: Color(0x26000000), // 15% 검정
+      offset: Offset(0, 6),
+      blurRadius: 16,
+      spreadRadius: 0,
+    ),
+    BoxShadow(
+      color: Color(0x1A2196F3), // 10% Primary
+      offset: Offset(0, 8),
+      blurRadius: 24,
+      spreadRadius: -4,
+    ),
+  ];
+
+  /// 모달/다이얼로그 그림자 (깊이감)
+  static const List<BoxShadow> modal = [
+    BoxShadow(
+      color: Color(0x33000000), // 20% 검정
+      offset: Offset(0, 16),
+      blurRadius: 48,
+      spreadRadius: -8,
+    ),
+  ];
 }
 
 /// 애니메이션 Duration 및 Curve
+/// 모던 플랫폼 스타일의 부드러운 애니메이션 설정을 포함합니다.
 class AppDurations {
   AppDurations._();
 
@@ -197,6 +269,20 @@ class AppDurations {
   static const Duration medium = Duration(milliseconds: 300);
   static const Duration slow = Duration(milliseconds: 500);
   static const Duration slowest = Duration(milliseconds: 700);
+
+  // ============= 인터랙티브 애니메이션 Duration =============
+
+  /// 카드 호버 애니메이션 (부드럽고 빠름)
+  static const Duration hoverCard = Duration(milliseconds: 300);
+
+  /// 리스트 아이템 애니메이션
+  static const Duration listItem = Duration(milliseconds: 250);
+
+  /// 페이지 전환 애니메이션
+  static const Duration pageTransition = Duration(milliseconds: 400);
+
+  /// 모달/다이얼로그 등장 애니메이션
+  static const Duration modal = Duration(milliseconds: 350);
 }
 
 class AppCurves {
@@ -206,6 +292,20 @@ class AppCurves {
   static const Curve smooth = Curves.easeOutCubic;
   static const Curve snappy = Curves.easeOutQuart;
   static const Curve bounce = Curves.bounceOut;
+
+  // ============= 인터랙티브 애니메이션 Curve =============
+
+  /// 카드 호버 커브 (부드러운 감속)
+  static const Curve hoverCard = Curves.easeOutCubic;
+
+  /// 리스트 아이템 커브
+  static const Curve listItem = Curves.easeOutQuart;
+
+  /// 페이지 전환 커브
+  static const Curve pageTransition = Curves.easeInOutCubic;
+
+  /// 모달 등장 커브
+  static const Curve modal = Curves.easeOutQuart;
 }
 
 /// Border 시스템
