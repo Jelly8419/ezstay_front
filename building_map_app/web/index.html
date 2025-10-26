@@ -57,21 +57,74 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png"/>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Material Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Material+Icons" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Outlined" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Sharp" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Two+Tone" rel="stylesheet">
+  <!-- Material Icons - preload로 최적화 -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Material+Icons&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Icons&display=swap" rel="stylesheet"></noscript>
 
-  <!-- API 설정 파일 -->
+  <!-- API 설정 파일 - 필수이므로 동기 로드 유지 -->
   <script src="js/api_config.js"></script>
 
-  <!-- Kakao Maps JavaScript API -->
+  <!-- Kakao Maps JavaScript API - 필수 API이므로 동기 로딩 유지 -->
   <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=7b8e75100e5af72db70a46c3fef81128"></script>
 
-  <!-- Daum Postcode API -->
+  <!-- Daum Postcode API - 필수 API이므로 동기 로딩 유지 -->
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+
+  <!-- Firebase Configuration (설정만 먼저 노출) -->
+  <script>
+    // Firebase 설정을 전역 변수로 노출 (Flutter가 읽을 수 있도록)
+    window.firebaseConfig = {
+      apiKey: "AIzaSyBDwxJU7ivdjfdMOJeA7N_buRjdJLfdKUs",
+      authDomain: "ezstay-864bc.firebaseapp.com",
+      projectId: "ezstay-864bc",
+      storageBucket: "ezstay-864bc.firebasestorage.app",
+      messagingSenderId: "922042336723",
+      appId: "1:922042336723:web:054fdbcc6b9b219aed1b26",
+      measurementId: "G-1QZK8YMFEV"
+    };
+  </script>
+
+  <!-- Firebase SDK - defer로 비차단 로딩 (필요한 서비스만) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" defer></script>
+
+  <!-- Firebase 초기화 (SDK 로드 후 실행) -->
+  <script defer>
+    // Firebase SDK 로드 대기 후 초기화
+    window.addEventListener('DOMContentLoaded', function() {
+      // Firebase SDK 로드 확인 (최대 5초 대기)
+      let attempts = 0;
+      const maxAttempts = 50;
+      const checkInterval = 100; // 100ms
+
+      const initFirebase = function() {
+        if (typeof firebase !== 'undefined') {
+          console.log('🔥 [WEB] Firebase SDK 로드 확인: OK');
+          try {
+            if (!firebase.apps.length) {
+              console.log('🔥 [WEB] Firebase 웹 초기화 시작...');
+              const app = firebase.initializeApp(window.firebaseConfig);
+              console.log('✅ [WEB] Firebase 웹 초기화 완료');
+              console.log('✅ [WEB] App name:', app.name);
+            } else {
+              console.log('⚠️ [WEB] Firebase 이미 초기화됨');
+            }
+          } catch (error) {
+            console.error('❌ [WEB] Firebase 초기화 에러:', error);
+          }
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(initFirebase, checkInterval);
+        } else {
+          console.error('❌ [WEB] Firebase SDK 로드 타임아웃 (5초)');
+        }
+      };
+
+      // 초기화 시작
+      initFirebase();
+    });
+  </script>
 
   <style>
     /* 로딩 스플래시 스크린 */

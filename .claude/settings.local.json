@@ -37,7 +37,17 @@
       "Bash(if [ -d \"Ezstay_front\" ])",
       "Bash(then echo \"Directory already exists\")",
       "Bash(else mv livemoment_front Ezstay_front)",
-      "Bash(git remote set-url:*)"
+      "Bash(git remote set-url:*)",
+      "Bash(git push:*)",
+      "Bash(start ms-settings:developers)",
+      "Bash(dart pub global activate:*)",
+      "Bash(C:UsersuserAppDataLocalPubCachebinflutterfire.bat configure --project=ezstay-2025)",
+      "Bash(\"$LOCALAPPDATA/Pub/Cache/bin/flutterfire.bat\" configure --project=ezstay-2025)",
+      "Bash(npm install -g firebase-tools)",
+      "Bash(firebase login:*)",
+      "Bash(dart analyze:*)",
+      "Bash(timeout 5 python:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

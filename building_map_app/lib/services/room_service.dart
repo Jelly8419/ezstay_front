@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'api_client.dart';
+import 'token_service.dart';
 import '../config/api_config.dart';
 
 /// 방 등록 API 서비스
 class RoomService {
-  static const _storage = FlutterSecureStorage();
   final _apiClient = ApiClient();
 
   /// 저장된 토큰 확인 (디버깅용)
   Future<void> checkToken() async {
-    final accessToken = await _storage.read(key: 'access_token');
-    final refreshToken = await _storage.read(key: 'refresh_token');
+    final accessToken = await TokenService.getAccessToken();
+    final refreshToken = await TokenService.getRefreshToken();
 
     debugPrint('=== 토큰 상태 확인 ===');
     debugPrint('Access Token: ${accessToken != null ? "있음 (${accessToken.length}자)" : "없음"}');
@@ -26,9 +25,10 @@ class RoomService {
     debugPrint('==================');
   }
 
-  /// Authorization 헤더 가져오기
+  /// Authorization 헤더 가져오기 (자동 갱신 포함)
   Future<Map<String, String>> _getHeaders() async {
-    final accessToken = await _storage.read(key: 'access_token');
+    // TokenService를 통해 토큰 가져오기 (자동 갱신 포함)
+    final accessToken = await TokenService.getValidAccessToken(autoRefresh: true);
 
     if (!ApiConfig.isProduction) {
       debugPrint('🔑 [AUTH] Access Token: ${accessToken != null ? "있음" : "없음"}');
@@ -127,7 +127,7 @@ class RoomService {
     try {
       debugPrint('📸 [PHOTOS] 사진 업로드 시작 - roomId: $roomId, 사진 수: ${photos.length}');
 
-      final accessToken = await _storage.read(key: 'access_token');
+      final accessToken = await TokenService.getValidAccessToken(autoRefresh: true);
 
       if (!ApiConfig.isProduction) {
         debugPrint('🔑 [PHOTOS] Access Token: ${accessToken != null ? "있음" : "없음"}');
@@ -241,7 +241,7 @@ class RoomService {
     try {
       debugPrint('🧹 [CLEANING] 청소도구 이미지 업로드 시작 - roomId: $roomId');
 
-      final accessToken = await _storage.read(key: 'access_token');
+      final accessToken = await TokenService.getValidAccessToken(autoRefresh: true);
 
       if (!ApiConfig.isProduction) {
         debugPrint('🔑 [CLEANING] Access Token: ${accessToken != null ? "있음" : "없음"}');

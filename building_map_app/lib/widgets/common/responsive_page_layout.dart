@@ -38,6 +38,10 @@ class ResponsivePageLayout extends StatelessWidget {
   /// 배경색 (기본값: null, null이면 Scaffold의 배경색 사용)
   final Color? backgroundColor;
 
+  /// 카드 스타일 적용 여부 (기본값: false)
+  /// true로 설정하면 떠있는 느낌의 카드 스타일 적용
+  final bool useCardStyle;
+
   const ResponsivePageLayout({
     super.key,
     required this.child,
@@ -46,11 +50,38 @@ class ResponsivePageLayout extends StatelessWidget {
     this.padding,
     this.scrollable = true,
     this.backgroundColor,
+    this.useCardStyle = false,
   });
 
   @override
   Widget build(BuildContext context) {
     Widget content = child;
+
+    // 카드 스타일 적용
+    if (useCardStyle) {
+      content = Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+          child: content,
+        ),
+      );
+    }
 
     // 패딩 적용
     if (usePadding) {
@@ -139,6 +170,9 @@ class ResponsiveScaffold extends StatelessWidget {
   /// 배경색
   final Color? backgroundColor;
 
+  /// 카드 스타일 적용 여부
+  final bool useCardStyle;
+
   const ResponsiveScaffold({
     super.key,
     required this.title,
@@ -153,6 +187,7 @@ class ResponsiveScaffold extends StatelessWidget {
     this.bottomNavigationBar,
     this.drawer,
     this.backgroundColor,
+    this.useCardStyle = false,
   });
 
   @override
@@ -169,11 +204,34 @@ class ResponsiveScaffold extends StatelessWidget {
         padding: padding,
         scrollable: scrollable,
         backgroundColor: backgroundColor,
+        useCardStyle: useCardStyle,
         child: body,
       ),
       floatingActionButton: floatingActionButton,
       bottomNavigationBar: bottomNavigationBar,
       drawer: drawer,
+    );
+  }
+}
+
+/// 최대 너비 제한 컨테이너
+class MaxWidthContainer extends StatelessWidget {
+  final Widget child;
+  final double maxWidth;
+
+  const MaxWidthContainer({
+    super.key,
+    required this.child,
+    this.maxWidth = 1200,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: child,
+      ),
     );
   }
 }

@@ -1,26 +1,48 @@
-import 'package:building_map_app/pages/room_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
-import '../pages/welcome_page.dart';
+
+// 즉시 로딩 (자주 사용하는 페이지)
 import '../pages/login_page.dart';
-import '../pages/mode_selection_page.dart';
 import '../pages/guest_home_page.dart';
-import '../pages/host_home_page.dart';
-import '../pages/room_registration_page.dart';
-import '../pages/pricing_page.dart';
-import '../pages/room_amenities_page.dart';
-import '../pages/free_services_page.dart';
-import '../pages/room_description_page.dart';
-import '../pages/user_info_popup.dart';
 import '../pages/map_screen.dart';
-import '../pages/guest_contracts_page.dart';
-import '../pages/host_contracts_page.dart';
-import '../pages/contract_detail_page.dart';
+
+// 지연 로딩 (필요할 때만 로드) - 웹 번들 크기 최적화
+import '../pages/mode_selection_page.dart' deferred as mode_selection;
+import '../pages/user_info_popup.dart' deferred as user_info;
+import '../pages/room_detail_page.dart' deferred as room_detail;
+import '../pages/host_home_page.dart' deferred as host_home;
+import '../pages/room_registration_page.dart' deferred as room_registration;
+import '../pages/pricing_page.dart' deferred as pricing;
+import '../pages/room_amenities_page.dart' deferred as amenities;
+import '../pages/free_services_page.dart' deferred as free_services;
+import '../pages/room_description_page.dart' deferred as room_description;
+import '../pages/guest_contracts_page.dart' deferred as guest_contracts;
+import '../pages/host_contracts_page.dart' deferred as host_contracts;
+import '../pages/contract_detail_page.dart' deferred as contract_detail;
+import '../pages/chat_list_page.dart' deferred as chat_list;
+import '../pages/chat_detail_page.dart' deferred as chat_detail;
 
 class AppRouter {
+  /// Deferred 라이브러리 로딩 위젯
+  static Widget _deferredWidget(Future<void> Function() loadLibrary, Widget Function() builder) {
+    return FutureBuilder(
+      future: loadLibrary(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return builder();
+        }
+        // 로딩 중 표시
+        return const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
+    );
+  }
   static GoRouter createRouter(AuthService authService, {GlobalKey<NavigatorState>? navigatorKey}) {
     return GoRouter(
       navigatorKey: navigatorKey,
@@ -29,10 +51,11 @@ class AppRouter {
       redirect: (BuildContext context, GoRouterState state) {
         final isInitialized = authService.isInitialized;
         final isLoggedIn = authService.isLoggedIn;
+        final isGoingToRoot = state.matchedLocation == '/';
         final isGoingToLogin = state.matchedLocation == '/login';
-        final isGoingToWelcome = state.matchedLocation == '/';
         final isGoingToBypass = state.matchedLocation.startsWith('/bypass');
         final isGoingToMap = state.matchedLocation == '/map';
+        final isGoingToGuest = state.matchedLocation == '/guest';
 
         // 초기화가 완료되지 않았으면 리다이렉트하지 않음 (로딩 중)
         if (!isInitialized) {
@@ -44,30 +67,53 @@ class AppRouter {
           return null;
         }
 
-        // 로그인된 상태에서 로그인 페이지나 웰컴 페이지 접근 시 홈으로 리다이렉트
-        if (isLoggedIn && (isGoingToLogin || isGoingToWelcome)) {
-          final userMode = authService.currentUser?.mode;
-          if (userMode == UserMode.host) {
-            return '/host';
-          } else if (userMode == UserMode.guest) {
+        // 루트 경로(/) 접근 시 사용자 모드에 따라 리다이렉트
+        if (isGoingToRoot) {
+          if (isLoggedIn) {
+            final userMode = authService.currentUser?.mode;
+            if (userMode == UserMode.host) {
+              return '/host';
+            } else {
+              return '/guest';
+            }
+          } else {
+            // 로그인 안 된 경우 게스트 홈으로
             return '/guest';
           }
         }
 
-        // 로그인 안 된 상태에서 보호된 페이지 접근 시 로그인으로 리다이렉트
-        // (단, 지도는 로그인 없이도 접근 가능)
-        if (!isLoggedIn && !isGoingToLogin && !isGoingToWelcome && !isGoingToMap) {
+        // 로그인된 상태에서 로그인 페이지 접근 시 홈으로 리다이렉트
+        if (isLoggedIn && isGoingToLogin) {
+          final userMode = authService.currentUser?.mode;
+          if (userMode == UserMode.host) {
+            return '/host';
+          } else {
+            return '/guest';
+          }
+        }
+
+        // 로그인 안 된 상태에서 호스트 전용 페이지 접근 시 게스트 홈으로 리다이렉트
+        if (!isLoggedIn &&
+            !isGoingToLogin &&
+            !isGoingToGuest &&
+            !isGoingToMap &&
+            state.matchedLocation.startsWith('/host')) {
+          return '/guest';
+        }
+
+        // 로그인 안 된 상태에서 계약 관리 등 보호된 페이지 접근 시 로그인 페이지로
+        if (!isLoggedIn &&
+            !isGoingToLogin &&
+            !isGoingToGuest &&
+            !isGoingToMap &&
+            (state.matchedLocation.contains('/contracts') ||
+             state.matchedLocation.contains('/chat'))) {
           return '/login';
         }
 
         return null;
       },
       routes: [
-        GoRoute(
-          path: '/',
-          name: 'welcome',
-          builder: (context, state) => const WelcomePage(),
-        ),
         GoRoute(
           path: '/login',
           name: 'login',
@@ -76,36 +122,46 @@ class AppRouter {
         GoRoute(
           path: '/mode-selection',
           name: 'mode-selection',
-          builder: (context, state) => ModeSelectionPage(
-            onModeSelected: (UserMode mode) async {
-              final authService = Provider.of<AuthService>(context, listen: false);
+          builder: (context, state) => _deferredWidget(
+            mode_selection.loadLibrary,
+            () => mode_selection.ModeSelectionPage(
+              onModeSelected: (UserMode mode) async {
+                final authService = Provider.of<AuthService>(context, listen: false);
 
-              // 소셜 로그인 타입에 따라 처리
-              final loginType = state.extra as String?;
+                // 소셜 로그인 타입에 따라 처리
+                final loginType = state.extra as String?;
 
-              bool success = false;
-              if (loginType == 'google') {
-                success = await authService.loginWithGoogle(mode);
-              } else if (loginType == 'kakao') {
-                success = await authService.loginWithKakao(mode);
-              }
-
-              if (success && context.mounted) {
-                context.go('/');
-                // 본인인증 정보 팝업으로 이동
-                await Future.delayed(const Duration(milliseconds: 100));
-                if (context.mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const UserInfoPopup(isFromSignup: true),
-                    ),
-                  );
+                bool success = false;
+                if (loginType == 'google') {
+                  success = await authService.loginWithGoogle(mode);
+                } else if (loginType == 'kakao') {
+                  success = await authService.loginWithKakao(mode);
                 }
-              } else if (context.mounted) {
-                context.pop();
-              }
-            },
+
+                if (success && context.mounted) {
+                  // 사용자 모드에 따라 리다이렉트
+                  final userMode = authService.currentUser?.mode;
+                  if (userMode == UserMode.host) {
+                    context.go('/host');
+                  } else {
+                    context.go('/guest');
+                  }
+                  // 본인인증 정보 팝업으로 이동
+                  await user_info.loadLibrary();
+                  await Future.delayed(const Duration(milliseconds: 100));
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => user_info.UserInfoPopup(isFromSignup: true),
+                      ),
+                    );
+                  }
+                } else if (context.mounted) {
+                  context.pop();
+                }
+              },
+            ),
           ),
         ),
         GoRoute(
@@ -138,18 +194,27 @@ class AppRouter {
               );
             }
 
-            return RoomDetailPage(roomId: roomId);
-          } 
+            return _deferredWidget(
+              room_detail.loadLibrary,
+              () => room_detail.RoomDetailPage(roomId: roomId),
+            );
+          }
         ),
         GoRoute(
           path: '/host',
           name: 'host',
-          builder: (context, state) => const HostHomePage(),
+          builder: (context, state) => _deferredWidget(
+            host_home.loadLibrary,
+            () => host_home.HostHomePage(),
+          ),
         ),
         GoRoute(
           path: '/host/room-registration',
           builder: (context, state) {
-            return const RoomRegistrationPage(roomId: null);
+            return _deferredWidget(
+              room_registration.loadLibrary,
+              () => room_registration.RoomRegistrationPage(roomId: null),
+            );
           },
         ),
         GoRoute(
@@ -158,7 +223,10 @@ class AppRouter {
           builder: (context, state) {
             final roomIdStr = state.pathParameters['roomId'];
             final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
-            return RoomRegistrationPage(roomId: roomId);
+            return _deferredWidget(
+              room_registration.loadLibrary,
+              () => room_registration.RoomRegistrationPage(roomId: roomId),
+            );
           },
         ),
         GoRoute(
@@ -167,7 +235,10 @@ class AppRouter {
           builder: (context, state) {
             final roomIdStr = state.pathParameters['roomId'];
             final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
-            return PricingPage(roomId: roomId);
+            return _deferredWidget(
+              pricing.loadLibrary,
+              () => pricing.PricingPage(roomId: roomId),
+            );
           },
         ),
         GoRoute(
@@ -176,7 +247,10 @@ class AppRouter {
           builder: (context, state) {
             final roomIdStr = state.pathParameters['roomId'];
             final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
-            return RoomAmenitiesPage(roomId: roomId);
+            return _deferredWidget(
+              amenities.loadLibrary,
+              () => amenities.RoomAmenitiesPage(roomId: roomId),
+            );
           },
         ),
         GoRoute(
@@ -185,7 +259,10 @@ class AppRouter {
           builder: (context, state) {
             final roomIdStr = state.pathParameters['roomId'];
             final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
-            return FreeServicesPage(roomId: roomId);
+            return _deferredWidget(
+              free_services.loadLibrary,
+              () => free_services.FreeServicesPage(roomId: roomId),
+            );
           },
         ),
         GoRoute(
@@ -194,7 +271,10 @@ class AppRouter {
           builder: (context, state) {
             final roomIdStr = state.pathParameters['roomId'];
             final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
-            return RoomDescriptionPage(roomId: roomId);
+            return _deferredWidget(
+              room_description.loadLibrary,
+              () => room_description.RoomDescriptionPage(roomId: roomId),
+            );
           },
         ),
         GoRoute(
@@ -205,14 +285,20 @@ class AppRouter {
         GoRoute(
           path: '/guest/contracts',
           name: 'guest-contracts',
-          builder: (context, state) => const GuestContractsPage(),
+          builder: (context, state) => _deferredWidget(
+            guest_contracts.loadLibrary,
+            () => guest_contracts.GuestContractsPage(),
+          ),
           routes: [
             GoRoute(
               path: ':contractId',
               name: 'guest-contract-detail',
               builder: (context, state) {
                 final contractId = state.pathParameters['contractId'] ?? '';
-                return ContractDetailPage(contractId: contractId);
+                return _deferredWidget(
+                  contract_detail.loadLibrary,
+                  () => contract_detail.ContractDetailPage(contractId: contractId),
+                );
               },
             ),
           ],
@@ -220,17 +306,67 @@ class AppRouter {
         GoRoute(
           path: '/host/contracts',
           name: 'host-contracts',
-          builder: (context, state) => const HostContractsPage(),
+          builder: (context, state) => _deferredWidget(
+            host_contracts.loadLibrary,
+            () => host_contracts.HostContractsPage(),
+          ),
           routes: [
             GoRoute(
               path: ':contractId',
               name: 'host-contract-detail',
               builder: (context, state) {
                 final contractId = state.pathParameters['contractId'] ?? '';
-                return ContractDetailPage(contractId: contractId);
+                return _deferredWidget(
+                  contract_detail.loadLibrary,
+                  () => contract_detail.ContractDetailPage(contractId: contractId),
+                );
               },
             ),
           ],
+        ),
+        GoRoute(
+          path: '/chat-list',
+          name: 'chat-list',
+          builder: (context, state) => _deferredWidget(
+            chat_list.loadLibrary,
+            () => chat_list.ChatListPage(),
+          ),
+        ),
+        GoRoute(
+          path: '/chat-detail',
+          name: 'chat-detail',
+          builder: (context, state) {
+            final args = state.extra as Map<String, dynamic>?;
+            final chatRoomId = args?['chatRoomId'] as String?;
+            final contractId = args?['contractId'] as int?;
+
+            if (chatRoomId == null) {
+              // chatRoomId가 없으면 채팅 목록으로 리다이렉트
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('잘못된 접근입니다.'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => context.go('/chat-list'),
+                        child: const Text('채팅 목록으로 돌아가기'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return _deferredWidget(
+              chat_detail.loadLibrary,
+              () => chat_detail.ChatDetailPage(
+                chatRoomId: chatRoomId,
+                contractId: contractId,
+              ),
+            );
+          },
         ),
         GoRoute(
           path: '/bypass/:userId',
@@ -258,7 +394,7 @@ class AppRouter {
                 }
 
                 // 로그인 완료 후 리다이렉트는 redirect 로직에서 처리
-                return const WelcomePage();
+                return const GuestHomePage();
               },
             );
           },
@@ -282,8 +418,8 @@ class AppRouter {
         context.go('/guest');
       }
     } else if (context.mounted) {
-      // 로그인 실패 시 웰컴 페이지로
-      context.go('/');
+      // 로그인 실패 시 게스트 홈으로
+      context.go('/guest');
     }
   }
 }

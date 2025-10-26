@@ -74,6 +74,8 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
       case ContractStatus.approvalExpired:
         return Colors.grey;
       case ContractStatus.approved:
+      case ContractStatus.paymentExpired:
+        return Colors.grey.shade600;
         return Colors.blue;
       case ContractStatus.paymentCompleted:
         return Colors.green;
@@ -124,10 +126,18 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
     final canApprove = isHost && _contract!.status == ContractStatus.pendingApproval;
     final canWithdraw = isGuest && _contract!.status == ContractStatus.pendingApproval;
 
+    // 승인 이후 상태에서는 채팅 버튼 표시
+    final canChat = _contract!.status == ContractStatus.approved ||
+        _contract!.status == ContractStatus.paymentCompleted ||
+        _contract!.status == ContractStatus.inProgress ||
+        _contract!.status == ContractStatus.completed;
+
     if (canApprove) {
       return _buildHostActionButtons();
     } else if (canWithdraw) {
       return _buildGuestActionButtons();
+    } else if (canChat) {
+      return _buildChatButton();
     }
     return null;
   }
@@ -1192,6 +1202,64 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
           ),
         ),
       ),
+    );
+  }
+
+  /// 채팅 버튼 (승인 이후 상태)
+  Widget _buildChatButton() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            offset: const Offset(0, -2),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppConstants.maxContentWidth),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton.icon(
+                onPressed: () => _navigateToChat(),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: const Text(
+                  '채팅하기',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 채팅으로 이동
+  void _navigateToChat() {
+    if (_contract == null) return;
+
+    // 채팅 목록 페이지로 이동
+    // (채팅방은 백엔드 API를 통해 계약 ID로 자동 조회됨)
+    Navigator.pushNamed(
+      context,
+      '/chat-list',
     );
   }
 

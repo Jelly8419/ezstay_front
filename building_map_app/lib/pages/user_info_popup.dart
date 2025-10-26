@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/user.dart';
 import '../services/auth_service.dart';
-import 'welcome_page.dart';
 import 'host_home_page.dart';
 import 'guest_home_page.dart';
 
@@ -1015,7 +1014,7 @@ class _UserInfoPopupState extends State<UserInfoPopup> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const WelcomePage(),
+          builder: (context) => const GuestHomePage(),
         ),
       );
     } else {
@@ -1085,7 +1084,7 @@ class _UserInfoPopupState extends State<UserInfoPopup> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const WelcomePage(),
+            builder: (context) => const GuestHomePage(),
           ),
         );
       } else {

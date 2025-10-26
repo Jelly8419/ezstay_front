@@ -14,6 +14,8 @@ class AppConstants {
   static const maxContentWidth = 1200.0;
   static const defaultPadding = 16.0;
   static const defaultRadius = 12.0;
+  static const cardRadius = 16.0; // 카드 둥근 모서리
+  static const cardElevation = 4.0; // 카드 그림자 높이
 
   // 애니메이션
   static const defaultAnimationDuration = Duration(milliseconds: 300);

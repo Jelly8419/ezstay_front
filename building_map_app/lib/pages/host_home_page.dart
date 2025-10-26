@@ -9,6 +9,8 @@ import '../core/theme/app_text_styles.dart';
 import '../core/theme/app_spacing.dart';
 import '../shared/widgets/app_buttons.dart';
 import '../features/web/web_layout.dart';
+import '../providers/chat_provider.dart';
+import '../widgets/chat_sidebar_widget.dart';
 
 /// 호스트 모드 홈 화면 - 새 디자인 시스템 적용
 class HostHomePage extends StatefulWidget {
@@ -292,6 +294,8 @@ class _HostHomePageState extends State<HostHomePage> {
 
                 // 스크롤 탑 버튼
                 ScrollToTopButton(scrollController: _scrollController),
+               // 채팅 사이드바 (오버레이)
+                ChatSidebarWidget(),
               ],
             ),
           ),
@@ -345,6 +349,12 @@ class _HostHomePageState extends State<HostHomePage> {
         text: '내 숙소',
         icon: Icons.home_work_outlined,
         onPressed: () => _showComingSoonDialog(context),
+      ),
+      SizedBox(width: AppSpacing.sm),
+      AppTextButton(
+        text: '채팅',
+        icon: Icons.chat_bubble_outline,
+        onPressed: () { final chatProvider = Provider.of<ChatProvider>(context, listen: false); chatProvider.openChatList(); },
       ),
       SizedBox(width: AppSpacing.sm),
       PopupMenuButton<String>(
@@ -846,6 +856,14 @@ class _HostHomePageState extends State<HostHomePage> {
               },
             ),
             ListTile(
+              leading: Icon(Icons.chat_bubble_outline, color: AppColors.primary600),
+              title: Text('채팅', style: AppTextStyles.bodyLarge),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/chat-list');
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.search, color: AppColors.primary600),
               title: Text('게스트 모드로 전환', style: AppTextStyles.bodyLarge),
               onTap: () {
@@ -912,9 +930,12 @@ class _HostHomePageState extends State<HostHomePage> {
             ),
             AppPrimaryButton(
               text: '전환하기',
-              onPressed: () {
-                authService.switchUserMode(UserMode.guest);
-                Navigator.pop(context);
+              onPressed: () async {
+                Navigator.pop(context); // 먼저 다이얼로그 닫기
+                await authService.switchUserMode(UserMode.guest); // 모드 변경
+                if (context.mounted) {
+                  context.go('/guest'); // 게스트 홈으로 이동 (올바른 경로)
+                }
               },
               fullWidth: false,
             ),

@@ -79,6 +79,13 @@ dependencies:
   # 국제화 및 로케일
   intl: ^0.19.0
 
+  # Firebase (필요한 서비스만 포함)
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.4
+  cloud_firestore: ^5.6.0
+  # firebase_storage: ^12.3.8  # 미사용 - 제거하여 번들 크기 감소
+  # firebase_messaging: ^15.1.5  # 미사용 - 제거하여 번들 크기 감소
+
 
 dev_dependencies:
   flutter_test:

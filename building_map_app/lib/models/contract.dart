@@ -5,6 +5,7 @@ enum ContractStatus {
   pendingApproval('PENDING_APPROVAL', '승인 대기'),
   approvalExpired('APPROVAL_EXPIRED', '미승인 만료'),
   approved('APPROVED', '승인됨'),
+  paymentExpired('PAYMENT_EXPIRED', '미결제 만료'),
   rejected('REJECTED', '거절됨'),
   paymentCompleted('PAYMENT_COMPLETED', '결제 완료'),
   inProgress('IN_PROGRESS', '계약 진행중'),

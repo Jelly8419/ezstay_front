@@ -1,3 +1,33 @@
+## ⚠️ 중요: Claude 작업 규칙
+
+### 🚫 절대 금지 사항
+1. **앱 실행 금지**: 버그 수정이나 기능 추가 후 `flutter run` 명령어를 **절대 실행하지 말 것**
+   - 사용자가 디버깅 모드에서 핫 리로드로 직접 확인함
+   - 포트 충돌 및 불필요한 프로세스 생성 방지
+
+2. **Git 작업 금지**: 사용자가 명시적으로 요청하기 전까지 다음 작업을 **절대 하지 말 것**
+   - git commit - 커밋 생성 금지
+   - git push - 원격 저장소로 푸시 금지
+   - git add - 스테이징 금지 (명시적 요청 시에만)
+
+### ✅ 허용되는 작업
+- 코드 읽기 및 분석
+- 버그 수정 및 기능 구현 (파일 수정)
+- 테스트 코드 작성
+- 문서 업데이트
+- 코드 리뷰 및 제안
+- Git 상태 확인 (git status, git diff, git log 등)
+
+### 📋 작업 후 보고 형식
+코드 수정 완료 후 다음 형식으로 보고:
+```
+✅ 수정 완료: [파일명:라인번호]
+- 변경 내용 요약
+- 해결된 문제 설명
+
+🔄 핫 리로드 대기 중...
+```
+
 # EZStay Front - EZStay
 
 ## 프로젝트 개요
@@ -86,9 +116,10 @@ building_map_app/
 
 ### `/lib/widgets/common/` (공통 컴포넌트)
 - `custom_text_field.dart` - 재사용 가능한 텍스트 입력 필드
-- `custom_button.dart` - 재사용 가능한 버튼 (로딩 상태 지원)
+- `custom_button.dart` - 재사용 가능한 버튼 (로딩 상태 지원, 그림자 효과)
 - `custom_dropdown.dart` - 재사용 가능한 드롭다운
-- `responsive_page_layout.dart` - 반응형 페이지 레이아웃 래퍼
+- `custom_card.dart` - 재사용 가능한 카드 (떠있는 느낌, 호버 효과)
+- `responsive_page_layout.dart` - 반응형 페이지 레이아웃 래퍼 (카드 스타일 옵션 지원)
 
 ### `/lib/router/`
 - `app_router.dart` - GoRouter 기반 앱 라우팅 설정
@@ -230,41 +261,124 @@ GoRouter 기반 라우팅:
 
 ### UI/디자인 가이드라인
 
-#### 1. 테마 시스템 사용 (필수)
-모든 페이지와 위젯에서 **통합된 테마 시스템**을 사용해야 합니다.
+#### 1. 디자인 시스템 구조 (중앙화된 테마)
 
-**색상:**
+프로젝트는 **모던 부동산 플랫폼 스타일**의 중앙화된 디자인 시스템을 사용합니다.
+
+**디렉토리 구조:**
+```
+lib/
+├── core/theme/              # 중앙화된 디자인 시스템
+│   ├── app_colors.dart      # 색상 시스템
+│   ├── app_text_styles.dart # 타이포그래피 시스템
+│   └── app_spacing.dart     # 간격, 그림자, 애니메이션
+├── shared/widgets/          # 재사용 가능한 공통 위젯
+│   └── hover_card.dart      # 인터랙티브 호버 카드
+└── widgets/                 # 페이지별 위젯
+```
+
+#### 2. 테마 시스템 사용 (필수)
+
+**색상 시스템:**
 ```dart
-import '../constants/app_constants.dart';
+import '../core/theme/app_colors.dart';
 
-// ✅ 올바른 방법
-Container(color: AppColors.primary)
+// ✅ 올바른 방법 - 중앙화된 색상 사용
+Container(color: AppColors.primary500)
+Container(color: AppColors.surface)
 Text('텍스트', style: TextStyle(color: AppColors.textPrimary))
+Border.all(color: AppColors.border)
 
-// ❌ 잘못된 방법
-Container(color: Color(0xFF4A90E2))  // 하드코딩 금지
+// ❌ 잘못된 방법 - 하드코딩 금지
+Container(color: Color(0xFF4A90E2))
 Text('텍스트', style: TextStyle(color: Colors.black))
 ```
 
-**텍스트 스타일:**
+**타이포그래피:**
 ```dart
+import '../core/theme/app_text_styles.dart';
+
 // ✅ 올바른 방법
-Text('제목', style: AppTextStyles.heading1)
-Text('본문', style: AppTextStyles.bodyLarge)
+Text('제목', style: AppTextStyles.headingLarge)
+Text('본문', style: AppTextStyles.bodyMedium)
+Text('가격', style: AppTextStyles.priceText)
+
+// 색상 변형
+Text('부제목', style: AppTextStyles.bodyMediumSecondary)
+Text('에러', style: AppTextStyles.bodySmallError)
 
 // ❌ 잘못된 방법
 Text('제목', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold))
 ```
 
-**상수값:**
+**간격 및 레이아웃:**
 ```dart
-// ✅ 올바른 방법
-BorderRadius.circular(AppConstants.defaultRadius)
-EdgeInsets.all(AppConstants.defaultPadding)
+import '../core/theme/app_spacing.dart';
+
+// ✅ 올바른 방법 - 8pt 그리드 시스템
+Padding(padding: AppSpacing.paddingMd)  // 16px
+SizedBox(height: AppSpacing.lg)         // 24px
+SizedBox(width: AppSpacing.xs)          // 4px
+
+// BorderRadius
+BorderRadius.circular(AppRadius.md)     // 12px
+BorderRadius.circular(AppRadius.lg)     // 16px
 
 // ❌ 잘못된 방법
-BorderRadius.circular(12)
 EdgeInsets.all(16)
+BorderRadius.circular(12)
+```
+
+#### 3. 그림자 시스템 (중앙화)
+
+**카드 그림자 (3단계):**
+```dart
+import '../core/theme/app_spacing.dart';
+
+Container(
+  decoration: BoxDecoration(
+    // 기본 상태 - 미세한 떠있는 느낌
+    boxShadow: AppShadows.cardDefault,
+
+    // 호버 상태 - 강조된 느낌 (Primary 색상 혼합)
+    boxShadow: AppShadows.cardHover,
+
+    // 선택 상태 - 더 강조된 느낌
+    boxShadow: AppShadows.cardSelected,
+  ),
+)
+
+// 플로팅 버튼, 모달 등
+boxShadow: AppShadows.floatingButton
+boxShadow: AppShadows.modal
+```
+
+#### 4. 애니메이션 시스템 (중앙화)
+
+**Duration & Curve:**
+```dart
+import '../core/theme/app_spacing.dart';
+
+// ✅ 올바른 방법 - 중앙화된 애니메이션 설정
+AnimatedContainer(
+  duration: AppDurations.hoverCard,    // 300ms
+  curve: AppCurves.hoverCard,          // easeOutCubic
+  ...
+)
+
+// 다양한 애니메이션 타입
+duration: AppDurations.listItem       // 250ms
+duration: AppDurations.pageTransition // 400ms
+duration: AppDurations.modal          // 350ms
+
+curve: AppCurves.listItem        // easeOutQuart
+curve: AppCurves.pageTransition  // easeInOutCubic
+
+// ❌ 잘못된 방법
+AnimatedContainer(
+  duration: Duration(milliseconds: 300),
+  curve: Curves.easeInOut,
+)
 ```
 
 #### 2. 반응형 페이지 레이아웃 (필수)
@@ -276,6 +390,7 @@ import '../widgets/common/responsive_page_layout.dart';
 
 ResponsiveScaffold(
   title: '페이지 제목',
+  useCardStyle: true,  // 떠있는 느낌의 카드 스타일
   actions: [
     IconButton(icon: Icon(Icons.settings), onPressed: () {}),
   ],
@@ -294,6 +409,7 @@ import '../widgets/common/responsive_page_layout.dart';
 Scaffold(
   appBar: AppBar(title: Text('페이지')),
   body: ResponsivePageLayout(
+    useCardStyle: true,  // 떠있는 느낌의 카드 스타일
     child: Column(
       children: [
         Text('컨텐츠'),
@@ -309,12 +425,14 @@ Scaffold(
 ResponsivePageLayout(
   scrollable: false,
   usePadding: false,
+  useCardStyle: false,  // 카드 스타일 비활성화
   child: ListView(...),
 )
 
 // 최대 너비 커스터마이징
 ResponsivePageLayout(
   maxWidth: 800,  // 기본값: 1200
+  useCardStyle: true,  // 카드 스타일 적용
   child: Column(...),
 )
 ```
@@ -330,11 +448,11 @@ Center(
 )
 ```
 
-#### 3. 공통 위젯 사용
-재사용 가능한 공통 위젯을 활용하세요:
+#### 5. 재사용 가능한 공통 위젯 (일반화)
 
+**기본 UI 컴포넌트:**
 ```dart
-// CustomButton
+// CustomButton (그림자 효과 자동 적용)
 CustomButton(
   text: '버튼',
   onPressed: () {},
@@ -357,7 +475,86 @@ CustomDropdown(
 )
 ```
 
-#### 4. 반응형 값 가져오기
+**인터랙티브 카드 위젯 (lib/shared/widgets/hover_card.dart):**
+
+```dart
+import '../shared/widgets/hover_card.dart';
+
+// 1. HoverCard - 완전한 기능의 호버 카드
+HoverCard(
+  onTap: () => print('탭됨'),
+  isSelected: false,
+  enableHoverLift: true,      // 호버 시 위로 올라감
+  liftHeight: 8.0,             // 올라가는 높이 (기본 8px)
+  borderRadius: AppRadius.radiusMd,
+  padding: AppSpacing.paddingMd,
+  animationDuration: AppDurations.hoverCard,
+  animationCurve: AppCurves.hoverCard,
+  child: Column(
+    children: [
+      Text('제목'),
+      Text('내용'),
+    ],
+  ),
+)
+
+// 2. HoverEffect - 기존 위젯에 호버 효과만 추가
+HoverEffect(
+  onTap: () {},
+  enableLift: true,
+  liftHeight: 8.0,
+  child: PropertyCard(...),  // 기존 위젯
+)
+
+// 3. ImageInfoCard - 이미지 + 정보 카드
+ImageInfoCard(
+  imageUrl: 'https://...',
+  imageHeight: 200,
+  title: '강남역 도보 5분',
+  subtitle: '서울시 강남구',
+  badge: '신규',              // 선택사항
+  trailing: Row(...),         // 하단 추가 위젯
+  onTap: () {},
+  isSelected: false,
+)
+```
+
+**HoverCard 사용 예시:**
+
+```dart
+// ✅ 매물 카드
+HoverCard(
+  child: PropertyCard(room: room),
+)
+
+// ✅ 리스트 아이템
+HoverEffect(
+  child: ListTile(
+    title: Text('아이템'),
+  ),
+)
+
+// ✅ 커스텀 카드
+HoverCard(
+  padding: AppSpacing.paddingLg,
+  child: Column(
+    children: [
+      Icon(Icons.home),
+      Text('제목'),
+      Text('설명'),
+    ],
+  ),
+)
+```
+
+**주요 특징:**
+- ✅ 호버 시 자동으로 위로 8px 상승
+- ✅ 3단계 그림자 (기본/호버/선택)
+- ✅ 부드러운 300ms 애니메이션
+- ✅ Primary 색상 테두리 강조
+- ✅ 완전히 커스터마이징 가능
+
+#### 6. 반응형 값 가져오기
 화면 크기에 따라 다른 값을 사용해야 할 때:
 
 ```dart
@@ -381,6 +578,14 @@ final gridColumns = ResponsiveUtil.getGridCrossAxisCount(context);  // 4/3/2
 - 현재 브랜치: `feature/host-room-registration`
 
 ## 최근 작업 내역
+
+### 2025-10-26: 모던 디자인 시스템 일반화 및 중앙화
+- ✅ 3단계 카드 그림자 시스템 추가 (AppShadows.cardDefault/cardHover/cardSelected)
+- ✅ 애니메이션 Duration/Curve 중앙화 (AppDurations, AppCurves)
+- ✅ 재사용 가능한 HoverCard, HoverEffect, ImageInfoCard 위젯 생성
+- ✅ PropertyCard에 모던 인터랙션 적용 (호버 시 8px 상승, 부드러운 300ms 애니메이션)
+- ✅ 모든 하드코딩된 값을 디자인 시스템으로 교체
+- ✅ CLAUDE.md에 디자인 시스템 일반화/중앙화 가이드 추가
 
 ### 2025-10-23: 디자인 시스템 통합 및 반응형 레이아웃 적용
 - ✅ 디자인 테마 시스템 통합 (AppTheme.lightTheme())
@@ -504,8 +709,142 @@ flutter test
 ### 추가 최적화
 - [ ] 위젯 리빌드 최적화 (Selector 사용)
 - [ ] 번들 크기 최적화
-- [ ] 코드 스플리팅
+- [ ] 코드 스플리팅 (Deferred Loading)
 - [ ] CI/CD 파이프라인 구축
+
+## 성능 최적화
+
+### Flutter 웹 번들 크기 최적화
+
+#### 현재 상황
+Flutter 웹은 기본적으로 **전체 앱을 하나의 JavaScript 번들로 빌드**합니다. 따라서:
+- 첫 로드 시 모든 Dart 파일이 JavaScript로 컴파일되어 다운로드됩니다
+- 이후 페이지 이동은 실제 네트워크 요청 없이 클라이언트 측에서만 처리됩니다
+- 개발 모드(`flutter run -d chrome`)에서는 번들이 최적화되지 않아 더 많은 파일이 보입니다
+
+#### 최적화 방법
+
+##### 1. 프로덕션 빌드 사용
+개발 모드가 아닌 **프로덕션 빌드**를 사용하면 번들 크기가 크게 줄어듭니다:
+
+```bash
+# 프로덕션 빌드 생성
+flutter build web --release
+
+# 로컬 서버로 테스트
+cd build/web
+python -m http.server 8000
+# 또는
+npx serve
+```
+
+**프로덕션 빌드 최적화:**
+- 트리 쉐이킹 (사용하지 않는 코드 제거)
+- 코드 난독화 및 압축
+- 번들 크기 최소화
+
+##### 2. Deferred Loading (지연 로딩) 적용
+
+자주 사용하지 않는 페이지를 나중에 로드하도록 설정:
+
+**router/app_router.dart 수정 예시:**
+```dart
+// 1. deferred import 사용
+import 'package:building_map_app/pages/room_detail_page.dart' deferred as room_detail;
+import 'package:building_map_app/pages/host_home_page.dart' deferred as host_home;
+import 'package:building_map_app/pages/chat_detail_page.dart' deferred as chat_detail;
+
+// 2. 라우트에서 loadLibrary() 호출
+GoRoute(
+  path: '/guest/room/detail/:roomId',
+  builder: (context, state) async {
+    await room_detail.loadLibrary();  // 필요할 때만 로드
+    final roomId = int.tryParse(state.pathParameters['roomId'] ?? '');
+    return room_detail.RoomDetailPage(roomId: roomId!);
+  },
+)
+```
+
+**지연 로딩 대상 페이지:**
+- 호스트 전용 페이지 (방 등록, 요금 설정 등)
+- 상세 페이지 (RoomDetailPage, ContractDetailPage)
+- 채팅 페이지
+- 자주 사용하지 않는 설정 페이지
+
+**주의사항:**
+- 게스트 홈, 로그인, 지도 등 자주 사용하는 페이지는 즉시 로딩
+- deferred loading은 웹에서만 동작 (모바일에서는 무시됨)
+
+##### 3. 이미지 최적화
+
+**이미지 최적화 체크리스트:**
+```dart
+// ✅ CachedNetworkImage 사용 (이미 적용됨)
+CachedNetworkImage(
+  imageUrl: imageUrl,
+  placeholder: (context, url) => Shimmer(...),
+  errorWidget: (context, url, error) => Icon(Icons.error),
+  maxHeightDiskCache: 800,  // 캐시 이미지 최대 높이
+  maxWidthDiskCache: 1200,   // 캐시 이미지 최대 너비
+)
+
+// ✅ WebP 포맷 사용 (용량 30-50% 감소)
+// ✅ 적절한 이미지 크기 (썸네일 300x300, 상세 1200x800)
+// ✅ ImageService로 업로드 전 압축 (이미 적용됨)
+```
+
+##### 4. 외부 라이브러리 최적화
+
+**index.html에서 불필요한 스크립트 제거:**
+```html
+<!-- ❌ 모든 Material Icons 변형 제거 -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Icons+Outlined" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Icons+Sharp" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Icons+Two+Tone" rel="stylesheet">
+
+<!-- ✅ 기본 Material Icons만 사용 -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Icons" rel="stylesheet">
+```
+
+**Firebase SDK 최적화:**
+```html
+<!-- ❌ 사용하지 않는 Firebase 서비스 제거 -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+
+<!-- ✅ 필요한 서비스만 로드 -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+```
+
+##### 5. 번들 분석
+
+프로덕션 빌드 후 번들 크기 분석:
+
+```bash
+# 번들 크기 분석
+flutter build web --release --analyze-size
+
+# 결과 확인
+cat .dart_tool/flutter_build/*/app.dill.size-analysis.json
+```
+
+#### 성능 측정
+
+**Chrome DevTools로 성능 측정:**
+1. Chrome DevTools → Performance 탭
+2. 녹화 시작 → 페이지 새로고침 → 녹화 중지
+3. 확인 항목:
+   - **FCP (First Contentful Paint)**: 첫 콘텐츠 표시 시간
+   - **LCP (Largest Contentful Paint)**: 최대 콘텐츠 표시 시간
+   - **TTI (Time to Interactive)**: 인터랙션 가능 시간
+
+**목표 지표:**
+- FCP < 1.8초
+- LCP < 2.5초
+- TTI < 3.8초
 
 ## 참고 문서
 
