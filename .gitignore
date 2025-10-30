@@ -4,6 +4,11 @@
 # VS Code settings (optional - uncomment if you want to ignore)
 # .vscode/
 
+# Node.js
+node_modules/
+package.json
+package-lock.json
+
 # OS generated files
 .DS_Store
 .DS_Store?

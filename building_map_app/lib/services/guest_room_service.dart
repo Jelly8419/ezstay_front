@@ -59,12 +59,13 @@ class GuestRoomService {
         if (filters.otherOptions.contains(OtherOptions.parking)) {
           queryParams['parking'] = 'true';
         }
-        if (filters.otherOptions.contains(OtherOptions.subway)) {
-          queryParams['subway'] = 'true';
-        }
-        if (filters.otherOptions.contains(OtherOptions.pet)) {
-          queryParams['pet'] = 'true';
-        }
+        // 백엔드 필드 없어서 주석 처리
+        // if (filters.otherOptions.contains(OtherOptions.subway)) {
+        //   queryParams['subway'] = 'true';
+        // }
+        // if (filters.otherOptions.contains(OtherOptions.pet)) {
+        //   queryParams['pet'] = 'true';
+        // }
       }
 
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/guest/rooms/search').replace(
