@@ -175,7 +175,8 @@ class _MapScreenState extends State<MapScreen> {
       _filters = newFilters;
     });
     _saveFilters(newFilters);
-    _loadRooms();
+    // 프론트엔드 필터링이므로 API 재호출 불필요
+    // _buildPropertyList()가 자동으로 필터링 적용
   }
 
   void _onRoomSelected(Room? room, {bool focusMap = false}) {
@@ -286,8 +287,9 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildPropertyList() {
-    // 현재 지도 영역 내 매물만 필터링 (실제 지도 bounds 기반)
+  /// 필터링된 방 목록 가져오기 (리스트와 지도 공통 사용)
+  List<Map<String, dynamic>> _getFilteredRooms() {
+    // 1단계: 지도 영역 내 매물 필터링 (bounds 기반)
     final visibleRooms = _roomsForMap.where((room) {
       // 백엔드 응답에 위도/경도가 없으면 제외
       if (room['latitude'] == null || room['longitude'] == null) return false;
@@ -312,11 +314,64 @@ class _MapScreenState extends State<MapScreen> {
       return isInBounds;
     }).toList();
 
+    // 2단계: 검색 필터 적용
+    final filteredRooms = visibleRooms.where((room) {
+      // 건물 유형 필터
+      if (_filters.buildingTypes.isNotEmpty) {
+        final buildingType = room['buildingType']?.toString() ?? '';
+        if (!_filters.buildingTypes.contains(buildingType)) {
+          return false;
+        }
+      }
+
+      // 방 개수 필터
+      if (_filters.bedroomCounts.isNotEmpty) {
+        final roomCount = room['roomCount'] as int? ?? 1;
+        // 3은 "3개 이상" 의미
+        if (_filters.bedroomCounts.contains(3)) {
+          // 3개 이상 필터가 선택된 경우
+          if (roomCount >= 3) {
+            // roomCount가 3 이상이면 통과
+          } else if (!_filters.bedroomCounts.contains(roomCount)) {
+            // roomCount가 3 미만이고, 해당 개수가 선택되지 않았으면 제외
+            return false;
+          }
+        } else {
+          // 3개 이상 필터가 선택되지 않은 경우
+          if (!_filters.bedroomCounts.contains(roomCount)) {
+            return false;
+          }
+        }
+      }
+
+      // 가격 범위 필터
+      if (!_filters.priceRange.isDefault) {
+        final dailyRent = room['dailyRent'] as int? ?? 0;
+        if (!_filters.priceRange.isInRange(dailyRent)) {
+          return false;
+        }
+      }
+
+      // 주차 가능 필터
+      if (_filters.otherOptions.contains(OtherOptions.parking)) {
+        final parking = room['parkingAvailable'] as bool? ?? false;
+        if (!parking) return false;
+      }
+
+      return true;
+    }).toList();
+
+    return filteredRooms;
+  }
+
+  Widget _buildPropertyList() {
+    final filteredRooms = _getFilteredRooms();
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: visibleRooms.length,
+      itemCount: filteredRooms.length,
       itemBuilder: (context, index) {
-        final roomData = visibleRooms[index];
+        final roomData = filteredRooms[index];
 
         // 백엔드 API 응답을 Room 모델 형식으로 변환
         final thumbnail = roomData['thumbnail'];
@@ -387,8 +442,9 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildMap() {
     if (kIsWeb) {
-      // 백엔드 API 응답 데이터를 카카오맵에 맞게 변환
-      final roomsForKakaoMap = _roomsForMap.map((roomData) {
+      // 필터링된 방 목록을 카카오맵에 맞게 변환
+      final filteredRooms = _getFilteredRooms();
+      final roomsForKakaoMap = filteredRooms.map((roomData) {
         // dailyRent를 weeklyRent로 계산 (1000원 단위 반올림)
         final dailyRent = roomData['dailyRent'] ?? 0;
         final weeklyRent = ((dailyRent * 7) / 1000).round() * 1000;
@@ -407,10 +463,10 @@ class _MapScreenState extends State<MapScreen> {
         rooms: roomsForKakaoMap,
         onMarkerTap: (roomData) {
           final roomId = roomData['id'] as int;
-          // 선택된 방 정보를 찾아서 표시
-          final selectedRoomData = _roomsForMap.firstWhere(
+          // 필터링된 방 목록에서 선택된 방 정보 찾기
+          final selectedRoomData = filteredRooms.firstWhere(
             (r) => r['id'] == roomId,
-            orElse: () => _roomsForMap.first,
+            orElse: () => filteredRooms.first,
           );
 
           // Room 모델로 변환

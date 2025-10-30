@@ -56,7 +56,9 @@ enum DiscountType {
 enum PaymentMethod {
   creditCard('CREDIT_CARD', '신용카드'),
   bankTransfer('BANK_TRANSFER', '계좌이체'),
-  simplePay('SIMPLE_PAY', '간편결제');
+  virtualAccount('VIRTUAL_ACCOUNT', '가상계좌'),
+  easyPay('EASY_PAY', '간편결제'),
+  mobilePayment('MOBILE_PAYMENT', '휴대폰 결제');
 
   final String value;
   final String label;
