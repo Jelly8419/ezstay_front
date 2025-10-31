@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_constants.dart';
 import '../models/contract.dart';
+import '../models/payment_method.dart';
 import '../services/contract_service.dart';
 import '../services/auth_service.dart';
 import '../config/api_config.dart';
@@ -30,6 +31,9 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
   bool _isLoading = true;
   String? _errorMessage;
   bool _isProcessing = false;
+
+  // 결제 관련 State
+  PaymentMethod? _selectedPaymentMethod;
 
   @override
   void initState() {
@@ -76,7 +80,6 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
       case ContractStatus.approved:
       case ContractStatus.paymentExpired:
         return Colors.grey.shade600;
-        return Colors.blue;
       case ContractStatus.paymentCompleted:
         return Colors.green;
       case ContractStatus.inProgress:
@@ -126,6 +129,9 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
     final canApprove = isHost && _contract!.status == ContractStatus.pendingApproval;
     final canWithdraw = isGuest && _contract!.status == ContractStatus.pendingApproval;
 
+    // 게스트 & 승인된 계약 - 결제 버튼 표시
+    final canPay = isGuest && _contract!.status == ContractStatus.approved;
+
     // 승인 이후 상태에서는 채팅 버튼 표시
     final canChat = _contract!.status == ContractStatus.approved ||
         _contract!.status == ContractStatus.paymentCompleted ||
@@ -136,6 +142,8 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
       return _buildHostActionButtons();
     } else if (canWithdraw) {
       return _buildGuestActionButtons();
+    } else if (canPay) {
+      return _buildPaymentButton();
     } else if (canChat) {
       return _buildChatButton();
     }
@@ -310,6 +318,12 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
 
     final room = _contract!.room!;
 
+    // 채팅 버튼 표시 여부 확인
+    final canChat = _contract!.status == ContractStatus.approved ||
+        _contract!.status == ContractStatus.paymentCompleted ||
+        _contract!.status == ContractStatus.inProgress ||
+        _contract!.status == ContractStatus.completed;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -333,6 +347,7 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
           ),
           const SizedBox(height: 16),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (room.thumbnail != null)
                 ClipRRect(
@@ -393,6 +408,42 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
                   ],
                 ),
               ),
+              // 채팅하기 버튼 (승인 이후 상태에서만 표시)
+              if (canChat)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _navigateToChat,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.chat_bubble_outline, size: 24),
+                          SizedBox(height: 4),
+                          Text(
+                            '채팅하기',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ],
@@ -630,6 +681,253 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 결제 수단 선택 모달 표시
+  Future<void> _showPaymentMethodModal() async {
+    final selectedMethod = await showModalBottomSheet<PaymentMethod>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildPaymentMethodModal(),
+    );
+
+    if (selectedMethod != null && mounted) {
+      setState(() => _selectedPaymentMethod = selectedMethod);
+      await _processPayment();
+    }
+  }
+
+  /// 결제 수단 선택 모달 UI
+  Widget _buildPaymentMethodModal() {
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 모달 헤더
+              _buildModalHeader(),
+
+              // 결제 수단 리스트 (스크롤 가능)
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  children: PaymentMethod.values
+                      .map((method) => _buildModalPaymentCard(method, setModalState))
+                      .toList(),
+                ),
+              ),
+
+              // 하단 고정 버튼
+              _buildModalBottomButton(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 모달 헤더
+  Widget _buildModalHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            '결제 수단 선택',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(Icons.close, size: 28, color: Colors.grey.shade600),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 모달 내 결제 수단 카드
+  Widget _buildModalPaymentCard(PaymentMethod method, StateSetter setModalState) {
+    final isSelected = _selectedPaymentMethod == method;
+
+    return GestureDetector(
+      onTap: () {
+        setModalState(() {
+          _selectedPaymentMethod = method;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.08),
+                    Colors.white,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : Colors.white,
+          border: Border.all(
+            color: isSelected ? AppColors.primary : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Row(
+          children: [
+            // 아이콘 (원형 배경)
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                method.icon,
+                size: 28,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    method.label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.primary
+                          : Colors.grey.shade900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    method.description,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_circle,
+                color: AppColors.primary,
+                size: 28,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 모달 하단 고정 버튼
+  Widget _buildModalBottomButton() {
+    final canPay = _selectedPaymentMethod != null;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            offset: const Offset(0, -4),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: ElevatedButton(
+            onPressed: canPay
+                ? () {
+                    Navigator.pop(context, _selectedPaymentMethod);
+                  }
+                : null,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              backgroundColor: canPay ? AppColors.primary : Colors.grey.shade300,
+              foregroundColor: canPay ? Colors.white : Colors.grey.shade600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: canPay ? 4 : 0,
+              disabledBackgroundColor: Colors.grey.shade300,
+              disabledForegroundColor: Colors.grey.shade600,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  canPay ? Icons.payment : Icons.touch_app,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  canPay
+                      ? '₩${_currencyFormat.format(_contract!.finalTotalAmount)} 결제하기'
+                      : '결제 수단을 선택해주세요',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1205,6 +1503,58 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
     );
   }
 
+  /// 결제 버튼 (게스트 & 승인된 계약) - 모달 방식
+  Widget _buildPaymentButton() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            offset: const Offset(0, -4),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppConstants.maxContentWidth),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: _showPaymentMethodModal,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 4,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.payment, size: 24),
+                    const SizedBox(width: 12),
+                    Text(
+                      '₩${_currencyFormat.format(_contract!.finalTotalAmount)} 결제하기',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 채팅 버튼 (승인 이후 상태)
   Widget _buildChatButton() {
     return Container(
@@ -1260,6 +1610,156 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
     Navigator.pushNamed(
       context,
       '/chat-list',
+    );
+  }
+
+  /// 결제 처리
+  Future<void> _processPayment() async {
+    if (_selectedPaymentMethod == null || _contract == null) return;
+
+    // 결제 확인 다이얼로그
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('결제 확인'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('아래 내용으로 결제를 진행하시겠습니까?'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: [
+                  _buildDialogInfoRow('결제 수단', _selectedPaymentMethod!.label),
+                  const Divider(height: 16),
+                  _buildDialogInfoRow(
+                    '결제 금액',
+                    '₩${_currencyFormat.format(_contract!.finalTotalAmount)}',
+                    bold: true,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 18,
+                    color: Colors.orange.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '결제 후 계약이 확정되며, 취소 시 수수료가 발생할 수 있습니다.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('결제하기'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      // TODO: 토스페이먼츠 API 연동
+      // 현재는 UI만 구현된 상태로, 실제 결제 로직은 사업자등록 후 추가 예정
+
+      // 임시 지연 (실제 API 호출 시뮬레이션)
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+
+      // 성공 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('결제 기능은 토스페이먼츠 연동 후 활성화됩니다.'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      // 실제 구현 시:
+      // final paymentResult = await PaymentService.processPayment(
+      //   contractId: _contract!.id,
+      //   paymentMethod: _selectedPaymentMethod!,
+      //   amount: _contract!.finalTotalAmount,
+      // );
+      //
+      // if (paymentResult.success) {
+      //   // 계약 정보 새로고침
+      //   await _loadContractDetail();
+      //
+      //   // 성공 다이얼로그 표시
+      //   showDialog(...);
+      // }
+
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// 다이얼로그 정보 행
+  Widget _buildDialogInfoRow(String label, String value, {bool bold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
+            color: Colors.grey.shade900,
+          ),
+        ),
+      ],
     );
   }
 

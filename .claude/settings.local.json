@@ -47,10 +47,15 @@
       "Bash(firebase login:*)",
       "Bash(dart analyze:*)",
       "Bash(timeout 5 python:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []
   },
-  "enableAllProjectMcpServers": true
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "design-analyzer",
+    "notion"
+  ]
 }

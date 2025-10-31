@@ -4,7 +4,20 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class ApiConfig {
   /// 백엔드 API 베이스 URL
   static String get baseUrl {
-    return dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+    // 1순위: --dart-define으로 전달된 값 (빌드 타임)
+    const dartDefineUrl = String.fromEnvironment('API_BASE_URL');
+    if (dartDefineUrl.isNotEmpty) {
+      return dartDefineUrl;
+    }
+
+    // 2순위: .env 파일의 값 (로컬 개발)
+    final dotenvUrl = dotenv.env['API_BASE_URL'];
+    if (dotenvUrl != null && dotenvUrl.isNotEmpty) {
+      return dotenvUrl;
+    }
+
+    // 3순위: 기본값 (localhost)
+    return 'http://localhost:8080';
   }
 
   /// API 타임아웃 시간 (초)

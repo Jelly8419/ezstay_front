@@ -177,14 +177,15 @@ class BuildingTypes {
 /// 기타 옵션 상수
 class OtherOptions {
   static const String parking = 'parking';
-  static const String subway = 'subway';
-  static const String pet = 'pet';
+  // 백엔드 필드 없어서 주석 처리
+  // static const String subway = 'subway';
+  // static const String pet = 'pet';
 
   static const Map<String, String> labels = {
     parking: '주차가능',
-    subway: '역세권',
-    pet: '반려동물 가능',
+    // subway: '역세권',
+    // pet: '반려동물 가능',
   };
 
-  static const List<String> all = [parking, subway, pet];
+  static const List<String> all = [parking];
 }
