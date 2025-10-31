@@ -1,4 +1,5 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'api_config.dart';
 
 /// 카카오 API 설정
 class KakaoConfig {
@@ -9,10 +10,10 @@ class KakaoConfig {
   static String get javascriptKey => dotenv.env['KAKAO_JAVASCRIPT_KEY'] ?? '';
 
   /// 리다이렉트 URL
-  static const String redirectUrl = 'http://localhost:8080/api/auth/kakao';
+  static String get redirectUrl => '${ApiConfig.baseUrl}/api/auth/kakao';
 
   /// 웹용 리다이렉트 URL (Flutter Web)
-  static const String webRedirectUrl = 'http://localhost:8080/api/auth/kakao';
+  static String get webRedirectUrl => '${ApiConfig.baseUrl}/api/auth/kakao';
 
   /// 카카오 앱 스킴 (네이티브 앱용)
   static String get nativeAppKey => 'kakao$restApiKey';

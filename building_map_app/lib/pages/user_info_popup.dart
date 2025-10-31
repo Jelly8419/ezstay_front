@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../config/api_config.dart';
 import 'host_home_page.dart';
 import 'guest_home_page.dart';
 
@@ -785,7 +786,7 @@ class _UserInfoPopupState extends State<UserInfoPopup> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8080/api/account/verify'),
+        Uri.parse('${ApiConfig.baseUrl}/api/account/verify'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${await Provider.of<AuthService>(context, listen: false).getAccessToken()}',
@@ -1125,7 +1126,7 @@ class _UserInfoPopupState extends State<UserInfoPopup> {
 
     if (isHost) {
       // 호스트: 본인인증 + 계좌정보 + 약관 저장
-      apiUrl = 'http://localhost:8080/api/user/host/verification';
+      apiUrl = '${ApiConfig.baseUrl}/api/user/host/verification';
       requestBody = {
         'name': _nameController.text,
         'phone_number': _phoneController.text,
@@ -1136,7 +1137,7 @@ class _UserInfoPopupState extends State<UserInfoPopup> {
       };
     } else {
       // 게스트: 본인인증 + 약관 저장
-      apiUrl = 'http://localhost:8080/api/user/guest/verification';
+      apiUrl = '${ApiConfig.baseUrl}/api/user/guest/verification';
       requestBody = {
         'name': _nameController.text,
         'phone_number': _phoneController.text,
