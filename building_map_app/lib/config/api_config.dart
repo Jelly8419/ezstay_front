@@ -4,14 +4,22 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class ApiConfig {
   /// 백엔드 API 베이스 URL
   static String get baseUrl {
-    // 1. --dart-define으로 주입된 값 우선 사용 (배포 시)
+
+
     const dartDefineUrl = String.fromEnvironment('API_BASE_URL');
     if (dartDefineUrl.isNotEmpty) {
       return dartDefineUrl;
     }
 
-    // 2. .env 파일에서 읽기 (로컬 개발 시)
-    return dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+
+    // 2순위: .env 파일의 값 (로컬 개발)
+    final dotenvUrl = dotenv.env['API_BASE_URL'];
+    if (dotenvUrl != null && dotenvUrl.isNotEmpty) {
+      return dotenvUrl;
+    }
+
+    // 3순위: 기본값 (localhost)
+    return 'http://localhost:8080';
   }
 
   /// API 타임아웃 시간 (초)

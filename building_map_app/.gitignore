@@ -14,11 +14,25 @@ migrate_working_dir/
 
 # Environment variables (contains API keys)
 .env
+.env.local
+.env.*.local
 .env.test
-.env.production
+
+# Keep template and non-local environments
 !.env.example
-lib/config/api_config.dart
-web/js/api_config.js
+!.env.test
+!.env.production
+
+# Deprecated - no longer needed
+# lib/config/api_config.dart
+# web/js/api_config.js
+
+# Deployment scripts (contains server IP, PEM key paths)
+deploy.ps1
+deploy_to_ec2.ps1
+deploy_to_ec2.bat
+server_deploy.sh
+
 
 # IntelliJ related
 *.iml

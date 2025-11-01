@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/registration_flow_indicator.dart';
 import '../services/room_service.dart';
+import '../config/api_config.dart';
 import 'dart:io';
 import '../widgets/common/responsive_page_layout.dart';
 import '../core/theme/app_colors.dart';
@@ -115,7 +116,7 @@ class _FreeServicesPageState extends State<FreeServicesPage> {
     // 웹 환경에서는 서버 URL 사용
     if (kIsWeb) {
       if (url.startsWith('/uploads/')) {
-        return 'http://localhost:8080$url';
+        return '${ApiConfig.baseUrl}$url';
       }
       return url;
     }
