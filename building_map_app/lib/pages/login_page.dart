@@ -382,7 +382,7 @@ class _LoginPageState extends State<LoginPage> {
                     height: 56,
                     child: OutlinedButton(
                       onPressed: () {
-                        context.push('/mode-selection');
+                        context.push('/mode-selection', extra: 'email');
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: primaryBlack,

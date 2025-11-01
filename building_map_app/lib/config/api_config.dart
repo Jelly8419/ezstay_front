@@ -4,6 +4,13 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class ApiConfig {
   /// 백엔드 API 베이스 URL
   static String get baseUrl {
+    // 1. --dart-define으로 주입된 값 우선 사용 (배포 시)
+    const dartDefineUrl = String.fromEnvironment('API_BASE_URL');
+    if (dartDefineUrl.isNotEmpty) {
+      return dartDefineUrl;
+    }
+
+    // 2. .env 파일에서 읽기 (로컬 개발 시)
     return dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
   }
 

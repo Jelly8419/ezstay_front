@@ -11,6 +11,7 @@ import '../pages/map_screen.dart';
 
 // 지연 로딩 (필요할 때만 로드) - 웹 번들 크기 최적화
 import '../pages/mode_selection_page.dart' deferred as mode_selection;
+import '../pages/register_page.dart' deferred as register;
 import '../pages/user_info_popup.dart' deferred as user_info;
 import '../pages/room_detail_page.dart' deferred as room_detail;
 import '../pages/host_home_page.dart' deferred as host_home;
@@ -136,6 +137,13 @@ class AppRouter {
                   success = await authService.loginWithGoogle(mode);
                 } else if (loginType == 'kakao') {
                   success = await authService.loginWithKakao(mode);
+                } else if (loginType == 'email') {
+                  // 이메일 회원가입 플로우 - 회원가입 페이지로 이동
+                  await register.loadLibrary();
+                  if (context.mounted) {
+                    context.push('/register', extra: mode);
+                  }
+                  return;
                 }
 
                 if (success && context.mounted) {
@@ -163,6 +171,17 @@ class AppRouter {
               },
             ),
           ),
+        ),
+        GoRoute(
+          path: '/register',
+          name: 'register',
+          builder: (context, state) {
+            final mode = state.extra as UserMode? ?? UserMode.guest;
+            return _deferredWidget(
+              register.loadLibrary,
+              () => register.RegisterPage(mode: mode),
+            );
+          },
         ),
         GoRoute(
           path: '/guest',
