@@ -10,6 +10,7 @@ import '../core/theme/app_text_styles.dart';
 import '../core/theme/app_spacing.dart';
 import '../shared/widgets/app_buttons.dart';
 import '../features/web/web_layout.dart';
+import '../widgets/mode_selection_dialog.dart';
 
 /// 게스트 홈 페이지 - 심플하고 모던한 랜딩 페이지
 class GuestHomePage extends StatefulWidget {
@@ -192,6 +193,16 @@ class _GuestHomePageState extends State<GuestHomePage> {
     );
   }
 
+  /// 회원가입 처리 - 모드 선택 다이얼로그 표시
+  Future<void> _handleSignup(BuildContext context) async {
+    final selectedMode = await ModeSelectionDialog.show(context);
+
+    if (selectedMode != null && context.mounted) {
+      // 선택한 모드와 함께 회원가입 페이지로 이동
+      context.push('/register', extra: selectedMode);
+    }
+  }
+
   List<Widget> _buildDesktopActions(AuthService authService) {
     // 로그인 안 된 상태
     if (!authService.isLoggedIn) {
@@ -204,7 +215,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
         SizedBox(width: AppSpacing.sm),
         AppPrimaryButton(
           text: '회원가입',
-          onPressed: () => context.go('/login'),
+          onPressed: () => _handleSignup(context),
           fullWidth: false,
         ),
       ];
@@ -795,7 +806,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                 _buildFeatureCard(
                   icon: Icons.local_shipping_outlined,
                   title: '계약 결제 시, 필요한 상품을 함께 구매하면',
-                  subtitle: '일주일 방으로 배송해드려요',
+                  subtitle: '입주할 방으로 배송해드려요',
                 ),
               ],
             )
@@ -813,7 +824,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                   child: _buildFeatureCard(
                     icon: Icons.local_shipping_outlined,
                     title: '계약 결제 시, 필요한 상품을 함께 구매하면',
-                    subtitle: '일주일 방으로 배송해드려요',
+                    subtitle: '입주할 방으로 배송해드려요',
                   ),
                 ),
               ],

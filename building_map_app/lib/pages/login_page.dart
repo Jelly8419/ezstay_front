@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../core/theme/app_colors.dart';
+import '../widgets/mode_selection_dialog.dart';
 
 /// 로그인 페이지 - 미니멀 디자인
 class LoginPage extends StatefulWidget {
@@ -381,9 +382,7 @@ class _LoginPageState extends State<LoginPage> {
                   SizedBox(
                     height: 56,
                     child: OutlinedButton(
-                      onPressed: () {
-                        context.push('/mode-selection', extra: 'email');
-                      },
+                      onPressed: _handleSignup,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: primaryBlack,
                         side: const BorderSide(
@@ -508,6 +507,16 @@ class _LoginPageState extends State<LoginPage> {
 
   void _handleKakaoLogin() {
     context.push('/mode-selection', extra: 'kakao');
+  }
+
+  /// 회원가입 처리 - 모드 선택 다이얼로그 표시
+  Future<void> _handleSignup() async {
+    final selectedMode = await ModeSelectionDialog.show(context);
+
+    if (selectedMode != null && mounted) {
+      // 선택한 모드와 함께 회원가입 페이지로 이동
+      context.push('/register', extra: selectedMode);
+    }
   }
 
   void _showErrorDialog(String message) {
