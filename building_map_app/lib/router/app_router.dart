@@ -12,7 +12,6 @@ import '../pages/map_screen.dart';
 // 지연 로딩 (필요할 때만 로드) - 웹 번들 크기 최적화
 import '../pages/mode_selection_page.dart' deferred as mode_selection;
 import '../pages/register_page.dart' deferred as register;
-import '../pages/user_info_popup.dart' deferred as user_info;
 import '../pages/room_detail_page.dart' deferred as room_detail;
 import '../pages/host_home_page.dart' deferred as host_home;
 import '../pages/room_registration_page.dart' deferred as room_registration;
@@ -132,12 +131,7 @@ class AppRouter {
                 // 소셜 로그인 타입에 따라 처리
                 final loginType = state.extra as String?;
 
-                bool success = false;
-                if (loginType == 'google') {
-                  success = await authService.loginWithGoogle(mode);
-                } else if (loginType == 'kakao') {
-                  success = await authService.loginWithKakao(mode);
-                } else if (loginType == 'email') {
+                if (loginType == 'email') {
                   // 이메일 회원가입 플로우 - 회원가입 페이지로 이동
                   await register.loadLibrary();
                   if (context.mounted) {
@@ -146,23 +140,28 @@ class AppRouter {
                   return;
                 }
 
+                // 소셜 로그인 처리 (google, kakao)
+                bool success = false;
+                if (loginType == 'google') {
+                  success = await authService.loginWithGoogle(mode);
+                } else if (loginType == 'kakao') {
+                  success = await authService.loginWithKakao(mode);
+                }
+
                 if (success && context.mounted) {
-                  // 사용자 모드에 따라 리다이렉트
-                  final userMode = authService.currentUser?.mode;
-                  if (userMode == UserMode.host) {
-                    context.go('/host');
-                  } else {
-                    context.go('/guest');
-                  }
-                  // 본인인증 정보 팝업으로 이동
-                  await user_info.loadLibrary();
-                  await Future.delayed(const Duration(milliseconds: 100));
+                  // 소셜 로그인 성공 → RegisterPage로 이동 (추가 정보 입력)
+                  final currentUser = authService.currentUser;
+                  await register.loadLibrary();
+
                   if (context.mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => user_info.UserInfoPopup(isFromSignup: true),
-                      ),
+                    context.push(
+                      '/register',
+                      extra: {
+                        'mode': mode,
+                        'email': currentUser?.email,
+                        'name': currentUser?.name,
+                        'isSocialLogin': true,
+                      },
                     );
                   }
                 } else if (context.mounted) {
@@ -176,11 +175,26 @@ class AppRouter {
           path: '/register',
           name: 'register',
           builder: (context, state) {
-            final mode = state.extra as UserMode? ?? UserMode.guest;
-            return _deferredWidget(
-              register.loadLibrary,
-              () => register.RegisterPage(mode: mode),
-            );
+            // extra가 Map이면 소셜 로그인, UserMode면 일반 회원가입
+            if (state.extra is Map<String, dynamic>) {
+              final params = state.extra as Map<String, dynamic>;
+              return _deferredWidget(
+                register.loadLibrary,
+                () => register.RegisterPage(
+                  mode: params['mode'] as UserMode? ?? UserMode.guest,
+                  initialEmail: params['email'] as String?,
+                  initialName: params['name'] as String?,
+                  isSocialLogin: params['isSocialLogin'] as bool? ?? false,
+                ),
+              );
+            } else {
+              // 일반 회원가입 (이메일)
+              final mode = state.extra as UserMode? ?? UserMode.guest;
+              return _deferredWidget(
+                register.loadLibrary,
+                () => register.RegisterPage(mode: mode),
+              );
+            }
           },
         ),
         GoRoute(

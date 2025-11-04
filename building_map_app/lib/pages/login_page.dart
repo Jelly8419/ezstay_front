@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
+import '../models/user.dart';
 import '../core/theme/app_colors.dart';
 import '../widgets/mode_selection_dialog.dart';
 
@@ -505,8 +507,41 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _handleKakaoLogin() {
-    context.push('/mode-selection', extra: 'kakao');
+  Future<void> _handleKakaoLogin() async {
+    try {
+      final authService = context.read<AuthService>();
+
+      // 웹 환경에서는 전체 페이지 리다이렉트 (false 반환은 정상 동작)
+      if (kIsWeb) {
+        // 로딩 상태 표시하고 리다이렉트 수행
+        await authService.loginWithKakao(UserMode.guest);
+        // 페이지가 리다이렉트되므로 이후 코드는 실행되지 않음
+        return;
+      }
+
+      // 모바일 환경: 일반 카카오 로그인 플로우
+      final success = await authService.loginWithKakao(UserMode.guest);
+
+      if (success && mounted) {
+        // RegisterPage로 이동 (이메일/이름 자동 입력)
+        final currentUser = authService.currentUser;
+        context.push(
+          '/register',
+          extra: {
+            'mode': UserMode.guest,
+            'email': currentUser?.email,
+            'name': currentUser?.name,
+            'isSocialLogin': true,
+          },
+        );
+      } else if (mounted) {
+        _showErrorDialog('카카오 로그인에 실패했습니다.\n다시 시도해주세요.');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('카카오 로그인 중 오류가 발생했습니다.');
+      }
+    }
   }
 
   /// 회원가입 처리 - 모드 선택 다이얼로그 표시
