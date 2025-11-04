@@ -494,12 +494,17 @@ class RoomService {
     required double neLat,
     required double neLng,
     int? zoom,
+    String? checkIn,
+    String? checkOut,
   }) async {
     try {
       debugPrint('🗺️ [MAP] 지도 영역 기반 방 검색 시작');
       debugPrint('📍 [MAP] SW: ($swLat, $swLng) - NE: ($neLat, $neLng)');
       if (zoom != null) {
         debugPrint('🔍 [MAP] 줌 레벨: $zoom');
+      }
+      if (checkIn != null && checkOut != null) {
+        debugPrint('📅 [MAP] 체크인: $checkIn, 체크아웃: $checkOut');
       }
 
       final queryParams = {
@@ -512,6 +517,14 @@ class RoomService {
       // 줌 레벨이 있으면 추가
       if (zoom != null) {
         queryParams['zoom'] = zoom.toString();
+      }
+
+      // 체크인/체크아웃 날짜가 있으면 추가
+      if (checkIn != null) {
+        queryParams['checkIn'] = checkIn;
+      }
+      if (checkOut != null) {
+        queryParams['checkOut'] = checkOut;
       }
 
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/rooms/map').replace(

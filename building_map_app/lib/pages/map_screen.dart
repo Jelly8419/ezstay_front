@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../models/room.dart';
 import '../models/search_filters.dart';
 import '../services/room_service.dart';
@@ -37,10 +38,69 @@ class _MapScreenState extends State<MapScreen> {
   double? _currentNeLng;
   int? _currentZoomLevel; // 현재 줌 레벨 추적
 
+  // guest_home_page로부터 전달받은 날짜 필터
+  DateTime? _checkInDate;
+  DateTime? _checkOutDate;
+  int? _minPrice;
+  int? _maxPrice;
+
   @override
   void initState() {
     super.initState();
     _loadSavedFilters();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // guest_home_page로부터 전달받은 필터 처리
+    final extra = GoRouterState.of(context).extra;
+    if (extra != null && extra is Map<String, dynamic>) {
+      setState(() {
+        _checkInDate = extra['checkInDate'] as DateTime?;
+        _checkOutDate = extra['checkOutDate'] as DateTime?;
+        _minPrice = extra['minPrice'] as int?;
+        _maxPrice = extra['maxPrice'] as int?;
+
+        // SearchFilters 초기화 (전달받은 값으로)
+        _initializeFiltersFromParams();
+      });
+
+      debugPrint('📅 [MAP] 전달받은 필터 - 체크인: $_checkInDate, 체크아웃: $_checkOutDate');
+      debugPrint('💰 [MAP] 전달받은 필터 - 최소금액: $_minPrice, 최대금액: $_maxPrice');
+    }
+  }
+
+  /// guest_home_page로부터 전달받은 파라미터로 SearchFilters 초기화
+  void _initializeFiltersFromParams() {
+    // DateRange 생성 (체크인/체크아웃 날짜가 모두 있을 때만)
+    DateRange? dateRange;
+    if (_checkInDate != null && _checkOutDate != null) {
+      dateRange = DateRange(
+        startDate: _checkInDate!,
+        endDate: _checkOutDate!,
+      );
+      debugPrint('📅 [MAP] DateRange 초기화: ${dateRange.startDate} ~ ${dateRange.endDate}');
+    }
+
+    // PriceRange 생성 (원 단위를 만원 단위로 변환)
+    PriceRange? priceRange;
+    if (_minPrice != null || _maxPrice != null) {
+      final minPriceManWon = _minPrice != null ? (_minPrice! ~/ 10000) : 0;
+      final maxPriceManWon = _maxPrice != null ? (_maxPrice! ~/ 10000) : null;
+      priceRange = PriceRange(
+        minPrice: minPriceManWon,
+        maxPrice: maxPriceManWon,
+      );
+      debugPrint('💰 [MAP] PriceRange 초기화: ${priceRange.minPrice}만원 ~ ${priceRange.maxPrice ?? "전체"}만원');
+    }
+
+    // 기존 필터와 병합 (전달받은 값이 우선)
+    _filters = _filters.copyWith(
+      dateRange: dateRange,
+      priceRange: priceRange,
+    );
   }
 
   /// 지도 영역 변경 시 방 검색
@@ -82,12 +142,24 @@ class _MapScreenState extends State<MapScreen> {
         _currentZoomLevel = zoom;
       });
 
+      // 날짜를 YYYY-MM-DD 형식 문자열로 변환
+      String? checkInStr;
+      String? checkOutStr;
+      if (_checkInDate != null) {
+        checkInStr = DateFormat('yyyy-MM-dd').format(_checkInDate!);
+      }
+      if (_checkOutDate != null) {
+        checkOutStr = DateFormat('yyyy-MM-dd').format(_checkOutDate!);
+      }
+
       final result = await _roomService.getRoomsByMapBounds(
         swLat: swLat,
         swLng: swLng,
         neLat: neLat,
         neLng: neLng,
         zoom: zoom,
+        checkIn: checkInStr,
+        checkOut: checkOutStr,
       );
 
       if (result != null && result['rooms'] != null) {
@@ -373,10 +445,21 @@ class _MapScreenState extends State<MapScreen> {
         }
       }
 
-      // 가격 범위 필터
+      // 가격 범위 필터 (SearchFilters)
       if (!_filters.priceRange.isDefault) {
         final dailyRent = room['dailyRent'] as int? ?? 0;
         if (!_filters.priceRange.isInRange(dailyRent)) {
+          return false;
+        }
+      }
+
+      // 가격 범위 필터 (guest_home_page에서 전달받은 값)
+      if (_minPrice != null || _maxPrice != null) {
+        final dailyRent = room['dailyRent'] as int? ?? 0;
+        if (_minPrice != null && dailyRent < _minPrice!) {
+          return false;
+        }
+        if (_maxPrice != null && dailyRent > _maxPrice!) {
           return false;
         }
       }
