@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 import '../../utils/responsive_util.dart';
+import 'ezstay_logo.dart';
 
 /// 반응형 페이지 레이아웃
 ///
@@ -194,7 +195,13 @@ class ResponsiveScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Row(
+          children: [
+            const ResponsiveEZStayLogo(),
+            const SizedBox(width: 12),
+            Text(title),
+          ],
+        ),
         actions: actions,
         leading: leading,
       ),

@@ -4,13 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../services/auth_service.dart';
-import '../models/user.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../core/theme/app_spacing.dart';
 import '../shared/widgets/app_buttons.dart';
 import '../features/web/web_layout.dart';
-import '../widgets/mode_selection_dialog.dart';
+import '../widgets/common/app_gnb.dart';
+import '../widgets/chat_sidebar_widget.dart';
+import '../providers/chat_provider.dart';
 
 /// 게스트 홈 페이지 - 심플하고 모던한 랜딩 페이지
 class GuestHomePage extends StatefulWidget {
@@ -52,7 +53,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
   Widget _buildMobileLayout(AuthService authService) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _buildMobileAppBar(authService),
+      appBar: const AppGNB(),
       body: SingleChildScrollView(
         controller: _scrollController,
         child: Column(
@@ -77,7 +78,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
   Widget _buildTabletLayout(AuthService authService) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _buildDesktopAppBar(authService),
+      appBar: const AppGNB(),
       body: SingleChildScrollView(
         controller: _scrollController,
         child: Column(
@@ -102,24 +103,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
   Widget _buildDesktopLayout(AuthService authService) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: const AppGNB(),
       body: Column(
         children: [
-          // 네비게이션 바
-          DesktopNavBar(
-            logo: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.home, color: AppColors.primary600, size: 28),
-                SizedBox(width: AppSpacing.sm),
-                Text(
-                  'EZStay',
-                  style: AppTextStyles.headingMedium,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-            actions: _buildDesktopActions(authService),
-          ),
 
           // 메인 컨텐츠
           Expanded(
@@ -152,116 +138,15 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
                 // 스크롤 탑 버튼
                 ScrollToTopButton(scrollController: _scrollController),
+
+                // 채팅 사이드바 (오버레이)
+                const ChatSidebarWidget(),
               ],
             ),
           ),
         ],
       ),
     );
-  }
-
-  // ==================== 앱바 ====================
-  PreferredSizeWidget _buildMobileAppBar(AuthService authService) {
-    return AppBar(
-      title: Text('EZStay', style: AppTextStyles.headingMedium),
-      backgroundColor: AppColors.surface,
-      foregroundColor: AppColors.textPrimary,
-      elevation: 0,
-      centerTitle: true,
-      actions: [
-        IconButton(
-          icon: Icon(Icons.person, color: AppColors.primary600),
-          onPressed: () => _showUserMenu(context, authService),
-        ),
-      ],
-    );
-  }
-
-  PreferredSizeWidget _buildDesktopAppBar(AuthService authService) {
-    return AppBar(
-      title: Row(
-        children: [
-          Icon(Icons.home, color: AppColors.primary600),
-          SizedBox(width: AppSpacing.sm),
-          Text('EZStay', style: AppTextStyles.headingMedium),
-        ],
-      ),
-      backgroundColor: AppColors.surface,
-      foregroundColor: AppColors.textPrimary,
-      elevation: 0,
-      actions: _buildDesktopActions(authService),
-    );
-  }
-
-  /// 회원가입 처리 - 모드 선택 다이얼로그 표시
-  Future<void> _handleSignup(BuildContext context) async {
-    final selectedMode = await ModeSelectionDialog.show(context);
-
-    if (selectedMode != null && context.mounted) {
-      // 선택한 모드와 함께 회원가입 페이지로 이동
-      context.push('/register', extra: selectedMode);
-    }
-  }
-
-  List<Widget> _buildDesktopActions(AuthService authService) {
-    // 로그인 안 된 상태
-    if (!authService.isLoggedIn) {
-      return [
-        AppTextButton(
-          text: '로그인',
-          icon: Icons.login,
-          onPressed: () => context.go('/login'),
-        ),
-        SizedBox(width: AppSpacing.sm),
-        AppPrimaryButton(
-          text: '회원가입',
-          onPressed: () => _handleSignup(context),
-          fullWidth: false,
-        ),
-      ];
-    }
-
-    // 로그인된 상태
-    return [
-      AppTextButton(
-        text: '계약 관리',
-        icon: Icons.description_outlined,
-        onPressed: () => context.go('/guest/contracts'),
-      ),
-      SizedBox(width: AppSpacing.sm),
-      PopupMenuButton<String>(
-        icon: Icon(Icons.account_circle, color: AppColors.primary600),
-        onSelected: (value) {
-          if (value == 'logout') {
-            _handleLogout(context, authService);
-          } else if (value == 'switch_to_host') {
-            _switchToHostMode(context, authService);
-          }
-        },
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'switch_to_host',
-            child: Row(
-              children: [
-                Icon(Icons.home_work, color: AppColors.success500),
-                SizedBox(width: AppSpacing.sm),
-                Text('호스트 모드로 전환', style: AppTextStyles.bodyMedium),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'logout',
-            child: Row(
-              children: [
-                Icon(Icons.logout, color: AppColors.error500),
-                SizedBox(width: AppSpacing.sm),
-                Text('로그아웃', style: AppTextStyles.bodyMedium),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ];
   }
 
   // ==================== 히어로 섹션 ====================
@@ -1079,107 +964,6 @@ class _GuestHomePageState extends State<GuestHomePage> {
     }
 
     context.go('/map', extra: extra.isNotEmpty ? extra : null);
-  }
-
-  void _showUserMenu(BuildContext context, AuthService authService) {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
-      builder: (context) => Container(
-        padding: AppSpacing.paddingLg,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(Icons.description_outlined, color: AppColors.primary600),
-              title: Text('계약 관리', style: AppTextStyles.bodyLarge),
-              onTap: () {
-                Navigator.pop(context);
-                context.go('/guest/contracts');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.home_work, color: AppColors.success500),
-              title: Text('호스트 모드로 전환', style: AppTextStyles.bodyLarge),
-              onTap: () {
-                Navigator.pop(context);
-                _switchToHostMode(context, authService);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.logout, color: AppColors.error500),
-              title: Text('로그아웃', style: AppTextStyles.bodyLarge),
-              onTap: () {
-                Navigator.pop(context);
-                _handleLogout(context, authService);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _handleLogout(BuildContext context, AuthService authService) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('로그아웃', style: AppTextStyles.headingSmall),
-          content: Text('정말 로그아웃하시겠습니까?', style: AppTextStyles.bodyMedium),
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
-          actions: [
-            AppTextButton(
-              text: '취소',
-              onPressed: () => Navigator.pop(context),
-            ),
-            AppPrimaryButton(
-              text: '로그아웃',
-              onPressed: () {
-                authService.logout();
-                Navigator.pop(context);
-              },
-              fullWidth: false,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _switchToHostMode(BuildContext context, AuthService authService) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('호스트 모드로 전환', style: AppTextStyles.headingSmall),
-          content: Text(
-            '호스트 모드로 전환하시겠습니까?\n숙소 등록 및 관리 기능을 사용할 수 있습니다.',
-            style: AppTextStyles.bodyMedium,
-          ),
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
-          actions: [
-            AppTextButton(
-              text: '취소',
-              onPressed: () => Navigator.pop(context),
-            ),
-            AppPrimaryButton(
-              text: '전환하기',
-              onPressed: () async {
-                Navigator.pop(context); // 먼저 다이얼로그 닫기
-                await authService.switchUserMode(UserMode.host); // 모드 변경
-                if (context.mounted) {
-                  context.go('/host'); // 호스트 홈으로 이동
-                }
-              },
-              fullWidth: false,
-            ),
-          ],
-        );
-      },
-    );
   }
 
   // ==================== 유틸리티 ====================

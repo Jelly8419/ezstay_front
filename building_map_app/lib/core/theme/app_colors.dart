@@ -16,17 +16,17 @@ class AppColors {
   AppColors._(); // Private constructor to prevent instantiation
 
   // ============= Primary Colors (메인 브랜드 컬러) =============
-  /// 신뢰감 있는 블루 계열
-  static const Color primary50 = Color(0xFFE3F2FD);
-  static const Color primary100 = Color(0xFFBBDEFB);
-  static const Color primary200 = Color(0xFF90CAF9);
-  static const Color primary300 = Color(0xFF64B5F6);
-  static const Color primary400 = Color(0xFF42A5F5);
-  static const Color primary500 = Color(0xFF2196F3); // Main
-  static const Color primary600 = Color(0xFF1E88E5);
-  static const Color primary700 = Color(0xFF1976D2);
-  static const Color primary800 = Color(0xFF1565C0);
-  static const Color primary900 = Color(0xFF0D47A1);
+  /// EZStay 브랜드 컬러 - 시원한 Cyan/Turquoise 계열
+  static const Color primary50 = Color(0xFFE0F7FA);
+  static const Color primary100 = Color(0xFFB2EBF2);
+  static const Color primary200 = Color(0xFF80DEEA);
+  static const Color primary300 = Color(0xFF4DD0E1);
+  static const Color primary400 = Color(0xFF26C6DA);
+  static const Color primary500 = Color(0xFF4DD9FA); // Main - 로고 색상
+  static const Color primary600 = Color(0xFF00BCD4);
+  static const Color primary700 = Color(0xFF0097A7);
+  static const Color primary800 = Color(0xFF00838F);
+  static const Color primary900 = Color(0xFF006064);
 
   // ============= Secondary Colors (보조 컬러) =============
   /// 따뜻한 오렌지/코랄 계열 (강조 및 액션)

@@ -5,6 +5,7 @@ import '../constants/app_constants.dart' hide AppColors;
 import '../models/contract.dart';
 import '../services/contract_service.dart';
 import '../core/theme/app_colors.dart';
+import '../widgets/common/app_gnb.dart';
 
 /// 호스트용 계약 목록 페이지
 class HostContractsPage extends StatefulWidget {
@@ -89,11 +90,7 @@ class _HostContractsPageState extends State<HostContractsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('계약 요청 목록'),
-        backgroundColor: AppColors.primary600,
-        foregroundColor: Colors.white,
-      ),
+      appBar: const AppGNB(),
       body: Column(
         children: [
           // 필터

@@ -16,6 +16,7 @@ import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
 import 'services/room_service.dart';
 import 'providers/chat_provider.dart';
+import 'providers/gnb_provider.dart';
 import 'router/app_router.dart';
 import 'widgets/kakao_map_web.dart';
 import 'widgets/splash_screen.dart';
@@ -68,6 +69,7 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider.value(value: authService),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => GNBProvider()),
         // Firebase 초기화 Future 제공
         Provider<Future<FirebaseApp>>.value(value: firebaseInitFuture),
       ],

@@ -7,6 +7,7 @@ import '../services/contract_service.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../core/theme/app_spacing.dart';
+import '../widgets/common/app_gnb.dart';
 
 /// 게스트용 계약 목록 페이지
 class GuestContractsPage extends StatefulWidget {
@@ -91,11 +92,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('내 계약 목록'),
-        backgroundColor: AppColors.primary600,
-        foregroundColor: Colors.white,
-      ),
+      appBar: const AppGNB(),
       body: Column(
         children: [
           // 필터
