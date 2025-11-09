@@ -47,6 +47,25 @@ class AppColors {
   static final grey600 = Colors.grey[600]!;
 }
 
+/// 색상 확장 메서드
+extension ColorExtension on Color {
+  /// 색상 어둡게 만들기
+  Color darken([double amount = 0.1]) {
+    assert(amount >= 0 && amount <= 1);
+    final hsl = HSLColor.fromColor(this);
+    final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return hslDark.toColor();
+  }
+
+  /// 색상 밝게 만들기
+  Color lighten([double amount = 0.1]) {
+    assert(amount >= 0 && amount <= 1);
+    final hsl = HSLColor.fromColor(this);
+    final hslLight = hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));
+    return hslLight.toColor();
+  }
+}
+
 /// 텍스트 스타일
 class AppTextStyles {
   static const heading1 = TextStyle(

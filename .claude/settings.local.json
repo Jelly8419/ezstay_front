@@ -48,7 +48,8 @@
       "Bash(dart analyze:*)",
       "Bash(timeout 5 python:*)",
       "Bash(powershell:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": []

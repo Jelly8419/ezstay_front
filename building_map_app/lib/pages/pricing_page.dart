@@ -1174,14 +1174,14 @@ class _PricingPageState extends State<PricingPage> {
                   return;
                 }
 
-                // 요금 데이터 수집 (1박당 입력 → 1주일 금액으로 변환하여 저장)
+                // 요금 데이터 수집 (1박당 금액으로 저장)
                 final pricingData = {
-                  'weeklyRent': _weeklyRent, // 계산된 주간 임대료
+                  'dailyRent': int.tryParse(_dailyRentController.text) ?? 0,
                   'longTermWeeks': _longTermWeeks,
                   'longTermDiscount': _longTermDiscount,
                   'quickMoveIn': _quickMoveIn,
                   'quickMoveInDiscount': _quickMoveInDiscount,
-                  'maintenanceFee': _weeklyMaintenanceFee, // 계산된 주간 관리비
+                  'dailyMaintenanceFee': int.tryParse(_dailyMaintenanceFeeController.text) ?? 0,
                   'maintenanceDetail': _maintenanceDetailController.text,
                   'includeElectricity': _includeElectricity,
                   'includeWater': _includeWater,

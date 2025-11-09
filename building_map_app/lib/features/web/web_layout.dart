@@ -297,17 +297,19 @@ class DesktopNavBar extends StatelessWidget {
         boxShadow: AppShadows.appBar,
       ),
       child: WebContainer(
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         child: Row(
           children: [
-            // 로고
+            // 로고 (텍스트 오버플로우 방지)
             logo,
             const Spacer(),
 
-            // 액션들
-            ...actions.map((action) => Padding(
-              padding: EdgeInsets.only(left: AppSpacing.lg),
-              child: action,
-            )),
+            // 액션들 (수평 정렬)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: actions,
+            ),
           ],
         ),
       ),

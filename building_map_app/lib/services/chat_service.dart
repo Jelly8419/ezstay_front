@@ -174,6 +174,13 @@ class ChatService {
     try {
       debugPrint('📩 [CHAT] 메시지 스트림 시작: $chatRoomId');
 
+      // 🔍 디버깅: 채팅방 문서 구조 확인
+      _firestore.collection('chatRooms').doc(chatRoomId).get().then((doc) {
+        if (doc.exists) {
+          debugPrint('🔍 [DEBUG] 채팅방 문서 전체 데이터: ${doc.data()}');
+        }
+      });
+
       return _firestore
           .collection('chatRooms')
           .doc(chatRoomId)
@@ -181,9 +188,20 @@ class ChatService {
           .orderBy('timestamp', descending: false)
           .snapshots()
           .map((snapshot) {
-        return snapshot.docs
-            .map((doc) => ChatMessage.fromFirestore(doc))
-            .toList();
+        debugPrint('📦 [CHAT] messages 서브컬렉션에서 받은 메시지 개수: ${snapshot.docs.length}');
+
+        final messages = snapshot.docs.map((doc) {
+          final data = doc.data();
+          debugPrint('📝 [CHAT] 메시지 원본 데이터: ${doc.id} => $data');
+
+          final message = ChatMessage.fromFirestore(doc);
+          debugPrint('✅ [CHAT] 파싱된 메시지: type=${message.type.value}, systemType=${message.systemMessageType}, text=${message.text}');
+
+          return message;
+        }).toList();
+
+        debugPrint('🎯 [CHAT] 총 ${messages.length}개 메시지 파싱 완료');
+        return messages;
       });
     } catch (e) {
       debugPrint('❌ [CHAT] 메시지 스트림 에러: $e');

@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
 import '../models/user.dart';
 import '../core/theme/app_colors.dart';
+import '../config/api_config.dart';
 
 /// 회원가입 페이지 - 미니멀 디자인
 class RegisterPage extends StatefulWidget {
   final UserMode mode; // mode_selection에서 전달받음
+  final String? initialEmail; // 소셜 로그인 시 자동 입력
+  final String? initialName; // 소셜 로그인 시 자동 입력
+  final bool isSocialLogin; // 소셜 로그인 여부
 
   const RegisterPage({
     super.key,
     required this.mode,
+    this.initialEmail,
+    this.initialName,
+    this.isSocialLogin = false,
   });
 
   @override
@@ -26,11 +36,40 @@ class _RegisterPageState extends State<RegisterPage> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
 
+  // 호스트용 계좌 정보
+  final _accountController = TextEditingController();
+  final _accountHolderController = TextEditingController();
+  String? _selectedBank;
+  bool _accountVerified = false;
+
   bool _isRegistering = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeTerms = false;
   bool _agreeMarketing = false;
+
+  // 은행 목록
+  static const List<String> _banks = [
+    '국민은행', '신한은행', '우리은행', '하나은행', 'KB국민은행',
+    '기업은행', '농협은행', '카카오뱅크', '토스뱅크', '새마을금고',
+    '신협', '우체국예금보험', '경남은행', '광주은행', '대구은행',
+    '부산은행', '수협은행', '전북은행', '제주은행', '산업은행',
+    '수출입은행', 'SC제일은행', '씨티은행'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // 소셜 로그인인 경우 초기값 설정
+    if (widget.isSocialLogin) {
+      if (widget.initialEmail != null) {
+        _emailController.text = widget.initialEmail!;
+      }
+      if (widget.initialName != null) {
+        _nameController.text = widget.initialName!;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -39,6 +78,8 @@ class _RegisterPageState extends State<RegisterPage> {
     _confirmPasswordController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
+    _accountController.dispose();
+    _accountHolderController.dispose();
     super.dispose();
   }
 
@@ -102,9 +143,59 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 40),
 
-                  // 이메일 라벨
-                  const Text(
-                    '이메일 주소',
+                  // 소셜 로그인 시 이메일 표시 (읽기 전용)
+                  if (widget.isSocialLogin) ...[
+                    const Text(
+                      '이메일 주소',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: textGray,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 52,
+                      child: TextFormField(
+                        controller: _emailController,
+                        enabled: false, // 읽기 전용
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: primaryBlack,
+                        ),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Color(0xFFF5F5F5), // 비활성 배경색
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          disabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // 이메일/비밀번호 필드 (일반 회원가입일 때만)
+                  if (!widget.isSocialLogin) ...[
+                    // 이메일 라벨
+                    const Text(
+                      '이메일 주소',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
@@ -203,7 +294,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         color: primaryBlack,
                       ),
                       decoration: InputDecoration(
-                        hintText: '8자 이상, 영문 대소문자, 숫자 포함',
+                        hintText: '8자 이상, 영문과 숫자 포함',
                         hintStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -265,9 +356,9 @@ class _RegisterPageState extends State<RegisterPage> {
                         if (value.length < 8) {
                           return '비밀번호는 8자 이상이어야 합니다';
                         }
-                        if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$')
+                        if (!RegExp(r'^(?=.*[a-zA-Z])(?=.*\d).+$')
                             .hasMatch(value)) {
-                          return '영문 대소문자, 숫자를 포함해야 합니다';
+                          return '영문과 숫자를 포함해야 합니다';
                         }
                         return null;
                       },
@@ -365,8 +456,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  ],
 
-                  // 이름 라벨
+                  // 이름 라벨 (소셜 로그인 시 읽기 전용)
                   const Text(
                     '이름',
                     style: TextStyle(
@@ -382,6 +474,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     height: 52,
                     child: TextFormField(
                       controller: _nameController,
+                      enabled: !widget.isSocialLogin, // 소셜 로그인 시 읽기 전용
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
@@ -395,7 +488,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           color: hintGray,
                         ),
                         filled: true,
-                        fillColor: backgroundWhite,
+                        fillColor: widget.isSocialLogin
+                            ? Color(0xFFF5F5F5)  // 소셜 로그인 시 회색 배경
+                            : backgroundWhite,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 14,
@@ -408,6 +503,13 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: borderGray,
+                            width: 1,
+                          ),
+                        ),
+                        disabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
                             color: borderGray,
@@ -520,6 +622,245 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
+
+                  // 호스트용 계좌 정보 (호스트 모드일 때만)
+                  if (widget.mode == UserMode.host) ...[
+                    // 정산 정보 섹션 제목
+                    const Text(
+                      '정산 정보',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: primaryBlack,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '수익 정산을 위한 계좌 정보를 입력해주세요',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: textGray,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 은행 선택 라벨
+                    const Text(
+                      '은행',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: textGray,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // 은행 선택 드롭다운
+                    SizedBox(
+                      height: 52,
+                      child: DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          hintText: '은행을 선택해주세요',
+                          hintStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: hintGray,
+                          ),
+                          filled: true,
+                          fillColor: backgroundWhite,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: AppColors.primary600,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        items: _banks.map((bank) {
+                          return DropdownMenuItem(
+                            value: bank,
+                            child: Text(bank),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedBank = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 계좌번호 라벨
+                    const Text(
+                      '계좌번호',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: textGray,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // 계좌번호 입력 + 확인 버튼
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 52,
+                            child: TextFormField(
+                              controller: _accountController,
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                color: primaryBlack,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: '계좌번호를 입력해주세요',
+                                hintStyle: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w400,
+                                  color: hintGray,
+                                ),
+                                filled: true,
+                                fillColor: backgroundWhite,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(
+                                    color: borderGray,
+                                    width: 1,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(
+                                    color: borderGray,
+                                    width: 1,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primary600,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: _verifyAccount,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _accountVerified
+                                  ? AppColors.success500
+                                  : AppColors.primary600,
+                              foregroundColor: backgroundWhite,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              _accountVerified ? '확인완료' : '확인하기',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 예금주 라벨
+                    const Text(
+                      '예금주',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: textGray,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // 예금주 입력
+                    SizedBox(
+                      height: 52,
+                      child: TextFormField(
+                        controller: _accountHolderController,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: primaryBlack,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '예금주명을 입력해주세요',
+                          hintStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: hintGray,
+                          ),
+                          filled: true,
+                          fillColor: backgroundWhite,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: AppColors.primary600,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
                   // 약관 동의
                   InkWell(
@@ -648,6 +989,74 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                     ),
                   ),
+
+                  // 소셜 로그인이 아닌 경우에만 카카오 간편가입 표시
+                  if (!widget.isSocialLogin) ...[
+                    const SizedBox(height: 40),
+
+                    // 구분선
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Divider(
+                            color: borderGray,
+                            thickness: 1,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            '또는',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              color: secondaryGray,
+                            ),
+                          ),
+                        ),
+                        const Expanded(
+                          child: Divider(
+                            color: borderGray,
+                            thickness: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // 카카오 간편가입
+                    SizedBox(
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _handleKakaoSignup,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFE812),
+                          foregroundColor: const Color(0xFF3C1E1E),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              '카카오로 간편가입',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -665,17 +1074,45 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    // 호스트 모드일 때 계좌 인증 확인
+    if (widget.mode == UserMode.host) {
+      if (_selectedBank == null || _accountController.text.isEmpty || _accountHolderController.text.isEmpty) {
+        _showErrorDialog('정산 정보를 모두 입력해주세요.');
+        return;
+      }
+      if (!_accountVerified) {
+        _showErrorDialog('계좌 확인을 먼저 완료해주세요.');
+        return;
+      }
+    }
+
     setState(() => _isRegistering = true);
 
     try {
       final authService = context.read<AuthService>();
+      bool success;
 
-      // 기존에 구현된 signUpWithEmail 메서드 호출!
-      final success = await authService.signUpWithEmail(
-        _emailController.text,
-        _passwordController.text,
-        widget.mode, // UserMode.guest 또는 UserMode.host
-      );
+      if (widget.isSocialLogin) {
+        // 소셜 로그인: 추가 정보만 업데이트
+        // TODO: 백엔드 API에 추가 정보 전송 (전화번호, 계좌 정보)
+        // 현재는 임시로 성공 처리
+        success = true;
+
+        // 추가 정보 업데이트 API 호출 필요
+        // await authService.updateUserProfile(
+        //   phone: _phoneController.text,
+        //   bankCode: _getBankCode(_selectedBank!),
+        //   accountNumber: _accountController.text,
+        //   accountHolder: _accountHolderController.text,
+        // );
+      } else {
+        // 일반 이메일 회원가입
+        success = await authService.signUpWithEmail(
+          _emailController.text,
+          _passwordController.text,
+          widget.mode, // UserMode.guest 또는 UserMode.host
+        );
+      }
 
       if (mounted) {
         setState(() => _isRegistering = false);
@@ -697,6 +1134,156 @@ class _RegisterPageState extends State<RegisterPage> {
         _showErrorDialog('회원가입 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
       }
     }
+  }
+
+  /// 카카오 간편가입 처리
+  Future<void> _handleKakaoSignup() async {
+    // 웹 환경에서는 로그인 페이지로 이동 (전체 페이지 리다이렉트 방식)
+    if (kIsWeb) {
+      _showInfoDialog(
+        '카카오 간편가입',
+        '로그인 페이지에서 "카카오로 계속하기" 버튼을 눌러주세요.\n'
+        '카카오 로그인 후 자동으로 회원가입 페이지로 이동됩니다.',
+        onConfirm: () {
+          context.go('/login');
+        },
+      );
+      return;
+    }
+
+    // 모바일 환경에서는 직접 카카오 로그인 호출
+    try {
+      final authService = context.read<AuthService>();
+
+      // 카카오 로그인 실행 (guest 모드로 기본 설정)
+      final success = await authService.loginWithKakao(UserMode.guest);
+
+      if (success && mounted) {
+        // 카카오 로그인 성공 → RegisterPage를 소셜 로그인 모드로 다시 로드
+        final currentUser = authService.currentUser;
+        context.pushReplacement(
+          '/register',
+          extra: {
+            'mode': UserMode.guest,
+            'email': currentUser?.email,
+            'name': currentUser?.name,
+            'isSocialLogin': true,
+          },
+        );
+      } else if (mounted) {
+        _showErrorDialog('카카오 로그인에 실패했습니다.\n다시 시도해주세요.');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('카카오 로그인 중 오류가 발생했습니다.');
+      }
+    }
+  }
+
+  /// 계좌 인증
+  Future<void> _verifyAccount() async {
+    if (_accountController.text.isEmpty || _selectedBank == null || _accountHolderController.text.isEmpty) {
+      _showErrorDialog('모든 정보를 입력해주세요.');
+      return;
+    }
+
+    try {
+      final authService = context.read<AuthService>();
+      final token = await authService.getAccessToken();
+
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/api/account/verify'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'bank_code': _getBankCode(_selectedBank!),
+          'account_num': _accountController.text,
+          'account_holder_name': _accountHolderController.text,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+
+        if (responseData['success'] == true) {
+          final data = responseData['data'];
+          final actualName = data['accountHolderName']; // 실제 예금주명
+          final verified = responseData['verified'] == true;
+
+          if (verified) {
+            // 이름이 정확히 일치하는 경우
+            setState(() {
+              _accountVerified = true;
+            });
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('계좌 확인이 완료되었습니다'),
+                  backgroundColor: AppColors.success500,
+                ),
+              );
+            }
+          } else {
+            // 이름이 다른 경우 - 실제 예금주명으로 업데이트
+            setState(() {
+              _accountVerified = true;
+              _accountHolderController.text = actualName;
+            });
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('예금주명이 "$actualName"으로 확인되었습니다'),
+                  backgroundColor: AppColors.success500,
+                ),
+              );
+            }
+          }
+        } else {
+          // API 호출은 성공했지만 계좌 확인 실패
+          _showErrorDialog(responseData['message'] ?? '계좌 확인에 실패했습니다');
+        }
+      } else {
+        throw Exception('서버 오류: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('계좌 확인 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+      }
+    }
+  }
+
+  /// 은행명을 은행코드로 변환
+  String _getBankCode(String bankName) {
+    const bankCodes = {
+      '국민은행': '004',
+      '신한은행': '088',
+      '우리은행': '020',
+      '하나은행': '081',
+      'KB국민은행': '004',
+      '기업은행': '003',
+      '농협은행': '011',
+      '카카오뱅크': '090',
+      '토스뱅크': '092',
+      '새마을금고': '045',
+      '신협': '048',
+      '우체국예금보험': '071',
+      '경남은행': '039',
+      '광주은행': '034',
+      '대구은행': '031',
+      '부산은행': '032',
+      '수협은행': '007',
+      '전북은행': '037',
+      '제주은행': '035',
+      '산업은행': '002',
+      '수출입은행': '008',
+      'SC제일은행': '023',
+      '씨티은행': '027',
+    };
+    return bankCodes[bankName] ?? '004';
   }
 
   void _showErrorDialog(String message) {
@@ -726,6 +1313,52 @@ class _RegisterPageState extends State<RegisterPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            child: Text(
+              '확인',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.primary600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInfoDialog(String title, String message, {VoidCallback? onConfirm}) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: backgroundWhite,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: primaryBlack,
+          ),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: textGray,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (onConfirm != null) {
+                onConfirm();
+              }
+            },
             child: Text(
               '확인',
               style: TextStyle(

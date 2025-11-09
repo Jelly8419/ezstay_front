@@ -4,57 +4,69 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ChatMessage {
   final String id;
   final int senderId;
+  final String? senderName;  // 시스템 메시지용
   final String text;
   final DateTime timestamp;
   final bool isRead;
   final MessageType type;
+  final String? systemMessageType;  // 'contract_approved', 'contract_completed' 등
 
   ChatMessage({
     required this.id,
     required this.senderId,
+    this.senderName,
     required this.text,
     required this.timestamp,
     this.isRead = false,
     this.type = MessageType.text,
+    this.systemMessageType,
   });
 
   factory ChatMessage.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return ChatMessage(
       id: doc.id,
-      senderId: data['senderId'],
+      senderId: data['senderId'] ?? 0,
+      senderName: data['senderName'],
       text: data['text'] ?? '',
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       isRead: data['isRead'] ?? false,
       type: MessageType.fromString(data['type'] ?? 'text'),
+      systemMessageType: data['systemMessageType'],
     );
   }
 
   Map<String, dynamic> toFirestore() {
     return {
       'senderId': senderId,
+      if (senderName != null) 'senderName': senderName,
       'text': text,
       'timestamp': Timestamp.fromDate(timestamp),
       'isRead': isRead,
       'type': type.value,
+      if (systemMessageType != null) 'systemMessageType': systemMessageType,
     };
   }
 
   ChatMessage copyWith({
     String? id,
     int? senderId,
+    String? senderName,
     String? text,
     DateTime? timestamp,
     bool? isRead,
     MessageType? type,
+    String? systemMessageType,
   }) {
     return ChatMessage(
       id: id ?? this.id,
       senderId: senderId ?? this.senderId,
+      senderName: senderName ?? this.senderName,
       text: text ?? this.text,
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
       type: type ?? this.type,
+      systemMessageType: systemMessageType ?? this.systemMessageType,
     );
   }
 }
