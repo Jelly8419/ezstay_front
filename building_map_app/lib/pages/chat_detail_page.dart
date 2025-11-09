@@ -9,6 +9,7 @@ import '../services/auth_service.dart';
 import '../providers/chat_provider.dart';
 import '../utils/responsive_util.dart';
 import '../constants/app_constants.dart';
+import '../widgets/system_message_bubble.dart';
 
 /// 채팅 상세 페이지
 class ChatDetailPage extends StatefulWidget {
@@ -314,10 +315,14 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             return Column(
               children: [
                 if (showDate) _buildDateSeparator(message.timestamp),
-                _ChatBubble(
-                  message: message,
-                  isMe: isMe,
-                ),
+                // 메시지 타입별 분기
+                if (message.type == MessageType.system)
+                  SystemMessageBubble(message: message)  // 시스템 메시지
+                else
+                  _ChatBubble(  // 일반 메시지
+                    message: message,
+                    isMe: isMe,
+                  ),
               ],
             );
           },
