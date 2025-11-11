@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import '../providers/chat_provider.dart';
-import '../utils/responsive_util.dart';
+import '../../providers/chat_provider.dart';
+import '../../utils/responsive_util.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../models/chat_room.dart';
-import '../services/chat_service.dart';
-import '../services/firebase_auth_service.dart';
-import '../services/auth_service.dart';
-import '../widgets/common/responsive_page_layout.dart';
-import '../constants/app_constants.dart';
+import '../../models/chat_room.dart';
+import '../../services/chat_service.dart';
+import '../../services/firebase_auth_service.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/common/responsive_page_layout.dart';
+import '../../constants/app_constants.dart';
 
 /// 채팅방 목록 페이지
 class ChatListPage extends StatefulWidget {

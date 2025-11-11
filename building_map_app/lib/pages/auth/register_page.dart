@@ -4,10 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../services/auth_service.dart';
-import '../models/user.dart';
-import '../core/theme/app_colors.dart';
-import '../config/api_config.dart';
+import '../../services/auth_service.dart';
+import '../../models/user.dart';
+import '../../core/theme/app_colors.dart';
+import '../../config/api_config.dart';
 
 /// 회원가입 페이지 - 미니멀 디자인
 class RegisterPage extends StatefulWidget {

@@ -3,15 +3,15 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../services/auth_service.dart';
-import '../core/theme/app_colors.dart';
-import '../core/theme/app_text_styles.dart';
-import '../core/theme/app_spacing.dart';
-import '../shared/widgets/app_buttons.dart';
-import '../features/web/web_layout.dart';
-import '../widgets/common/app_gnb.dart';
-import '../widgets/chat_sidebar_widget.dart';
-import '../providers/chat_provider.dart';
+import '../../services/auth_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../shared/widgets/app_buttons.dart';
+import '../../features/web/web_layout.dart';
+import '../../widgets/common/app_gnb.dart';
+import '../../widgets/chat_sidebar_widget.dart';
+import '../../providers/chat_provider.dart';
 
 /// 게스트 홈 페이지 - 심플하고 모던한 랜딩 페이지
 class GuestHomePage extends StatefulWidget {

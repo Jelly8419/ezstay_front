@@ -5,25 +5,25 @@ import '../services/auth_service.dart';
 import '../models/user.dart';
 
 // 즉시 로딩 (자주 사용하는 페이지)
-import '../pages/login_page.dart';
-import '../pages/guest_home_page.dart';
-import '../pages/map_screen.dart';
+import '../pages/auth/login_page.dart';
+import '../pages/guest/guest_home_page.dart';
+import '../pages/guest/map_screen.dart';
 
 // 지연 로딩 (필요할 때만 로드) - 웹 번들 크기 최적화
-import '../pages/mode_selection_page.dart' deferred as mode_selection;
-import '../pages/register_page.dart' deferred as register;
-import '../pages/room_detail_page.dart' deferred as room_detail;
-import '../pages/host_home_page.dart' deferred as host_home;
-import '../pages/room_registration_page.dart' deferred as room_registration;
-import '../pages/pricing_page.dart' deferred as pricing;
-import '../pages/room_amenities_page.dart' deferred as amenities;
-import '../pages/free_services_page.dart' deferred as free_services;
-import '../pages/room_description_page.dart' deferred as room_description;
-import '../pages/guest_contracts_page.dart' deferred as guest_contracts;
-import '../pages/host_contracts_page.dart' deferred as host_contracts;
-import '../pages/contract_detail_page.dart' deferred as contract_detail;
-import '../pages/chat_list_page.dart' deferred as chat_list;
-import '../pages/chat_detail_page.dart' deferred as chat_detail;
+import '../pages/auth/mode_selection_page.dart' deferred as mode_selection;
+import '../pages/auth/register_page.dart' deferred as register;
+import '../pages/guest/room_detail_page.dart' deferred as room_detail;
+import '../pages/host/host_home_page.dart' deferred as host_home;
+import '../pages/host/room_registration/room_registration_page.dart' deferred as room_registration;
+import '../pages/host/room_registration/pricing_page.dart' deferred as pricing;
+import '../pages/host/room_registration/room_amenities_page.dart' deferred as amenities;
+import '../pages/host/room_registration/free_services_page.dart' deferred as free_services;
+import '../pages/host/room_registration/room_description_page.dart' deferred as room_description;
+import '../pages/contract/guest_contracts_page.dart' deferred as guest_contracts;
+import '../pages/contract/host_contracts_page.dart' deferred as host_contracts;
+import '../pages/contract/contract_detail_page.dart' deferred as contract_detail;
+import '../pages/chat/chat_list_page.dart' deferred as chat_list;
+import '../pages/chat/chat_detail_page.dart' deferred as chat_detail;
 import '../pages/support/support_center_page.dart' deferred as support_center;
 import '../pages/support/notice_list_page.dart' deferred as notice_list;
 import '../pages/support/notice_detail_page.dart' deferred as notice_detail;
@@ -50,6 +50,36 @@ class AppRouter {
       },
     );
   }
+
+  /// Path 파라미터를 int로 파싱하는 헬퍼 함수
+  static int? _parseIntParameter(String? value) {
+    return value != null ? int.tryParse(value) : null;
+  }
+
+  /// 잘못된 접근 에러 페이지 빌더
+  static Widget _buildInvalidAccessPage(
+    BuildContext context, {
+    required String message,
+    required String buttonText,
+    required String redirectPath,
+  }) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(message),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => context.go(redirectPath),
+              child: Text(buttonText),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   static GoRouter createRouter(AuthService authService, {GlobalKey<NavigatorState>? navigatorKey}) {
     return GoRouter(
       navigatorKey: navigatorKey,
@@ -213,24 +243,14 @@ class AppRouter {
           path: '/guest/room/detail/:roomId',
           name: 'room-detail',
           builder: (context, state) {
-            final roomIdStr = state.pathParameters['roomId'];
-            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
-             if (roomId == null) {
-              // roomId가 없으면 에러 페이지 또는 이전 페이지로
-              return Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('잘못된 접근입니다.'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => context.go('/map'),
-                        child: const Text('지도로 돌아가기'),
-                      ),
-                    ],
-                  ),
-                ),
+            final roomId = _parseIntParameter(state.pathParameters['roomId']);
+
+            if (roomId == null) {
+              return _buildInvalidAccessPage(
+                context,
+                message: '잘못된 접근입니다.',
+                buttonText: '지도로 돌아가기',
+                redirectPath: '/map',
               );
             }
 
@@ -261,8 +281,7 @@ class AppRouter {
           path: '/host/room-registration/:roomId',
           name: 'room-registration',
           builder: (context, state) {
-            final roomIdStr = state.pathParameters['roomId'];
-            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
+            final roomId = _parseIntParameter(state.pathParameters['roomId']);
             return _deferredWidget(
               room_registration.loadLibrary,
               () => room_registration.RoomRegistrationPage(roomId: roomId),
@@ -273,8 +292,7 @@ class AppRouter {
           path: '/host/pricing/:roomId',
           name: 'pricing',
           builder: (context, state) {
-            final roomIdStr = state.pathParameters['roomId'];
-            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
+            final roomId = _parseIntParameter(state.pathParameters['roomId']);
             return _deferredWidget(
               pricing.loadLibrary,
               () => pricing.PricingPage(roomId: roomId),
@@ -285,8 +303,7 @@ class AppRouter {
           path: '/host/amenities/:roomId',
           name: 'amenities',
           builder: (context, state) {
-            final roomIdStr = state.pathParameters['roomId'];
-            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
+            final roomId = _parseIntParameter(state.pathParameters['roomId']);
             return _deferredWidget(
               amenities.loadLibrary,
               () => amenities.RoomAmenitiesPage(roomId: roomId),
@@ -297,8 +314,7 @@ class AppRouter {
           path: '/host/free-services/:roomId',
           name: 'free-services',
           builder: (context, state) {
-            final roomIdStr = state.pathParameters['roomId'];
-            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
+            final roomId = _parseIntParameter(state.pathParameters['roomId']);
             return _deferredWidget(
               free_services.loadLibrary,
               () => free_services.FreeServicesPage(roomId: roomId),
@@ -309,8 +325,7 @@ class AppRouter {
           path: '/host/room-description/:roomId',
           name: 'room-description',
           builder: (context, state) {
-            final roomIdStr = state.pathParameters['roomId'];
-            final roomId = roomIdStr != null ? int.tryParse(roomIdStr) : null;
+            final roomId = _parseIntParameter(state.pathParameters['roomId']);
             return _deferredWidget(
               room_description.loadLibrary,
               () => room_description.RoomDescriptionPage(roomId: roomId),
@@ -381,21 +396,11 @@ class AppRouter {
             final contractId = args?['contractId'] as int?;
 
             if (chatRoomId == null) {
-              // chatRoomId가 없으면 채팅 목록으로 리다이렉트
-              return Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('잘못된 접근입니다.'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => context.go('/chat-list'),
-                        child: const Text('채팅 목록으로 돌아가기'),
-                      ),
-                    ],
-                  ),
-                ),
+              return _buildInvalidAccessPage(
+                context,
+                message: '잘못된 접근입니다.',
+                buttonText: '채팅 목록으로 돌아가기',
+                redirectPath: '/chat-list',
               );
             }
 
@@ -433,24 +438,14 @@ class AppRouter {
               path: 'notice/:noticeId',
               name: 'notice-detail',
               builder: (context, state) {
-                final noticeIdStr = state.pathParameters['noticeId'];
-                final noticeId = noticeIdStr != null ? int.tryParse(noticeIdStr) : null;
+                final noticeId = _parseIntParameter(state.pathParameters['noticeId']);
 
                 if (noticeId == null) {
-                  return Scaffold(
-                    body: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('잘못된 접근입니다.'),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () => context.go('/support'),
-                            child: const Text('고객센터로 돌아가기'),
-                          ),
-                        ],
-                      ),
-                    ),
+                  return _buildInvalidAccessPage(
+                    context,
+                    message: '잘못된 접근입니다.',
+                    buttonText: '고객센터로 돌아가기',
+                    redirectPath: '/support',
                   );
                 }
 
@@ -491,24 +486,14 @@ class AppRouter {
               path: 'inquiry/:inquiryId',
               name: 'inquiry-detail',
               builder: (context, state) {
-                final inquiryIdStr = state.pathParameters['inquiryId'];
-                final inquiryId = inquiryIdStr != null ? int.tryParse(inquiryIdStr) : null;
+                final inquiryId = _parseIntParameter(state.pathParameters['inquiryId']);
 
                 if (inquiryId == null) {
-                  return Scaffold(
-                    body: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('잘못된 접근입니다.'),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () => context.go('/support?tab=inquiry'),
-                            child: const Text('문의 목록으로 돌아가기'),
-                          ),
-                        ],
-                      ),
-                    ),
+                  return _buildInvalidAccessPage(
+                    context,
+                    message: '잘못된 접근입니다.',
+                    buttonText: '문의 목록으로 돌아가기',
+                    redirectPath: '/support?tab=inquiry',
                   );
                 }
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/chat_provider.dart';
-import '../pages/chat_list_page.dart';
-import '../pages/chat_detail_page.dart';
+import '../pages/chat/chat_list_page.dart';
+import '../pages/chat/chat_detail_page.dart';
 import '../constants/app_constants.dart';
 
 /// 오른쪽 고정 채팅 사이드바 위젯 (데스크톱 전용) - 오버레이 방식

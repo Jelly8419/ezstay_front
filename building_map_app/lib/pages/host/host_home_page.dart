@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../services/auth_service.dart';
-import '../services/room_service.dart';
-import '../models/user.dart';
-import '../core/theme/app_colors.dart';
-import '../core/theme/app_text_styles.dart';
-import '../core/theme/app_spacing.dart';
-import '../shared/widgets/app_buttons.dart';
-import '../features/web/web_layout.dart';
-import '../providers/chat_provider.dart';
-import '../widgets/chat_sidebar_widget.dart';
-import '../widgets/common/app_gnb.dart';
+import '../../services/auth_service.dart';
+import '../../services/room_service.dart';
+import '../../models/user.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../shared/widgets/app_buttons.dart';
+import '../../features/web/web_layout.dart';
+import '../../providers/chat_provider.dart';
+import '../../widgets/chat_sidebar_widget.dart';
+import '../../widgets/common/app_gnb.dart';
 
 /// 호스트 모드 홈 화면 - 새 디자인 시스템 적용
 class HostHomePage extends StatefulWidget {

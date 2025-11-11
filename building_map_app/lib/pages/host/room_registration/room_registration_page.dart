@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/daum_postcode_widget.dart';
-import '../widgets/registration_flow_indicator.dart';
-import '../services/room_service.dart';
-import '../widgets/common/responsive_page_layout.dart';
-import '../core/theme/app_colors.dart';
-import '../core/theme/app_text_styles.dart';
-import '../core/theme/app_spacing.dart';
-import '../shared/widgets/app_buttons.dart';
-import '../shared/widgets/app_inputs.dart';
+import '../../../widgets/daum_postcode_widget.dart';
+import '../../../widgets/registration_flow_indicator.dart';
+import '../../../services/room_service.dart';
+import '../../../widgets/common/responsive_page_layout.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../shared/widgets/app_buttons.dart';
+import '../../../shared/widgets/app_inputs.dart';
 
 /// 호스트 전용 방 등록 페이지
 class RoomRegistrationPage extends StatefulWidget {

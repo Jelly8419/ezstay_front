@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../services/auth_service.dart';
-import '../models/user.dart';
-import '../core/theme/app_colors.dart';
-import '../widgets/mode_selection_dialog.dart';
-import '../widgets/common/ezstay_logo.dart';
-import '../widgets/common/app_gnb.dart';
+import '../../services/auth_service.dart';
+import '../../models/user.dart';
+import '../../core/theme/app_colors.dart';
+import '../../widgets/mode_selection_dialog.dart';
+import '../../widgets/common/ezstay_logo.dart';
+import '../../widgets/common/app_gnb.dart';
 
 /// 로그인 페이지 - 미니멀 디자인
 class LoginPage extends StatefulWidget {

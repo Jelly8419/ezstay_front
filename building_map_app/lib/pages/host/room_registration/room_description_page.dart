@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/registration_flow_indicator.dart';
-import '../services/room_service.dart';
-import '../widgets/common/responsive_page_layout.dart';
-import '../core/theme/app_colors.dart';
-import '../core/theme/app_text_styles.dart';
-import '../core/theme/app_spacing.dart';
-import '../shared/widgets/app_buttons.dart';
+import '../../../widgets/registration_flow_indicator.dart';
+import '../../../services/room_service.dart';
+import '../../../widgets/common/responsive_page_layout.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../shared/widgets/app_buttons.dart';
 
 /// 방 소개 페이지
 class RoomDescriptionPage extends StatefulWidget {

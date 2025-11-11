@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import '../models/room.dart';
-import '../constants/app_constants.dart';
-import '../services/guest_room_service.dart';
-import '../widgets/simple_kakao_map.dart';
-import '../widgets/kakao_roadview_web.dart';
+import '../../models/room.dart';
+import '../../constants/app_constants.dart';
+import '../../services/guest_room_service.dart';
+import '../../widgets/simple_kakao_map.dart';
+import '../../widgets/kakao_roadview_web.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'contract_start_page.dart';
+import '../contract/contract_start_page.dart';
 
 /// 방 상세 정보 페이지
 class RoomDetailPage extends StatefulWidget {

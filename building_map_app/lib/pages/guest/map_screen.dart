@@ -4,15 +4,15 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../models/room.dart';
-import '../models/search_filters.dart';
-import '../services/room_service.dart';
-import '../config/api_config.dart';
-import '../widgets/kakao_map_web.dart';
-import '../widgets/property_card.dart';
-import '../widgets/search_filter_bar.dart';
-import '../constants/app_constants.dart';
-import '../utils/responsive_util.dart';
+import '../../models/room.dart';
+import '../../models/search_filters.dart';
+import '../../services/room_service.dart';
+import '../../config/api_config.dart';
+import '../../widgets/kakao_map_web.dart';
+import '../../widgets/property_card.dart';
+import '../../widgets/search_filter_bar.dart';
+import '../../constants/app_constants.dart';
+import '../../utils/responsive_util.dart';
 
 /// 지도 기반 숙소 검색 화면
 class MapScreen extends StatefulWidget {

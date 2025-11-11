@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/room.dart';
-import '../constants/app_constants.dart' hide AppColors;
-import '../services/contract_service.dart';
+import '../../models/room.dart';
+import '../../services/contract_service.dart';
 import 'package:intl/intl.dart';
-import '../widgets/common/responsive_page_layout.dart';
-import '../core/theme/app_colors.dart';
-import '../core/theme/app_text_styles.dart';
-import '../core/theme/app_spacing.dart';
-import '../shared/widgets/app_buttons.dart';
+import '../../widgets/common/responsive_page_layout.dart';
+import '../../core/theme/app_colors.dart';
 
 /// 계약 시작하기 페이지
 class ContractStartPage extends StatefulWidget {
