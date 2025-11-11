@@ -118,13 +118,7 @@ class GNBMenuDropdown extends StatelessWidget {
 
       case 'support':
         // 고객센터 페이지로 이동
-        // TODO: 고객센터 페이지 라우트 추가 필요
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('고객센터 페이지 준비 중입니다.'),
-            backgroundColor: AppColors.primary500,
-          ),
-        );
+        context.go('/support');
         break;
 
       case 'logout':

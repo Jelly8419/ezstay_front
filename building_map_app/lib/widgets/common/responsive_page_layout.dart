@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 import '../../utils/responsive_util.dart';
 import 'ezstay_logo.dart';
+import 'app_gnb.dart';
 
 /// 반응형 페이지 레이아웃
 ///
@@ -127,6 +128,7 @@ class ResponsivePageLayout extends StatelessWidget {
 /// ```dart
 /// ResponsiveScaffold(
 ///   title: '페이지 제목',
+///   useGNB: true,  // GNB 사용
 ///   body: Column(
 ///     children: [
 ///       Text('컨텐츠'),
@@ -174,6 +176,10 @@ class ResponsiveScaffold extends StatelessWidget {
   /// 카드 스타일 적용 여부
   final bool useCardStyle;
 
+  /// GNB(Global Navigation Bar) 사용 여부 (기본값: false)
+  /// true로 설정하면 AppGNB를 사용하고, false면 기본 AppBar 사용
+  final bool useGNB;
+
   const ResponsiveScaffold({
     super.key,
     required this.title,
@@ -189,22 +195,26 @@ class ResponsiveScaffold extends StatelessWidget {
     this.drawer,
     this.backgroundColor,
     this.useCardStyle = false,
+    this.useGNB = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const ResponsiveEZStayLogo(),
-            const SizedBox(width: 12),
-            Text(title),
-          ],
-        ),
-        actions: actions,
-        leading: leading,
-      ),
+      backgroundColor: backgroundColor ?? AppColors.background,
+      appBar: useGNB
+          ? const AppGNB()
+          : AppBar(
+              title: Row(
+                children: [
+                  const ResponsiveEZStayLogo(),
+                  const SizedBox(width: 12),
+                  Text(title),
+                ],
+              ),
+              actions: actions,
+              leading: leading,
+            ),
       body: ResponsivePageLayout(
         maxWidth: maxWidth,
         usePadding: usePadding,

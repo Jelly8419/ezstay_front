@@ -79,6 +79,9 @@ dependencies:
   # 국제화 및 로케일
   intl: ^0.19.0
 
+  # HTML 렌더링 (공지사항, FAQ)
+  flutter_html: ^3.0.0-beta.2
+
   # Firebase (필요한 서비스만 포함)
   firebase_core: ^3.8.1
   firebase_auth: ^5.3.4

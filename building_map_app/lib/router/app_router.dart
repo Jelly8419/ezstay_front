@@ -24,6 +24,13 @@ import '../pages/host_contracts_page.dart' deferred as host_contracts;
 import '../pages/contract_detail_page.dart' deferred as contract_detail;
 import '../pages/chat_list_page.dart' deferred as chat_list;
 import '../pages/chat_detail_page.dart' deferred as chat_detail;
+import '../pages/support/support_center_page.dart' deferred as support_center;
+import '../pages/support/notice_list_page.dart' deferred as notice_list;
+import '../pages/support/notice_detail_page.dart' deferred as notice_detail;
+import '../pages/support/faq_list_page.dart' deferred as faq_list;
+import '../pages/support/inquiry_list_page.dart' deferred as inquiry_list;
+import '../pages/support/inquiry_form_page.dart' deferred as inquiry_form;
+import '../pages/support/inquiry_detail_page.dart' deferred as inquiry_detail;
 
 class AppRouter {
   /// Deferred 라이브러리 로딩 위젯
@@ -400,6 +407,118 @@ class AppRouter {
               ),
             );
           },
+        ),
+        // 고객센터 라우트
+        GoRoute(
+          path: '/support',
+          name: 'support-center',
+          builder: (context, state) {
+            return _deferredWidget(
+              support_center.loadLibrary,
+              () => support_center.SupportCenterPage(),
+            );
+          },
+          routes: [
+            // 공지사항 목록
+            GoRoute(
+              path: 'notices',
+              name: 'notice-list',
+              builder: (context, state) => _deferredWidget(
+                notice_list.loadLibrary,
+                () => notice_list.NoticeListPage(),
+              ),
+            ),
+            // 공지사항 상세
+            GoRoute(
+              path: 'notice/:noticeId',
+              name: 'notice-detail',
+              builder: (context, state) {
+                final noticeIdStr = state.pathParameters['noticeId'];
+                final noticeId = noticeIdStr != null ? int.tryParse(noticeIdStr) : null;
+
+                if (noticeId == null) {
+                  return Scaffold(
+                    body: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('잘못된 접근입니다.'),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => context.go('/support'),
+                            child: const Text('고객센터로 돌아가기'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return _deferredWidget(
+                  notice_detail.loadLibrary,
+                  () => notice_detail.NoticeDetailPage(noticeId: noticeId),
+                );
+              },
+            ),
+            // FAQ 목록
+            GoRoute(
+              path: 'faqs',
+              name: 'faq-list',
+              builder: (context, state) => _deferredWidget(
+                faq_list.loadLibrary,
+                () => faq_list.FAQListPage(),
+              ),
+            ),
+            // 문의 목록
+            GoRoute(
+              path: 'inquiries',
+              name: 'inquiry-list',
+              builder: (context, state) => _deferredWidget(
+                inquiry_list.loadLibrary,
+                () => inquiry_list.InquiryListPage(),
+              ),
+            ),
+            // 문의 작성
+            GoRoute(
+              path: 'inquiry/form',
+              name: 'inquiry-form',
+              builder: (context, state) => _deferredWidget(
+                inquiry_form.loadLibrary,
+                () => inquiry_form.InquiryFormPage(),
+              ),
+            ),
+            GoRoute(
+              path: 'inquiry/:inquiryId',
+              name: 'inquiry-detail',
+              builder: (context, state) {
+                final inquiryIdStr = state.pathParameters['inquiryId'];
+                final inquiryId = inquiryIdStr != null ? int.tryParse(inquiryIdStr) : null;
+
+                if (inquiryId == null) {
+                  return Scaffold(
+                    body: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('잘못된 접근입니다.'),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => context.go('/support?tab=inquiry'),
+                            child: const Text('문의 목록으로 돌아가기'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return _deferredWidget(
+                  inquiry_detail.loadLibrary,
+                  () => inquiry_detail.InquiryDetailPage(inquiryId: inquiryId),
+                );
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/bypass/:userId',
