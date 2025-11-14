@@ -64,6 +64,29 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: 📝 Create .env file
+        working-directory: ./building_map_app
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment || 'test' }}
+          API_URL: ${{ github.event.inputs.environment == 'production' && 'https://api.ezstay.com' || 'https://ezstay-api.duckdns.org' }}
+        run: |
+          cat > .env << EOF
+          # Kakao API Keys (Public - 안전함)
+          KAKAO_REST_API_KEY=88df9fa560e1447eb0930e5bae9ff017
+          KAKAO_JAVASCRIPT_KEY=7b8e75100e5af72db70a46c3fef81128
+
+          # Backend API URLs
+          API_BASE_URL=$API_URL
+          API_TIMEOUT_SECONDS=10
+
+          # Environment
+          IS_PRODUCTION=${{ github.event.inputs.environment == 'production' && 'true' || 'false' }}
+          ENVIRONMENT=$ENVIRONMENT
+          EOF
+
+          echo "✅ .env file created for $ENVIRONMENT environment"
+          echo "🌐 API URL: $API_URL"
+
       - name: 📦 Install dependencies
         working-directory: ./building_map_app
         run: flutter pub get
