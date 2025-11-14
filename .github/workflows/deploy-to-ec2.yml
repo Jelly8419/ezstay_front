@@ -1,0 +1,223 @@
+name: Deploy Flutter Web to EC2
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - production
+
+env:
+  FLUTTER_VERSION: '3.9.2'
+  REMOTE_UPLOAD_PATH: '/opt/ezstay/frontend/flutter'
+  REMOTE_NGINX_PATH: '/var/www/flutter'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ==========================================
+      # 1. 환경 설정
+      # ==========================================
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Get GitHub Actions Runner IP
+        id: runner-ip
+        uses: haythem/public-ip@v1.3
+
+      - name: 🔓 Add Runner IP to AWS Security Group
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          RUNNER_IP="${{ steps.runner-ip.outputs.ipv4 }}"
+          SG_ID="${{ secrets.EC2_SECURITY_GROUP_ID }}"
+
+          echo "🌐 Runner IP: $RUNNER_IP"
+          echo "🛡️ Security Group: $SG_ID"
+
+          # SSH 포트(22) 인바운드 규칙 추가
+          aws ec2 authorize-security-group-ingress \
+            --group-id "$SG_ID" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${RUNNER_IP}/32" \
+            --region "${{ secrets.AWS_REGION }}" \
+            || echo "⚠️ Rule may already exist (continuing...)"
+
+      # ==========================================
+      # 2. Flutter 빌드
+      # ==========================================
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Install dependencies
+        working-directory: ./building_map_app
+        run: flutter pub get
+
+      - name: 🧪 Run tests
+        working-directory: ./building_map_app
+        run: flutter test
+        continue-on-error: true
+
+      - name: 🏗️ Build Flutter web
+        working-directory: ./building_map_app
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment || 'test' }}
+          API_URL: ${{ github.event.inputs.environment == 'production' && 'https://api.ezstay.com' || 'https://ezstay-api.duckdns.org' }}
+        run: |
+          echo "🔧 Environment: $ENVIRONMENT"
+          echo "🌐 API URL: $API_URL"
+
+          flutter build web --release \
+            --base-href=/app/ \
+            --dart-define=ENVIRONMENT=$ENVIRONMENT \
+            --dart-define=API_BASE_URL=$API_URL
+
+      # ==========================================
+      # 3. SSH 설정
+      # ==========================================
+      - name: 🔐 Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.TEST_SERVER_SSH_KEY }}" > ~/.ssh/deploy_key.pem
+          chmod 600 ~/.ssh/deploy_key.pem
+
+          # known_hosts에 서버 추가
+          ssh-keyscan -H -p ${{ secrets.TEST_SERVER_PORT }} \
+            ${{ secrets.TEST_SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      # ==========================================
+      # 4. EC2 배포
+      # ==========================================
+      - name: 🧹 Clean old files on server
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem \
+            -p ${{ secrets.TEST_SERVER_PORT }} \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} \
+            "sudo rm -rf ${{ env.REMOTE_UPLOAD_PATH }}/web && \
+             sudo rm -rf ${{ env.REMOTE_NGINX_PATH }}/* && \
+             echo '✅ Cleanup completed'"
+
+      - name: 📤 Upload build to EC2
+        run: |
+          # 업로드 디렉토리 생성
+          ssh -i ~/.ssh/deploy_key.pem \
+            -p ${{ secrets.TEST_SERVER_PORT }} \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} \
+            "sudo mkdir -p ${{ env.REMOTE_UPLOAD_PATH }}"
+
+          # SCP로 파일 전송
+          scp -i ~/.ssh/deploy_key.pem \
+            -P ${{ secrets.TEST_SERVER_PORT }} \
+            -o StrictHostKeyChecking=no \
+            -r building_map_app/build/web \
+            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }}:${{ env.REMOTE_UPLOAD_PATH }}/
+
+      - name: 🚀 Deploy to Nginx
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem \
+            -p ${{ secrets.TEST_SERVER_PORT }} \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} << 'DEPLOY_SCRIPT'
+
+          # Nginx 디렉토리로 복사
+          sudo mkdir -p ${{ env.REMOTE_NGINX_PATH }}
+          sudo cp -r ${{ env.REMOTE_UPLOAD_PATH }}/web/* ${{ env.REMOTE_NGINX_PATH }}/
+
+          # 권한 설정
+          sudo chown -R nginx:nginx ${{ env.REMOTE_NGINX_PATH }}
+          sudo chmod -R 755 ${{ env.REMOTE_NGINX_PATH }}
+
+          # Nginx 설정 확인
+          sudo nginx -t
+
+          # Nginx 재시작
+          sudo systemctl reload nginx
+
+          echo "✅ Deployment completed"
+          DEPLOY_SCRIPT
+
+      # ==========================================
+      # 5. 배포 확인
+      # ==========================================
+      - name: ✅ Verify deployment
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem \
+            -p ${{ secrets.TEST_SERVER_PORT }} \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} << 'VERIFY_SCRIPT'
+
+          echo "📊 Files in Nginx path:"
+          ls -lh ${{ env.REMOTE_NGINX_PATH }} | head -10
+
+          echo ""
+          echo "💾 Disk usage:"
+          du -sh ${{ env.REMOTE_NGINX_PATH }}
+
+          echo ""
+          echo "🌐 Server IP:"
+          curl -s ifconfig.me || echo "N/A"
+          VERIFY_SCRIPT
+
+      # ==========================================
+      # 6. 보안 그룹 정리 (항상 실행)
+      # ==========================================
+      - name: 🔒 Remove Runner IP from Security Group
+        if: always()
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          RUNNER_IP="${{ steps.runner-ip.outputs.ipv4 }}"
+          SG_ID="${{ secrets.EC2_SECURITY_GROUP_ID }}"
+
+          echo "🔒 Removing Runner IP from Security Group..."
+
+          aws ec2 revoke-security-group-ingress \
+            --group-id "$SG_ID" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${RUNNER_IP}/32" \
+            --region "${{ secrets.AWS_REGION }}" \
+            || echo "⚠️ Rule may not exist (continuing...)"
+
+          echo "✅ Security group cleaned up"
+
+      # ==========================================
+      # 7. 배포 완료 알림
+      # ==========================================
+      - name: 🎉 Deployment summary
+        if: success()
+        run: |
+          echo "======================================"
+          echo "  🎉 Deployment Successful!"
+          echo "======================================"
+          echo ""
+          echo "🔧 Environment: ${{ github.event.inputs.environment || 'test' }}"
+          echo "🌐 Server: ${{ secrets.TEST_SERVER_HOST }}"
+          echo "📊 API URL: ${{ github.event.inputs.environment == 'production' && 'https://api.ezstay.com' || 'https://ezstay-api.duckdns.org' }}"
+          echo ""
+          echo "Next steps:"
+          echo "  1. Test the website in browser"
+          echo "  2. Check for console errors"
+          echo "  3. Verify all features work correctly"
+          echo ""
