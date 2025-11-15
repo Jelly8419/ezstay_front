@@ -45,7 +45,7 @@ class AppPrimaryButton extends StatelessWidget {
         onPressed: isInteractive ? onPressed : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: isInteractive
-              ? AppColors.primary500
+              ? AppColors.blue600  // Blue-600 브랜드 색상
               : AppColors.neutral300,
           foregroundColor: AppColors.neutral0,
           elevation: 0,

@@ -491,14 +491,14 @@ class _HostHomePageState extends State<HostHomePage> {
       height: 120,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary500, AppColors.primary700],
+          colors: [AppColors.blue600, AppColors.blue700],  // Blue gradient
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: AppRadius.radiusLg,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary500.withOpacity(0.3),
+            color: AppColors.blue600.withValues(alpha: 0.3),
             offset: const Offset(0, 8),
             blurRadius: 16,
           ),
