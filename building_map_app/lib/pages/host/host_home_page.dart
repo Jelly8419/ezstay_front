@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
+import '../../services/analytics_service.dart';
 import '../../services/room_service.dart';
 import '../../models/user.dart';
 import '../../core/theme/app_colors.dart';
@@ -23,6 +24,7 @@ class HostHomePage extends StatefulWidget {
 
 class _HostHomePageState extends State<HostHomePage> {
   final _roomService = RoomService();
+  late final AnalyticsService _analytics;
   final ScrollController _scrollController = ScrollController();
   Map<String, dynamic>? _inProgressRoom;
   bool _isLoading = true;
@@ -30,6 +32,12 @@ class _HostHomePageState extends State<HostHomePage> {
   @override
   void initState() {
     super.initState();
+    // Firebase 초기화 후 Analytics 사용
+    _analytics = AnalyticsService();
+    // 🔥 호스트 홈 화면 진입 이벤트 기록
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _analytics.logHomeViewHost();
+    });
     _checkInProgressRooms();
   }
 

@@ -86,6 +86,7 @@ dependencies:
   firebase_core: ^3.8.1
   firebase_auth: ^5.3.4
   cloud_firestore: ^5.6.0
+  firebase_analytics: ^11.3.4  # 사용자 행동 분석 (PRD 이벤트 로깅)
   # firebase_storage: ^12.3.8  # 미사용 - 제거하여 번들 크기 감소
   # firebase_messaging: ^15.1.5  # 미사용 - 제거하여 번들 크기 감소
 
