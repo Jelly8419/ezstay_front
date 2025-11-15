@@ -75,7 +75,9 @@ class _HostHomePageState extends State<HostHomePage> {
             }
             _isLoading = false;
           });
-          debugPrint('🏠 [HOST] setState 완료 - _inProgressRoom에 id 추가: ${_inProgressRoom?['id']}');
+          debugPrint(
+            '🏠 [HOST] setState 완료 - _inProgressRoom에 id 추가: ${_inProgressRoom?['id']}',
+          );
         }
       } else {
         debugPrint('🏠 [HOST] 등록 중인 방이 없음');
@@ -180,33 +182,41 @@ class _HostHomePageState extends State<HostHomePage> {
       backgroundColor: AppColors.background,
       appBar: const AppGNB(),
       body: SingleChildScrollView(
-        padding: AppSpacing.paddingMd,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: AppSpacing.md),
-            _buildWelcomeSection(authService),
-            SizedBox(height: AppSpacing.lg),
+            // 히어로 섹션
+            _buildHeroSection(isMobile: true),
 
-            // 등록 중인 방 배너
-            if (_inProgressRoom != null) ...[
-              _buildInProgressRoomBanner(),
-              SizedBox(height: AppSpacing.lg),
-            ],
+            Padding(
+              padding: AppSpacing.paddingMd,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: AppSpacing.lg),
 
-            // 숙소 등록하기 버튼
-            _buildRegisterPropertyButton(),
-            SizedBox(height: AppSpacing.xl),
+                  // 등록 중인 방 배너
+                  if (_inProgressRoom != null) ...[
+                    _buildInProgressRoomBanner(),
+                    SizedBox(height: AppSpacing.lg),
+                  ],
 
-            // 관리 섹션
-            Text('호스트 관리', style: AppTextStyles.headingMedium),
-            SizedBox(height: AppSpacing.md),
-            _buildManagementGrid(),
-            SizedBox(height: AppSpacing.xl),
+                  // 숙소 등록하기 버튼
+                  _buildRegisterPropertyButton(),
+                  SizedBox(height: AppSpacing.xl),
 
-            // 통계 섹션
-            _buildStatsCard(),
-            SizedBox(height: AppSpacing.xxl),
+                  // 관리 섹션
+                  Text('호스트 관리', style: AppTextStyles.headingMedium),
+                  SizedBox(height: AppSpacing.md),
+                  _buildManagementGrid(),
+                  SizedBox(height: AppSpacing.xl),
+
+                  // 통계 섹션
+                  _buildStatsCard(),
+                  SizedBox(height: AppSpacing.xxl),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -219,29 +229,37 @@ class _HostHomePageState extends State<HostHomePage> {
       backgroundColor: AppColors.background,
       appBar: const AppGNB(),
       body: SingleChildScrollView(
-        padding: AppSpacing.paddingLg,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: AppSpacing.lg),
-            _buildWelcomeSection(authService),
-            SizedBox(height: AppSpacing.xl),
+            // 히어로 섹션
+            _buildHeroSection(isMobile: false),
 
-            if (_inProgressRoom != null) ...[
-              _buildInProgressRoomBanner(),
-              SizedBox(height: AppSpacing.xl),
-            ],
+            Padding(
+              padding: AppSpacing.paddingLg,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: AppSpacing.xl),
 
-            _buildRegisterPropertyButton(),
-            SizedBox(height: AppSpacing.xxl),
+                  if (_inProgressRoom != null) ...[
+                    _buildInProgressRoomBanner(),
+                    SizedBox(height: AppSpacing.xl),
+                  ],
 
-            Text('호스트 관리', style: AppTextStyles.headingLarge),
-            SizedBox(height: AppSpacing.lg),
-            _buildManagementGrid(),
-            SizedBox(height: AppSpacing.xxl),
+                  _buildRegisterPropertyButton(),
+                  SizedBox(height: AppSpacing.xxl),
 
-            _buildStatsCard(),
-            SizedBox(height: AppSpacing.xxxl),
+                  Text('호스트 관리', style: AppTextStyles.headingLarge),
+                  SizedBox(height: AppSpacing.lg),
+                  _buildManagementGrid(),
+                  SizedBox(height: AppSpacing.xxl),
+
+                  _buildStatsCard(),
+                  SizedBox(height: AppSpacing.xxxl),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -261,38 +279,47 @@ class _HostHomePageState extends State<HostHomePage> {
               children: [
                 SingleChildScrollView(
                   controller: _scrollController,
-                  child: WebContainer(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildWelcomeSection(authService),
-                          SizedBox(height: AppSpacing.xl),
+                  child: Column(
+                    children: [
+                      // 히어로 섹션
+                      _buildHeroSection(isMobile: false),
 
-                          if (_inProgressRoom != null) ...[
-                            _buildInProgressRoomBanner(),
-                            SizedBox(height: AppSpacing.xl),
-                          ],
+                      WebContainer(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppSpacing.xxl,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildWelcomeSection(authService),
+                              SizedBox(height: AppSpacing.xl),
 
-                          _buildRegisterPropertyButton(),
-                          SizedBox(height: AppSpacing.xxxl),
+                              if (_inProgressRoom != null) ...[
+                                _buildInProgressRoomBanner(),
+                                SizedBox(height: AppSpacing.xl),
+                              ],
 
-                          Text('호스트 관리', style: AppTextStyles.displaySmall),
-                          SizedBox(height: AppSpacing.lg),
-                          _buildManagementGrid(),
-                          SizedBox(height: AppSpacing.xxxl),
+                              _buildRegisterPropertyButton(),
+                              SizedBox(height: AppSpacing.xxxl),
 
-                          _buildStatsCard(),
-                        ],
+                              Text('호스트 관리', style: AppTextStyles.displaySmall),
+                              SizedBox(height: AppSpacing.lg),
+                              _buildManagementGrid(),
+                              SizedBox(height: AppSpacing.xxxl),
+
+                              _buildStatsCard(),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
 
                 // 스크롤 탑 버튼
                 ScrollToTopButton(scrollController: _scrollController),
-               // 채팅 사이드바 (오버레이)
+                // 채팅 사이드바 (오버레이)
                 ChatSidebarWidget(),
               ],
             ),
@@ -321,11 +348,7 @@ class _HostHomePageState extends State<HostHomePage> {
               color: AppColors.success50,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.person,
-              size: 32,
-              color: AppColors.success600,
-            ),
+            child: Icon(Icons.person, size: 32, color: AppColors.success600),
           ),
           SizedBox(width: AppSpacing.md),
           Expanded(
@@ -377,7 +400,7 @@ class _HostHomePageState extends State<HostHomePage> {
         borderRadius: AppRadius.radiusLg,
         boxShadow: [
           BoxShadow(
-            color: AppColors.warning500.withOpacity(0.3),
+            color: AppColors.warning500.withValues(alpha: 0.3),
             offset: const Offset(0, 8),
             blurRadius: 16,
           ),
@@ -398,7 +421,7 @@ class _HostHomePageState extends State<HostHomePage> {
                     Container(
                       padding: EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         borderRadius: AppRadius.radiusSm,
                       ),
                       child: Icon(
@@ -422,7 +445,7 @@ class _HostHomePageState extends State<HostHomePage> {
                           Text(
                             '마저 입력하고 게스트에게 방을 보여주세요.',
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.neutral0.withOpacity(0.9),
+                              color: AppColors.neutral0.withValues(alpha: 0.9),
                             ),
                           ),
                         ],
@@ -470,8 +493,10 @@ class _HostHomePageState extends State<HostHomePage> {
                       borderRadius: AppRadius.radiusXs,
                       child: LinearProgressIndicator(
                         value: completionRate / 100,
-                        backgroundColor: Colors.white.withOpacity(0.3),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        backgroundColor: Colors.white.withValues(alpha: 0.3),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.white,
+                        ),
                         minHeight: 8,
                       ),
                     ),
@@ -485,13 +510,106 @@ class _HostHomePageState extends State<HostHomePage> {
     );
   }
 
+  // ==================== 히어로 섹션 ====================
+  Widget _buildHeroSection({required bool isMobile}) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.blue600, // Blue-600
+            AppColors.blue700, // Blue-700
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? AppSpacing.lg : AppSpacing.xl * 2,
+          vertical: AppSpacing.xl * 2,
+        ),
+        child: Column(
+          children: [
+            // 헤드라인 (흰색)
+            Text(
+              '호스트님의 단기임대를\n이지스테이가 함께합니다',
+              style:
+                  (isMobile
+                          ? AppTextStyles.headingLarge.copyWith(fontSize: 28)
+                          : AppTextStyles.displayLarge)
+                      .copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+              textAlign: TextAlign.center,
+            ),
+
+            SizedBox(height: AppSpacing.md),
+
+            // 서브 타이틀 (Blue-50)
+            Text(
+              '안전한 계약부터 정산까지, 모든 것을 한 곳에서',
+              style:
+                  (isMobile
+                          ? AppTextStyles.bodyLarge
+                          : AppTextStyles.headingLarge)
+                      .copyWith(
+                        color: AppColors.blue50,
+                        fontWeight: FontWeight.w600,
+                      ),
+              textAlign: TextAlign.center,
+            ),
+
+            SizedBox(height: AppSpacing.xl * 2),
+
+            // 매물 등록하기 버튼
+            SizedBox(
+              width: isMobile ? double.infinity : 280,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () => context.go('/host/room-registration'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppColors.blue600,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.radiusMd,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '매물 등록하기',
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.blue600,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.sm),
+                    Icon(
+                      Icons.arrow_forward,
+                      size: 20,
+                      color: AppColors.blue600,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ==================== 숙소 등록 버튼 ====================
   Widget _buildRegisterPropertyButton() {
     return Container(
       height: 120,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.blue600, AppColors.blue700],  // Blue gradient
+          colors: [AppColors.blue600, AppColors.blue700], // Blue gradient
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -516,7 +634,7 @@ class _HostHomePageState extends State<HostHomePage> {
                 Container(
                   padding: EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: AppRadius.radiusMd,
                   ),
                   child: Icon(
@@ -541,7 +659,7 @@ class _HostHomePageState extends State<HostHomePage> {
                       Text(
                         '새로운 숙소를 등록하세요',
                         style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.neutral0.withOpacity(0.9),
+                          color: AppColors.neutral0.withValues(alpha: 0.9),
                         ),
                       ),
                     ],
@@ -560,97 +678,81 @@ class _HostHomePageState extends State<HostHomePage> {
     );
   }
 
-  // ==================== 관리 그리드 ====================
+  // ==================== Quick Actions (빠른 작업) ====================
   Widget _buildManagementGrid() {
     return GridView.count(
-      crossAxisCount: 2,
+      crossAxisCount: 3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: AppSpacing.md,
       mainAxisSpacing: AppSpacing.md,
-      childAspectRatio: 1.1,
+      childAspectRatio: 1.2,
       children: [
-        _buildManagementCard(
-          icon: Icons.home_work_outlined,
-          title: '내 숙소',
-          subtitle: '등록된 숙소 관리',
-          color: AppColors.primary600,
+        _buildQuickActionCard(
+          icon: Icons.location_on_outlined,
+          title: '방 관리',
+          backgroundColor: AppColors.blue100,
+          iconColor: AppColors.blue600,
           onTap: () => _showComingSoonDialog(context),
         ),
-        _buildManagementCard(
-          icon: Icons.description_outlined,
+        _buildQuickActionCard(
+          icon: Icons.check_circle_outline,
           title: '계약 관리',
-          subtitle: '계약 요청 확인',
-          color: AppColors.secondary600,
+          backgroundColor: AppColors.success100,
+          iconColor: AppColors.success600,
           onTap: () => context.go('/host/contracts'),
         ),
-        _buildManagementCard(
-          icon: Icons.attach_money_outlined,
-          title: '수익 관리',
-          subtitle: '매출 및 정산',
-          color: AppColors.success600,
-          onTap: () => _showComingSoonDialog(context),
-        ),
-        _buildManagementCard(
-          icon: Icons.reviews_outlined,
-          title: '리뷰 관리',
-          subtitle: '게스트 리뷰',
-          color: AppColors.warning600,
+        _buildQuickActionCard(
+          icon: Icons.all_inbox_outlined,
+          title: '자동메시지',
+          backgroundColor: const Color(0xFFF3E8FF), // Purple-100
+          iconColor: const Color(0xFF9333EA), // Purple-600
           onTap: () => _showComingSoonDialog(context),
         ),
       ],
     );
   }
 
-  Widget _buildManagementCard({
+  Widget _buildQuickActionCard({
     required IconData icon,
     required String title,
-    required String subtitle,
-    required Color color,
+    required Color backgroundColor,
+    required Color iconColor,
     required VoidCallback onTap,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: AppRadius.radiusMd,
+        borderRadius: AppRadius.radiusLg,
         border: Border.all(color: AppColors.border),
-        boxShadow: AppShadows.shadowSm,
+        boxShadow: AppShadows.cardDefault,
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: AppRadius.radiusMd,
+          borderRadius: AppRadius.radiusLg,
           child: Padding(
-            padding: AppSpacing.paddingMd,
+            padding: AppSpacing.paddingLg,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    shape: BoxShape.circle,
+                    color: backgroundColor,
+                    borderRadius: AppRadius.radiusMd,
                   ),
-                  child: Icon(
-                    icon,
-                    size: 24,
-                    color: color,
-                  ),
+                  child: Icon(icon, size: 24, color: iconColor),
                 ),
-                SizedBox(height: AppSpacing.sm),
+                SizedBox(height: AppSpacing.md),
                 Text(
                   title,
                   style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
-                ),
-                SizedBox(height: AppSpacing.xs),
-                Text(
-                  subtitle,
-                  style: AppTextStyles.bodySmallSecondary,
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -684,11 +786,7 @@ class _HostHomePageState extends State<HostHomePage> {
                   icon: Icons.home,
                 ),
               ),
-              Container(
-                width: 1,
-                height: 40,
-                color: AppColors.divider,
-              ),
+              Container(width: 1, height: 40, color: AppColors.divider),
               Expanded(
                 child: _buildStatItem(
                   title: '예약 건수',
@@ -696,11 +794,7 @@ class _HostHomePageState extends State<HostHomePage> {
                   icon: Icons.book,
                 ),
               ),
-              Container(
-                width: 1,
-                height: 40,
-                color: AppColors.divider,
-              ),
+              Container(width: 1, height: 40, color: AppColors.divider),
               Expanded(
                 child: _buildStatItem(
                   title: '총 수익',
@@ -722,11 +816,7 @@ class _HostHomePageState extends State<HostHomePage> {
   }) {
     return Column(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: AppColors.success600,
-        ),
+        Icon(icon, size: 20, color: AppColors.success600),
         SizedBox(height: AppSpacing.sm),
         Text(
           value,
