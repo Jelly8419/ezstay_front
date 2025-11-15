@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
+import '../../services/analytics_service.dart';
 import '../../services/room_service.dart';
 import '../../models/user.dart';
 import '../../core/theme/app_colors.dart';
@@ -23,6 +24,7 @@ class HostHomePage extends StatefulWidget {
 
 class _HostHomePageState extends State<HostHomePage> {
   final _roomService = RoomService();
+  late final AnalyticsService _analytics;
   final ScrollController _scrollController = ScrollController();
   Map<String, dynamic>? _inProgressRoom;
   bool _isLoading = true;
@@ -30,6 +32,12 @@ class _HostHomePageState extends State<HostHomePage> {
   @override
   void initState() {
     super.initState();
+    // Firebase 초기화 후 Analytics 사용
+    _analytics = AnalyticsService();
+    // 🔥 호스트 홈 화면 진입 이벤트 기록
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _analytics.logHomeViewHost();
+    });
     _checkInProgressRooms();
   }
 
@@ -483,14 +491,14 @@ class _HostHomePageState extends State<HostHomePage> {
       height: 120,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary500, AppColors.primary700],
+          colors: [AppColors.blue600, AppColors.blue700],  // Blue gradient
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: AppRadius.radiusLg,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary500.withOpacity(0.3),
+            color: AppColors.blue600.withValues(alpha: 0.3),
             offset: const Offset(0, 8),
             blurRadius: 16,
           ),
