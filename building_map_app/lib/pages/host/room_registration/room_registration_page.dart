@@ -33,8 +33,6 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
   final _parkingInfoController = TextEditingController();
   final _roomCountController = TextEditingController();
   final _bathroomCountController = TextEditingController();
-  final _livingRoomCountController = TextEditingController();
-  final _kitchenCountController = TextEditingController();
 
   // 셀렉트 박스 값들
   String _buildingType = '오피스텔';
@@ -43,8 +41,6 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
   String _floor = '1층';
   int _roomCount = 1;
   int _bathroomCount = 1;
-  int _livingRoomCount = 0;
-  int _kitchenCount = 0;
 
   // 체크박스 값
   bool _isDuplex = false;
@@ -105,12 +101,6 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
           if (roomData['bathroomCount'] != null) {
             _bathroomCount = roomData['bathroomCount'];
           }
-          if (roomData['livingRoomCount'] != null) {
-            _livingRoomCount = roomData['livingRoomCount'];
-          }
-          if (roomData['kitchenCount'] != null) {
-            _kitchenCount = roomData['kitchenCount'];
-          }
           if (roomData['isDuplex'] != null) {
             _isDuplex = roomData['isDuplex'];
           }
@@ -142,8 +132,6 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
     _parkingInfoController.dispose();
     _roomCountController.dispose();
     _bathroomCountController.dispose();
-    _livingRoomCountController.dispose();
-    _kitchenCountController.dispose();
     super.dispose();
   }
 
@@ -559,7 +547,7 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
-              items: ['오피스텔', '아파트', '단독주택', '기타']
+              items: ['오피스텔', '아파트', '빌라', '다세대주택', '단독주택', '기타']
                   .map((type) => DropdownMenuItem(
                         value: type,
                         child: Text(type),
@@ -788,95 +776,6 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
                         onChanged: (value) {
                           setState(() {
                             _bathroomCount = value!;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // 거실 수 & 주방 수
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFieldLabel('거실 수'),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<int>(
-                        value: _livingRoomCount,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        ),
-                        items: List.generate(10, (index) => index)
-                            .map((count) => DropdownMenuItem(
-                                  value: count,
-                                  child: Text(count.toString()),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _livingRoomCount = value!;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFieldLabel('주방 수'),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<int>(
-                        value: _kitchenCount,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        ),
-                        items: List.generate(10, (index) => index)
-                            .map((count) => DropdownMenuItem(
-                                  value: count,
-                                  child: Text(count.toString()),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _kitchenCount = value!;
                           });
                         },
                       ),
@@ -1144,8 +1043,6 @@ class _RoomRegistrationPageState extends State<RoomRegistrationPage> {
         'elevatorAvailable': _elevatorAvailable == '있음',
         'roomCount': _roomCount,
         'bathroomCount': _bathroomCount,
-        'livingRoomCount': _livingRoomCount,
-        'kitchenCount': _kitchenCount,
         'isDuplex': _isDuplex,
         'entrancePassword': _useEntrancePassword ? _entrancePassword : null,
       };

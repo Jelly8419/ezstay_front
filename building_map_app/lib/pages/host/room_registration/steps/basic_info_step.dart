@@ -396,7 +396,10 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     '*방이 2개 층으로 나뉘어져 있는 경우 체크해주세요',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -586,7 +589,6 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
   }
 
   Widget _buildEntrancePasswordSection() {
-    final hasPassword = widget.formData['hasEntrancePassword'] ?? false;
     final password = widget.formData['entrancePassword'] ?? '';
 
     return Column(
@@ -606,9 +608,8 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
             Expanded(
               child: _buildToggleButton(
                 label: '없음',
-                selected: !hasPassword,
+                selected: password.isEmpty,
                 onTap: () {
-                  _updateFormData('hasEntrancePassword', false);
                   _updateFormData('entrancePassword', '');
                 },
               ),
@@ -617,13 +618,17 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
             Expanded(
               child: _buildToggleButton(
                 label: '있음',
-                selected: hasPassword,
-                onTap: () => _updateFormData('hasEntrancePassword', true),
+                selected: password.isNotEmpty,
+                onTap: () {
+                  debugPrint('Entrance password toggle: 있음 selected');
+                  // 비밀번호가 비어있으면 공백 문자를 저장해서 UI를 표시
+                  _updateFormData('entrancePassword', password.isEmpty ? ' ' : password);
+                },
               ),
             ),
           ],
         ),
-        if (hasPassword) ...[
+        if (password.isNotEmpty) ...[
           const SizedBox(height: 16),
           _buildPasswordInput(password),
         ],

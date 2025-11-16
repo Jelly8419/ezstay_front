@@ -44,9 +44,9 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
   // 전체 폼 데이터 (모든 Step에서 공유)
   final Map<String, dynamic> _formData = {
     // Step 1: 기본 정보
-    'propertyName': '', // basic_info_step.dart에서 사용하는 필드명
+    'roomName': '', // basic_info_step.dart에서 사용하는 필드명
     'address': '',
-    'addressDetail': '', // basic_info_step.dart에서 사용하는 필드명
+    'detailAddress': '', // basic_info_step.dart에서 사용하는 필드명
     'floor': '',
     'buildingType': '선택',
     'area': '',
@@ -56,7 +56,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     'parkingAvailable': null, // Boolean (true/false)
     'parkingInfo': '', // 주차 상세 정보 (선택사항)
     'elevatorAvailable': null, // Boolean (true/false)
-    'hasEntrancePassword': false,
     'entrancePassword': '',
 
     // Step 2: 사진 및 편의옵션
@@ -127,9 +126,9 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         // API 데이터를 formData로 복원 (API 필드명 -> UI 필드명 매핑)
         setState(() {
           // Step 1: 기본 정보
-          _formData['propertyName'] = roomData['roomName'] ?? '';
+          _formData['roomName'] = roomData['roomName'] ?? '';
           _formData['address'] = roomData['address'] ?? '';
-          _formData['addressDetail'] = roomData['addressDetail'] ?? '';
+          _formData['detailAddress'] = roomData['detailAddress'] ?? '';
           _formData['floor'] = roomData['floor']?.toString() ?? '';
           _formData['buildingType'] = roomData['buildingType'] ?? '선택';
           _formData['area'] = roomData['area']?.toString() ?? '';
@@ -139,8 +138,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           _formData['parkingAvailable'] = roomData['parkingAvailable'];
           _formData['parkingInfo'] = roomData['parkingInfo'] ?? '';
           _formData['elevatorAvailable'] = roomData['elevatorAvailable'];
-          _formData['hasEntrancePassword'] =
-              roomData['hasEntrancePassword'] ?? false;
           _formData['entrancePassword'] = roomData['entrancePassword'] ?? '';
 
           // Step 2: 사진 및 편의옵션
@@ -299,9 +296,9 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
       case 1:
         // Step 1: 기본 정보 저장
         final basicInfoData = {
-          'roomName': _formData['propertyName'], // UI 필드명 -> API 필드명 매핑
+          'roomName': _formData['roomName'], // UI 필드명 -> API 필드명 매핑
           'address': _formData['address'],
-          'detailAddress': _formData['addressDetail'],
+          'detailAddress': _formData['detailAddress'],
           'floor': int.tryParse(_formData['floor']?.toString() ?? ''),
           'buildingType': _formData['buildingType'],
           'area': double.tryParse(_formData['area']?.toString() ?? ''),
@@ -315,7 +312,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           'parkingAvailable': _formData['parkingAvailable'],
           'parkingInfo': _formData['parkingInfo'] ?? '',
           'elevatorAvailable': _formData['elevatorAvailable'],
-          'hasEntrancePassword': _formData['hasEntrancePassword'] ?? false,
           'entrancePassword': _formData['entrancePassword'] ?? '',
         };
 
