@@ -191,8 +191,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.blue600, // Blue-600
-            AppColors.blue700, // Blue-700
+            AppColors.primary600, // Primary-600
+            AppColors.primary700, // Primary-700
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -779,12 +779,12 @@ class _GuestHomePageState extends State<GuestHomePage> {
   }) {
     final gradientColors = isGreenTheme
         ? [AppColors.green500, AppColors.green600]
-        : [AppColors.blue500, AppColors.blue600];
-    final shadowColor = isGreenTheme ? AppColors.green500 : AppColors.blue500;
-    final badgeColor = isGreenTheme ? AppColors.green100 : AppColors.blue100;
+        : [AppColors.primary500, AppColors.primary600];
+    final shadowColor = isGreenTheme ? AppColors.green500 : AppColors.primary500;
+    final badgeColor = isGreenTheme ? AppColors.green100 : AppColors.primary100;
     final badgeTextColor = isGreenTheme
         ? AppColors.green600
-        : AppColors.blue600;
+        : AppColors.primary600;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,

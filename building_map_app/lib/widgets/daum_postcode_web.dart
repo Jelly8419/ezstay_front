@@ -68,7 +68,10 @@ class _DaumPostcodeWebState extends State<DaumPostcodeWeb> {
 
       js.context['onAddressClose'] = (state) {
         // 사용자가 주소 선택 없이 창을 닫은 경우
-        Navigator.of(context).pop();
+        // 이미 pop된 경우 중복 pop 방지
+        if (Navigator.canPop(context)) {
+          Navigator.of(context).pop();
+        }
       };
 
       // 다음 우편번호 API 실행
