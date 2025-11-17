@@ -1,4 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../config/api_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../services/room_service.dart';
@@ -140,19 +144,124 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           _formData['elevatorAvailable'] = roomData['elevatorAvailable'];
           _formData['entrancePassword'] = roomData['entrancePassword'] ?? '';
 
-          // Step 2: 사진 및 편의옵션
-          if (roomData['basicOptions'] != null) {
-            _formData['basicOptions'] = List<String>.from(
-              roomData['basicOptions'],
-            );
+          // Step 2: 사진 및 편의옵션 (API 형식: photos 배열 + amenities JSON → UI 형식: List 변환)
+          final basicOptionsList = <String>[];
+          final selectedOptionsList = <String>[];
+          final bedSelectionsList = <Map<String, dynamic>>[];
+
+          // 사진 데이터 처리 (상대 경로 → 완전한 URL 변환)
+          if (roomData['photos'] != null && roomData['photos'] is List) {
+            final photosList = (roomData['photos'] as List<dynamic>).map((
+              photo,
+            ) {
+              final url = photo['url'] as String;
+              // 상대 경로인 경우 API_BASE_URL 추가
+              if (url.startsWith('/')) {
+                return '${ApiConfig.baseUrl}$url';
+              }
+              return url;
+            }).toList();
+            _formData['uploadedImages'] = photosList;
           }
-          _formData['bedInfo'] = roomData['bedInfo'] ?? '';
+
+          // amenities 객체에서 JSON 문자열 파싱
+          if (roomData['amenities'] != null && roomData['amenities'] is Map) {
+            final amenities = roomData['amenities'] as Map<String, dynamic>;
+            final optionMapping = _getOptionMapping();
+            final reverseMapping = {
+              for (var e in optionMapping.entries) e.value: e.key,
+            };
+
+            // basicOptions JSON 문자열 파싱
+            if (amenities['basicOptions'] != null &&
+                amenities['basicOptions'] is String) {
+              try {
+                final basicOptionsMap =
+                    jsonDecode(amenities['basicOptions'])
+                        as Map<String, dynamic>;
+
+                // 영어 필드명을 한글로 역변환
+                basicOptionsMap.forEach((englishKey, value) {
+                  if (englishKey == 'bed' && value is Map) {
+                    // 침대 정보 처리
+                    basicOptionsList.add('침대');
+                    final bedMap = value as Map<String, dynamic>;
+                    final sizeReverseMapping = {
+                      'king': '킹',
+                      'queen': '퀸',
+                      'single': '싱글',
+                      'superSingle': '슈퍼싱글',
+                    };
+
+                    bedMap.forEach((englishSize, count) {
+                      final koreanSize = sizeReverseMapping[englishSize];
+                      if (koreanSize != null && count > 0) {
+                        bedSelectionsList.add({
+                          'size': koreanSize,
+                          'count': count,
+                        });
+                      }
+                    });
+                  } else if (value == true) {
+                    // boolean 옵션 (true인 것만)
+                    final koreanKey = reverseMapping[englishKey];
+                    if (koreanKey != null) {
+                      basicOptionsList.add(koreanKey);
+                    }
+                  }
+                });
+              } catch (e) {
+                debugPrint('❌ basicOptions JSON 파싱 실패: $e');
+              }
+            }
+
+            // additionalOptions JSON 문자열 파싱
+            if (amenities['additionalOptions'] != null &&
+                amenities['additionalOptions'] is String) {
+              try {
+                final additionalOptionsMap =
+                    jsonDecode(amenities['additionalOptions'])
+                        as Map<String, dynamic>;
+
+                additionalOptionsMap.forEach((englishKey, value) {
+                  if (value == true) {
+                    final koreanKey = reverseMapping[englishKey];
+                    if (koreanKey != null) {
+                      selectedOptionsList.add(koreanKey);
+                    }
+                  }
+                });
+              } catch (e) {
+                debugPrint('❌ additionalOptions JSON 파싱 실패: $e');
+              }
+            }
+
+            // convenienceOptions JSON 문자열 파싱
+            if (amenities['convenienceOptions'] != null &&
+                amenities['convenienceOptions'] is String) {
+              try {
+                final convenienceOptionsMap =
+                    jsonDecode(amenities['convenienceOptions'])
+                        as Map<String, dynamic>;
+
+                convenienceOptionsMap.forEach((englishKey, value) {
+                  if (value == true) {
+                    final koreanKey = reverseMapping[englishKey];
+                    if (koreanKey != null) {
+                      selectedOptionsList.add(koreanKey);
+                    }
+                  }
+                });
+              } catch (e) {
+                debugPrint('❌ convenienceOptions JSON 파싱 실패: $e');
+              }
+            }
+          }
+
+          _formData['basicOptions'] = basicOptionsList;
+          _formData['selectedOptions'] = selectedOptionsList;
+          _formData['bedSelections'] = bedSelectionsList;
           _formData['wifiPassword'] = roomData['wifiPassword'] ?? '';
-          if (roomData['conveniences'] != null) {
-            _formData['conveniences'] = List<String>.from(
-              roomData['conveniences'],
-            );
-          }
 
           // Step 3: 요금 설정
           _formData['dailyRent'] = roomData['dailyRent']?.toString() ?? '';
@@ -182,16 +291,26 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           _formData['earlyCheckinDiscountAmount'] =
               roomData['earlyCheckinDiscountAmount']?.toString() ?? '';
 
-          // Step 4: 무료 부가 서비스
-          _formData['cleaningService'] = roomData['cleaningService'] ?? false;
-          _formData['exitInspectionService'] =
-              roomData['exitInspectionService'] ?? false;
-          _formData['beddingRentalService'] =
-              roomData['beddingRentalService'] ?? false;
-          _formData['hairDryerRental'] = roomData['hairDryerRental'] ?? false;
-          _formData['amenityKitPurchase'] =
-              roomData['amenityKitPurchase'] ?? false;
-          _formData['servicePassword'] = roomData['servicePassword'] ?? '';
+          // Step 4: 무료 부가 서비스 (API freeServices 객체에서 가져오기)
+          if (roomData['freeServices'] != null &&
+              roomData['freeServices'] is Map) {
+            final freeServices = roomData['freeServices'] as Map<String, dynamic>;
+            debugPrint('📦 freeServices 데이터: $freeServices');
+
+            // API 필드명 → Frontend 필드명 매핑
+            _formData['cleaningService'] = freeServices['cleaningService'] ?? false;
+            _formData['exitInspectionService'] =
+                freeServices['autoPasswordChange'] ?? false;  // API: autoPasswordChange
+            _formData['beddingRentalService'] =
+                freeServices['beddingService'] ?? false;  // API: beddingService
+            _formData['hairDryerRental'] = freeServices['hairDryerRental'] ?? false;
+            _formData['amenityKitPurchase'] =
+                freeServices['amenityKit'] ?? false;  // API: amenityKit
+            _formData['servicePassword'] =
+                freeServices['roomPassword'] ?? '';  // API: roomPassword
+
+            debugPrint('✅ servicePassword 로드: ${_formData['servicePassword']}');
+          }
 
           // Step 5: 방 소개
           _formData['maxGuests'] = roomData['maxGuests']?.toString() ?? '';
@@ -330,6 +449,49 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     }
   }
 
+  /// 한글 옵션명을 영문 필드명으로 매핑
+  Map<String, String> _getOptionMapping() {
+    return {
+      '냉장고': 'refrigerator',
+      '세탁기': 'washingMachine',
+      '에어컨': 'airConditioner',
+      '싱크대': 'sink',
+      'TV': 'tv',
+      '인터넷(wi-fi)': 'internet',
+      '침대': 'bed', // 침대 매핑 추가
+      '도어락': 'doorLock',
+      'CCTV': 'cctv',
+      '관리실': 'managementOffice',
+      '가스레인지': 'gasRange',
+      '인덕션': 'induction',
+      '전자레인지': 'microwave',
+      '식탁': 'diningTable',
+      '신발장': 'shoeRack',
+      '옷장': 'wardrobe',
+      '드레스룸': 'dressRoom',
+      '화장대': 'vanity',
+      '케이블 TV': 'cableTv',
+      '소파': 'sofa',
+      '책상': 'desk',
+      '커튼': 'curtain',
+      '발코니/베란다': 'balcony',
+      '냉난방기': 'heatingCooling',
+      '히터': 'heater',
+      '공기청정기': 'airPurifier',
+      '건조기': 'dryer',
+      '다리미': 'iron',
+      '정수기': 'waterPurifier',
+      '전기밥솥': 'riceCooker',
+      '전기포트': 'electricKettle',
+      '식기': 'dishes',
+      '조리도구': 'cookware',
+      '욕조': 'bathtub',
+      '헤어드라이기': 'hairDryer',
+      '비데': 'bidet',
+      '반려동물 가능': 'petsAllowed',
+    };
+  }
+
   /// 현재 단계 데이터를 API에 저장
   Future<void> _saveCurrentStepToApi() async {
     switch (_currentStep) {
@@ -383,22 +545,161 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           throw Exception('roomId가 없습니다. Step 1을 먼저 완료해주세요.');
         }
 
-        // 사진 업로드는 PhotosStep 내부에서 처리되므로 여기서는 편의옵션만 저장
+        bool photosSuccess = true;
+        bool amenitiesSuccess = false;
+
+        // 1. 사진 업로드 API 호출
+        final uploadedXFiles =
+            _formData['uploadedXFiles'] as List<XFile>? ?? [];
+        if (uploadedXFiles.isNotEmpty) {
+          debugPrint('📸 사진 업로드 시작: ${uploadedXFiles.length}개');
+          final photoResult = await _roomService.uploadPhotos(
+            _currentRoomId!,
+            uploadedXFiles,
+          );
+
+          if (photoResult == null) {
+            photosSuccess = false;
+            throw Exception('사진 업로드 실패');
+          }
+          debugPrint('✅ 사진 업로드 성공: ${photoResult.length}개');
+        } else {
+          debugPrint('⚠️ 업로드할 사진이 없습니다');
+        }
+
+        // 2. 편의시설 데이터 변환 (한글 → 영문 필드명)
+        final optionMapping = _getOptionMapping();
+
+        // basicOptions 변환
+        final basicOptionsMap = <String, dynamic>{};
+        final basicOptionsList =
+            _formData['basicOptions'] as List<dynamic>? ?? [];
+
+        // 기본 옵션 처리 (boolean)
+        for (var key in ['냉장고', '세탁기', '에어컨', '싱크대', 'TV', '인터넷(wi-fi)']) {
+          final englishKey = optionMapping[key];
+          if (englishKey != null) {
+            basicOptionsMap[englishKey] = basicOptionsList.contains(key);
+          }
+        }
+
+        // 침대 정보 처리 (중첩 객체 - 영어 필드명)
+        if (basicOptionsList.contains('침대')) {
+          final bedSelections =
+              _formData['bedSelections'] as List<dynamic>? ?? [];
+          final bedMap = {
+            'king': 0, // 킹 → king
+            'queen': 0, // 퀸 → queen
+            'single': 0, // 싱글 → single
+            'superSingle': 0, // 슈퍼싱글 → superSingle
+          };
+
+          // 한글 사이즈를 영어로 매핑
+          final sizeMapping = {
+            '킹': 'king',
+            '퀸': 'queen',
+            '싱글': 'single',
+            '슈퍼싱글': 'superSingle',
+          };
+
+          for (var bed in bedSelections) {
+            final koreanSize = bed['size'] as String;
+            final englishSize = sizeMapping[koreanSize];
+            final count = bed['count'] as int;
+            if (englishSize != null) {
+              bedMap[englishSize] = count;
+            }
+          }
+
+          basicOptionsMap['bed'] = bedMap; // '침대' → 'bed'
+        }
+
+        // additionalOptions와 convenienceOptions 분류
+        final additionalOptionsMap = <String, dynamic>{};
+        final convenienceOptionsMap = <String, dynamic>{};
+        final selectedOptions =
+            _formData['selectedOptions'] as List<dynamic>? ?? [];
+
+        // additionalOptions에 속하는 옵션들
+        final additionalKeys = [
+          '도어락',
+          'CCTV',
+          '관리실',
+          '가스레인지',
+          '인덕션',
+          '전자레인지',
+          '식탁',
+          '신발장',
+          '옷장',
+          '드레스룸',
+          '화장대',
+          '케이블 TV',
+          '소파',
+          '책상',
+          '커튼',
+          '발코니/베란다',
+          '반려동물 가능',
+        ];
+
+        // convenienceOptions에 속하는 옵션들
+        final convenienceKeys = [
+          '냉난방기',
+          '히터',
+          '공기청정기',
+          '건조기',
+          '다리미',
+          '정수기',
+          '전기밥솥',
+          '전기포트',
+          '식기',
+          '조리도구',
+          '욕조',
+          '헤어드라이기',
+          '비데',
+        ];
+
+        for (var key in additionalKeys) {
+          final englishKey = optionMapping[key];
+          if (englishKey != null) {
+            additionalOptionsMap[englishKey] = selectedOptions.contains(key);
+          }
+        }
+
+        for (var key in convenienceKeys) {
+          final englishKey = optionMapping[key];
+          if (englishKey != null) {
+            convenienceOptionsMap[englishKey] = selectedOptions.contains(key);
+          }
+        }
+
+        // 3. API 요청 데이터 구성
         final amenitiesData = {
-          'basicOptions': _formData['basicOptions'] ?? [],
-          'bedInfo': _formData['bedInfo'],
+          'basicOptions': basicOptionsMap,
+          'additionalOptions': additionalOptionsMap,
+          'convenienceOptions': convenienceOptionsMap,
           'wifiPassword': _formData['wifiPassword'],
-          'conveniences': _formData['conveniences'] ?? [],
         };
 
-        final amenitiesSuccess = await _roomService.updateAmenities(
+        debugPrint('📤 편의시설 API 요청 데이터: $amenitiesData');
+
+        // 4. 편의시설 저장 API 호출
+        amenitiesSuccess = await _roomService.updateAmenities(
           _currentRoomId!,
           amenitiesData,
         );
+
         if (!amenitiesSuccess) {
           throw Exception('편의시설 설정 실패');
         }
-        debugPrint('✅ Step 2 저장 완료');
+
+        debugPrint('✅ 편의시설 설정 성공');
+
+        // 5. 사진과 편의시설 모두 성공한 경우에만 진행
+        if (!photosSuccess || !amenitiesSuccess) {
+          throw Exception('사진 업로드 또는 편의시설 설정 실패');
+        }
+
+        debugPrint('✅ Step 2 저장 완료 (사진 + 편의시설 모두 성공)');
         break;
 
       case 3:
@@ -450,13 +751,14 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           throw Exception('roomId가 없습니다. Step 1을 먼저 완료해주세요.');
         }
 
+        // Frontend → API 필드명 매핑
         final servicesData = {
           'cleaningService': _formData['cleaningService'] ?? false,
-          'exitInspectionService': _formData['exitInspectionService'] ?? false,
-          'beddingRentalService': _formData['beddingRentalService'] ?? false,
+          'autoPasswordChange': _formData['exitInspectionService'] ?? false,  // API 필드명
+          'beddingService': _formData['beddingRentalService'] ?? false,  // API 필드명
           'hairDryerRental': _formData['hairDryerRental'] ?? false,
-          'amenityKitPurchase': _formData['amenityKitPurchase'] ?? false,
-          'servicePassword': _formData['servicePassword'],
+          'amenityKit': _formData['amenityKitPurchase'] ?? false,  // API 필드명
+          'roomPassword': _formData['servicePassword'],  // API 필드명
         };
 
         final servicesSuccess = await _roomService.updateFreeServices(
@@ -477,9 +779,10 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
         final descriptionData = {
           'maxGuests': int.tryParse(_formData['maxGuests'] ?? ''),
-          'checkInTime': _formData['checkInTime'],
-          'checkOutTime': _formData['checkOutTime'],
-          'propertyDescription': _formData['propertyDescription'],
+          'description': _formData['propertyDescription'],  // 백엔드가 'description' 필드를 기대함
+          // checkInTime, checkOutTime은 백엔드가 아직 처리하지 않으므로 주석 처리
+          // 'checkInTime': _formData['checkInTime'],
+          // 'checkOutTime': _formData['checkOutTime'],
         };
 
         final descriptionSuccess = await _roomService.updateDescription(
@@ -528,7 +831,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // 다이얼로그 닫기
-                Navigator.of(context).pop(); // 등록 페이지 닫기
+                context.go('/host'); // 호스트 홈으로 이동
               },
               child: const Text('확인'),
             ),
@@ -613,7 +916,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                   '기본 정보',
                   '사진·편의옵션',
                   '요금 설정',
-                  '부가 서비스',
+                  '무료 부가 서비스',
                   '방 소개',
                 ],
               ),
@@ -622,82 +925,92 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
             // 구분선
             const Divider(height: 1),
 
-            // 현재 Step 컨텐츠
-            Expanded(child: _buildCurrentStep()),
-
-            // 하단 네비게이션 버튼
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    offset: const Offset(0, -2),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-              padding: AppSpacing.paddingMd,
-              child: SafeArea(
-                child: Row(
+            // 스크롤 가능한 컨텐츠 영역
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: Column(
                   children: [
-                    // 이전 버튼
-                    if (_currentStep > 1)
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _isLoading ? null : _handlePrevious,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: const BorderSide(color: AppColors.gray300),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text(
-                            '이전',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
+                    // 현재 Step 컨텐츠
+                    _buildCurrentStep(),
 
-                    if (_currentStep > 1) const SizedBox(width: 12),
+                    const SizedBox(height: 32),
 
-                    // 다음/완료 버튼
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleNext,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary600,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                    // 하단 네비게이션 버튼
+                    Padding(
+                      padding: AppSpacing.paddingMd,
+                      child: Row(
+                        children: [
+                          // 이전 버튼
+                          if (_currentStep > 1)
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _isLoading ? null : _handlePrevious,
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  side: const BorderSide(
+                                    color: AppColors.gray300,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                              )
-                            : Text(
-                                _currentStep == 5 ? '등록 완료' : '다음',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                child: const Text(
+                                  '이전',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
+                            ),
+
+                          if (_currentStep > 1) const SizedBox(width: 12),
+
+                          // 다음/완료 버튼
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleNext,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary600,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    )
+                                  : Text(
+                                      _currentStep == 5 ? '등록 완료' : '다음',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+
+                    // 하단 추가 여백
+                    const SizedBox(height: 48),
                   ],
                 ),
               ),
