@@ -16,13 +16,6 @@ import '../pages/guest/room_detail_page.dart' deferred as room_detail;
 import '../pages/host/host_home_page.dart' deferred as host_home;
 import '../pages/host/room_registration/room_registration_flow_page.dart'
     deferred as room_registration;
-import '../pages/host/room_registration/pricing_page.dart' deferred as pricing;
-import '../pages/host/room_registration/room_amenities_page.dart'
-    deferred as amenities;
-import '../pages/host/room_registration/free_services_page.dart'
-    deferred as free_services;
-import '../pages/host/room_registration/room_description_page.dart'
-    deferred as room_description;
 import '../pages/contract/guest_contracts_page.dart'
     deferred as guest_contracts;
 import '../pages/contract/host_contracts_page.dart' deferred as host_contracts;
@@ -300,94 +293,6 @@ class AppRouter {
             return _deferredWidget(
               room_registration.loadLibrary,
               () => room_registration.RoomRegistrationFlowPage(roomId: roomId),
-            );
-          },
-        ),
-        // 방 등록 - 요금 설정
-        GoRoute(
-          path: '/host/pricing/:roomId',
-          name: 'pricing',
-          builder: (context, state) {
-            final roomId = _parseIntParameter(state.pathParameters['roomId']);
-
-            if (roomId == null) {
-              return _buildInvalidAccessPage(
-                context,
-                message: '잘못된 접근입니다.',
-                buttonText: '호스트 홈으로',
-                redirectPath: '/host',
-              );
-            }
-
-            return _deferredWidget(
-              pricing.loadLibrary,
-              () => pricing.PricingPage(roomId: roomId),
-            );
-          },
-        ),
-        // 방 등록 - 편의시설
-        GoRoute(
-          path: '/host/amenities/:roomId',
-          name: 'amenities',
-          builder: (context, state) {
-            final roomId = _parseIntParameter(state.pathParameters['roomId']);
-
-            if (roomId == null) {
-              return _buildInvalidAccessPage(
-                context,
-                message: '잘못된 접근입니다.',
-                buttonText: '호스트 홈으로',
-                redirectPath: '/host',
-              );
-            }
-
-            return _deferredWidget(
-              amenities.loadLibrary,
-              () => amenities.RoomAmenitiesPage(roomId: roomId),
-            );
-          },
-        ),
-        // 방 등록 - 무료 부가서비스
-        GoRoute(
-          path: '/host/free-services/:roomId',
-          name: 'free-services',
-          builder: (context, state) {
-            final roomId = _parseIntParameter(state.pathParameters['roomId']);
-
-            if (roomId == null) {
-              return _buildInvalidAccessPage(
-                context,
-                message: '잘못된 접근입니다.',
-                buttonText: '호스트 홈으로',
-                redirectPath: '/host',
-              );
-            }
-
-            return _deferredWidget(
-              free_services.loadLibrary,
-              () => free_services.FreeServicesPage(roomId: roomId),
-            );
-          },
-        ),
-        // 방 등록 - 방 소개
-        GoRoute(
-          path: '/host/room-description/:roomId',
-          name: 'room-description',
-          builder: (context, state) {
-            final roomId = _parseIntParameter(state.pathParameters['roomId']);
-
-            if (roomId == null) {
-              return _buildInvalidAccessPage(
-                context,
-                message: '잘못된 접근입니다.',
-                buttonText: '호스트 홈으로',
-                redirectPath: '/host',
-              );
-            }
-
-            return _deferredWidget(
-              room_description.loadLibrary,
-              () => room_description.RoomDescriptionPage(roomId: roomId),
             );
           },
         ),

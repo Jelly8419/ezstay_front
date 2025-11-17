@@ -87,30 +87,9 @@ class _HostHomePageState extends State<HostHomePage> {
   /// 진행 중인 단계에 따라 페이지 이동
   void _continueRegistration(Map<String, dynamic> room) {
     final roomId = room['id'] ?? room['roomId'];
-    final progress = room['registrationProgress'];
-
-    if (progress == null) {
-      context.go('/host/room-registration/$roomId');
-      return;
-    }
-
-    final steps = progress['steps'] as Map<String, dynamic>?;
-
-    if (steps != null) {
-      if (steps['basicInfo'] == false) {
-        context.go('/host/room-registration/$roomId');
-      } else if (steps['pricing'] == false) {
-        context.go('/host/pricing/$roomId');
-      } else if (steps['photosAndAmenities'] == false) {
-        context.go('/host/amenities/$roomId');
-      } else if (steps['freeServices'] == false) {
-        context.go('/host/free-services/$roomId');
-      } else if (steps['description'] == false) {
-        context.go('/host/room-description/$roomId');
-      } else {
-        context.go('/host/room-registration/$roomId');
-      }
-    }
+    // 모든 단계는 RoomRegistrationFlowPage에서 Step 위젯으로 처리
+    // RoomRegistrationFlowPage가 내부적으로 진행 상태를 파악하여 적절한 단계를 표시함
+    context.go('/host/room-registration/$roomId');
   }
 
   @override
