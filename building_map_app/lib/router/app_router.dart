@@ -14,14 +14,13 @@ import '../pages/auth/mode_selection_page.dart' deferred as mode_selection;
 import '../pages/auth/register_page.dart' deferred as register;
 import '../pages/guest/room_detail_page.dart' deferred as room_detail;
 import '../pages/host/host_home_page.dart' deferred as host_home;
-import '../pages/host/room_registration/room_registration_page.dart' deferred as room_registration;
-import '../pages/host/room_registration/pricing_page.dart' deferred as pricing;
-import '../pages/host/room_registration/room_amenities_page.dart' deferred as amenities;
-import '../pages/host/room_registration/free_services_page.dart' deferred as free_services;
-import '../pages/host/room_registration/room_description_page.dart' deferred as room_description;
-import '../pages/contract/guest_contracts_page.dart' deferred as guest_contracts;
+import '../pages/host/room_registration/room_registration_flow_page.dart'
+    deferred as room_registration;
+import '../pages/contract/guest_contracts_page.dart'
+    deferred as guest_contracts;
 import '../pages/contract/host_contracts_page.dart' deferred as host_contracts;
-import '../pages/contract/contract_detail_page.dart' deferred as contract_detail;
+import '../pages/contract/contract_detail_page.dart'
+    deferred as contract_detail;
 import '../pages/chat/chat_list_page.dart' deferred as chat_list;
 import '../pages/chat/chat_detail_page.dart' deferred as chat_detail;
 import '../pages/support/support_center_page.dart' deferred as support_center;
@@ -34,7 +33,10 @@ import '../pages/support/inquiry_detail_page.dart' deferred as inquiry_detail;
 
 class AppRouter {
   /// Deferred 라이브러리 로딩 위젯
-  static Widget _deferredWidget(Future<void> Function() loadLibrary, Widget Function() builder) {
+  static Widget _deferredWidget(
+    Future<void> Function() loadLibrary,
+    Widget Function() builder,
+  ) {
     return FutureBuilder(
       future: loadLibrary(),
       builder: (context, snapshot) {
@@ -42,11 +44,7 @@ class AppRouter {
           return builder();
         }
         // 로딩 중 표시
-        return const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }
@@ -80,7 +78,10 @@ class AppRouter {
     );
   }
 
-  static GoRouter createRouter(AuthService authService, {GlobalKey<NavigatorState>? navigatorKey}) {
+  static GoRouter createRouter(
+    AuthService authService, {
+    GlobalKey<NavigatorState>? navigatorKey,
+  }) {
     return GoRouter(
       navigatorKey: navigatorKey,
       initialLocation: '/',
@@ -144,7 +145,7 @@ class AppRouter {
             !isGoingToGuest &&
             !isGoingToMap &&
             (state.matchedLocation.contains('/contracts') ||
-             state.matchedLocation.contains('/chat'))) {
+                state.matchedLocation.contains('/chat'))) {
           return '/login';
         }
 
@@ -163,7 +164,10 @@ class AppRouter {
             mode_selection.loadLibrary,
             () => mode_selection.ModeSelectionPage(
               onModeSelected: (UserMode mode) async {
-                final authService = Provider.of<AuthService>(context, listen: false);
+                final authService = Provider.of<AuthService>(
+                  context,
+                  listen: false,
+                );
 
                 // 소셜 로그인 타입에 따라 처리
                 final loginType = state.extra as String?;
@@ -258,7 +262,7 @@ class AppRouter {
               room_detail.loadLibrary,
               () => room_detail.RoomDetailPage(roomId: roomId),
             );
-          }
+          },
         ),
         GoRoute(
           path: '/host',
@@ -268,67 +272,27 @@ class AppRouter {
             () => host_home.HostHomePage(),
           ),
         ),
+        // 신규 방 등록 (roomId 없음)
         GoRoute(
           path: '/host/room-registration',
-          builder: (context, state) {
-            return _deferredWidget(
-              room_registration.loadLibrary,
-              () => room_registration.RoomRegistrationPage(roomId: null),
-            );
-          },
-        ),
-        GoRoute(
-          path: '/host/room-registration/:roomId',
           name: 'room-registration',
           builder: (context, state) {
-            final roomId = _parseIntParameter(state.pathParameters['roomId']);
             return _deferredWidget(
               room_registration.loadLibrary,
-              () => room_registration.RoomRegistrationPage(roomId: roomId),
+              () => room_registration.RoomRegistrationFlowPage(roomId: null),
             );
           },
         ),
+        // 기존 방 수정 (roomId 있음)
         GoRoute(
-          path: '/host/pricing/:roomId',
-          name: 'pricing',
+          path: '/host/room-registration/:roomId',
+          name: 'room-registration-edit',
           builder: (context, state) {
             final roomId = _parseIntParameter(state.pathParameters['roomId']);
+
             return _deferredWidget(
-              pricing.loadLibrary,
-              () => pricing.PricingPage(roomId: roomId),
-            );
-          },
-        ),
-        GoRoute(
-          path: '/host/amenities/:roomId',
-          name: 'amenities',
-          builder: (context, state) {
-            final roomId = _parseIntParameter(state.pathParameters['roomId']);
-            return _deferredWidget(
-              amenities.loadLibrary,
-              () => amenities.RoomAmenitiesPage(roomId: roomId),
-            );
-          },
-        ),
-        GoRoute(
-          path: '/host/free-services/:roomId',
-          name: 'free-services',
-          builder: (context, state) {
-            final roomId = _parseIntParameter(state.pathParameters['roomId']);
-            return _deferredWidget(
-              free_services.loadLibrary,
-              () => free_services.FreeServicesPage(roomId: roomId),
-            );
-          },
-        ),
-        GoRoute(
-          path: '/host/room-description/:roomId',
-          name: 'room-description',
-          builder: (context, state) {
-            final roomId = _parseIntParameter(state.pathParameters['roomId']);
-            return _deferredWidget(
-              room_description.loadLibrary,
-              () => room_description.RoomDescriptionPage(roomId: roomId),
+              room_registration.loadLibrary,
+              () => room_registration.RoomRegistrationFlowPage(roomId: roomId),
             );
           },
         ),
@@ -352,7 +316,9 @@ class AppRouter {
                 final contractId = state.pathParameters['contractId'] ?? '';
                 return _deferredWidget(
                   contract_detail.loadLibrary,
-                  () => contract_detail.ContractDetailPage(contractId: contractId),
+                  () => contract_detail.ContractDetailPage(
+                    contractId: contractId,
+                  ),
                 );
               },
             ),
@@ -373,7 +339,9 @@ class AppRouter {
                 final contractId = state.pathParameters['contractId'] ?? '';
                 return _deferredWidget(
                   contract_detail.loadLibrary,
-                  () => contract_detail.ContractDetailPage(contractId: contractId),
+                  () => contract_detail.ContractDetailPage(
+                    contractId: contractId,
+                  ),
                 );
               },
             ),
@@ -438,7 +406,9 @@ class AppRouter {
               path: 'notice/:noticeId',
               name: 'notice-detail',
               builder: (context, state) {
-                final noticeId = _parseIntParameter(state.pathParameters['noticeId']);
+                final noticeId = _parseIntParameter(
+                  state.pathParameters['noticeId'],
+                );
 
                 if (noticeId == null) {
                   return _buildInvalidAccessPage(
@@ -486,7 +456,9 @@ class AppRouter {
               path: 'inquiry/:inquiryId',
               name: 'inquiry-detail',
               builder: (context, state) {
-                final inquiryId = _parseIntParameter(state.pathParameters['inquiryId']);
+                final inquiryId = _parseIntParameter(
+                  state.pathParameters['inquiryId'],
+                );
 
                 if (inquiryId == null) {
                   return _buildInvalidAccessPage(
@@ -541,7 +513,10 @@ class AppRouter {
   }
 
   /// 개발자 바이패스 로그인 처리
-  static Future<void> _handleDevBypass(BuildContext context, String userId) async {
+  static Future<void> _handleDevBypass(
+    BuildContext context,
+    String userId,
+  ) async {
     final authService = Provider.of<AuthService>(context, listen: false);
 
     final success = await authService.loginWithDevBypass(userId);

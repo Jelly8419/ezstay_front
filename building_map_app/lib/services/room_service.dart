@@ -427,11 +427,11 @@ class RoomService {
           final rooms = List<Map<String, dynamic>>.from(data['data']['rooms']);
           debugPrint('📊 [ROOMS] 전체 방 개수: ${rooms.length}개');
 
-          // draft 또는 pending_review 상태인 방만 필터링
+          // draft 상태인 방만 필터링 (pending_review는 심사 요청 완료 상태이므로 제외)
           final inProgressRooms = rooms.where((room) {
             final status = room['status'];
             debugPrint('🔍 [ROOMS] 방 ID ${room['id']}, status: $status');
-            return status == 'draft' || status == 'pending_review';
+            return status == 'draft';
           }).toList();
 
           debugPrint('📊 [ROOMS] 등록 중인 방: ${inProgressRooms.length}개');

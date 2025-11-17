@@ -49,7 +49,9 @@
       "Bash(timeout 5 python:*)",
       "Bash(powershell:*)",
       "Bash(git reset:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(timeout 2 sleep:*)",
+      "Bash(dart format:*)"
     ],
     "deny": [],
     "ask": []

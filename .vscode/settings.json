@@ -1,0 +1,29 @@
+{
+  // Dart Code 확장 설정
+  "dart.flutterSdkPath": null,
+  "dart.debugExternalPackageLibraries": false,
+  "dart.debugSdkLibraries": false,
+
+  // Flutter 웹 포트 설정 (flutter run 시에만 적용)
+  // "dart.flutterRunAdditionalArgs": [
+  //   "--web-port=3000"
+  // ],
+
+  // 에디터 설정
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+
+  // Dart 포맷터 설정
+  "[dart]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.rulers": [80],
+    "editor.selectionHighlight": false,
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "editor.suggestSelection": "first",
+    "editor.tabCompletion": "onlySnippets",
+    "editor.wordBasedSuggestions": "off"
+  }
+}
