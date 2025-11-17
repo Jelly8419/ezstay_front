@@ -143,6 +143,7 @@ class _PhotosStepState extends State<PhotosStep> {
 
   void _removeImage(int index) {
     final updated = List<String>.from(_uploadedImages);
+    final removedImageUrl = updated[index];
     updated.removeAt(index);
     _updateFormData('uploadedImages', updated);
 
@@ -152,6 +153,29 @@ class _PhotosStepState extends State<PhotosStep> {
       final updatedXFiles = List<XFile>.from(xFiles);
       updatedXFiles.removeAt(index);
       _updateFormData('uploadedXFiles', updatedXFiles);
+    }
+
+    // 서버에 업로드된 사진인 경우 삭제할 photoId 추적
+    final uploadedPhotos =
+        (widget.formData['uploadedPhotos'] as List<dynamic>?) ?? [];
+    if (index < uploadedPhotos.length) {
+      final photoObject = uploadedPhotos[index] as Map<String, dynamic>;
+      if (photoObject['id'] != null) {
+        // deletedPhotoIds 리스트에 추가
+        final deletedPhotoIds =
+            (widget.formData['deletedPhotoIds'] as List<int>?) ?? [];
+        deletedPhotoIds.add(photoObject['id'] as int);
+        _updateFormData('deletedPhotoIds', deletedPhotoIds);
+
+        debugPrint('🗑️ 사진 삭제 예약: photoId=${photoObject['id']}, url=$removedImageUrl');
+      }
+
+      // uploadedPhotos 리스트에서도 제거
+      final updatedPhotos = List<Map<String, dynamic>>.from(
+        uploadedPhotos.map((e) => e as Map<String, dynamic>),
+      );
+      updatedPhotos.removeAt(index);
+      _updateFormData('uploadedPhotos', updatedPhotos);
     }
   }
 

@@ -208,6 +208,8 @@ class _ServicesStepState extends State<ServicesStep> {
   }
 
   Widget _buildKeypad(String password) {
+    const double buttonHeight = 48.0; // 모든 버튼의 통일된 높이
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -217,48 +219,13 @@ class _ServicesStepState extends State<ServicesStep> {
       ),
       child: Column(
         children: [
-          // Icon buttons
-          Row(
-            children: [
-              Expanded(
-                child: _buildKeypadButton(
-                  '🔑',
-                  onTap: () {
-                    _updateFormData('servicePassword', '$password🔑');
-                  },
-                  fontSize: 32,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildKeypadButton(
-                  '🔔',
-                  onTap: () {
-                    _updateFormData('servicePassword', '$password🔔');
-                  },
-                  fontSize: 32,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildKeypadButton(
-                  '🛡',
-                  onTap: () {
-                    _updateFormData('servicePassword', '$password🛡');
-                  },
-                  fontSize: 32,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Number buttons (높이 절반으로 줄임: 5 = 2.5 * 2)
+          // Number buttons
           GridView.count(
             shrinkWrap: true,
             crossAxisCount: 3,
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
-            childAspectRatio: 5,
+            childAspectRatio: 2.5,
             physics: const NeverScrollableScrollPhysics(),
             children:
                 ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
@@ -268,79 +235,83 @@ class _ServicesStepState extends State<ServicesStep> {
                         onTap: () {
                           _updateFormData('servicePassword', password + digit);
                         },
+                        height: buttonHeight,
                       ),
                     )
                     .toList(),
           ),
           const SizedBox(height: 12),
-          // Control buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    _updateFormData('servicePassword', '');
-                  },
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.error50,
-                    side: const BorderSide(color: AppColors.error500),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: const Text(
-                    '전체 삭제',
-                    style: TextStyle(
-                      color: AppColors.error600,
-                      fontWeight: FontWeight.w600,
+          // Control buttons (높이를 숫자 버튼과 동일하게)
+          SizedBox(
+            height: buttonHeight,
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      _updateFormData('servicePassword', '');
+                    },
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: AppColors.error50,
+                      side: const BorderSide(color: AppColors.error500),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      '전체 삭제',
+                      style: TextStyle(
+                        color: AppColors.error600,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    if (password.isNotEmpty) {
-                      _updateFormData(
-                        'servicePassword',
-                        password.substring(0, password.length - 1),
-                      );
-                    }
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.gray300),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: const Text(
-                    '삭제',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      if (password.isNotEmpty) {
+                        _updateFormData(
+                          'servicePassword',
+                          password.substring(0, password.length - 1),
+                        );
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.gray300),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      '삭제',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _showServicePasswordKeypad = false;
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary600,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: const Text(
-                    '완료',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _showServicePasswordKeypad = false;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary600,
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      '완료',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -351,11 +322,13 @@ class _ServicesStepState extends State<ServicesStep> {
     String label, {
     required VoidCallback onTap,
     double fontSize = 16,
+    double? height,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
+        height: height,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: Colors.white,

@@ -72,6 +72,12 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
   }
 
   bool _hasError(String keyword) {
+    // "상세 주소" 에러 체크 시 "주소"만 있는 에러와 구분
+    if (keyword == '주소') {
+      return widget.validationErrors.any(
+        (error) => error.contains('주소') && !error.contains('상세'),
+      );
+    }
     return widget.validationErrors.any((error) => error.contains(keyword));
   }
 
@@ -251,21 +257,33 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                     hintStyle: TextStyle(color: Colors.grey[400]),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppColors.gray300),
+                      borderSide: BorderSide(
+                        color: _hasError('상세 주소')
+                            ? AppColors.error500
+                            : AppColors.gray300,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppColors.gray300),
+                      borderSide: BorderSide(
+                        color: _hasError('상세 주소')
+                            ? AppColors.error500
+                            : AppColors.gray300,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
-                        color: AppColors.primary600,
+                      borderSide: BorderSide(
+                        color: _hasError('상세 주소')
+                            ? AppColors.error500
+                            : AppColors.primary600,
                         width: 2,
                       ),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: _hasError('상세 주소')
+                        ? AppColors.error50
+                        : Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -318,7 +336,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'ⓘ 상세주소는 게스트 결제 후 자동 제공됩니다.',
+                  'ⓘ 상세주소는 입주 당일 게스트에게 공개됩니다.',
                   style: TextStyle(fontSize: 13, color: AppColors.primary600),
                 ),
               ],
@@ -488,7 +506,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: safeValue,
+          initialValue: safeValue,
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -625,7 +643,10 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 onTap: () {
                   debugPrint('Entrance password toggle: 있음 selected');
                   // 비밀번호가 비어있으면 공백 문자를 저장해서 UI를 표시
-                  _updateFormData('entrancePassword', password.isEmpty ? ' ' : password);
+                  _updateFormData(
+                    'entrancePassword',
+                    password.isEmpty ? ' ' : password,
+                  );
                 },
               ),
             ),
@@ -713,6 +734,8 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
   }
 
   Widget _buildKeypad(String password) {
+    const double buttonHeight = 48.0; // 모든 버튼의 통일된 높이
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -732,6 +755,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                     _updateFormData('entrancePassword', '$password🔑');
                   },
                   fontSize: 32,
+                  height: buttonHeight,
                 ),
               ),
               const SizedBox(width: 8),
@@ -742,6 +766,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                     _updateFormData('entrancePassword', '$password🔔');
                   },
                   fontSize: 32,
+                  height: buttonHeight,
                 ),
               ),
               const SizedBox(width: 8),
@@ -752,6 +777,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                     _updateFormData('entrancePassword', '$password🛡');
                   },
                   fontSize: 32,
+                  height: buttonHeight,
                 ),
               ),
             ],
@@ -773,79 +799,83 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                         onTap: () {
                           _updateFormData('entrancePassword', password + num);
                         },
+                        height: buttonHeight,
                       ),
                     )
                     .toList(),
           ),
           const SizedBox(height: 12),
-          // Control buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    _updateFormData('entrancePassword', '');
-                  },
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.error50,
-                    side: const BorderSide(color: AppColors.error500),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: const Text(
-                    '전체 삭제',
-                    style: TextStyle(
-                      color: AppColors.error600,
-                      fontWeight: FontWeight.w600,
+          // Control buttons (높이를 아이콘/숫자 버튼과 동일하게)
+          SizedBox(
+            height: buttonHeight,
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      _updateFormData('entrancePassword', '');
+                    },
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: AppColors.error50,
+                      side: const BorderSide(color: AppColors.error500),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      '전체 삭제',
+                      style: TextStyle(
+                        color: AppColors.error600,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    if (password.isNotEmpty) {
-                      _updateFormData(
-                        'entrancePassword',
-                        password.substring(0, password.length - 1),
-                      );
-                    }
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.gray300),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: const Text(
-                    '삭제',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      if (password.isNotEmpty) {
+                        _updateFormData(
+                          'entrancePassword',
+                          password.substring(0, password.length - 1),
+                        );
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.gray300),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      '삭제',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _showEntrancePasswordKeypad = false;
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary600,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: const Text(
-                    '완료',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _showEntrancePasswordKeypad = false;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary600,
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      '완료',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -856,11 +886,13 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
     String label, {
     required VoidCallback onTap,
     double fontSize = 16,
+    double? height,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
+        height: height,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: Colors.white,

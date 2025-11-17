@@ -8,6 +8,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../services/room_service.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
 import '../../../widgets/common/app_gnb.dart';
+import '../../../widgets/common/custom_toast.dart';
 import 'steps/basic_info_step.dart';
 import 'steps/photos_step.dart';
 import 'steps/pricing_step.dart';
@@ -151,17 +152,25 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
           // 사진 데이터 처리 (상대 경로 → 완전한 URL 변환)
           if (roomData['photos'] != null && roomData['photos'] is List) {
-            final photosList = (roomData['photos'] as List<dynamic>).map((
-              photo,
-            ) {
+            final photosList = <String>[];
+            final photoObjects = <Map<String, dynamic>>[];
+
+            for (var photo in roomData['photos']) {
               final url = photo['url'] as String;
               // 상대 경로인 경우 API_BASE_URL 추가
-              if (url.startsWith('/')) {
-                return '${ApiConfig.baseUrl}$url';
-              }
-              return url;
-            }).toList();
+              final fullUrl = url.startsWith('/')
+                  ? '${ApiConfig.baseUrl}$url'
+                  : url;
+
+              photosList.add(fullUrl);
+              photoObjects.add({
+                'id': photo['id'],
+                'url': fullUrl,
+              });
+            }
+
             _formData['uploadedImages'] = photosList;
+            _formData['uploadedPhotos'] = photoObjects; // photoId 추적용
           }
 
           // amenities 객체에서 JSON 문자열 파싱
@@ -413,7 +422,12 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
   Future<void> _handleNext() async {
     // 1. 현재 단계 검증
     if (!_validateCurrentStep()) {
-      _showErrorSnackBar('입력하신 정보를 다시 확인해주세요');
+      // 첫 번째 에러 메시지를 토스트로 표시
+      if (_currentStepErrors.isNotEmpty) {
+        CustomToast.error(context, _currentStepErrors.first);
+      } else {
+        CustomToast.error(context, '입력하신 정보를 다시 확인해주세요');
+      }
       return;
     }
 
@@ -421,6 +435,11 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     setState(() => _isLoading = true);
     try {
       await _saveCurrentStepToApi();
+
+      // 저장 성공 토스트 (마지막 단계 제외)
+      if (_currentStep < 5 && mounted) {
+        CustomToast.success(context, '저장되었습니다');
+      }
 
       // 3. 다음 단계로 이동
       if (_currentStep < 5) {
@@ -548,23 +567,73 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         bool photosSuccess = true;
         bool amenitiesSuccess = false;
 
-        // 1. 사진 업로드 API 호출
+        // 1. 사진 삭제 API 호출 (삭제된 사진들)
+        final deletedPhotoIds = _formData['deletedPhotoIds'] as List<int>? ?? [];
+        if (deletedPhotoIds.isNotEmpty) {
+          debugPrint('🗑️ 사진 삭제 시작: ${deletedPhotoIds.length}개');
+          for (final photoId in deletedPhotoIds) {
+            final deleteResult = await _roomService.deletePhoto(
+              _currentRoomId!,
+              photoId,
+            );
+            if (!deleteResult) {
+              debugPrint('⚠️ 사진 삭제 실패: photoId=$photoId');
+            } else {
+              debugPrint('✅ 사진 삭제 성공: photoId=$photoId');
+            }
+          }
+          // 삭제 완료 후 deletedPhotoIds 초기화
+          _formData['deletedPhotoIds'] = [];
+          debugPrint('✅ 사진 삭제 완료: ${deletedPhotoIds.length}개');
+        }
+
+        // 2. 사진 업로드 API 호출 (새로 추가된 이미지만)
         final uploadedXFiles =
             _formData['uploadedXFiles'] as List<XFile>? ?? [];
-        if (uploadedXFiles.isNotEmpty) {
-          debugPrint('📸 사진 업로드 시작: ${uploadedXFiles.length}개');
+        final uploadedImages =
+            _formData['uploadedImages'] as List<dynamic>? ?? [];
+
+        // 이미 업로드된 이미지 개수 (URL 형식)
+        final existingImageCount = uploadedImages.where((img) =>
+          img is String && (img.startsWith('http') || img.startsWith('/'))
+        ).length;
+
+        // 새로 추가된 XFile만 필터링 (uploadedImages의 기존 URL 개수를 제외)
+        final newXFiles = uploadedXFiles.skip(0).take(
+          uploadedXFiles.length > existingImageCount
+            ? uploadedXFiles.length - existingImageCount
+            : uploadedXFiles.length
+        ).toList();
+
+        if (newXFiles.isNotEmpty) {
+          debugPrint('📸 새 이미지 업로드 시작: ${newXFiles.length}개 (전체: ${uploadedImages.length}개)');
           final photoResult = await _roomService.uploadPhotos(
             _currentRoomId!,
-            uploadedXFiles,
+            newXFiles,
           );
 
           if (photoResult == null) {
             photosSuccess = false;
             throw Exception('사진 업로드 실패');
           }
-          debugPrint('✅ 사진 업로드 성공: ${photoResult.length}개');
+
+          // 업로드 성공 후 uploadedXFiles 초기화 (중복 업로드 방지)
+          _formData['uploadedXFiles'] = [];
+
+          // uploadedPhotos에 새로 업로드된 사진 정보 추가
+          final uploadedPhotos =
+              _formData['uploadedPhotos'] as List<dynamic>? ?? [];
+          for (var photo in photoResult) {
+            uploadedPhotos.add({
+              'id': photo['id'],
+              'url': photo['url'],
+            });
+          }
+          _formData['uploadedPhotos'] = uploadedPhotos;
+
+          debugPrint('✅ 사진 업로드 성공: ${photoResult.length}개 (중복 방지: uploadedXFiles 초기화)');
         } else {
-          debugPrint('⚠️ 업로드할 사진이 없습니다');
+          debugPrint('⚠️ 새로 추가된 사진이 없습니다 (기존: $existingImageCount개)');
         }
 
         // 2. 편의시설 데이터 변환 (한글 → 영문 필드명)
@@ -816,26 +885,94 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
       if (!mounted) return;
 
+      // 성공 토스트 표시
+      CustomToast.success(context, '방 등록이 완료되었습니다!');
+
       // 성공 다이얼로그 표시
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
-          title: const Text('등록 완료'),
-          content: const Text(
-            '방 등록이 완료되었습니다!\n\n'
-            '관리자 심사가 진행됩니다. (보통 1-2일 소요)\n'
-            '심사 승인 후 매물이 공개됩니다.',
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // 다이얼로그 닫기
-                context.go('/host'); // 호스트 홈으로 이동
-              },
-              child: const Text('확인'),
-            ),
-          ],
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 성공 아이콘
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.success100,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle,
+                  color: AppColors.success600,
+                  size: 40,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // 제목
+              const Text(
+                '등록 완료',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // 설명
+              const Text(
+                '방 등록이 완료되었습니다!\n\n'
+                '관리자 심사가 진행됩니다. (보통 1-2일 소요)\n'
+                '심사 승인 후 매물이 공개됩니다.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 확인 버튼
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // 다이얼로그 닫기
+                    context.go('/host'); // 호스트 홈으로 이동
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                  child: const Text(
+                    '확인',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     } catch (e) {
@@ -844,15 +981,9 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     }
   }
 
-  /// 에러 스낵바 표시
+  /// 에러 토스트 표시
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error600,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    CustomToast.error(context, message);
   }
 
   /// 현재 단계에 맞는 Step 위젯 반환
@@ -901,32 +1032,41 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppGNB(),
-      body: MaxWidthContainer(
-        maxWidth: 1000,
-        child: Column(
-          children: [
-            // 진행 상태 표시
-            Container(
+      body: Column(
+        children: [
+          // 진행 상태 표시 (전체 너비, 컨텐츠는 중앙)
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
               color: Colors.white,
-              padding: AppSpacing.paddingMd,
-              child: RegistrationFlowIndicator(
-                currentStep: _currentStep,
-                totalSteps: 5,
-                stepTitles: const [
-                  '기본 정보',
-                  '사진·편의옵션',
-                  '요금 설정',
-                  '무료 부가 서비스',
-                  '방 소개',
-                ],
+              boxShadow: AppShadows.cardDefault,
+            ),
+            padding: AppSpacing.paddingMd,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: RegistrationFlowIndicator(
+                  currentStep: _currentStep,
+                  totalSteps: 5,
+                  stepTitles: const [
+                    '기본 정보',
+                    '사진·편의옵션',
+                    '요금 설정',
+                    '무료 부가 서비스',
+                    '방 소개',
+                  ],
+                ),
               ),
             ),
+          ),
 
-            // 구분선
-            const Divider(height: 1),
+          // 구분선
+          const Divider(height: 1),
 
-            // 스크롤 가능한 컨텐츠 영역
-            Expanded(
+          // 스크롤 가능한 컨텐츠 영역
+          Expanded(
+            child: MaxWidthContainer(
+              maxWidth: 1000,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.only(bottom: 24),
                 child: Column(
@@ -1015,8 +1155,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

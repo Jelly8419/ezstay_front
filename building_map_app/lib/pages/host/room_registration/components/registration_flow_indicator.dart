@@ -18,93 +18,90 @@ class RegistrationFlowIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 진행률 바
-        Row(
-          children: List.generate(totalSteps, (index) {
-            final stepNumber = index + 1;
-            final isActive = stepNumber <= currentStep;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalWidth = constraints.maxWidth;
 
-            return Expanded(
-              child: Row(
-                children: [
-                  // Step 구분선 (첫 번째 제외)
-                  if (index > 0)
-                    Expanded(
-                      child: Container(
-                        height: 2,
-                        color: stepNumber <= currentStep
-                            ? AppColors.primary600
-                            : AppColors.gray200,
-                      ),
-                    ),
+        return Stack(
+          children: [
+            // 배경 연결선 (전체)
+            Positioned(
+              top: 17,  // 원의 중앙 (36 / 2 - 1)
+              left: 18,  // 첫 원의 중심
+              right: 18,  // 마지막 원의 중심
+              child: Container(
+                height: 2,
+                color: AppColors.gray200,
+              ),
+            ),
 
-                  // Step 번호 원
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isActive ? AppColors.primary600 : Colors.white,
-                      border: Border.all(
-                        color: isActive ? AppColors.primary600 : AppColors.gray300,
-                        width: 2,
+            // 진행된 연결선
+            if (currentStep > 1)
+              Positioned(
+                top: 17,
+                left: 18,
+                width: (totalWidth - 36) * ((currentStep - 1) / (totalSteps - 1)),
+                child: Container(
+                  height: 2,
+                  color: AppColors.primary600,
+                ),
+              ),
+
+            // 원들과 텍스트
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(totalSteps, (index) {
+                final stepNumber = index + 1;
+                final isActive = stepNumber <= currentStep;
+                final isCurrent = stepNumber == currentStep;
+                final title = stepTitles[index];
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Step 번호 원
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isActive ? AppColors.primary600 : Colors.white,
+                        border: Border.all(
+                          color: isActive ? AppColors.primary600 : AppColors.gray300,
+                          width: 2,
+                        ),
                       ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '$stepNumber',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: isActive ? Colors.white : AppColors.textSecondary,
+                      child: Center(
+                        child: Text(
+                          '$stepNumber',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isActive ? Colors.white : AppColors.textSecondary,
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  // 마지막 Step 이후 구분선 제거
-                  if (index < totalSteps - 1)
-                    Expanded(
-                      child: Container(
-                        height: 2,
-                        color: stepNumber < currentStep
-                            ? AppColors.primary600
-                            : AppColors.gray200,
+                    const SizedBox(height: 12),
+
+                    // Step 제목
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
+                        color: isCurrent ? AppColors.primary600 : AppColors.textSecondary,
                       ),
                     ),
-                ],
-              ),
-            );
-          }),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Step 제목 표시
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(totalSteps, (index) {
-            final stepNumber = index + 1;
-            final isCurrent = stepNumber == currentStep;
-            final title = stepTitles[index];
-
-            return Expanded(
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                  color: isCurrent ? AppColors.primary600 : AppColors.textSecondary,
-                ),
-              ),
-            );
-          }),
-        ),
-      ],
+                  ],
+                );
+              }),
+            ),
+          ],
+        );
+      },
     );
   }
 }
