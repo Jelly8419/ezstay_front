@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 
-/// 폼 섹션 컴포넌트 (리액트 FormSection 복제)
+/// 폼 섹션 컴포넌트 (카드 스타일의 섹션)
 class FormSection extends StatelessWidget {
   final IconData? icon;
   final String title;
@@ -16,34 +17,42 @@ class FormSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section header
-        Row(
-          children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                size: 24,
-                color: AppColors.primary600,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: AppRadius.radiusLg,
+        border: Border.all(color: AppColors.gray200),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section header
+          Row(
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 24,
+                  color: AppColors.primary600,
+                ),
+                const SizedBox(width: 12),
+              ],
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black,
+                ),
               ),
-              const SizedBox(width: 12),
             ],
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // Section content
-        child,
-      ],
+          ),
+          const SizedBox(height: 16),
+          // Section content
+          child,
+        ],
+      ),
     );
   }
 }

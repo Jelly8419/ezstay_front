@@ -25,13 +25,23 @@ class PricingStep extends StatefulWidget {
 class _PricingStepState extends State<PricingStep> {
   final NumberFormat _numberFormat = NumberFormat('#,###', 'ko_KR');
 
+  // TextEditingController 선언
+  late final TextEditingController _dailyRentController;
+  late final TextEditingController _dailyMaintenanceController;
+  late final TextEditingController _maintenanceDescriptionController;
+  late final TextEditingController _cleaningFeeController;
+  late final TextEditingController _longTermDiscountPercentController;
+  late final TextEditingController _earlyCheckInDiscountAmountController;
+
+  // FocusNode 선언
+  late final FocusNode _dailyRentFocus;
+  late final FocusNode _dailyMaintenanceFocus;
+  late final FocusNode _cleaningFeeFocus;
+  late final FocusNode _longTermDiscountPercentFocus;
+  late final FocusNode _earlyCheckInDiscountAmountFocus;
+
   // 관리비 포함 항목
-  static const List<String> _maintenanceOptions = [
-    '수도세',
-    '전기세',
-    '가스비',
-    '인터넷'
-  ];
+  static const List<String> _maintenanceOptions = ['수도세', '전기세', '가스비', '인터넷'];
 
   // 환불 규정 옵션
   static const List<Map<String, String>> _refundPolicies = [
@@ -72,12 +82,26 @@ class _PricingStepState extends State<PricingStep> {
   };
 
   String get _dailyRent => (widget.formData['dailyRent'] as String?) ?? '';
-  String get _weeklyRent => (widget.formData['weeklyRent'] as String?) ?? '';
+
+  // 주간 임대료는 일일 임대료 * 7로 자동 계산
+  String get _weeklyRent {
+    if (_dailyRent.isEmpty) return '0';
+    final dailyValue = int.tryParse(_dailyRent) ?? 0;
+    return (dailyValue * 7).toString();
+  }
+
   String get _deposit => '300000'; // 고정값
+
   String get _dailyMaintenanceFee =>
       (widget.formData['dailyMaintenanceFee'] as String?) ?? '';
-  String get _weeklyMaintenanceFee =>
-      (widget.formData['weeklyMaintenanceFee'] as String?) ?? '';
+
+  // 주간 관리비는 일일 관리비 * 7로 자동 계산
+  String get _weeklyMaintenanceFee {
+    if (_dailyMaintenanceFee.isEmpty) return '0';
+    final dailyValue = int.tryParse(_dailyMaintenanceFee) ?? 0;
+    return (dailyValue * 7).toString();
+  }
+
   String get _maintenanceDescription =>
       (widget.formData['maintenanceDescription'] as String?) ?? '';
   String get _cleaningFee => (widget.formData['cleaningFee'] as String?) ?? '';
@@ -100,6 +124,116 @@ class _PricingStepState extends State<PricingStep> {
           .toList() ??
       [];
 
+  @override
+  void initState() {
+    super.initState();
+
+    // TextEditingController 초기화
+    _dailyRentController = TextEditingController(
+      text: _formatNumberWithCommas(_dailyRent),
+    );
+    _dailyMaintenanceController = TextEditingController(
+      text: _formatNumberWithCommas(_dailyMaintenanceFee),
+    );
+    _maintenanceDescriptionController = TextEditingController(
+      text: _maintenanceDescription,
+    );
+    _cleaningFeeController = TextEditingController(
+      text: _formatNumberWithCommas(_cleaningFee),
+    );
+    _longTermDiscountPercentController = TextEditingController(
+      text: _longTermDiscountPercent,
+    );
+    _earlyCheckInDiscountAmountController = TextEditingController(
+      text: _formatNumberWithCommas(_earlyCheckInDiscountAmount),
+    );
+
+    // FocusNode 초기화
+    _dailyRentFocus = FocusNode();
+    _dailyMaintenanceFocus = FocusNode();
+    _cleaningFeeFocus = FocusNode();
+    _longTermDiscountPercentFocus = FocusNode();
+    _earlyCheckInDiscountAmountFocus = FocusNode();
+
+    // FocusNode listener 추가 (포커스 벗어날 때 천원 단위 반올림)
+    _dailyRentFocus.addListener(() {
+      if (!_dailyRentFocus.hasFocus) {
+        _handleDailyRentBlur();
+      }
+    });
+
+    _dailyMaintenanceFocus.addListener(() {
+      if (!_dailyMaintenanceFocus.hasFocus) {
+        _handleDailyMaintenanceBlur();
+      }
+    });
+
+    _cleaningFeeFocus.addListener(() {
+      if (!_cleaningFeeFocus.hasFocus) {
+        _handleCleaningFeeBlur();
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(PricingStep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // formData가 변경되었을 때만 컨트롤러 업데이트 (포커스 없을 때만)
+    if (!_dailyRentFocus.hasFocus) {
+      final newText = _formatNumberWithCommas(_dailyRent);
+      if (_dailyRentController.text != newText) {
+        _dailyRentController.text = newText;
+      }
+    }
+    if (!_dailyMaintenanceFocus.hasFocus) {
+      final newText = _formatNumberWithCommas(_dailyMaintenanceFee);
+      if (_dailyMaintenanceController.text != newText) {
+        _dailyMaintenanceController.text = newText;
+      }
+    }
+    if (_maintenanceDescriptionController.text != _maintenanceDescription) {
+      _maintenanceDescriptionController.text = _maintenanceDescription;
+    }
+    if (!_cleaningFeeFocus.hasFocus) {
+      final newText = _formatNumberWithCommas(_cleaningFee);
+      if (_cleaningFeeController.text != newText) {
+        _cleaningFeeController.text = newText;
+      }
+    }
+    if (!_longTermDiscountPercentFocus.hasFocus) {
+      if (_longTermDiscountPercentController.text != _longTermDiscountPercent) {
+        _longTermDiscountPercentController.text = _longTermDiscountPercent;
+      }
+    }
+    if (!_earlyCheckInDiscountAmountFocus.hasFocus) {
+      final newText = _formatNumberWithCommas(_earlyCheckInDiscountAmount);
+      if (_earlyCheckInDiscountAmountController.text != newText) {
+        _earlyCheckInDiscountAmountController.text = newText;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    // TextEditingController 해제
+    _dailyRentController.dispose();
+    _dailyMaintenanceController.dispose();
+    _maintenanceDescriptionController.dispose();
+    _cleaningFeeController.dispose();
+    _longTermDiscountPercentController.dispose();
+    _earlyCheckInDiscountAmountController.dispose();
+
+    // FocusNode 해제
+    _dailyRentFocus.dispose();
+    _dailyMaintenanceFocus.dispose();
+    _cleaningFeeFocus.dispose();
+    _longTermDiscountPercentFocus.dispose();
+    _earlyCheckInDiscountAmountFocus.dispose();
+
+    super.dispose();
+  }
+
   void _updateFormData(String key, dynamic value) {
     final updated = Map<String, dynamic>.from(widget.formData);
     updated[key] = value;
@@ -115,49 +249,62 @@ class _PricingStepState extends State<PricingStep> {
 
   void _handleDailyRentChange(String value) {
     final number = value.replaceAll(RegExp(r'[^0-9]'), '');
-    final numValue = int.tryParse(number) ?? 0;
-    final rounded = (numValue / 1000).round() * 1000;
-    final weekly = rounded * 7;
-
     _updateFormData('dailyRent', number);
-    _updateFormData('weeklyRent', weekly.toString());
+
+    // 실시간 콤마 포맷팅 적용
+    if (number.isNotEmpty) {
+      final formatted = _formatNumberWithCommas(number);
+      _dailyRentController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
   }
 
   void _handleDailyRentBlur() {
     if (_dailyRent.isNotEmpty) {
       final value = int.tryParse(_dailyRent) ?? 0;
       final rounded = (value / 1000).round() * 1000;
-      final weekly = rounded * 7;
 
       _updateFormData('dailyRent', rounded.toString());
-      _updateFormData('weeklyRent', weekly.toString());
     }
   }
 
   void _handleDailyMaintenanceChange(String value) {
     final number = value.replaceAll(RegExp(r'[^0-9]'), '');
-    final numValue = int.tryParse(number) ?? 0;
-    final rounded = (numValue / 1000).round() * 1000;
-    final weekly = rounded * 7;
-
     _updateFormData('dailyMaintenanceFee', number);
-    _updateFormData('weeklyMaintenanceFee', weekly.toString());
+
+    // 실시간 콤마 포맷팅 적용
+    if (number.isNotEmpty) {
+      final formatted = _formatNumberWithCommas(number);
+      _dailyMaintenanceController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
   }
 
   void _handleDailyMaintenanceBlur() {
     if (_dailyMaintenanceFee.isNotEmpty) {
       final value = int.tryParse(_dailyMaintenanceFee) ?? 0;
       final rounded = (value / 1000).round() * 1000;
-      final weekly = rounded * 7;
 
       _updateFormData('dailyMaintenanceFee', rounded.toString());
-      _updateFormData('weeklyMaintenanceFee', weekly.toString());
     }
   }
 
   void _handleCleaningFeeChange(String value) {
     final number = value.replaceAll(RegExp(r'[^0-9]'), '');
     _updateFormData('cleaningFee', number);
+
+    // 실시간 콤마 포맷팅 적용
+    if (number.isNotEmpty) {
+      final formatted = _formatNumberWithCommas(number);
+      _cleaningFeeController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
   }
 
   void _handleCleaningFeeBlur() {
@@ -212,8 +359,8 @@ class _PricingStepState extends State<PricingStep> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: TextEditingController(
-                      text: _formatNumberWithCommas(_dailyRent)),
+                  controller: _dailyRentController,
+                  focusNode: _dailyRentFocus,
                   onChanged: _handleDailyRentChange,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
@@ -222,7 +369,8 @@ class _PricingStepState extends State<PricingStep> {
                       fontSize: 14,
                       color: AppColors.textSecondary,
                     ),
-                    suffixText: _dailyRent.isNotEmpty &&
+                    suffixText:
+                        _dailyRent.isNotEmpty &&
                             int.tryParse(_dailyRent) != null &&
                             int.parse(_dailyRent) > 0
                         ? '원/일'
@@ -291,56 +439,8 @@ class _PricingStepState extends State<PricingStep> {
                 if (_hasError('dailyRent'))
                   const Text(
                     '임대료를 입력해주세요',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.error600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: AppColors.error600),
                   ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // 보증금 (고정)
-          FormSection(
-            title: '보증금',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: TextEditingController(
-                      text: _formatNumberWithCommas(_deposit)),
-                  enabled: false,
-                  decoration: InputDecoration(
-                    suffixText: '원',
-                    suffixStyle: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.gray50,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.gray300),
-                    ),
-                    disabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.gray300),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '* 보증금은 300,000원으로 고정되어 있습니다. 퇴실 완료 후 1일 내 게스트에게 자동으로 입금됩니다.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
               ],
             ),
           ),
@@ -354,7 +454,7 @@ class _PricingStepState extends State<PricingStep> {
               children: [
                 // 1일 관리비
                 const Text(
-                  '1일 관리비',
+                  '1일 관리비 (선택)',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -363,8 +463,8 @@ class _PricingStepState extends State<PricingStep> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: TextEditingController(
-                      text: _formatNumberWithCommas(_dailyMaintenanceFee)),
+                  controller: _dailyMaintenanceController,
+                  focusNode: _dailyMaintenanceFocus,
                   onChanged: _handleDailyMaintenanceChange,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
@@ -373,7 +473,8 @@ class _PricingStepState extends State<PricingStep> {
                       fontSize: 14,
                       color: AppColors.textSecondary,
                     ),
-                    suffixText: _dailyMaintenanceFee.isNotEmpty &&
+                    suffixText:
+                        _dailyMaintenanceFee.isNotEmpty &&
                             int.tryParse(_dailyMaintenanceFee) != null &&
                             int.parse(_dailyMaintenanceFee) > 0
                         ? '원/일'
@@ -442,10 +543,7 @@ class _PricingStepState extends State<PricingStep> {
                 if (_hasError('dailyMaintenanceFee'))
                   const Text(
                     '관리비를 입력해주세요',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.error600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: AppColors.error600),
                   ),
                 const SizedBox(height: 16),
 
@@ -483,8 +581,7 @@ class _PricingStepState extends State<PricingStep> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: TextEditingController(
-                      text: _maintenanceDescription),
+                  controller: _maintenanceDescriptionController,
                   onChanged: (value) =>
                       _updateFormData('maintenanceDescription', value),
                   maxLines: 3,
@@ -507,8 +604,10 @@ class _PricingStepState extends State<PricingStep> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide:
-                          const BorderSide(color: AppColors.primary600, width: 2),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary600,
+                        width: 2,
+                      ),
                     ),
                   ),
                 ),
@@ -519,13 +618,13 @@ class _PricingStepState extends State<PricingStep> {
 
           // 청소비
           FormSection(
-            title: '청소비',
+            title: '청소비 (선택)',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
-                  controller: TextEditingController(
-                      text: _formatNumberWithCommas(_cleaningFee)),
+                  controller: _cleaningFeeController,
+                  focusNode: _cleaningFeeFocus,
                   onChanged: _handleCleaningFeeChange,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
@@ -583,29 +682,95 @@ class _PricingStepState extends State<PricingStep> {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                if (_hasError('cleaningFee'))
-                  const Text(
-                    '청소비를 입력해주세요',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.error600,
-                    ),
-                  ),
               ],
             ),
           ),
           const SizedBox(height: 32),
-
+          // 보증금 (고정)
+          FormSection(
+            title: '보증금',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.gray50,
+                    border: Border.all(color: AppColors.gray200),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      // 왼쪽 아이콘
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.primary600,
+                            width: 2,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          size: 16,
+                          color: AppColors.primary600,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // 금액 정보
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${_formatNumberWithCommas(_deposit)}원',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              '보증금은 30만원으로 고정되어 있습니다',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '* 보증금은 퇴실 후 시설 훼손 완료 시 영업일 기준 7일 이내에 자동 환불됩니다',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
           // 최소 계약 기간
           FormSection(
             title: '최소 계약 기간',
             child: DropdownButtonFormField<String>(
-              value: _minContractPeriod,
+              initialValue:
+                  ['1주', '2주', '3주', '4주'].contains(_minContractPeriod)
+                  ? _minContractPeriod
+                  : '1주',
               items: ['1주', '2주', '3주', '4주']
-                  .map((period) => DropdownMenuItem(
-                        value: period,
-                        child: Text(period),
-                      ))
+                  .map(
+                    (period) =>
+                        DropdownMenuItem(value: period, child: Text(period)),
+                  )
                   .toList(),
               onChanged: (value) {
                 if (value != null) {
@@ -629,8 +794,10 @@ class _PricingStepState extends State<PricingStep> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: AppColors.primary600, width: 2),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary600,
+                    width: 2,
+                  ),
                 ),
               ),
             ),
@@ -644,12 +811,17 @@ class _PricingStepState extends State<PricingStep> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DropdownButtonFormField<String>(
-                  value: _refundPolicy.isEmpty ? '' : _refundPolicy,
+                  initialValue:
+                      _refundPolicies.any((p) => p['value'] == _refundPolicy)
+                      ? _refundPolicy
+                      : '',
                   items: _refundPolicies
-                      .map((policy) => DropdownMenuItem(
-                            value: policy['value'],
-                            child: Text(policy['label']!),
-                          ))
+                      .map(
+                        (policy) => DropdownMenuItem(
+                          value: policy['value'],
+                          child: Text(policy['label']!),
+                        ),
+                      )
                       .toList(),
                   onChanged: (value) {
                     if (value != null) {
@@ -674,7 +846,9 @@ class _PricingStepState extends State<PricingStep> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(
-                          color: AppColors.primary600, width: 2),
+                        color: AppColors.primary600,
+                        width: 2,
+                      ),
                     ),
                   ),
                 ),
@@ -691,16 +865,18 @@ class _PricingStepState extends State<PricingStep> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: _refundPolicyDetails[_refundPolicy]!
-                          .map((line) => Padding(
-                                padding: const EdgeInsets.only(bottom: 4),
-                                child: Text(
-                                  line,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.black,
-                                  ),
+                          .map(
+                            (line) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Text(
+                                line,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black,
                                 ),
-                              ))
+                              ),
+                            ),
+                          )
                           .toList(),
                     ),
                   ),
@@ -710,10 +886,7 @@ class _PricingStepState extends State<PricingStep> {
                     padding: EdgeInsets.only(top: 8),
                     child: Text(
                       '환불 규정을 선택해주세요',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.error600,
-                      ),
+                      style: TextStyle(fontSize: 12, color: AppColors.error600),
                     ),
                   ),
               ],
@@ -733,45 +906,64 @@ class _PricingStepState extends State<PricingStep> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     DropdownButton<String>(
-                      value: _longTermDiscountWeeks,
-                      items: [
-                        '0',
-                        '2',
-                        '3',
-                        '4',
-                        '5',
-                        '6',
-                        '7',
-                        '8',
-                        '9',
-                        '10',
-                        '11',
-                        '12'
-                      ]
-                          .map((week) => DropdownMenuItem(
-                                value: week,
-                                child: Text('${week}주'),
-                              ))
-                          .toList(),
+                      value:
+                          [
+                            '0',
+                            '2',
+                            '3',
+                            '4',
+                            '5',
+                            '6',
+                            '7',
+                            '8',
+                            '9',
+                            '10',
+                            '11',
+                            '12',
+                          ].contains(_longTermDiscountWeeks)
+                          ? _longTermDiscountWeeks
+                          : '0',
+                      items:
+                          [
+                                '0',
+                                '2',
+                                '3',
+                                '4',
+                                '5',
+                                '6',
+                                '7',
+                                '8',
+                                '9',
+                                '10',
+                                '11',
+                                '12',
+                              ]
+                              .map(
+                                (week) => DropdownMenuItem(
+                                  value: week,
+                                  child: Text('$week주'),
+                                ),
+                              )
+                              .toList(),
                       onChanged: (value) {
                         if (value != null) {
                           _updateFormData('longTermDiscountWeeks', value);
                         }
                       },
                       underline: Container(),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black,
-                      ),
+                      style: const TextStyle(fontSize: 14, color: Colors.black),
                     ),
                     const Text('이상 계약 시'),
                     SizedBox(
                       width: 80,
                       child: TextField(
-                        controller: TextEditingController(
-                            text: _longTermDiscountPercent),
+                        controller: _longTermDiscountPercentController,
+                        focusNode: _longTermDiscountPercentFocus,
                         onChanged: (value) {
-                          final number = value.replaceAll(RegExp(r'[^0-9]'), '');
+                          final number = value.replaceAll(
+                            RegExp(r'[^0-9]'),
+                            '',
+                          );
                           final numValue = int.tryParse(number) ?? 0;
                           if (numValue >= 0 && numValue <= 100) {
                             _updateFormData('longTermDiscountPercent', number);
@@ -787,18 +979,22 @@ class _PricingStepState extends State<PricingStep> {
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide:
-                                const BorderSide(color: AppColors.gray300),
+                            borderSide: const BorderSide(
+                              color: AppColors.gray300,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide:
-                                const BorderSide(color: AppColors.gray300),
+                            borderSide: const BorderSide(
+                              color: AppColors.gray300,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(
-                                color: AppColors.primary600, width: 2),
+                              color: AppColors.primary600,
+                              width: 2,
+                            ),
                           ),
                         ),
                       ),
@@ -831,44 +1027,71 @@ class _PricingStepState extends State<PricingStep> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     DropdownButton<String>(
-                      value: _earlyCheckInDiscountDays,
-                      items: [
-                        {'value': '0', 'label': '0일'},
-                        {'value': 'today', 'label': '오늘입주'},
-                        {'value': '1', 'label': '1일'},
-                        {'value': '2', 'label': '2일'},
-                        {'value': '3', 'label': '3일'},
-                        {'value': '4', 'label': '4일'},
-                        {'value': '5', 'label': '5일'},
-                        {'value': '6', 'label': '6일'},
-                        {'value': '7', 'label': '7일'},
-                      ]
-                          .map((day) => DropdownMenuItem(
-                                value: day['value'],
-                                child: Text(day['label']!),
-                              ))
-                          .toList(),
+                      value:
+                          [
+                            '0',
+                            'today',
+                            '1',
+                            '2',
+                            '3',
+                            '4',
+                            '5',
+                            '6',
+                            '7',
+                          ].contains(_earlyCheckInDiscountDays)
+                          ? _earlyCheckInDiscountDays
+                          : '0',
+                      items:
+                          [
+                                {'value': '0', 'label': '0일'},
+                                {'value': 'today', 'label': '오늘입주'},
+                                {'value': '1', 'label': '1일'},
+                                {'value': '2', 'label': '2일'},
+                                {'value': '3', 'label': '3일'},
+                                {'value': '4', 'label': '4일'},
+                                {'value': '5', 'label': '5일'},
+                                {'value': '6', 'label': '6일'},
+                                {'value': '7', 'label': '7일'},
+                              ]
+                              .map(
+                                (day) => DropdownMenuItem(
+                                  value: day['value'],
+                                  child: Text(day['label']!),
+                                ),
+                              )
+                              .toList(),
                       onChanged: (value) {
                         if (value != null) {
                           _updateFormData('earlyCheckInDiscountDays', value);
                         }
                       },
                       underline: Container(),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black,
-                      ),
+                      style: const TextStyle(fontSize: 14, color: Colors.black),
                     ),
                     const Text('이내 입주 시'),
                     SizedBox(
                       width: 120,
                       child: TextField(
-                        controller: TextEditingController(
-                            text: _formatNumberWithCommas(
-                                _earlyCheckInDiscountAmount)),
+                        controller: _earlyCheckInDiscountAmountController,
+                        focusNode: _earlyCheckInDiscountAmountFocus,
                         onChanged: (value) {
-                          final number = value.replaceAll(RegExp(r'[^0-9]'), '');
+                          final number = value.replaceAll(
+                            RegExp(r'[^0-9]'),
+                            '',
+                          );
                           _updateFormData('earlyCheckInDiscountAmount', number);
+
+                          // 실시간 콤마 포맷팅 적용
+                          if (number.isNotEmpty) {
+                            final formatted = _formatNumberWithCommas(number);
+                            _earlyCheckInDiscountAmountController.value =
+                                TextEditingValue(
+                                  text: formatted,
+                                  selection: TextSelection.collapsed(
+                                    offset: formatted.length,
+                                  ),
+                                );
+                          }
                         },
                         onEditingComplete: () {
                           if (_earlyCheckInDiscountAmount.isNotEmpty) {
@@ -876,7 +1099,9 @@ class _PricingStepState extends State<PricingStep> {
                                 int.tryParse(_earlyCheckInDiscountAmount) ?? 0;
                             final rounded = (value / 10000).round() * 10000;
                             _updateFormData(
-                                'earlyCheckInDiscountAmount', rounded.toString());
+                              'earlyCheckInDiscountAmount',
+                              rounded.toString(),
+                            );
                           }
                         },
                         keyboardType: TextInputType.number,
@@ -888,18 +1113,22 @@ class _PricingStepState extends State<PricingStep> {
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide:
-                                const BorderSide(color: AppColors.gray300),
+                            borderSide: const BorderSide(
+                              color: AppColors.gray300,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide:
-                                const BorderSide(color: AppColors.gray300),
+                            borderSide: const BorderSide(
+                              color: AppColors.gray300,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(
-                                color: AppColors.primary600, width: 2),
+                              color: AppColors.primary600,
+                              width: 2,
+                            ),
                           ),
                         ),
                       ),

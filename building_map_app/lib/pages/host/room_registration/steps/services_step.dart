@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../components/form_section.dart';
 
 /// Step 4: 무료 부가 서비스 (리액트 ServicesStep 복제)
@@ -20,6 +21,8 @@ class ServicesStep extends StatefulWidget {
 }
 
 class _ServicesStepState extends State<ServicesStep> {
+  bool _showServicePasswordKeypad = false;
+
   // 게스트용 대여/구매 서비스
   static const List<Map<String, String>> _guestServices = [
     {
@@ -27,11 +30,7 @@ class _ServicesStepState extends State<ServicesStep> {
       'title': '침구류 대여',
       'description': '침대 1set당 (이불+베개+커버)',
     },
-    {
-      'id': 'hairDryerRental',
-      'title': '헤어드라이기 대여',
-      'description': '',
-    },
+    {'id': 'hairDryerRental', 'title': '헤어드라이기 대여', 'description': ''},
     {
       'id': 'amenityKitPurchase',
       'title': '어메니티 키트',
@@ -82,7 +81,9 @@ class _ServicesStepState extends State<ServicesStep> {
   }
 
   void _handleCleaningServiceChange(bool enabled) {
-    final fee = enabled ? _calculateCleaningFee() : int.tryParse(_cleaningFee) ?? 0;
+    final fee = enabled
+        ? _calculateCleaningFee()
+        : int.tryParse(_cleaningFee) ?? 0;
     _updateFormData('cleaningService', enabled);
     _updateFormData('cleaningFee', fee.toString());
   }
@@ -132,11 +133,7 @@ class _ServicesStepState extends State<ServicesStep> {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: isSelected
-                  ? const Icon(
-                      Icons.check,
-                      size: 16,
-                      color: Colors.white,
-                    )
+                  ? const Icon(Icons.check, size: 16, color: Colors.white)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -173,147 +170,174 @@ class _ServicesStepState extends State<ServicesStep> {
     );
   }
 
-  Widget _buildPasswordKeypad(String password) {
+  // 비밀번호 입력 섹션 (토글 없이 바로 표시)
+  Widget _buildServicePasswordSection() {
+    final password = _servicePassword;
+
+    return Column(
+      children: [
+        InkWell(
+          onTap: () {
+            setState(() {
+              _showServicePasswordKeypad = !_showServicePasswordKeypad;
+            });
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: AppColors.gray300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              password.isEmpty ? '비밀번호를 입력하세요' : password,
+              style: TextStyle(
+                fontSize: 14,
+                color: password.isEmpty ? Colors.grey[400] : Colors.black,
+              ),
+            ),
+          ),
+        ),
+        if (_showServicePasswordKeypad) ...[
+          const SizedBox(height: 16),
+          _buildKeypad(password),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildKeypad(String password) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.gray50,
-        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.gray200),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 비밀번호 표시
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.gray300),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  password.isEmpty ? '비밀번호를 입력하세요' : password,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: password.isEmpty
-                        ? AppColors.textSecondary
-                        : Colors.black,
-                    letterSpacing: password.isEmpty ? 0 : 4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // 아이콘 버튼 (🔑, 🔔, 🛡)
+          // Icon buttons
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildKeypadButton('🔑', onTap: () {
-                _updateFormData('servicePassword', password + '🔑');
-              }),
-              _buildKeypadButton('🔔', onTap: () {
-                _updateFormData('servicePassword', password + '🔔');
-              }),
-              _buildKeypadButton('🛡', onTap: () {
-                _updateFormData('servicePassword', password + '🛡');
-              }),
+              Expanded(
+                child: _buildKeypadButton(
+                  '🔑',
+                  onTap: () {
+                    _updateFormData('servicePassword', '$password🔑');
+                  },
+                  fontSize: 32,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildKeypadButton(
+                  '🔔',
+                  onTap: () {
+                    _updateFormData('servicePassword', '$password🔔');
+                  },
+                  fontSize: 32,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildKeypadButton(
+                  '🛡',
+                  onTap: () {
+                    _updateFormData('servicePassword', '$password🛡');
+                  },
+                  fontSize: 32,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-
-          // 숫자 패드 (1-9, *, 0, #)
+          // Number buttons (높이 절반으로 줄임: 5 = 2.5 * 2)
           GridView.count(
             shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 3,
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
-            childAspectRatio: 2,
-            children: [
-              '1',
-              '2',
-              '3',
-              '4',
-              '5',
-              '6',
-              '7',
-              '8',
-              '9',
-              '*',
-              '0',
-              '#'
-            ].map((num) {
-              return _buildKeypadButton(num, onTap: () {
-                _updateFormData('servicePassword', password + num);
-              });
-            }).toList(),
+            childAspectRatio: 5,
+            physics: const NeverScrollableScrollPhysics(),
+            children:
+                ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
+                    .map(
+                      (digit) => _buildKeypadButton(
+                        digit,
+                        onTap: () {
+                          _updateFormData('servicePassword', password + digit);
+                        },
+                      ),
+                    )
+                    .toList(),
           ),
           const SizedBox(height: 12),
-
-          // 제어 버튼
+          // Control buttons
           Row(
             children: [
               Expanded(
-                child: ElevatedButton(
-                  onPressed: () => _updateFormData('servicePassword', ''),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gray200,
-                    foregroundColor: Colors.black,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                child: OutlinedButton(
+                  onPressed: () {
+                    _updateFormData('servicePassword', '');
+                  },
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: AppColors.error50,
+                    side: const BorderSide(color: AppColors.error500),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  child: const Text(
+                    '전체 삭제',
+                    style: TextStyle(
+                      color: AppColors.error600,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  child: const Text('전체 삭제'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    if (password.isNotEmpty) {
+                      _updateFormData(
+                        'servicePassword',
+                        password.substring(0, password.length - 1),
+                      );
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.gray300),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  child: const Text(
+                    '삭제',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: password.isEmpty
-                      ? null
-                      : () {
-                          _updateFormData('servicePassword',
-                              password.substring(0, password.length - 1));
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gray200,
-                    foregroundColor: Colors.black,
-                    disabledBackgroundColor: AppColors.gray50,
-                    disabledForegroundColor: AppColors.textSecondary,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('삭제'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: password.isEmpty ? null : () {},
+                  onPressed: () {
+                    setState(() {
+                      _showServicePasswordKeypad = false;
+                    });
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary600,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.gray200,
-                    disabledForegroundColor: AppColors.textSecondary,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  child: const Text(
+                    '완료',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  child: const Text('완료'),
                 ),
               ),
             ],
@@ -323,24 +347,27 @@ class _ServicesStepState extends State<ServicesStep> {
     );
   }
 
-  Widget _buildKeypadButton(String text, {required VoidCallback onTap}) {
+  Widget _buildKeypadButton(
+    String label, {
+    required VoidCallback onTap,
+    double fontSize = 16,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: AppColors.gray300),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Center(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
           ),
         ),
       ),
@@ -356,14 +383,15 @@ class _ServicesStepState extends State<ServicesStep> {
         children: [
           // 정보 박스
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.primary50,
               border: Border.all(color: AppColors.primary100),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.radiusLg,
             ),
             child: const Text(
-              '💡무료 부가 서비스를 사용하면 방에 직접 가지 않고 관리할 수 있으며,\n사용하지 않을 때보다 게스트 예약율이 훨씬 높아져요!',
+              '💡무료 부가 서비스를 사용하면 방에 직접 가지 않고 관리할 수 있으며, 사용하지 않을 때보다 게스트 예약율이 훨씬 높아져요!',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -405,10 +433,7 @@ class _ServicesStepState extends State<ServicesStep> {
               children: [
                 const Text(
                   '옵션 선택 시, 게스트는 입주에 필요한 상품을 직접 구매할 수 있어요. 호스트님은 물품을 별도로 제공하지 않아도 됩니다.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 16),
                 ...(_guestServices.map((service) {
@@ -438,14 +463,11 @@ class _ServicesStepState extends State<ServicesStep> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildPasswordKeypad(_servicePassword),
+                  _buildServicePasswordSection(),
                   const SizedBox(height: 12),
                   const Text(
                     'ⓘ 호스트 방 관리 서비스를 위해 도어락 비밀번호를 입력해주세요.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.primary600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: AppColors.primary600),
                   ),
                 ],
               ),

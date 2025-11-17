@@ -472,6 +472,9 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
     required ValueChanged<String> onChanged,
     bool hasError = false,
   }) {
+    // ✅ value가 items에 없으면 첫 번째 항목으로 설정
+    final safeValue = items.contains(value) ? value : items.first;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -485,7 +488,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          initialValue: value,
+          value: safeValue,
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),

@@ -47,7 +47,9 @@ class RegistrationValidator {
     if (roomCount == null) {
       errors.add('방 개수를 입력해주세요');
     } else {
-      final roomCountValue = roomCount is int ? roomCount : int.tryParse(roomCount.toString());
+      final roomCountValue = roomCount is int
+          ? roomCount
+          : int.tryParse(roomCount.toString());
       if (roomCountValue == null || roomCountValue <= 0) {
         errors.add('올바른 방 개수를 입력해주세요');
       }
@@ -58,7 +60,9 @@ class RegistrationValidator {
     if (bathroomCount == null) {
       errors.add('화장실 개수를 입력해주세요');
     } else {
-      final bathroomCountValue = bathroomCount is int ? bathroomCount : int.tryParse(bathroomCount.toString());
+      final bathroomCountValue = bathroomCount is int
+          ? bathroomCount
+          : int.tryParse(bathroomCount.toString());
       if (bathroomCountValue == null || bathroomCountValue <= 0) {
         errors.add('올바른 화장실 개수를 입력해주세요');
       }
@@ -83,33 +87,25 @@ class RegistrationValidator {
   static List<String> validatePhotos(Map<String, dynamic> formData) {
     final errors = <String>[];
 
-    // 사진 (최소 5장)
-    final photos = formData['photos'] as List<String>?;
-    if (photos == null || photos.isEmpty) {
+    // 사진 (최소 5장) - uploadedImages 필드 확인
+    final uploadedImages = formData['uploadedImages'] as List<dynamic>?;
+    if (uploadedImages == null || uploadedImages.isEmpty) {
       errors.add('사진을 최소 5장 이상 업로드해주세요');
-    } else if (photos.length < 5) {
-      errors.add('사진을 최소 5장 이상 업로드해주세요 (현재 ${photos.length}장)');
+    } else if (uploadedImages.length < 5) {
+      errors.add('사진을 최소 5장 이상 업로드해주세요 (현재 ${uploadedImages.length}장)');
     }
 
     // 기본 옵션 선택 여부 확인 (최소 1개)
-    final basicOptions = formData['basicOptions'] as List<String>?;
+    final basicOptions = formData['basicOptions'] as List<dynamic>?;
     if (basicOptions == null || basicOptions.isEmpty) {
       errors.add('기본 옵션을 최소 1개 이상 선택해주세요');
     }
 
-    // 침대 선택 시 침대 정보 필수
+    // 침대 선택 시 침대 정보 필수 - bedSelections 필드 확인
     if (basicOptions != null && basicOptions.contains('침대')) {
-      final bedInfo = formData['bedInfo'] as String?;
-      if (bedInfo == null || bedInfo.isEmpty) {
-        errors.add('침대 종류를 선택해주세요');
-      }
-    }
-
-    // 인터넷(wi-fi) 선택 시 비밀번호 필수
-    if (basicOptions != null && basicOptions.contains('인터넷(wi-fi)')) {
-      final wifiPassword = formData['wifiPassword'] as String?;
-      if (wifiPassword == null || wifiPassword.isEmpty) {
-        errors.add('Wi-Fi 비밀번호를 입력해주세요');
+      final bedSelections = formData['bedSelections'] as List<dynamic>?;
+      if (bedSelections == null || bedSelections.isEmpty) {
+        errors.add('침대 종류와 개수를 선택해주세요');
       }
     }
 
@@ -133,46 +129,9 @@ class RegistrationValidator {
       }
     }
 
-    // 주간 임대료
-    final weeklyRent = formData['weeklyRent'] as String?;
-    if (weeklyRent == null || weeklyRent.isEmpty) {
-      errors.add('주간 임대료를 입력해주세요');
-    } else {
-      final weeklyRentValue = int.tryParse(weeklyRent);
-      if (weeklyRentValue == null || weeklyRentValue <= 0) {
-        errors.add('올바른 주간 임대료를 입력해주세요');
-      }
-    }
-
-    // 보증금 (고정 300,000원이므로 검증 불필요)
-
-    // 일일 관리비
-    final dailyMaintenanceFee = formData['dailyMaintenanceFee'] as String?;
-    if (dailyMaintenanceFee == null || dailyMaintenanceFee.isEmpty) {
-      errors.add('일일 관리비를 입력해주세요');
-    } else {
-      final feeValue = int.tryParse(dailyMaintenanceFee);
-      if (feeValue == null || feeValue < 0) {
-        errors.add('올바른 일일 관리비를 입력해주세요');
-      }
-    }
-
-    // 주간 관리비
-    final weeklyMaintenanceFee = formData['weeklyMaintenanceFee'] as String?;
-    if (weeklyMaintenanceFee == null || weeklyMaintenanceFee.isEmpty) {
-      errors.add('주간 관리비를 입력해주세요');
-    } else {
-      final feeValue = int.tryParse(weeklyMaintenanceFee);
-      if (feeValue == null || feeValue < 0) {
-        errors.add('올바른 주간 관리비를 입력해주세요');
-      }
-    }
-
-    // 청소비
+    // 청소비 (선택사항이므로 값이 있을 때만 검증)
     final cleaningFee = formData['cleaningFee'] as String?;
-    if (cleaningFee == null || cleaningFee.isEmpty) {
-      errors.add('청소비를 입력해주세요');
-    } else {
+    if (cleaningFee != null && cleaningFee.isNotEmpty) {
       final cleaningFeeValue = int.tryParse(cleaningFee);
       if (cleaningFeeValue == null || cleaningFeeValue < 0) {
         errors.add('올바른 청소비를 입력해주세요');
@@ -348,8 +307,7 @@ class RegistrationValidator {
   }
 
   /// 특정 Step까지 유효한지 확인 (부분 검증)
-  static bool isValidUpToStep(
-      Map<String, dynamic> formData, int currentStep) {
+  static bool isValidUpToStep(Map<String, dynamic> formData, int currentStep) {
     switch (currentStep) {
       case 1:
         return validateBasicInfo(formData).isEmpty;

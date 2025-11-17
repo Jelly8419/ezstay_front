@@ -117,6 +117,11 @@ class _PhotosStepState extends State<PhotosStep> {
         final newImages = images.map((xFile) => xFile.path).toList();
         final updatedImages = [..._uploadedImages, ...newImages];
 
+        // XFile 객체도 함께 저장 (API 업로드용)
+        final existingXFiles =
+            (widget.formData['uploadedXFiles'] as List<XFile>?) ?? [];
+        final updatedXFiles = [...existingXFiles, ...images];
+
         // 최대 20장 제한
         if (updatedImages.length > 20) {
           if (mounted) {
@@ -125,8 +130,10 @@ class _PhotosStepState extends State<PhotosStep> {
             ).showSnackBar(const SnackBar(content: Text('최대 20장까지 업로드 가능합니다')));
           }
           _updateFormData('uploadedImages', updatedImages.sublist(0, 20));
+          _updateFormData('uploadedXFiles', updatedXFiles.sublist(0, 20));
         } else {
           _updateFormData('uploadedImages', updatedImages);
+          _updateFormData('uploadedXFiles', updatedXFiles);
         }
       }
     } catch (e) {
@@ -138,6 +145,14 @@ class _PhotosStepState extends State<PhotosStep> {
     final updated = List<String>.from(_uploadedImages);
     updated.removeAt(index);
     _updateFormData('uploadedImages', updated);
+
+    // XFile 목록에서도 제거
+    final xFiles = (widget.formData['uploadedXFiles'] as List<XFile>?) ?? [];
+    if (index < xFiles.length) {
+      final updatedXFiles = List<XFile>.from(xFiles);
+      updatedXFiles.removeAt(index);
+      _updateFormData('uploadedXFiles', updatedXFiles);
+    }
   }
 
   void _toggleBasicOption(String option) {
@@ -528,7 +543,7 @@ class _PhotosStepState extends State<PhotosStep> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '* 결제 완료 후 게스트에게 자동 제공됩니다',
+                    '* 지금 입력하지 않아도 괜찮아요.',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,

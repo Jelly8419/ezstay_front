@@ -20,6 +20,10 @@ class DescriptionStep extends StatefulWidget {
 }
 
 class _DescriptionStepState extends State<DescriptionStep> {
+  // TextEditingController를 멤버 변수로 선언 (포커스 유지를 위해)
+  late final TextEditingController _maxGuestsController;
+  late final TextEditingController _propertyDescriptionController;
+
   // 입주 시간 옵션
   static const List<String> _checkInTimes = [
     '14:00',
@@ -43,6 +47,40 @@ class _DescriptionStepState extends State<DescriptionStep> {
       (widget.formData['checkOutTime'] as String?) ?? '11:00';
   String get _propertyDescription =>
       (widget.formData['propertyDescription'] as String?) ?? '';
+
+  @override
+  void initState() {
+    super.initState();
+    // 컨트롤러 초기화
+    _maxGuestsController = TextEditingController(text: _maxGuests);
+    _propertyDescriptionController = TextEditingController(text: _propertyDescription);
+  }
+
+  @override
+  void didUpdateWidget(DescriptionStep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // formData가 외부에서 변경된 경우에만 컨트롤러 텍스트 업데이트
+    if (oldWidget.formData['maxGuests'] != widget.formData['maxGuests']) {
+      final newMaxGuests = _maxGuests;
+      if (_maxGuestsController.text != newMaxGuests) {
+        _maxGuestsController.text = newMaxGuests;
+      }
+    }
+    if (oldWidget.formData['propertyDescription'] != widget.formData['propertyDescription']) {
+      final newDescription = _propertyDescription;
+      if (_propertyDescriptionController.text != newDescription) {
+        _propertyDescriptionController.text = newDescription;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    // 컨트롤러 정리
+    _maxGuestsController.dispose();
+    _propertyDescriptionController.dispose();
+    super.dispose();
+  }
 
   void _updateFormData(String key, dynamic value) {
     final updated = Map<String, dynamic>.from(widget.formData);
@@ -83,7 +121,7 @@ class _DescriptionStepState extends State<DescriptionStep> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
-                  controller: TextEditingController(text: _maxGuests),
+                  controller: _maxGuestsController,
                   onChanged: (value) => _updateFormData('maxGuests', value),
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
@@ -172,7 +210,9 @@ class _DescriptionStepState extends State<DescriptionStep> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: _checkInTime,
+                        value: _checkInTimes.contains(_checkInTime)
+                            ? _checkInTime
+                            : '14:00',
                         items: _checkInTimes
                             .map((time) => DropdownMenuItem(
                                   value: time,
@@ -227,7 +267,9 @@ class _DescriptionStepState extends State<DescriptionStep> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: _checkOutTime,
+                        value: _checkOutTimes.contains(_checkOutTime)
+                            ? _checkOutTime
+                            : '11:00',
                         items: _checkOutTimes
                             .map((time) => DropdownMenuItem(
                                   value: time,
@@ -279,8 +321,7 @@ class _DescriptionStepState extends State<DescriptionStep> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
-                  controller:
-                      TextEditingController(text: _propertyDescription),
+                  controller: _propertyDescriptionController,
                   onChanged: (value) =>
                       _updateFormData('propertyDescription', value),
                   maxLines: 8,

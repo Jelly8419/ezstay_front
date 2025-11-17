@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/auth_service.dart';
 import '../../services/analytics_service.dart';
 import '../../services/room_service.dart';
@@ -13,6 +14,7 @@ import '../../features/web/web_layout.dart';
 import '../../providers/chat_provider.dart';
 import '../../widgets/chat_sidebar_widget.dart';
 import '../../widgets/common/app_gnb.dart';
+import '../../config/api_config.dart';
 
 /// 호스트 모드 홈 화면 - 새 디자인 시스템 적용
 class HostHomePage extends StatefulWidget {
@@ -296,9 +298,34 @@ class _HostHomePageState extends State<HostHomePage> {
   Widget _buildInProgressRoomBanner(Map<String, dynamic> room) {
     final roomName = room['roomName'] ?? '등록 중인 방';
     final address = room['address'] ?? '주소 미입력';
+
+    // photos 배열에서 URL 추출 (문자열 또는 객체 형태 모두 지원)
     final photos = room['photos'] as List<dynamic>?;
-    final hasPhoto = photos != null && photos.isNotEmpty;
-    final photoUrl = hasPhoto ? photos.first : null;
+    String photoUrl = '';
+
+    debugPrint('🖼️ [HOST] photos 데이터: $photos');
+
+    if (photos != null && photos.isNotEmpty) {
+      final firstPhoto = photos.first;
+      debugPrint('🖼️ [HOST] firstPhoto 타입: ${firstPhoto.runtimeType}, 값: $firstPhoto');
+
+      if (firstPhoto is String) {
+        // 문자열인 경우 (URL 직접)
+        photoUrl = firstPhoto;
+      } else if (firstPhoto is Map) {
+        // 객체인 경우 (url 또는 photoUrl 필드 추출)
+        photoUrl = (firstPhoto['url'] ?? firstPhoto['photoUrl'] ?? '') as String;
+      }
+
+      // 상대 경로를 절대 URL로 변환
+      if (photoUrl.isNotEmpty && photoUrl.startsWith('/')) {
+        photoUrl = '${ApiConfig.baseUrl}$photoUrl';
+      }
+
+      debugPrint('🖼️ [HOST] 추출된 photoUrl: $photoUrl');
+    }
+
+    final hasPhoto = photoUrl.isNotEmpty;
 
     return Center(
       child: Container(
@@ -332,12 +359,56 @@ class _HostHomePageState extends State<HostHomePage> {
                         child: hasPhoto
                             ? ClipRRect(
                                 borderRadius: AppRadius.radiusMd,
-                                child: Image.network(
-                                  photoUrl,
+                                child: CachedNetworkImage(
+                                  imageUrl: photoUrl,
                                   fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color: AppColors.neutral100,
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.primary500,
+                                      ),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) {
+                                    debugPrint('🖼️ [HOST] 이미지 로딩 실패: $url');
+                                    debugPrint('🖼️ [HOST] 에러: $error');
+                                    return Container(
+                                      color: AppColors.neutral100,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.broken_image_outlined,
+                                            size: 32,
+                                            color: AppColors.neutral400,
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            '이미지 없음',
+                                            style: AppTextStyles.bodySmall.copyWith(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
                                 ),
                               )
-                            : Icon(Icons.home_outlined, size: 32),
+                            : Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.neutral100,
+                                  borderRadius: AppRadius.radiusMd,
+                                ),
+                                child: Icon(
+                                  Icons.home_outlined,
+                                  size: 32,
+                                  color: AppColors.neutral400,
+                                ),
+                              ),
                       ),
                       SizedBox(width: AppSpacing.md),
                       Expanded(
