@@ -201,8 +201,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               roomData['propertyDescription'] ?? '';
 
           // 진행 상태에 따라 현재 단계 설정
-          // status가 draft면 계속 진행 가능
-          _currentStep = 1; // 기본적으로 1단계부터 시작
+          _currentStep = _calculateCurrentStep(roomData);
         });
 
         debugPrint('✅ 저장된 등록 데이터 복원 완료 - roomId: $_currentRoomId');
@@ -211,6 +210,47 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
       debugPrint('❌ 등록 중인 데이터 불러오기 실패: $e');
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  /// registrationProgress를 분석하여 현재 진행 중인 단계 계산
+  int _calculateCurrentStep(Map<String, dynamic> roomData) {
+    final progress = roomData['registrationProgress'];
+
+    // registrationProgress가 없으면 1단계부터 시작
+    if (progress == null) {
+      debugPrint('📍 registrationProgress 없음 → Step 1부터 시작');
+      return 1;
+    }
+
+    final steps = progress['steps'] as Map<String, dynamic>?;
+
+    // steps 정보가 없으면 1단계부터 시작
+    if (steps == null) {
+      debugPrint('📍 steps 정보 없음 → Step 1부터 시작');
+      return 1;
+    }
+
+    // 완료되지 않은 첫 번째 단계를 찾음
+    if (steps['basicInfo'] == false) {
+      debugPrint('📍 basicInfo 미완료 → Step 1로 이동');
+      return 1;
+    } else if (steps['photosAndAmenities'] == false) {
+      debugPrint('📍 photosAndAmenities 미완료 → Step 2로 이동');
+      return 2;
+    } else if (steps['pricing'] == false) {
+      debugPrint('📍 pricing 미완료 → Step 3으로 이동');
+      return 3;
+    } else if (steps['freeServices'] == false) {
+      debugPrint('📍 freeServices 미완료 → Step 4로 이동');
+      return 4;
+    } else if (steps['description'] == false) {
+      debugPrint('📍 description 미완료 → Step 5로 이동');
+      return 5;
+    } else {
+      // 모든 단계 완료 → 마지막 단계로 이동 (재확인용)
+      debugPrint('📍 모든 단계 완료 → Step 5로 이동 (재확인)');
+      return 5;
     }
   }
 
