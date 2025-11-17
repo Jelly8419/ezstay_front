@@ -56,14 +56,14 @@ class _PropertyCardState extends State<PropertyCard> {
               color: widget.isSelected
                   ? theme.AppColors.primary500
                   : _isHovered
-                      ? theme.AppColors.primary300
-                      : theme.AppColors.border,
+                  ? theme.AppColors.primary300
+                  : theme.AppColors.border,
               width: widget.isSelected ? 2 : 1,
             ),
             boxShadow: isActive
                 ? (widget.isSelected
-                    ? AppShadows.cardSelected
-                    : AppShadows.cardHover)
+                      ? AppShadows.cardSelected
+                      : AppShadows.cardHover)
                 : AppShadows.cardDefault,
           ),
           child: Column(
@@ -96,59 +96,42 @@ class _PropertyCardState extends State<PropertyCard> {
                     ),
                     SizedBox(height: AppSpacing.sm),
 
-                    // 가격
-                    Row(
-                      children: [
-                        if (widget.room.longTermDiscount > 0) ...[
-                          Text(
-                            '${widget.room.longTermDiscount}%',
-                            style: theme.AppTextStyles.labelMedium.copyWith(
-                              color: theme.AppColors.error500,
-                            ),
-                          ),
-                          SizedBox(width: AppSpacing.xs),
-                        ],
-                        Text(
-                          '${_formatPrice(widget.room.weeklyRent)}/주',
-                          style: theme.AppTextStyles.priceText,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: AppSpacing.sm),
-
-                    // 방 정보 (침대, 화장실, 방)
-                    Row(
-                      children: [
-                        if (widget.room.totalBeds > 0) ...[
-                          _buildIconInfo(Icons.bed, '침대 ${widget.room.totalBeds}'),
-                          SizedBox(width: AppSpacing.md),
-                        ],
-                        _buildIconInfo(Icons.bathroom, '욕실 ${widget.room.bathroomCount}'),
-                        SizedBox(width: AppSpacing.md),
-                        _buildIconInfo(Icons.door_sliding, '방 ${widget.room.roomCount}'),
-                      ],
+                    // 가격 (검은색)
+                    Text(
+                      '${_formatPrice(widget.room.weeklyRent)}원/주',
+                      style: theme.AppTextStyles.priceText.copyWith(
+                        color: Colors.black,
+                      ),
                     ),
 
-                    // 할인 정보 (있을 경우)
-                    if (widget.room.longTermDiscount > 0) ...[
-                      SizedBox(height: AppSpacing.sm),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: AppSpacing.xs,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.AppColors.error50,
-                          borderRadius: AppRadius.radiusSm,
-                        ),
-                        child: Text(
-                          '${widget.room.longTermDiscount}% 할인 중',
-                          style: theme.AppTextStyles.labelSmall.copyWith(
-                            color: theme.AppColors.error500,
-                          ),
+                    // 할인 정보 텍스트 (파란색, 배경 없음)
+                    if (_hasQuickMoveInDiscount()) ...[
+                      SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '* ${widget.room.quickMoveIn}일 이내 입주시 ${_formatPrice(widget.room.quickMoveInDiscount!)}원 할인',
+                        style: theme.AppTextStyles.bodySmall.copyWith(
+                          color: theme.AppColors.primary500,
                         ),
                       ),
                     ],
+                    if (_hasLongTermDiscount()) ...[
+                      SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '* ${widget.room.longTermWeeks}주 이상 계약시 ${widget.room.longTermDiscount}% 할인',
+                        style: theme.AppTextStyles.bodySmall.copyWith(
+                          color: theme.AppColors.primary500,
+                        ),
+                      ),
+                    ],
+
+                    SizedBox(height: AppSpacing.sm),
+
+                    // 방 정보 (침대만 표시)
+                    if (widget.room.totalBeds > 0)
+                      _buildIconInfo(
+                        Icons.bed,
+                        '침대 ${widget.room.totalBeds}',
+                      ),
                   ],
                 ),
               ),
@@ -162,92 +145,96 @@ class _PropertyCardState extends State<PropertyCard> {
   Widget _buildPhotoSection() {
     final hasPhotos = widget.room.photos.isNotEmpty;
 
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.radiusTopMd,
-        color: theme.AppColors.neutral200,
-      ),
-      child: Stack(
-        children: [
-          // 사진 또는 플레이스홀더
-          ClipRRect(
-            borderRadius: AppRadius.radiusTopMd,
-            child: hasPhotos
-                ? Image.network(
-                    widget.room.photos[_currentPhotoIndex].url,
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      debugPrint('❌ [PROPERTY_CARD] 이미지 로드 실패: ${widget.room.photos[_currentPhotoIndex].url}');
-                      debugPrint('❌ [PROPERTY_CARD] 에러: $error');
-                      return _buildPlaceholder();
-                    },
-                  )
-                : _buildPlaceholder(),
-          ),
+    // 디버그: PropertyCard에서 받은 photos 확인 (첫 렌더링만)
+    if (_currentPhotoIndex == 0 && !hasPhotos) {
+      debugPrint('⚠️ [CARD] PropertyCard - photos 없음 (room.id: ${widget.room.id})');
+    } else if (_currentPhotoIndex == 0 && hasPhotos) {
+      debugPrint('✅ [CARD] PropertyCard - photos 존재 (room.id: ${widget.room.id}, 개수: ${widget.room.photos.length})');
+    }
 
-          // 좌우 화살표 (사진이 2개 이상일 때만) - 인피니트 롤링
-          if (hasPhotos && widget.room.photos.length > 1) ...[
-            // 왼쪽 화살표
-            Positioned(
-              left: 8,
-              top: 0,
-              bottom: 0,
-              child: Center(
-                child: _buildArrowButton(
-                  Icons.chevron_left,
-                  () {
-                    setState(() {
-                      _currentPhotoIndex = (_currentPhotoIndex - 1 + widget.room.photos.length) % widget.room.photos.length;
-                    });
-                  },
-                ),
-              ),
+    return AspectRatio(
+      aspectRatio: 4 / 3, // 4:3 비율
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.radiusTopMd,
+          color: theme.AppColors.neutral200,
+        ),
+        child: Stack(
+          children: [
+            // 사진 또는 플레이스홀더
+            ClipRRect(
+              borderRadius: AppRadius.radiusTopMd,
+              child: hasPhotos
+                  ? Image.network(
+                      widget.room.photos[_currentPhotoIndex].url,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildPlaceholder();
+                      },
+                    )
+                  : _buildPlaceholder(),
             ),
 
-            // 오른쪽 화살표
-            Positioned(
-              right: 8,
-              top: 0,
-              bottom: 0,
-              child: Center(
-                child: _buildArrowButton(
-                  Icons.chevron_right,
-                  () {
+            // 좌우 화살표 (사진이 2개 이상일 때만) - 인피니트 롤링
+            if (hasPhotos && widget.room.photos.length > 1) ...[
+              // 왼쪽 화살표
+              Positioned(
+                left: 8,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _buildArrowButton(Icons.chevron_left, () {
                     setState(() {
-                      _currentPhotoIndex = (_currentPhotoIndex + 1) % widget.room.photos.length;
+                      _currentPhotoIndex =
+                          (_currentPhotoIndex - 1 + widget.room.photos.length) %
+                          widget.room.photos.length;
                     });
-                  },
+                  }),
                 ),
               ),
-            ),
 
-            // 사진 인디케이터
-            Positioned(
-              bottom: 8,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${_currentPhotoIndex + 1} / ${widget.room.photos.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
+              // 오른쪽 화살표
+              Positioned(
+                right: 8,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _buildArrowButton(Icons.chevron_right, () {
+                    setState(() {
+                      _currentPhotoIndex =
+                          (_currentPhotoIndex + 1) % widget.room.photos.length;
+                    });
+                  }),
+                ),
+              ),
+
+              // 사진 인디케이터
+              Positioned(
+                bottom: 8,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_currentPhotoIndex + 1} / ${widget.room.photos.length}',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -262,10 +249,7 @@ class _PropertyCardState extends State<PropertyCard> {
         children: [
           Icon(Icons.home, size: 48, color: theme.AppColors.neutral400),
           SizedBox(height: AppSpacing.sm),
-          Text(
-            '사진 없음',
-            style: theme.AppTextStyles.bodyMediumSecondary,
-          ),
+          Text('사진 없음', style: theme.AppTextStyles.bodyMediumSecondary),
         ],
       ),
     );
@@ -302,15 +286,23 @@ class _PropertyCardState extends State<PropertyCard> {
     );
   }
 
+  /// 가격을 콤마 구분 포맷으로 변환 (예: 1,446,000원)
   String _formatPrice(int price) {
-    if (price >= 10000) {
-      final manWon = price ~/ 10000;
-      final remainder = price % 10000;
-      if (remainder == 0) {
-        return '$manWon만원';
-      }
-      return '$manWon.${(remainder / 1000).toStringAsFixed(0)}만원';
-    }
-    return '${price.toString()}원';
+    final formatter = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+    return price.toString().replaceAllMapped(formatter, (Match m) => '${m[1]},');
+  }
+
+  /// 빠른입주 할인 정보가 있는지 확인 (quickMoveIn AND quickMoveInDiscount 둘 다 필요)
+  bool _hasQuickMoveInDiscount() {
+    return widget.room.quickMoveIn != null &&
+           widget.room.quickMoveInDiscount != null &&
+           widget.room.quickMoveInDiscount! > 0;
+  }
+
+  /// 장기계약 할인 정보가 있는지 확인 (longTermWeeks AND longTermDiscount 둘 다 필요)
+  bool _hasLongTermDiscount() {
+    return widget.room.longTermWeeks != null &&
+           widget.room.longTermDiscount != null &&
+           widget.room.longTermDiscount! > 0;
   }
 }

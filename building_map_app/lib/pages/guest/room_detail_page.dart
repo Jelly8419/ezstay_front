@@ -1011,7 +1011,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         const SizedBox(height: 24),
 
         // 할인 정보
-        if (_room!.longTermDiscount > 0 || (_room!.quickMoveInDiscount > 0 && _room!.quickMoveIn != null)) ...[
+        if ((_room!.longTermDiscount != null && _room!.longTermDiscount! > 0) ||
+            (_room!.quickMoveInDiscount != null && _room!.quickMoveInDiscount! > 0 && _room!.quickMoveIn != null)) ...[
           const Text(
             '할인 정보',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -1020,7 +1021,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         ],
 
         // 장기계약 할인
-        if (_room!.longTermDiscount > 0) ...[
+        if (_room!.longTermDiscount != null && _room!.longTermDiscount! > 0) ...[
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -1043,7 +1044,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         ],
 
         // 빠른입주 할인
-        if (_room!.quickMoveInDiscount > 0 && _room!.quickMoveIn != null) ...[
+        if (_room!.quickMoveInDiscount != null && _room!.quickMoveInDiscount! > 0 && _room!.quickMoveIn != null) ...[
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -1056,7 +1057,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                 Icon(Icons.flash_on, color: Colors.orange[700], size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  '빠른입주 할인: ${_room!.quickMoveInDiscount}% 할인',
+                  '빠른입주 할인: ${_room!.quickMoveInDiscount}원 할인',
                   style: TextStyle(fontSize: 14, color: Colors.orange[900]),
                 ),
               ],
@@ -1065,7 +1066,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           const SizedBox(height: 24),
         ],
 
-        if (_room!.longTermDiscount > 0 || (_room!.quickMoveInDiscount > 0 && _room!.quickMoveIn != null))
+        if ((_room!.longTermDiscount != null && _room!.longTermDiscount! > 0) ||
+            (_room!.quickMoveInDiscount != null && _room!.quickMoveInDiscount! > 0 && _room!.quickMoveIn != null))
           const SizedBox(height: 16),
 
         // 관리비 포함 항목 (아이콘 방식)
@@ -2147,8 +2149,11 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     int discountAmount = 0;
     String? discountLabel;
 
-    if (_room!.longTermDiscount > 0 && weeks >= _room!.longTermWeeks) {
-      discountAmount = (weeklyRentTotal * _room!.longTermDiscount / 100).round();
+    if (_room!.longTermDiscount != null &&
+        _room!.longTermDiscount! > 0 &&
+        _room!.longTermWeeks != null &&
+        weeks >= _room!.longTermWeeks!) {
+      discountAmount = (weeklyRentTotal * _room!.longTermDiscount! / 100).round();
       discountLabel = '할인 적용';
     }
 
