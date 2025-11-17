@@ -25,10 +25,10 @@ class Room {
 
   // 가격 정보
   final int dailyRent; // 일 임대료
-  final int longTermWeeks; // 장기계약 기준 주수
-  final int longTermDiscount; // 장기계약 할인율 (%)
-  final String? quickMoveIn; // 빠른 입주 가능일 (ISO 8601)
-  final int quickMoveInDiscount; // 빠른 입주 할인율 (%)
+  final int? longTermWeeks; // 장기계약 기준 주수 (discounts.longTermWeeks, nullable)
+  final int? longTermDiscount; // 장기계약 할인율 (%) (discounts.longTermDiscount, nullable)
+  final int? quickMoveIn; // 빠른 입주 가능 일수 (숫자, 예: 13) (discounts.quickMoveIn)
+  final int? quickMoveInDiscount; // 빠른 입주 할인 금액 (원) (discounts.quickMoveInDiscount, nullable)
   final int dailyMaintenanceFee; // 일 관리비
   final String? maintenanceDetail; // 관리비 상세 설명
   final bool includeElectricity; // 관리비에 전기 포함 여부
@@ -153,10 +153,11 @@ class Room {
 
       // 가격 정보
       dailyRent: json['dailyRent'] as int? ?? 0,
-      longTermWeeks: json['longTermWeeks'] as int? ?? 12,
-      longTermDiscount: json['longTermDiscount'] as int? ?? 0,
-      quickMoveIn: json['quickMoveIn'] as String?,
-      quickMoveInDiscount: json['quickMoveInDiscount'] as int? ?? 0,
+      // discounts 객체에서 할인 정보 파싱 (nullable 유지)
+      longTermWeeks: json['discounts']?['longTermWeeks'] as int? ?? json['longTermWeeks'] as int?,
+      longTermDiscount: json['discounts']?['longTermDiscount'] as int? ?? json['longTermDiscount'] as int?,
+      quickMoveIn: json['discounts']?['quickMoveIn'] as int? ?? json['quickMoveIn'] as int?,
+      quickMoveInDiscount: json['discounts']?['quickMoveInDiscount'] as int? ?? json['quickMoveInDiscount'] as int?,
       dailyMaintenanceFee: json['dailyMaintenanceFee'] as int? ?? 0,
       maintenanceDetail: json['maintenanceDetail'] as String?,
       includeElectricity: json['includeElectricity'] as bool? ?? false,
@@ -274,16 +275,16 @@ class Room {
 
   /// 장기 계약 할인 적용된 주 임대료
   int get longTermDiscountedRent {
-    if (longTermDiscount > 0) {
-      return (weeklyRent * (100 - longTermDiscount) / 100).round();
+    if (longTermDiscount != null && longTermDiscount! > 0) {
+      return (weeklyRent * (100 - longTermDiscount!) / 100).round();
     }
     return weeklyRent;
   }
 
   /// 빠른 입주 할인 적용된 주 임대료
   int get quickMoveInDiscountedRent {
-    if (quickMoveInDiscount > 0) {
-      return (weeklyRent * (100 - quickMoveInDiscount) / 100).round();
+    if (quickMoveInDiscount != null && quickMoveInDiscount! > 0) {
+      return (weeklyRent - quickMoveInDiscount!).round();
     }
     return weeklyRent;
   }
@@ -331,7 +332,7 @@ class Room {
     int? dailyRent,
     int? longTermWeeks,
     int? longTermDiscount,
-    String? quickMoveIn,
+    int? quickMoveIn,
     int? quickMoveInDiscount,
     int? dailyMaintenanceFee,
     String? maintenanceDetail,

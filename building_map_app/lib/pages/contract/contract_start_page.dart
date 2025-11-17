@@ -106,9 +106,12 @@ class _ContractStartPageState extends State<ContractStartPage> {
     final days = widget.checkOutDate.difference(widget.checkInDate).inDays;
     final weeks = (days / 7).ceil();
 
-    if (widget.room.longTermDiscount > 0 && weeks >= widget.room.longTermWeeks) {
+    if (widget.room.longTermDiscount != null &&
+        widget.room.longTermDiscount! > 0 &&
+        widget.room.longTermWeeks != null &&
+        weeks >= widget.room.longTermWeeks!) {
       final rentalTotal = _calculateRentalTotal();
-      return (rentalTotal * widget.room.longTermDiscount / 100).round();
+      return (rentalTotal * widget.room.longTermDiscount! / 100).round();
     }
     return 0;
   }

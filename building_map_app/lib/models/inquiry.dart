@@ -86,7 +86,8 @@ class Inquiry {
       return Inquiry(
         id: _parseField<int>(json, 'id'),
         categoryType: InquiryCategoryType.fromString(
-            _parseField<String>(json, 'categoryType')),
+          _parseField<String>(json, 'categoryType'),
+        ),
         title: _parseField<String>(json, 'title'),
         content: json['content'] as String? ?? '',
         status: InquiryStatus.fromString(_parseField<String>(json, 'status')),
@@ -109,9 +110,10 @@ class Inquiry {
       }
       if (value is! T) {
         throw FormatException(
-            '필드 "$fieldName" 타입 오류: 예상 $T, 실제 ${value.runtimeType}, 값: $value');
+          '필드 "$fieldName" 타입 오류: 예상 $T, 실제 ${value.runtimeType}, 값: $value',
+        );
       }
-      return value as T;
+      return value;
     } catch (e) {
       throw FormatException('필드 "$fieldName" 파싱 실패: $e');
     }
@@ -131,10 +133,7 @@ class InquiryListResponse {
   final List<Inquiry> inquiries;
   final Pagination pagination;
 
-  InquiryListResponse({
-    required this.inquiries,
-    required this.pagination,
-  });
+  InquiryListResponse({required this.inquiries, required this.pagination});
 
   factory InquiryListResponse.fromJson(Map<String, dynamic> json) {
     final data = json['data'] as Map<String, dynamic>;
@@ -143,7 +142,8 @@ class InquiryListResponse {
           .map((item) => Inquiry.fromJson(item as Map<String, dynamic>))
           .toList(),
       pagination: Pagination.fromJson(
-          data['pagination'] as Map<String, dynamic>),
+        data['pagination'] as Map<String, dynamic>,
+      ),
     );
   }
 }
