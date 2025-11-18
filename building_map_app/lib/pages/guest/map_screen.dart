@@ -351,12 +351,13 @@ class _MapScreenState extends State<MapScreen> {
 
         // 빈 배열인 경우: 클러스터 필터링 해제 (전체 매물 표시)
         if (clusterRoomIds.isEmpty) {
-          debugPrint('🔄 [MAP] 클러스터 필터링 해제 - 전체 매물 표시');
+          debugPrint('🔄 [MAP] 클러스터 필터링 해제 - 전체 매물 표시 + 카드 리스트 숨김');
           setState(() {
             _filteredByCluster = false;
             _clusterRoomIds = [];
             _selectedRoom = null;
             _currentMobileCardIndex = 0; // 모바일 카드 인덱스 리셋
+            _showMobileCardList = false; // 모바일 카드 리스트 숨김 (UX 개선)
           });
 
           // 모바일 PageView를 첫 번째 카드로 이동
@@ -368,7 +369,14 @@ class _MapScreenState extends State<MapScreen> {
           return;
         }
 
-        // 클러스터 필터링 활성화
+        // 개별 마커(클러스터 크기 1)는 onMarkerTap 콜백이 처리하므로 여기서는 스킵
+        // (중복 토글 방지: 이 리스너와 onMarkerTap 콜백이 동시에 토글하는 버그 수정)
+        if (clusterRoomIds.length == 1) {
+          debugPrint('📍 [MAP] 개별 마커 감지 (클러스터 크기 1) - onMarkerTap 콜백이 처리 예정, 여기서는 스킵');
+          return;
+        }
+
+        // 클러스터 필터링 활성화 (클러스터 크기 >= 2)
         debugPrint(
           '📱 [MAP] 클러스터 필터링 활성화 - 모바일 리스트 토글 및 ${clusterRoomIds.length}개 매물 표시',
         );
@@ -393,7 +401,7 @@ class _MapScreenState extends State<MapScreen> {
           _clusterRoomIds = clusterRoomIds;
           _selectedRoom = null; // 선택된 방 초기화
           _currentMobileCardIndex = 0; // 모바일 카드 인덱스를 0으로 리셋 (첫 번째 매물 표시)
-          _showMobileCardList = !_showMobileCardList; // 클러스터 클릭 시 매물 리스트 토글 (뱃지와 동일한 동작)
+          _showMobileCardList = true; // 다른 클러스터 클릭 시 카드 리스트 무조건 노출 (같은 클러스터 재클릭은 clusterRoomIds.isEmpty로 별도 처리)
         });
 
         // 클러스터 마커 선택 (파란색으로 표시)
@@ -1139,12 +1147,13 @@ class _MapScreenState extends State<MapScreen> {
 
           // roomId: -1은 개별 마커 재클릭 (선택 해제) 이벤트
           if (roomId == -1) {
-            debugPrint('🔄 [MAP] 개별 마커 재클릭 - 선택 해제 + 전체 매물 표시');
+            debugPrint('🔄 [MAP] 개별 마커 재클릭 - 선택 해제 + 전체 매물 표시 + 카드 리스트 숨김');
             setState(() {
               _selectedRoom = null;
               _filteredByCluster = false;
               _clusterRoomIds = [];
               _currentMobileCardIndex = 0;
+              _showMobileCardList = false; // 모바일 카드 리스트 숨김 (UX 개선)
             });
 
             // PageView를 첫 번째 카드로 리셋 (모바일/태블릿)
@@ -1231,11 +1240,15 @@ class _MapScreenState extends State<MapScreen> {
             }
 
             // 다른 마커 클릭: 해당 매물 선택 (상세 페이지 이동 제거)
-            debugPrint('📱 [MOBILE] 마커 클릭 - 매물 선택 및 리스트 토글: $roomId');
+            debugPrint('📱 [MOBILE] 개별 마커 클릭 - 해당 매물만 카드 리스트 노출: $roomId');
 
-            // 매물 리스트 토글 (뱃지와 동일한 동작)
+            // 개별 마커 클릭 시 해당 매물만 필터링하여 카드 리스트 노출
+            // (같은 마커 재클릭은 roomId: -1 이벤트로 별도 처리)
             setState(() {
-              _showMobileCardList = !_showMobileCardList;
+              _showMobileCardList = true;
+              _filteredByCluster = true; // 개별 매물 필터링 활성화
+              _clusterRoomIds = [roomId]; // 해당 매물만 표시
+              _currentMobileCardIndex = 0; // 카드 인덱스 리셋
             });
 
             final selectedRoomData = filteredRooms.firstWhere(
@@ -1293,6 +1306,13 @@ class _MapScreenState extends State<MapScreen> {
             };
 
             _onRoomSelected(Room.fromJson(roomJson), focusMap: false);
+
+            // 모바일 PageView를 첫 번째 카드로 이동 (개별 마커는 1개만 있으므로 항상 0번째)
+            if (ResponsiveUtil.isMobile(context) &&
+                _mobileCardController.hasClients) {
+              _mobileCardController.jumpToPage(0);
+              debugPrint('📱 [MOBILE] 개별 마커 - PageView 첫 번째 카드로 이동');
+            }
           }
         },
         onBoundsChanged: (swLat, swLng, neLat, neLng, zoom) {
