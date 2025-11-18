@@ -17,6 +17,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
+import '../../services/map_interaction_coordinator.dart';
+import 'package:provider/provider.dart';
 
 /// 지도 기반 숙소 검색 화면
 class MapScreen extends StatefulWidget {
@@ -59,9 +61,6 @@ class _MapScreenState extends State<MapScreen> {
   // 모바일 매물 리스트 표시 여부
   bool _showMobileCardList = false;
 
-  // 뱃지 클릭 시간 추적 (마커 클릭과 중복 방지)
-  DateTime? _lastBadgeClickTime;
-
   // 클러스터 필터링 관련
   bool _filteredByCluster = false; // 클러스터로 필터링 중인지 여부
   List<int> _clusterRoomIds = []; // 현재 선택된 클러스터의 방 ID 목록
@@ -75,6 +74,7 @@ class _MapScreenState extends State<MapScreen> {
     super.initState();
     _loadSavedFilters();
     _setupClusterClickListener();
+    _setupCoordinatorListener();
   }
 
   @override
@@ -84,7 +84,50 @@ class _MapScreenState extends State<MapScreen> {
     if (_clusterClickListener != null) {
       html.window.removeEventListener('message', _clusterClickListener);
     }
+    _removeCoordinatorListener();
     super.dispose();
+  }
+
+  /// 🎯 Coordinator 리스너 설정: 모드 변경 시 지도 드래그 자동 제어
+  void _setupCoordinatorListener() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final coordinator = Provider.of<MapInteractionCoordinator>(
+        context,
+        listen: false,
+      );
+      coordinator.addListener(_onCoordinatorModeChanged);
+    });
+  }
+
+  /// 🎯 Coordinator 리스너 제거
+  void _removeCoordinatorListener() {
+    try {
+      final coordinator = Provider.of<MapInteractionCoordinator>(
+        context,
+        listen: false,
+      );
+      coordinator.removeListener(_onCoordinatorModeChanged);
+    } catch (e) {
+      // context가 이미 dispose된 경우 무시
+    }
+  }
+
+  /// 🎯 Coordinator 모드 변경 시 호출
+  void _onCoordinatorModeChanged() {
+    if (!mounted) return;
+
+    final coordinator = Provider.of<MapInteractionCoordinator>(
+      context,
+      listen: false,
+    );
+
+    // idle 모드일 때만 지도 드래그 허용, 그 외에는 차단
+    final shouldEnableDrag = coordinator.currentMode == InteractionMode.idle;
+    _mapController.setMapDraggable(shouldEnableDrag);
+
+    debugPrint(
+      '🎯 [COORDINATOR→MAP] 모드: ${coordinator.currentMode}, 지도 드래그: ${shouldEnableDrag ? "활성화" : "비활성화"}',
+    );
   }
 
   @override
@@ -381,16 +424,14 @@ class _MapScreenState extends State<MapScreen> {
           '📱 [MAP] 클러스터 필터링 활성화 - 모바일 리스트 토글 및 ${clusterRoomIds.length}개 매물 표시',
         );
 
-        // 뱃지 클릭 후 300ms 이내라면 클러스터 마커 클릭 무시 (중복 토글 방지)
-        if (_lastBadgeClickTime != null) {
-          final timeSinceLastBadgeClick =
-              DateTime.now().difference(_lastBadgeClickTime!);
-          if (timeSinceLastBadgeClick.inMilliseconds < 300) {
-            debugPrint(
-              '⏱️ [MAP] 클러스터 마커 클릭 무시 - 최근 뱃지 클릭(${timeSinceLastBadgeClick.inMilliseconds}ms 전)',
-            );
-            return;
-          }
+        // 🎯 Coordinator: 클러스터 클릭 이벤트 처리 가능 여부 확인
+        final coordinator = Provider.of<MapInteractionCoordinator>(
+          context,
+          listen: false,
+        );
+        if (!coordinator.canProcessEvent(EventType.clusterClick)) {
+          debugPrint('🚫 [MAP] 클러스터 클릭 차단 - 다른 인터랙션 진행 중');
+          return;
         }
 
         // 클릭된 클러스터의 첫 번째 방 ID 가져오기
@@ -808,12 +849,18 @@ class _MapScreenState extends State<MapScreen> {
 
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
+        // 🎯 Coordinator: 리스트 스크롤 모드 진입/종료
+        final coordinator = Provider.of<MapInteractionCoordinator>(
+          context,
+          listen: false,
+        );
+
         if (notification is ScrollStartNotification) {
-          // 스크롤 시작 시 지도 드래그 비활성화
-          _mapController.setMapDraggable(false);
+          // 스크롤 시작 → 리스트 스크롤 모드 진입 (지도 드래그 자동 차단)
+          coordinator.enterMode(InteractionMode.listScrolling);
         } else if (notification is ScrollEndNotification) {
-          // 스크롤 종료 시 지도 드래그 활성화
-          _mapController.setMapDraggable(true);
+          // 스크롤 종료 → idle 모드 복귀 (지도 드래그 자동 허용)
+          coordinator.exitMode();
         }
         return true;
       },
@@ -965,8 +1012,15 @@ class _MapScreenState extends State<MapScreen> {
                 behavior: HitTestBehavior.opaque, // 뱃지 클릭 우선 처리 (마커 클릭보다 우선)
                 onTap: ResponsiveUtil.isMobile(context)
                     ? () {
-                        // 뱃지 클릭 시간 기록 (마커 클릭 차단용)
-                        _lastBadgeClickTime = DateTime.now();
+                        // 🎯 Coordinator: 마커 선택 모드 진입 + 300ms 이벤트 잠금
+                        final coordinator = Provider.of<MapInteractionCoordinator>(
+                          context,
+                          listen: false,
+                        );
+                        coordinator.enterMode(
+                          InteractionMode.markerSelecting,
+                          lockDuration: const Duration(milliseconds: 300),
+                        );
 
                         setState(() {
                           _showMobileCardList = !_showMobileCardList;
@@ -1040,28 +1094,31 @@ class _MapScreenState extends State<MapScreen> {
               opacity: _showMobileCardList ? 1.0 : 0.0,
               child: Listener(
                 onPointerDown: (_) {
-                  // 모바일 PageView 드래그 시작 시 지도 드래그 비활성화
-                  debugPrint('📱 [MOBILE] PageView 드래그 시작 - 지도 비활성화');
-                  _mapController.setMapDraggable(false);
+                  // 🎯 Coordinator: PageView 드래그 시작 → 카드 슬라이드 모드 진입
+                  debugPrint('📱 [MOBILE] PageView 드래그 시작 - 카드 슬라이드 모드');
+                  final coordinator = Provider.of<MapInteractionCoordinator>(
+                    context,
+                    listen: false,
+                  );
+                  coordinator.enterMode(InteractionMode.cardSwiping);
                 },
                 onPointerUp: (_) {
-                  // 모바일 PageView 드래그 종료 시 지도 드래그 활성화 (지연 적용)
-                  debugPrint('📱 [MOBILE] PageView 드래그 종료 - 지도 활성화 (150ms 지연)');
-                  // 잔여 HTML 이벤트 소멸을 위해 150ms 지연 후 활성화
-                  Future.delayed(const Duration(milliseconds: 150), () {
-                    if (mounted) {
-                      _mapController.setMapDraggable(true);
-                    }
-                  });
+                  // 🎯 Coordinator: PageView 드래그 종료 → idle 모드 복귀
+                  debugPrint('📱 [MOBILE] PageView 드래그 종료 - idle 모드 복귀');
+                  final coordinator = Provider.of<MapInteractionCoordinator>(
+                    context,
+                    listen: false,
+                  );
+                  coordinator.exitMode();
                 },
                 onPointerCancel: (_) {
-                  // 드래그 취소 시에도 지도 드래그 활성화 (지연 적용)
-                  debugPrint('📱 [MOBILE] PageView 드래그 취소 - 지도 활성화 (150ms 지연)');
-                  Future.delayed(const Duration(milliseconds: 150), () {
-                    if (mounted) {
-                      _mapController.setMapDraggable(true);
-                    }
-                  });
+                  // 🎯 Coordinator: 드래그 취소 시에도 idle 모드 복귀
+                  debugPrint('📱 [MOBILE] PageView 드래그 취소 - idle 모드 복귀');
+                  final coordinator = Provider.of<MapInteractionCoordinator>(
+                    context,
+                    listen: false,
+                  );
+                  coordinator.exitMode();
                 },
                 behavior: HitTestBehavior.opaque,
                 child: PageView.builder(
@@ -1167,7 +1224,15 @@ class _MapScreenState extends State<MapScreen> {
 
           // 반응형 동작 분기
           if (ResponsiveUtil.isDesktop(context)) {
-            // 데스크톱: 리스트에서 PropertyCard 강조 (기존 동작)
+            // 데스크톱: 개별 마커 클릭 시 해당 매물만 리스트에 표시
+            debugPrint('🖥️ [DESKTOP] 개별 마커 클릭 - 해당 매물만 리스트 표시: $roomId');
+
+            // 개별 마커 클릭 시 해당 매물만 필터링하여 리스트 표시
+            setState(() {
+              _filteredByCluster = true; // 개별 매물 필터링 활성화
+              _clusterRoomIds = [roomId]; // 해당 매물만 표시
+            });
+
             final selectedRoomData = filteredRooms.firstWhere(
               (r) => r['id'] == roomId,
               orElse: () => filteredRooms.first,
@@ -1227,16 +1292,14 @@ class _MapScreenState extends State<MapScreen> {
           } else {
             // 모바일/태블릿: 마커 클릭 시 매물 선택 및 리스트 토글
 
-            // 뱃지 클릭 후 300ms 이내라면 마커 클릭 무시 (중복 토글 방지)
-            if (_lastBadgeClickTime != null) {
-              final timeSinceLastBadgeClick =
-                  DateTime.now().difference(_lastBadgeClickTime!);
-              if (timeSinceLastBadgeClick.inMilliseconds < 300) {
-                debugPrint(
-                  '⏱️ [MOBILE] 마커 클릭 무시 - 최근 뱃지 클릭(${timeSinceLastBadgeClick.inMilliseconds}ms 전)',
-                );
-                return;
-              }
+            // 🎯 Coordinator: 마커 클릭 이벤트 처리 가능 여부 확인
+            final coordinator = Provider.of<MapInteractionCoordinator>(
+              context,
+              listen: false,
+            );
+            if (!coordinator.canProcessEvent(EventType.markerClick)) {
+              debugPrint('🚫 [MOBILE] 마커 클릭 차단 - 다른 인터랙션 진행 중');
+              return;
             }
 
             // 다른 마커 클릭: 해당 매물 선택 (상세 페이지 이동 제거)

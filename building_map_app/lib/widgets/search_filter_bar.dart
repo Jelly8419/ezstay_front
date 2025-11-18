@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/search_filters.dart';
 import '../utils/responsive_util.dart';
+import '../services/map_interaction_coordinator.dart';
 import 'kakao_map_web.dart';
 
 /// 검색 필터 바 위젯 (React MapSearch.tsx 기반)
@@ -82,12 +84,23 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
     try {
       _overlayEntry?.remove();
       _overlayEntry = null;
-      // 드롭다운 닫힐 때 지도 드래그 다시 활성화
-      widget.mapController?.setMapDraggable(true);
+
+      // 🎯 Coordinator: 필터 닫기 → idle 모드 복귀 (지도 드래그 자동 허용)
+      final coordinator = Provider.of<MapInteractionCoordinator>(
+        context,
+        listen: false,
+      );
+      coordinator.exitMode();
     } catch (e) {
       debugPrint('⚠️ Overlay 제거 중 에러: $e');
       _overlayEntry = null;
-      widget.mapController?.setMapDraggable(true);
+
+      // 🎯 Coordinator: 에러 시에도 idle 모드 복귀
+      final coordinator = Provider.of<MapInteractionCoordinator>(
+        context,
+        listen: false,
+      );
+      coordinator.exitMode();
     }
   }
 
@@ -472,8 +485,13 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
     );
 
     Overlay.of(context).insert(_overlayEntry!);
-    // 드롭다운 열릴 때 지도 드래그 비활성화
-    widget.mapController?.setMapDraggable(false);
+
+    // 🎯 Coordinator: 필터 열기 → 필터 모드 진입 (지도 드래그 자동 차단)
+    final coordinator = Provider.of<MapInteractionCoordinator>(
+      context,
+      listen: false,
+    );
+    coordinator.enterMode(InteractionMode.filterOpen);
   }
 
   void _showBuildingTypeDropdown() {
@@ -678,8 +696,13 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
     );
 
     Overlay.of(context).insert(_overlayEntry!);
-    // 드롭다운 열릴 때 지도 드래그 비활성화
-    widget.mapController?.setMapDraggable(false);
+
+    // 🎯 Coordinator: 필터 열기 → 필터 모드 진입 (지도 드래그 자동 차단)
+    final coordinator = Provider.of<MapInteractionCoordinator>(
+      context,
+      listen: false,
+    );
+    coordinator.enterMode(InteractionMode.filterOpen);
   }
 
   void _showRentRangeDropdown() {
@@ -759,8 +782,13 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
     );
 
     Overlay.of(context).insert(_overlayEntry!);
-    // 드롭다운 열릴 때 지도 드래그 비활성화
-    widget.mapController?.setMapDraggable(false);
+
+    // 🎯 Coordinator: 필터 열기 → 필터 모드 진입 (지도 드래그 자동 차단)
+    final coordinator = Provider.of<MapInteractionCoordinator>(
+      context,
+      listen: false,
+    );
+    coordinator.enterMode(InteractionMode.filterOpen);
   }
 
   Widget _buildCalendarDropdown(StateSetter setOverlayState) {
