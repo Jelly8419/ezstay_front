@@ -36,6 +36,7 @@ class Room {
   final bool includeGas; // 관리비에 가스 포함 여부
   final bool includeInternet; // 관리비에 인터넷 포함 여부
   final int cleaningFee; // 청소비
+  final int deposit; // 보증금
 
   // 계약 정보
   final int minContractWeeks; // 최소 계약 주수
@@ -97,6 +98,7 @@ class Room {
     required this.includeGas,
     required this.includeInternet,
     required this.cleaningFee,
+    required this.deposit,
     required this.minContractWeeks,
     required this.refundPolicy,
     this.description,
@@ -165,6 +167,7 @@ class Room {
       includeGas: json['includeGas'] as bool? ?? false,
       includeInternet: json['includeInternet'] as bool? ?? false,
       cleaningFee: json['cleaningFee'] as int? ?? 0,
+      deposit: json['deposit'] as int? ?? 0,
 
       // 계약 정보
       minContractWeeks: json['minContractWeeks'] as int? ?? 4,
@@ -239,6 +242,7 @@ class Room {
       'includeGas': includeGas,
       'includeInternet': includeInternet,
       'cleaningFee': cleaningFee,
+      'deposit': deposit,
       'minContractWeeks': minContractWeeks,
       'refundPolicy': refundPolicy,
       'description': description,
@@ -266,6 +270,9 @@ class Room {
   }
 
   // === 계산 프로퍼티 (Computed Properties) ===
+
+  /// 최소 계약 일수 (주 단위를 일 단위로 변환, React UI 호환)
+  int get minContractDays => minContractWeeks * 7;
 
   /// 1일 임대료로 1주일 임대료 계산
   int get weeklyRent => (dailyRent * 7 / 1000).round() * 1000;
@@ -341,6 +348,7 @@ class Room {
     bool? includeGas,
     bool? includeInternet,
     int? cleaningFee,
+    int? deposit,
     int? minContractWeeks,
     String? refundPolicy,
     String? description,
@@ -394,6 +402,7 @@ class Room {
       includeGas: includeGas ?? this.includeGas,
       includeInternet: includeInternet ?? this.includeInternet,
       cleaningFee: cleaningFee ?? this.cleaningFee,
+      deposit: deposit ?? this.deposit,
       minContractWeeks: minContractWeeks ?? this.minContractWeeks,
       refundPolicy: refundPolicy ?? this.refundPolicy,
       description: description ?? this.description,
