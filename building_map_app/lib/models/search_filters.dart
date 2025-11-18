@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// 검색 필터 모델
 class SearchFilters {
   final DateRange? dateRange;
@@ -20,6 +22,29 @@ class SearchFilters {
         bedroomCounts.isNotEmpty ||
         !priceRange.isDefault ||
         otherOptions.isNotEmpty;
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! SearchFilters) return false;
+
+    return dateRange == other.dateRange &&
+        setEquals(buildingTypes, other.buildingTypes) &&
+        setEquals(bedroomCounts, other.bedroomCounts) &&
+        priceRange == other.priceRange &&
+        setEquals(otherOptions, other.otherOptions);
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      dateRange,
+      Object.hashAll(buildingTypes),
+      Object.hashAll(bedroomCounts),
+      priceRange,
+      Object.hashAll(otherOptions),
+    );
   }
 
   SearchFilters copyWith({
@@ -94,6 +119,17 @@ class DateRange {
     return duration >= 7 && duration <= 90;
   }
 
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! DateRange) return false;
+
+    return startDate == other.startDate && endDate == other.endDate;
+  }
+
+  @override
+  int get hashCode => Object.hash(startDate, endDate);
+
   Map<String, dynamic> toJson() {
     return {
       'startDate': startDate.toIso8601String(),
@@ -123,13 +159,26 @@ class PriceRange {
     return minPrice == 0 && maxPrice == null;
   }
 
-  /// 가격이 범위 내에 있는지 확인
-  bool isInRange(int price) {
-    final priceInManWon = price ~/ 10000;
+  /// 가격이 범위 내에 있는지 확인 (주간 임대료 기준)
+  bool isInRange(int dailyRent) {
+    final weeklyRent = dailyRent * 7;  // 일일 임대료를 주간 임대료로 변환
+    final priceInManWon = weeklyRent ~/ 10000;
+
     if (priceInManWon < minPrice) return false;
     if (maxPrice != null && priceInManWon > maxPrice!) return false;
     return true;
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! PriceRange) return false;
+
+    return minPrice == other.minPrice && maxPrice == other.maxPrice;
+  }
+
+  @override
+  int get hashCode => Object.hash(minPrice, maxPrice);
 
   Map<String, dynamic> toJson() {
     return {
