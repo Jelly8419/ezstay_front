@@ -15,6 +15,7 @@ import 'constants/app_constants.dart';
 import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
 import 'services/room_service.dart';
+import 'services/map_interaction_coordinator.dart';
 import 'providers/chat_provider.dart';
 import 'providers/gnb_provider.dart';
 import 'router/app_router.dart';
@@ -70,6 +71,8 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: authService),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => GNBProvider()),
+        // 지도 상호작용 조정자 (이벤트 충돌 방지)
+        ChangeNotifierProvider(create: (_) => MapInteractionCoordinator()),
         // Firebase 초기화 Future 제공
         Provider<Future<FirebaseApp>>.value(value: firebaseInitFuture),
       ],
