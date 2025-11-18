@@ -32,7 +32,15 @@ jobs:
 
       - name: 🔍 Get GitHub Actions Runner IP
         id: runner-ip
-        uses: haythem/public-ip@v1.3
+        run: |
+          # 여러 공개 IP 서비스를 순차적으로 시도 (fallback)
+          IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || curl -s https://icanhazip.com)
+          if [ -z "$IP" ]; then
+            echo "❌ Failed to get public IP"
+            exit 1
+          fi
+          echo "ipv4=$IP" >> $GITHUB_OUTPUT
+          echo "✅ Runner IP: $IP"
 
       - name: 🔓 Add Runner IP to AWS Security Group
         env:
