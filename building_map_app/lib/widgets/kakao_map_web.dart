@@ -25,6 +25,11 @@ class KakaoMapWebController {
   void selectMarker(int roomId) {
     _state?.selectMarker(roomId);
   }
+
+  /// 지도 드래그 활성화/비활성화 (드롭다운 열림/닫힘 시 호출)
+  void setMapDraggable(bool enabled) {
+    _state?.setMapDraggable(enabled);
+  }
 }
 
 /// 웹용 카카오 지도 위젯 (JavaScript SDK 직접 사용)
@@ -124,15 +129,39 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
       if (messageEvent.data is Map &&
           messageEvent.data['type'] == 'marker_click') {
         final data = messageEvent.data;
-        final roomId = data['roomId'] as int;
 
-        // 클릭된 방의 정보를 찾아서 콜백 호출
+        // 클러스터 클릭인지 개별 마커 클릭인지 구분
+        final clusterRoomIds = data['clusterRoomIds'] as List?;
+
+        // 클러스터 이벤트인 경우 (clusterRoomIds가 2개 이상이면) onMarkerTap 호출하지 않음
+        // → map_screen.dart의 _setupClusterClickListener()가 처리
+        // 개별 마커는 클러스터 크기가 1이므로 onMarkerTap 호출해야 함
+        if (clusterRoomIds != null && clusterRoomIds.length > 1) {
+          debugPrint('🎯 [MAP WEB] 클러스터 이벤트 감지 (${clusterRoomIds.length}개) - onMarkerTap 스킵');
+          return;
+        }
+
+        // 개별 마커 이벤트인 경우 (clusterRoomIds 필드 없음) onMarkerTap 콜백 호출
+        final roomId = data['roomId'] as int?;
+        if (roomId == null) return;
+
+        // roomId: -1인 경우 → 개별 마커 재클릭 (선택 해제)
+        if (roomId == -1) {
+          debugPrint('🔄 [MAP WEB] 개별 마커 재클릭 감지 (roomId: -1) - 선택 해제');
+          if (widget.onMarkerTap != null) {
+            widget.onMarkerTap!({'id': -1}); // 특수 마커로 재클릭 이벤트 전달
+          }
+          return;
+        }
+
+        // 일반 개별 마커 클릭: 클릭된 방의 정보를 찾아서 콜백 호출
         final clickedRoom = widget.rooms.firstWhere(
           (room) => room['id'] == roomId,
           orElse: () => {},
         );
 
         if (clickedRoom.isNotEmpty && widget.onMarkerTap != null) {
+          debugPrint('📍 [MAP WEB] 개별 마커 클릭 - roomId: $roomId');
           widget.onMarkerTap!(clickedRoom);
         }
       }
@@ -353,18 +382,18 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
             // 같은 마커 재클릭 시 토글 (선택 해제)
             if (container._selectedMarkerId === clickedRoomId) {
-              console.log('🔄 [JS] 같은 마커 재클릭 - 선택 해제 및 전체 매물 표시');
+              console.log('🔄 [JS] 같은 마커 재클릭 - 선택 해제');
               container._selectedMarkerId = null;
               content.style.backgroundColor = 'white';
               content.style.color = '#1F2937';
               content.style.border = '1px solid #E5E7EB';
               content.style.zIndex = '10';
 
-              // Flutter로 빈 배열 전송 (클러스터 필터링 해제)
+              // Flutter로 메시지 전송 (개별 마커 재클릭이므로 clusterRoomIds 필드 제외)
               window.postMessage({
                 type: 'marker_click',
-                roomId: -1,
-                clusterRoomIds: [] // 빈 배열: 전체 매물 표시
+                roomId: -1
+                // clusterRoomIds 필드 제거 → 개별 마커 재클릭임을 나타냄
               }, '*');
               return; // 조기 종료
             }
@@ -452,6 +481,26 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
     js.context.callMethod('eval', [jsCode]);
   }
 
+  /// 지도 드래그 활성화/비활성화
+  void setMapDraggable(bool enabled) {
+    final jsCode =
+        '''
+      (function() {
+        var container = document.getElementById('$_viewId');
+        if (!container || !container._kakaoMap) {
+          console.warn('[지도 드래그 제어] 지도 인스턴스를 찾을 수 없습니다');
+          return;
+        }
+
+        var map = container._kakaoMap;
+        map.setDraggable($enabled);
+        console.log('[지도 드래그 제어] 드래그 ${enabled ? '활성화' : '비활성화'}됨');
+      })();
+    ''';
+
+    js.context.callMethod('eval', [jsCode]);
+  }
+
   void _initMap() {
     debugPrint('🚀 [MAP WEB] _initMap 호출됨! 지도 초기화 시작');
     int attempts = 0;
@@ -523,7 +572,7 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
             // 커스텀 라운드 줌 컨트롤 생성
             var zoomControlDiv = document.createElement('div');
-            zoomControlDiv.style.cssText = 'position:absolute;bottom:24px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:100;';
+            zoomControlDiv.style.cssText = 'position:absolute;top:24px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:100;';
 
             // 줌 인 버튼 (+)
             var zoomInBtn = document.createElement('button');

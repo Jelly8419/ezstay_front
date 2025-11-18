@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/search_filters.dart';
 import '../utils/responsive_util.dart';
+import 'kakao_map_web.dart';
 
 /// 검색 필터 바 위젯 (React MapSearch.tsx 기반)
 /// React 코드에 맞춰 3개 필터만 사용: 임대 기간, 건물 유형, 임대료
@@ -8,11 +9,13 @@ import '../utils/responsive_util.dart';
 class SearchFilterBar extends StatefulWidget {
   final SearchFilters filters;
   final Function(SearchFilters) onFiltersChanged;
+  final KakaoMapWebController? mapController;
 
   const SearchFilterBar({
     super.key,
     required this.filters,
     required this.onFiltersChanged,
+    this.mapController,
   });
 
   @override
@@ -79,9 +82,12 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
     try {
       _overlayEntry?.remove();
       _overlayEntry = null;
+      // 드롭다운 닫힐 때 지도 드래그 다시 활성화
+      widget.mapController?.setMapDraggable(true);
     } catch (e) {
       debugPrint('⚠️ Overlay 제거 중 에러: $e');
       _overlayEntry = null;
+      widget.mapController?.setMapDraggable(true);
     }
   }
 
@@ -96,9 +102,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -164,14 +168,57 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                           isActive: !_currentFilters.priceRange.isDefault,
                           onTap: () => _showRentRangeDropdown(),
                         ),
+
+                  // 데스크톱 필터 초기화 버튼 (임대료 필터 옆)
+                  if (!isMobile && _currentFilters.hasActiveFilters) ...[
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _currentFilters = const SearchFilters();
+                          _rangeStart = null;
+                          _rangeEnd = null;
+                          _selectedBuildingTypes.clear();
+                          _rentMin = 0;
+                          _rentMax = 150;
+                        });
+                        widget.onFiltersChanged(_currentFilters);
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '전체 초기화',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
 
-          // 필터 초기화 버튼
-          if (_currentFilters.hasActiveFilters) ...[
-            const SizedBox(width: 12),
+          // 모바일 필터 초기화 버튼 (우측 고정)
+          if (isMobile && _currentFilters.hasActiveFilters) ...[
+            const SizedBox(width: 8),
             InkWell(
               onTap: () {
                 setState(() {
@@ -186,23 +233,8 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               },
               borderRadius: BorderRadius.circular(8),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.close, size: 16, color: Colors.grey[600]),
-                    if (!isMobile) ...[
-                      const SizedBox(width: 4),
-                      Text(
-                        '초기화',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                padding: const EdgeInsets.all(8),
+                child: Icon(Icons.refresh, size: 20, color: Colors.grey[700]),
               ),
             ),
           ],
@@ -241,10 +273,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
             if (showOnlyValue)
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
               )
             else ...[
               Text(
@@ -258,18 +287,11 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               const SizedBox(width: 8),
               Text(
                 value,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
             ],
             const SizedBox(width: 8),
-            Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
-              color: Colors.grey[600],
-            ),
+            Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.grey[600]),
           ],
         ),
       ),
@@ -351,8 +373,8 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
 
   String _formatBuildingTypeDesktop() {
     if (_selectedBuildingTypes.isEmpty) return '전체';
-    if (_selectedBuildingTypes.length == 1) return _selectedBuildingTypes.first;
-    return '${_selectedBuildingTypes.length}개 선택';
+    // 다중 선택 시 모든 유형을 쉼표로 구분하여 표시 (예: '원룸, 오피스텔')
+    return _selectedBuildingTypes.join(', ');
   }
 
   String _formatRentRangeMobile() {
@@ -380,7 +402,8 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
   void _showDateRangeDropdown() {
     _removeOverlay();
 
-    final renderBox = _dateRangeButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox =
+        _dateRangeButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null || !renderBox.hasSize) return;
 
     final offset = renderBox.localToGlobal(Offset.zero);
@@ -401,7 +424,13 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                     onPanUpdate: (_) {}, // 드래그 중 차단
                     onPanEnd: (_) {}, // 드래그 끝 차단
                     behavior: HitTestBehavior.opaque,
-                    child: Container(color: Colors.transparent),
+                    child: Listener(
+                      onPointerDown: (_) {}, // 포인터 이벤트 완전 차단
+                      onPointerMove: (_) {},
+                      onPointerUp: (_) {},
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(color: Colors.transparent),
+                    ),
                   ),
                 ),
                 // 드롭다운 (React: rounded-xl, shadow-xl, min-w-[320px])
@@ -412,19 +441,25 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                     onPanDown: (_) {}, // 드래그 이벤트 흡수
                     onPanUpdate: (_) {},
                     onPanEnd: (_) {},
-                    behavior: HitTestBehavior.translucent,
-                    child: Material(
-                      elevation: 8,
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: 320,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[200]!),
+                    behavior: HitTestBehavior.opaque,
+                    child: Listener(
+                      onPointerDown: (_) {},
+                      onPointerMove: (_) {},
+                      onPointerUp: (_) {},
+                      behavior: HitTestBehavior.opaque,
+                      child: Material(
+                        elevation: 8,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          width: 320,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey[200]!),
+                          ),
+                          child: _buildCalendarDropdown(setOverlayState),
                         ),
-                        child: _buildCalendarDropdown(setOverlayState),
                       ),
                     ),
                   ),
@@ -437,12 +472,15 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
     );
 
     Overlay.of(context).insert(_overlayEntry!);
+    // 드롭다운 열릴 때 지도 드래그 비활성화
+    widget.mapController?.setMapDraggable(false);
   }
 
   void _showBuildingTypeDropdown() {
     _removeOverlay();
 
-    final renderBox = _buildingTypeButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox =
+        _buildingTypeButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null || !renderBox.hasSize) return;
 
     final offset = renderBox.localToGlobal(Offset.zero);
@@ -465,7 +503,13 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                     onPanUpdate: (_) {}, // 드래그 중 차단
                     onPanEnd: (_) {}, // 드래그 끝 차단
                     behavior: HitTestBehavior.opaque,
-                    child: Container(color: Colors.transparent),
+                    child: Listener(
+                      onPointerDown: (_) {}, // 포인터 이벤트 완전 차단
+                      onPointerMove: (_) {},
+                      onPointerUp: (_) {},
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(color: Colors.transparent),
+                    ),
                   ),
                 ),
                 // 드롭다운 (너비 1.5배 확장: 160px → 240px)
@@ -476,142 +520,173 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                     onPanDown: (_) {}, // 드래그 이벤트 흡수
                     onPanUpdate: (_) {},
                     onPanEnd: (_) {},
-                    behavior: HitTestBehavior.translucent,
-                    child: Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        width: 240,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 헤더
-                            Text(
-                              '건물 유형',
-                              style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[700],
-                            ),
+                    behavior: HitTestBehavior.opaque,
+                    child: Listener(
+                      onPointerDown: (_) {},
+                      onPointerMove: (_) {},
+                      onPointerUp: (_) {},
+                      behavior: HitTestBehavior.opaque,
+                      child: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: 240,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey[200]!),
                           ),
-                          const SizedBox(height: 12),
-                          // 체크박스 리스트
-                          ...types.asMap().entries.map((entry) {
-                            final type = entry.value;
-                            final isSelected = _selectedBuildingTypes.contains(type);
-
-                            return InkWell(
-                              onTap: () {
-                                setOverlayState(() {
-                                  if (type == '전체') {
-                                    // '전체' 클릭 시 모든 선택 해제
-                                    _selectedBuildingTypes.clear();
-                                  } else {
-                                    // 개별 항목 토글
-                                    if (isSelected) {
-                                      _selectedBuildingTypes.remove(type);
-                                    } else {
-                                      _selectedBuildingTypes.add(type);
-                                    }
-                                  }
-                                });
-                              },
-                              borderRadius: BorderRadius.circular(8),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                child: Row(
-                                  children: [
-                                    // 체크박스
-                                    Container(
-                                      width: 20,
-                                      height: 20,
-                                      decoration: BoxDecoration(
-                                        color: isSelected ? const Color(0xFF3B82F6) : Colors.white,
-                                        border: Border.all(
-                                          color: isSelected ? const Color(0xFF3B82F6) : Colors.grey[400]!,
-                                          width: 2,
-                                        ),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: isSelected
-                                          ? const Icon(
-                                              Icons.check,
-                                              size: 14,
-                                              color: Colors.white,
-                                            )
-                                          : null,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    // 라벨
-                                    Expanded(
-                                      child: Text(
-                                        type,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                          color: isSelected ? const Color(0xFF3B82F6) : Colors.black87,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 헤더
+                              Text(
+                                '건물 유형',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey[700],
                                 ),
                               ),
-                            );
-                          }),
-                          const SizedBox(height: 12),
-                          // 적용 버튼
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _currentFilters = _currentFilters.copyWith(
-                                    buildingTypes: _selectedBuildingTypes,
-                                  );
-                                });
-                                widget.onFiltersChanged(_currentFilters);
-                                _removeOverlay();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF3B82F6),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              const SizedBox(height: 12),
+                              // 체크박스 리스트
+                              ...types.asMap().entries.map((entry) {
+                                final type = entry.value;
+                                final isSelected = _selectedBuildingTypes
+                                    .contains(type);
+
+                                return InkWell(
+                                  onTap: () {
+                                    setOverlayState(() {
+                                      if (type == '전체') {
+                                        // '전체' 클릭 시 모든 선택 해제
+                                        _selectedBuildingTypes.clear();
+                                      } else {
+                                        // 개별 항목 토글
+                                        if (isSelected) {
+                                          _selectedBuildingTypes.remove(type);
+                                        } else {
+                                          _selectedBuildingTypes.add(type);
+                                        }
+                                      }
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        // 체크박스
+                                        Container(
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? const Color(0xFF3B82F6)
+                                                : Colors.white,
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? const Color(0xFF3B82F6)
+                                                  : Colors.grey[400]!,
+                                              width: 2,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: isSelected
+                                              ? const Icon(
+                                                  Icons.check,
+                                                  size: 14,
+                                                  color: Colors.white,
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        // 라벨
+                                        Expanded(
+                                          child: Text(
+                                            type,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w600
+                                                  : FontWeight.normal,
+                                              color: isSelected
+                                                  ? const Color(0xFF3B82F6)
+                                                  : Colors.black87,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                              const SizedBox(height: 12),
+                              // 적용 버튼
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _currentFilters = _currentFilters
+                                          .copyWith(
+                                            buildingTypes:
+                                                _selectedBuildingTypes,
+                                          );
+                                    });
+                                    widget.onFiltersChanged(_currentFilters);
+                                    _removeOverlay();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF3B82F6),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    '적용',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
                               ),
-                              child: const Text(
-                                '적용',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                              ),
-                            ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
-    ),
-  );
+              ],
+            ),
+          );
+        },
+      ),
+    );
 
-  Overlay.of(context).insert(_overlayEntry!);
-}
+    Overlay.of(context).insert(_overlayEntry!);
+    // 드롭다운 열릴 때 지도 드래그 비활성화
+    widget.mapController?.setMapDraggable(false);
+  }
 
-void _showRentRangeDropdown() {
+  void _showRentRangeDropdown() {
     _removeOverlay();
 
-    final renderBox = _rentRangeButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox =
+        _rentRangeButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null || !renderBox.hasSize) return;
 
     final offset = renderBox.localToGlobal(Offset.zero);
@@ -634,30 +709,44 @@ void _showRentRangeDropdown() {
                     onPanUpdate: (_) {}, // 드래그 중 차단
                     onPanEnd: (_) {}, // 드래그 끝 차단
                     behavior: HitTestBehavior.opaque,
-                    child: Container(color: Colors.transparent),
+                    child: Listener(
+                      onPointerDown: (_) {}, // 포인터 이벤트 완전 차단
+                      onPointerMove: (_) {},
+                      onPointerUp: (_) {},
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(color: Colors.transparent),
+                    ),
                   ),
                 ),
                 // 드롭다운 (React: rounded-lg, shadow-lg, w-[90vw] lg:w-auto max-w-[360px])
                 Positioned(
                   top: offset.dy + size.height + 4,
-                  left: isMobile ? (screenWidth - (screenWidth * 0.9)) / 2 : offset.dx,
+                  left: isMobile
+                      ? (screenWidth - (screenWidth * 0.9)) / 2
+                      : offset.dx,
                   child: GestureDetector(
                     onPanDown: (_) {}, // 드래그 이벤트 흡수
                     onPanUpdate: (_) {},
                     onPanEnd: (_) {},
-                    behavior: HitTestBehavior.translucent,
-                    child: Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        width: isMobile ? screenWidth * 0.9 : 360,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[200]!),
+                    behavior: HitTestBehavior.opaque,
+                    child: Listener(
+                      onPointerDown: (_) {},
+                      onPointerMove: (_) {},
+                      onPointerUp: (_) {},
+                      behavior: HitTestBehavior.opaque,
+                      child: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: isMobile ? screenWidth * 0.9 : 360,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey[200]!),
+                          ),
+                          child: _buildRentRangeDropdown(setOverlayState),
                         ),
-                        child: _buildRentRangeDropdown(setOverlayState),
                       ),
                     ),
                   ),
@@ -670,6 +759,8 @@ void _showRentRangeDropdown() {
     );
 
     Overlay.of(context).insert(_overlayEntry!);
+    // 드롭다운 열릴 때 지도 드래그 비활성화
+    widget.mapController?.setMapDraggable(false);
   }
 
   Widget _buildCalendarDropdown(StateSetter setOverlayState) {
@@ -684,7 +775,10 @@ void _showRentRangeDropdown() {
             IconButton(
               onPressed: () {
                 setOverlayState(() {
-                  _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1);
+                  _focusedMonth = DateTime(
+                    _focusedMonth.year,
+                    _focusedMonth.month - 1,
+                  );
                 });
               },
               icon: const Icon(Icons.chevron_left, size: 20),
@@ -692,7 +786,9 @@ void _showRentRangeDropdown() {
               constraints: const BoxConstraints(),
               style: IconButton.styleFrom(
                 backgroundColor: Colors.grey[100],
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             Text(
@@ -706,7 +802,10 @@ void _showRentRangeDropdown() {
             IconButton(
               onPressed: () {
                 setOverlayState(() {
-                  _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1);
+                  _focusedMonth = DateTime(
+                    _focusedMonth.year,
+                    _focusedMonth.month + 1,
+                  );
                 });
               },
               icon: const Icon(Icons.chevron_right, size: 20),
@@ -714,7 +813,9 @@ void _showRentRangeDropdown() {
               constraints: const BoxConstraints(),
               style: IconButton.styleFrom(
                 backgroundColor: Colors.grey[100],
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ],
@@ -724,7 +825,9 @@ void _showRentRangeDropdown() {
         // 요일 헤더
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: ['일', '월', '화', '수', '목', '금', '토'].asMap().entries.map((entry) {
+          children: ['일', '월', '화', '수', '목', '금', '토'].asMap().entries.map((
+            entry,
+          ) {
             final index = entry.key;
             final day = entry.value;
             return SizedBox(
@@ -737,8 +840,8 @@ void _showRentRangeDropdown() {
                   color: index == 0
                       ? Colors.red[600]
                       : index == 6
-                          ? Colors.blue[600]
-                          : Colors.grey[600],
+                      ? Colors.blue[600]
+                      : Colors.grey[600],
                 ),
               ),
             );
@@ -800,9 +903,14 @@ void _showRentRangeDropdown() {
                 _removeOverlay();
               },
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 10,
+                ),
                 side: BorderSide(color: Colors.grey[300]!),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               child: const Text(
                 '초기화',
@@ -817,8 +925,16 @@ void _showRentRangeDropdown() {
 
   /// 날짜 그리드 생성 (React 스타일)
   Widget _buildDateGrid(StateSetter setOverlayState) {
-    final firstDayOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
-    final lastDayOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
+    final firstDayOfMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month,
+      1,
+    );
+    final lastDayOfMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month + 1,
+      0,
+    );
     final firstWeekday = firstDayOfMonth.weekday % 7; // 일요일=0, 월요일=1, ...
     final daysInMonth = lastDayOfMonth.day;
 
@@ -868,14 +984,20 @@ void _showRentRangeDropdown() {
   /// 날짜 셀 생성
   Widget _buildDateCell(DateTime date, StateSetter setOverlayState) {
     final today = DateTime.now();
-    final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
+    final isToday =
+        date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day;
     final isPast = date.isBefore(DateTime(today.year, today.month, today.day));
 
     // 선택 상태 확인
     final isStart = _rangeStart != null && _isSameDay(date, _rangeStart!);
     final isEnd = _rangeEnd != null && _isSameDay(date, _rangeEnd!);
-    final isInRange = _rangeStart != null && _rangeEnd != null &&
-                      date.isAfter(_rangeStart!) && date.isBefore(_rangeEnd!);
+    final isInRange =
+        _rangeStart != null &&
+        _rangeEnd != null &&
+        date.isAfter(_rangeStart!) &&
+        date.isBefore(_rangeEnd!);
 
     // 색상 결정
     Color? backgroundColor;
@@ -926,27 +1048,32 @@ void _showRentRangeDropdown() {
     );
   }
 
-  /// 날짜 선택 핸들러 (React 로직)
+  /// 날짜 선택 핸들러 (React 로직 + UX 개선)
   void _onDateSelected(DateTime selectedDate, StateSetter setOverlayState) {
     setOverlayState(() {
       // 1. 시작일만 선택된 상태 → 종료일 선택
       if (_rangeStart != null && _rangeEnd == null) {
-        // 시작일보다 이전 날짜 선택 시 시작일 재설정
-        if (selectedDate.isBefore(_rangeStart!)) {
-          _rangeStart = _normalizeDate(selectedDate);
-          _rangeEnd = null;
-          return;
-        }
-
         // 같은 날짜 선택 시 무시
         if (_isSameDay(selectedDate, _rangeStart!)) {
           return;
         }
 
+        // 날짜 순서 자동 정렬 (빠른 날짜를 체크인, 느린 날짜를 체크아웃으로)
+        final DateTime earlierDate;
+        final DateTime laterDate;
+
+        if (selectedDate.isBefore(_rangeStart!)) {
+          earlierDate = _normalizeDate(selectedDate);
+          laterDate = _normalizeDate(_rangeStart!);
+        } else {
+          earlierDate = _normalizeDate(_rangeStart!);
+          laterDate = _normalizeDate(selectedDate);
+        }
+
         // 최소 기간 체크 (7일)
-        final duration = selectedDate.difference(_rangeStart!).inDays;
+        final duration = laterDate.difference(earlierDate).inDays;
         if (duration < 7) {
-          // 에러 표시 (3초 후 자동 제거)
+          // 에러 표시 (2초 후 자동 제거)
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('이지스테이는 최소 7일부터 예약할 수 있어요'),
@@ -969,8 +1096,9 @@ void _showRentRangeDropdown() {
           return;
         }
 
-        // 종료일 설정
-        _rangeEnd = _normalizeDate(selectedDate);
+        // 체크인/체크아웃 날짜 설정 (자동 정렬됨)
+        _rangeStart = earlierDate;
+        _rangeEnd = laterDate;
 
         // 필터 업데이트 및 드롭다운 닫기
         setState(() {
@@ -1037,7 +1165,7 @@ void _showRentRangeDropdown() {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _rentMax == 150 ? '150만원+' : '${_rentMax.toInt()}만원',
+                  _rentMax == 150 ? '전체' : '${_rentMax.toInt()}만원',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -1058,7 +1186,7 @@ void _showRentRangeDropdown() {
           divisions: 15,
           labels: RangeLabels(
             '${_rentMin.toInt()}만원',
-            _rentMax == 150 ? '150만원+' : '${_rentMax.toInt()}만원',
+            _rentMax == 150 ? '전체' : '${_rentMax.toInt()}만원',
           ),
           activeColor: const Color(0xFF3B82F6),
           inactiveColor: Colors.grey[300],
@@ -1086,7 +1214,9 @@ void _showRentRangeDropdown() {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   side: BorderSide(color: Colors.grey[300]!),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 child: const Text(
                   '초기화',
@@ -1114,7 +1244,9 @@ void _showRentRangeDropdown() {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 child: const Text(
                   '적용',
