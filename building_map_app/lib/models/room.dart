@@ -1,5 +1,5 @@
 import 'room_photo.dart';
-import 'room_amenity.dart';
+import 'room_amenity_freezed.dart';
 import 'room_free_service.dart';
 import 'rental_item.dart';
 
@@ -22,6 +22,7 @@ class Room {
   final int livingRoomCount; // 거실 개수
   final int kitchenCount; // 주방 개수
   final bool isDuplex; // 복층 여부
+  final int maxGuests; // 권장 최대 인원
 
   // 가격 정보
   final int dailyRent; // 일 임대료
@@ -56,7 +57,7 @@ class Room {
 
   // 연관 데이터
   final List<RoomPhoto> photos;
-  final RoomAmenity? amenity;
+  final RoomAmenityFreezed? amenity;
   final RoomFreeService? freeService;
   final AvailableRentalItems? availableRentalItems;
 
@@ -86,11 +87,12 @@ class Room {
     required this.livingRoomCount,
     required this.kitchenCount,
     required this.isDuplex,
+    required this.maxGuests,
     required this.dailyRent,
-    required this.longTermWeeks,
-    required this.longTermDiscount,
+    this.longTermWeeks,
+    this.longTermDiscount,
     this.quickMoveIn,
-    required this.quickMoveInDiscount,
+    this.quickMoveInDiscount,
     required this.dailyMaintenanceFee,
     this.maintenanceDetail,
     required this.includeElectricity,
@@ -152,14 +154,15 @@ class Room {
       livingRoomCount: json['livingRoomCount'] as int? ?? 0,
       kitchenCount: json['kitchenCount'] as int? ?? 0,
       isDuplex: json['isDuplex'] as bool? ?? false,
+      maxGuests: json['maxGuests'] as int? ?? 2,
 
       // 가격 정보
       dailyRent: json['dailyRent'] as int? ?? 0,
-      // discounts 객체에서 할인 정보 파싱 (nullable 유지)
-      longTermWeeks: json['discounts']?['longTermWeeks'] as int? ?? json['longTermWeeks'] as int?,
-      longTermDiscount: json['discounts']?['longTermDiscount'] as int? ?? json['longTermDiscount'] as int?,
-      quickMoveIn: json['discounts']?['quickMoveIn'] as int? ?? json['quickMoveIn'] as int?,
-      quickMoveInDiscount: json['discounts']?['quickMoveInDiscount'] as int? ?? json['quickMoveInDiscount'] as int?,
+      // discounts 객체에서 할인 정보 파싱 (nullable with explicit null handling)
+      longTermWeeks: _parseNullableInt(json['discounts']?['longTermWeeks']) ?? _parseNullableInt(json['longTermWeeks']),
+      longTermDiscount: _parseNullableInt(json['discounts']?['longTermDiscount']) ?? _parseNullableInt(json['longTermDiscount']),
+      quickMoveIn: _parseNullableInt(json['discounts']?['quickMoveIn']) ?? _parseNullableInt(json['quickMoveIn']),
+      quickMoveInDiscount: _parseNullableInt(json['discounts']?['quickMoveInDiscount']) ?? _parseNullableInt(json['quickMoveInDiscount']),
       dailyMaintenanceFee: json['dailyMaintenanceFee'] as int? ?? 0,
       maintenanceDetail: json['maintenanceDetail'] as String?,
       includeElectricity: json['includeElectricity'] as bool? ?? false,
@@ -187,7 +190,7 @@ class Room {
 
       // 연관 데이터
       photos: photoList,
-      amenity: json['amenity'] != null ? RoomAmenity.fromJson(json['amenity'] as Map<String, dynamic>) : null,
+      amenity: json['amenity'] != null ? RoomAmenityFreezed.fromJson(json['amenity'] as Map<String, dynamic>) : null,
       freeService: json['freeService'] != null ? RoomFreeService.fromJson(json['freeService'] as Map<String, dynamic>) : null,
       availableRentalItems: json['availableRentalItems'] != null ? AvailableRentalItems.fromJson(json['availableRentalItems'] as Map<String, dynamic>) : null,
 
@@ -212,6 +215,14 @@ class Room {
     return 0.0;
   }
 
+  /// nullable int 값을 안전하게 파싱 (null, int, String 지원)
+  static int? _parseNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -230,6 +241,7 @@ class Room {
       'livingRoomCount': livingRoomCount,
       'kitchenCount': kitchenCount,
       'isDuplex': isDuplex,
+      'maxGuests': maxGuests,
       'dailyRent': dailyRent,
       'longTermWeeks': longTermWeeks,
       'longTermDiscount': longTermDiscount,
@@ -336,6 +348,7 @@ class Room {
     int? livingRoomCount,
     int? kitchenCount,
     bool? isDuplex,
+    int? maxGuests,
     int? dailyRent,
     int? longTermWeeks,
     int? longTermDiscount,
@@ -362,7 +375,7 @@ class Room {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<RoomPhoto>? photos,
-    RoomAmenity? amenity,
+    RoomAmenityFreezed? amenity,
     RoomFreeService? freeService,
     AvailableRentalItems? availableRentalItems,
     bool? isNearSubway,
@@ -390,6 +403,7 @@ class Room {
       livingRoomCount: livingRoomCount ?? this.livingRoomCount,
       kitchenCount: kitchenCount ?? this.kitchenCount,
       isDuplex: isDuplex ?? this.isDuplex,
+      maxGuests: maxGuests ?? this.maxGuests,
       dailyRent: dailyRent ?? this.dailyRent,
       longTermWeeks: longTermWeeks ?? this.longTermWeeks,
       longTermDiscount: longTermDiscount ?? this.longTermDiscount,

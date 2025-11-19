@@ -13,8 +13,8 @@ class RoomPhoto {
   factory RoomPhoto.fromJson(Map<String, dynamic> json) {
     return RoomPhoto(
       id: json['id'] as int?,
-      url: json['url'] as String,
-      order: json['order'] as int,
+      url: json['url'] as String? ?? '',  // ✅ null 안전 처리
+      order: json['order'] as int? ?? 0,  // ✅ null 안전 처리 + 기본값
     );
   }
 

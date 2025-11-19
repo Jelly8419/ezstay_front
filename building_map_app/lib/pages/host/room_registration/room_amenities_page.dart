@@ -9,9 +9,10 @@ import 'dart:io';
 import 'dart:convert';
 import '../../../widgets/common/responsive_page_layout.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../shared/widgets/app_buttons.dart';
+import '../../../models/room_amenity_freezed.dart';
+import '../../../models/amenity/basic_options.dart';
+import '../../../models/amenity/additional_options.dart';
+import '../../../models/amenity/convenience_options.dart';
 
 /// 사진 및 편의시설 페이지
 class RoomAmenitiesPage extends StatefulWidget {
@@ -33,50 +34,8 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
   // 서버에서 받은 사진 URL 목록 (이미 업로드된 사진)
   List<Map<String, dynamic>> _existingPhotos = [];
 
-  // 기본 옵션
-  bool _refrigerator = false;
-  bool _washingMachine = false;
-  bool _airConditioner = false;
-  bool _sink = false;
-  bool _bed = false;
-  bool _tv = false;
-  bool _internet = false;
-
-  // 추가 옵션
-  bool _doorLock = false;
-  bool _cctv = false;
-  bool _managementOffice = false;
-  bool _gasRange = false;
-  bool _induction = false;
-  bool _microwave = false;
-  bool _diningTable = false;
-  bool _shoeRack = false;
-  bool _wardrobe = false;
-  bool _dressRoom = false;
-  bool _vanity = false;
-  bool _cableTv = false;
-  bool _sofa = false;
-  bool _desk = false;
-  bool _curtain = false;
-  bool _balcony = false;
-
-  // 편의 옵션
-  bool _heatingCooling = false;
-  bool _heater = false;
-  bool _airPurifier = false;
-  bool _dryer = false;
-  bool _iron = false;
-  bool _waterPurifier = false;
-  bool _riceCooker = false;
-  bool _electricKettle = false;
-  bool _dishes = false;
-  bool _cookware = false;
-  bool _bathtub = false;
-  bool _hairDryer = false;
-  bool _bidet = false;
-
-  // 반려동물
-  bool _petsAllowed = false;
+  // 편의시설 정보 (Freezed 모델 사용)
+  RoomAmenityFreezed? _amenity;
 
   @override
   void initState() {
@@ -104,68 +63,49 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
     final roomData = await _roomService.getRoom(_roomId!);
     if (roomData != null && mounted) {
       setState(() {
-        // 편의시설 정보가 있으면 채우기
+        // 편의시설 정보가 있으면 Freezed 모델로 파싱
         if (roomData['amenities'] != null) {
-          final amenities = roomData['amenities'];
+          final amenitiesData = roomData['amenities'];
 
-          // 기본 옵션 (JSON 문자열을 파싱)
-          if (amenities['basicOptions'] != null) {
-            final basicStr = amenities['basicOptions'];
-            final basic = basicStr is String ? json.decode(basicStr) : basicStr;
-            _refrigerator = _toBool(basic['refrigerator']);
-            _washingMachine = _toBool(basic['washingMachine']);
-            _airConditioner = _toBool(basic['airConditioner']);
-            _sink = _toBool(basic['sink']);
-            _bed = _toBool(basic['bed']);
-            _tv = _toBool(basic['tv']);
-            _internet = _toBool(basic['internet']);
-          }
+          try {
+            // 백엔드 응답 구조에 따라 파싱
+            final basicOptionsJson = _parseOptionsJson(amenitiesData['basicOptions']);
+            final additionalOptionsJson = _parseOptionsJson(amenitiesData['additionalOptions']);
+            final convenienceOptionsJson = _parseOptionsJson(amenitiesData['convenienceOptions']);
 
-          // 추가 옵션 (JSON 문자열을 파싱)
-          if (amenities['additionalOptions'] != null) {
-            final additionalStr = amenities['additionalOptions'];
-            final additional = additionalStr is String ? json.decode(additionalStr) : additionalStr;
-            _doorLock = _toBool(additional['doorLock']);
-            _cctv = _toBool(additional['cctv']);
-            _managementOffice = _toBool(additional['managementOffice']);
-            _gasRange = _toBool(additional['gasRange']);
-            _induction = _toBool(additional['induction']);
-            _microwave = _toBool(additional['microwave']);
-            _diningTable = _toBool(additional['diningTable']);
-            _shoeRack = _toBool(additional['shoeRack']);
-            _wardrobe = _toBool(additional['wardrobe']);
-            _dressRoom = _toBool(additional['dressRoom']);
-            _vanity = _toBool(additional['vanity']);
-            _cableTv = _toBool(additional['cableTv']);
-            _sofa = _toBool(additional['sofa']);
-            _desk = _toBool(additional['desk']);
-            _curtain = _toBool(additional['curtain']);
-            _balcony = _toBool(additional['balcony']);
-          }
+            // petsAllowed는 최상위 필드에서 읽기 (필터 기능 확장성)
+            // 백엔드가 snake_case 또는 camelCase 사용할 수 있으므로 둘 다 대응
+            final petsAllowed = _toBool(
+              roomData['petAllowed'] ??
+              roomData['pet_allowed'] ??
+              amenitiesData['petsAllowed'] // 하위 호환성 유지
+            );
 
-          // 편의 옵션 (JSON 문자열을 파싱)
-          if (amenities['convenienceOptions'] != null) {
-            final convenienceStr = amenities['convenienceOptions'];
-            final convenience = convenienceStr is String ? json.decode(convenienceStr) : convenienceStr;
-            _heatingCooling = _toBool(convenience['heatingCooling']);
-            _heater = _toBool(convenience['heater']);
-            _airPurifier = _toBool(convenience['airPurifier']);
-            _dryer = _toBool(convenience['dryer']);
-            _iron = _toBool(convenience['iron']);
-            _waterPurifier = _toBool(convenience['waterPurifier']);
-            _riceCooker = _toBool(convenience['riceCooker']);
-            _electricKettle = _toBool(convenience['electricKettle']);
-            _dishes = _toBool(convenience['dishes']);
-            _cookware = _toBool(convenience['cookware']);
-            _bathtub = _toBool(convenience['bathtub']);
-            _hairDryer = _toBool(convenience['hairDryer']);
-            _bidet = _toBool(convenience['bidet']);
+            _amenity = RoomAmenityFreezed(
+              roomId: _roomId!,
+              basicOptions: BasicOptions.fromJson(basicOptionsJson),
+              additionalOptions: AdditionalOptions.fromJson(additionalOptionsJson),
+              convenienceOptions: ConvenienceOptions.fromJson(convenienceOptionsJson),
+              petsAllowed: petsAllowed,
+            );
+          } catch (e) {
+            debugPrint('⚠️ [AMENITIES] 편의시설 로드 실패: $e');
+            // 기본값으로 초기화
+            _amenity = RoomAmenityFreezed(
+              roomId: _roomId!,
+              basicOptions: const BasicOptions(),
+              additionalOptions: const AdditionalOptions(),
+              convenienceOptions: const ConvenienceOptions(),
+            );
           }
-
-          // 반려동물
-          if (amenities['petsAllowed'] != null) {
-            _petsAllowed = _toBool(amenities['petsAllowed']);
-          }
+        } else {
+          // 편의시설 정보가 없으면 기본값으로 초기화
+          _amenity = RoomAmenityFreezed(
+            roomId: _roomId!,
+            basicOptions: const BasicOptions(),
+            additionalOptions: const AdditionalOptions(),
+            convenienceOptions: const ConvenienceOptions(),
+          );
         }
 
         // 사진 정보
@@ -175,6 +115,26 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
         }
       });
     }
+  }
+
+  /// JSON 문자열 또는 Map을 Map으로 파싱 (백엔드 이중직렬화 대응)
+  Map<String, dynamic> _parseOptionsJson(dynamic data) {
+    if (data == null) return {};
+    if (data is Map<String, dynamic>) {
+      // int 값(1/0)을 bool로 변환
+      return data.map((key, value) => MapEntry(key, _toBool(value)));
+    }
+    if (data is String) {
+      try {
+        final decoded = json.decode(data);
+        if (decoded is Map<String, dynamic>) {
+          return decoded.map((key, value) => MapEntry(key, _toBool(value)));
+        }
+      } catch (e) {
+        debugPrint('⚠️ [AMENITIES] JSON 파싱 실패: $e');
+      }
+    }
+    return {};
   }
 
   /// 사진 URL에 경로 prefix 추가
@@ -723,40 +683,70 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
   }
 
   Widget _buildBasicOptions() {
+    final basic = _amenity?.basicOptions ?? const BasicOptions();
+
     return Column(
       children: [
         Row(
           children: [
-            _buildCheckboxItem('냉장고', _refrigerator, (value) {
-              setState(() => _refrigerator = value!);
+            _buildCheckboxItem('냉장고', basic.refrigerator, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  basicOptions: basic.copyWith(refrigerator: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('세탁기', _washingMachine, (value) {
-              setState(() => _washingMachine = value!);
+            _buildCheckboxItem('세탁기', basic.washingMachine, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  basicOptions: basic.copyWith(washingMachine: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('에어컨', _airConditioner, (value) {
-              setState(() => _airConditioner = value!);
+            _buildCheckboxItem('에어컨', basic.airConditioner, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  basicOptions: basic.copyWith(airConditioner: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('싱크대', _sink, (value) {
-              setState(() => _sink = value!);
+            _buildCheckboxItem('싱크대', basic.sink, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  basicOptions: basic.copyWith(sink: value!),
+                );
+              });
             }),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildCheckboxItem('침대', _bed, (value) {
-              setState(() => _bed = value!);
+            _buildCheckboxItem('침대', basic.bed, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  basicOptions: basic.copyWith(bed: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('TV', _tv, (value) {
-              setState(() => _tv = value!);
+            _buildCheckboxItem('TV', basic.tv, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  basicOptions: basic.copyWith(tv: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('인터넷 (Wi-Fi)', _internet, (value) {
-              setState(() => _internet = value!);
+            _buildCheckboxItem('인터넷 (Wi-Fi)', basic.internet, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  basicOptions: basic.copyWith(internet: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
             const Expanded(child: SizedBox()),
@@ -767,84 +757,150 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
   }
 
   Widget _buildAdditionalOptions() {
+    final additional = _amenity?.additionalOptions ?? const AdditionalOptions();
+
     return Column(
       children: [
         Row(
           children: [
-            _buildCheckboxItem('도어락', _doorLock, (value) {
-              setState(() => _doorLock = value!);
+            _buildCheckboxItem('도어락', additional.doorLock, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(doorLock: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('CCTV', _cctv, (value) {
-              setState(() => _cctv = value!);
+            _buildCheckboxItem('CCTV', additional.cctv, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(cctv: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('관리실', _managementOffice, (value) {
-              setState(() => _managementOffice = value!);
+            _buildCheckboxItem('관리실', additional.managementOffice, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(managementOffice: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('가스레인지', _gasRange, (value) {
-              setState(() => _gasRange = value!);
+            _buildCheckboxItem('가스레인지', additional.gasRange, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(gasRange: value!),
+                );
+              });
             }),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildCheckboxItem('인덕션', _induction, (value) {
-              setState(() => _induction = value!);
+            _buildCheckboxItem('인덕션', additional.induction, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(induction: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('전자레인지', _microwave, (value) {
-              setState(() => _microwave = value!);
+            _buildCheckboxItem('전자레인지', additional.microwave, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(microwave: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('식탁', _diningTable, (value) {
-              setState(() => _diningTable = value!);
+            _buildCheckboxItem('식탁', additional.diningTable, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(diningTable: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('신발장', _shoeRack, (value) {
-              setState(() => _shoeRack = value!);
+            _buildCheckboxItem('신발장', additional.shoeRack, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(shoeRack: value!),
+                );
+              });
             }),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildCheckboxItem('옷장', _wardrobe, (value) {
-              setState(() => _wardrobe = value!);
+            _buildCheckboxItem('옷장', additional.wardrobe, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(wardrobe: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('드레스룸', _dressRoom, (value) {
-              setState(() => _dressRoom = value!);
+            _buildCheckboxItem('드레스룸', additional.dressRoom, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(dressRoom: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('화장대', _vanity, (value) {
-              setState(() => _vanity = value!);
+            _buildCheckboxItem('화장대', additional.vanity, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(vanity: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('케이블 TV', _cableTv, (value) {
-              setState(() => _cableTv = value!);
+            _buildCheckboxItem('케이블 TV', additional.cableTv, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(cableTv: value!),
+                );
+              });
             }),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildCheckboxItem('소파', _sofa, (value) {
-              setState(() => _sofa = value!);
+            _buildCheckboxItem('소파', additional.sofa, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(sofa: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('책상', _desk, (value) {
-              setState(() => _desk = value!);
+            _buildCheckboxItem('책상', additional.desk, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(desk: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('커튼', _curtain, (value) {
-              setState(() => _curtain = value!);
+            _buildCheckboxItem('커튼', additional.curtain, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(curtain: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('발코니/베란다', _balcony, (value) {
-              setState(() => _balcony = value!);
+            _buildCheckboxItem('발코니/베란다', additional.balcony, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  additionalOptions: additional.copyWith(balcony: value!),
+                );
+              });
             }),
           ],
         ),
@@ -853,72 +909,126 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
   }
 
   Widget _buildConvenienceOptions() {
+    final convenience = _amenity?.convenienceOptions ?? const ConvenienceOptions();
+
     return Column(
       children: [
         Row(
           children: [
-            _buildCheckboxItem('냉난방기', _heatingCooling, (value) {
-              setState(() => _heatingCooling = value!);
+            _buildCheckboxItem('냉난방기', convenience.heatingCooling, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(heatingCooling: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('히터', _heater, (value) {
-              setState(() => _heater = value!);
+            _buildCheckboxItem('히터', convenience.heater, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(heater: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('공기청정기', _airPurifier, (value) {
-              setState(() => _airPurifier = value!);
+            _buildCheckboxItem('공기청정기', convenience.airPurifier, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(airPurifier: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('건조기', _dryer, (value) {
-              setState(() => _dryer = value!);
+            _buildCheckboxItem('건조기', convenience.dryer, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(dryer: value!),
+                );
+              });
             }),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildCheckboxItem('다리미', _iron, (value) {
-              setState(() => _iron = value!);
+            _buildCheckboxItem('다리미', convenience.iron, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(iron: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('정수기', _waterPurifier, (value) {
-              setState(() => _waterPurifier = value!);
+            _buildCheckboxItem('정수기', convenience.waterPurifier, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(waterPurifier: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('전기밥솥', _riceCooker, (value) {
-              setState(() => _riceCooker = value!);
+            _buildCheckboxItem('전기밥솥', convenience.riceCooker, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(riceCooker: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('전기포트', _electricKettle, (value) {
-              setState(() => _electricKettle = value!);
+            _buildCheckboxItem('전기포트', convenience.electricKettle, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(electricKettle: value!),
+                );
+              });
             }),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildCheckboxItem('식기(그릇,수저)', _dishes, (value) {
-              setState(() => _dishes = value!);
+            _buildCheckboxItem('식기(그릇,수저)', convenience.dishes, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(dishes: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('조리도구(팬, 냄비)', _cookware, (value) {
-              setState(() => _cookware = value!);
+            _buildCheckboxItem('조리도구(팬, 냄비)', convenience.cookware, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(cookware: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('욕조', _bathtub, (value) {
-              setState(() => _bathtub = value!);
+            _buildCheckboxItem('욕조', convenience.bathtub, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(bathtub: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
-            _buildCheckboxItem('드라이어', _hairDryer, (value) {
-              setState(() => _hairDryer = value!);
+            _buildCheckboxItem('드라이어', convenience.hairDryer, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(hairDryer: value!),
+                );
+              });
             }),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildCheckboxItem('비데', _bidet, (value) {
-              setState(() => _bidet = value!);
+            _buildCheckboxItem('비데', convenience.bidet, (value) {
+              setState(() {
+                _amenity = _amenity?.copyWith(
+                  convenienceOptions: convenience.copyWith(bidet: value!),
+                );
+              });
             }),
             const SizedBox(width: 12),
             const Expanded(child: SizedBox()),
@@ -933,10 +1043,14 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
   }
 
   Widget _buildPetOptions() {
+    final petsAllowed = _amenity?.petsAllowed ?? false;
+
     return Row(
       children: [
-        _buildCheckboxItem('동반가능', _petsAllowed, (value) {
-          setState(() => _petsAllowed = value!);
+        _buildCheckboxItem('동반가능', petsAllowed, (value) {
+          setState(() {
+            _amenity = _amenity?.copyWith(petsAllowed: value!);
+          });
         }),
         const SizedBox(width: 12),
         const Expanded(child: SizedBox()),
@@ -1037,50 +1151,25 @@ class _RoomAmenitiesPageState extends State<RoomAmenitiesPage> {
                 }
 
                 // 2. 편의시설 데이터 수집
+                if (_amenity == null) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('편의시설 데이터가 초기화되지 않았습니다.')),
+                    );
+                  }
+                  return;
+                }
+
+                // Freezed 모델을 JSON으로 변환
+                final fullData = _amenity!.toJson();
+
+                // 백엔드 API 스펙에 맞게 구조 변환
+                // petAllowed를 최상위로 분리 (필터 기능 확장성)
                 final amenitiesData = {
-                  'basicOptions': {
-                    'refrigerator': _refrigerator,
-                    'washingMachine': _washingMachine,
-                    'airConditioner': _airConditioner,
-                    'sink': _sink,
-                    'bed': _bed,
-                    'tv': _tv,
-                    'internet': _internet,
-                  },
-                  'additionalOptions': {
-                    'doorLock': _doorLock,
-                    'cctv': _cctv,
-                    'managementOffice': _managementOffice,
-                    'gasRange': _gasRange,
-                    'induction': _induction,
-                    'microwave': _microwave,
-                    'diningTable': _diningTable,
-                    'shoeRack': _shoeRack,
-                    'wardrobe': _wardrobe,
-                    'dressRoom': _dressRoom,
-                    'vanity': _vanity,
-                    'cableTv': _cableTv,
-                    'sofa': _sofa,
-                    'desk': _desk,
-                    'curtain': _curtain,
-                    'balcony': _balcony,
-                  },
-                  'convenienceOptions': {
-                    'heatingCooling': _heatingCooling,
-                    'heater': _heater,
-                    'airPurifier': _airPurifier,
-                    'dryer': _dryer,
-                    'iron': _iron,
-                    'waterPurifier': _waterPurifier,
-                    'riceCooker': _riceCooker,
-                    'electricKettle': _electricKettle,
-                    'dishes': _dishes,
-                    'cookware': _cookware,
-                    'bathtub': _bathtub,
-                    'hairDryer': _hairDryer,
-                    'bidet': _bidet,
-                  },
-                  'petsAllowed': _petsAllowed,
+                  'basicOptions': fullData['basicOptions'],
+                  'additionalOptions': fullData['additionalOptions'],
+                  'convenienceOptions': fullData['convenienceOptions'],
+                  'petAllowed': fullData['petsAllowed'], // snake_case로 변환
                 };
 
                 // 3. 편의시설 정보 전송

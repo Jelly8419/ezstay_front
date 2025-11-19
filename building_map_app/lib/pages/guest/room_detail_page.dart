@@ -4,6 +4,7 @@ import '../../models/booking_state.dart';
 import '../../models/rental_item.dart';
 import '../../models/selected_rental_item.dart';
 import '../../services/guest_room_service.dart';
+import '../../services/analytics_service.dart';
 import '../../widgets/simple_kakao_map.dart';
 import '../../widgets/room_detail/booking_bottom_sheet.dart';
 import '../../widgets/common/app_gnb.dart';
@@ -13,18 +14,15 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../utils/price_calculator.dart';
 import '../host/room_registration/components/form_section.dart';
-import '../host/room_registration/components/option_toggle.dart';
 import 'package:intl/intl.dart';
 import '../contract/contract_start_page.dart';
+import '../../widgets/kakao_roadview_web.dart';
 
 /// 방 상세 정보 페이지
 class RoomDetailPage extends StatefulWidget {
   final int roomId;
 
-  const RoomDetailPage({
-    super.key,
-    required this.roomId,
-  });
+  const RoomDetailPage({super.key, required this.roomId});
 
   @override
   State<RoomDetailPage> createState() => _RoomDetailPageState();
@@ -32,6 +30,7 @@ class RoomDetailPage extends StatefulWidget {
 
 class _RoomDetailPageState extends State<RoomDetailPage> {
   final GuestRoomService _guestRoomService = GuestRoomService();
+  final AnalyticsService _analyticsService = AnalyticsService();
   final NumberFormat _currencyFormat = NumberFormat('#,###');
   final ScrollController _thumbnailScrollController = ScrollController();
 
@@ -40,6 +39,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   String? _errorMessage;
 
   int _currentPhotoIndex = 0;
+
+  // 지도 vs 로드뷰 표시 상태
+  bool _showRoadview = false;
 
   // 예약 상태 (React UI 스타일)
   BookingState _bookingState = const BookingState();
@@ -71,6 +73,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           _room = room;
           _isLoading = false;
         });
+
+        // 📊 Analytics: 방 상세 페이지 조회
+        await _analyticsService.logViewRoomDetail(roomId: widget.roomId);
       } else {
         setState(() {
           _errorMessage = '방 정보를 찾을 수 없습니다.';
@@ -89,6 +94,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   /// 모바일 예약 Bottom Sheet 표시
   void _showBookingBottomSheet() {
     if (_room == null) return;
+
+    // 📊 Analytics: 가격 안내 바텀시트 열기
+    _analyticsService.logClickOpenPricingSheet(roomId: widget.roomId);
 
     showModalBottomSheet(
       context: context,
@@ -114,6 +122,13 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   void _navigateToContractPage() {
     if (_room == null || !_bookingState.hasSelectedDates) return;
 
+    // 📊 Analytics: 계약 요청 버튼 클릭
+    _analyticsService.logClickRequestContract(
+      roomId: widget.roomId,
+      checkInDate: _bookingState.checkInDate,
+      checkOutDate: _bookingState.checkOutDate,
+    );
+
     // BookingState에서 개별 데이터 추출
     final selectedItems = _bookingState.selectedRentalItems;
 
@@ -130,13 +145,19 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       // ID 범위로 타입 구분 (임시 방법, 나중에 type 필드 추가 고려)
       if (_room!.availableRentalItems!.hairDryers.any((h) => h.id == item.id)) {
         selectedHairDryerId = item.id;
-      } else if (_room!.availableRentalItems!.beddingSets.any((b) => b.id == item.id)) {
+      } else if (_room!.availableRentalItems!.beddingSets.any(
+        (b) => b.id == item.id,
+      )) {
         selectedBeddingSetId = item.id;
         beddingSetQuantity = item.quantity;
-      } else if (_room!.availableRentalItems!.amenityKits.any((a) => a.id == item.id)) {
+      } else if (_room!.availableRentalItems!.amenityKits.any(
+        (a) => a.id == item.id,
+      )) {
         selectedAmenityKitId = item.id;
         amenityKitQuantity = item.quantity;
-      } else if (_room!.availableRentalItems!.towelSets.any((t) => t.id == item.id)) {
+      } else if (_room!.availableRentalItems!.towelSets.any(
+        (t) => t.id == item.id,
+      )) {
         selectedTowelSetId = item.id;
         towelSetQuantity = item.quantity;
       }
@@ -172,39 +193,39 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-              ? _buildErrorWidget()
-              : _room != null
-                  ? Stack(
-                      children: [
-                        // 리액트 UI 스타일: 2컬럼 그리드 레이아웃
-                        SingleChildScrollView(
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 1200),
-                              child: Padding(
-                                padding: EdgeInsets.all(isMobile ? 16 : 32),
-                                child: isMobile
-                                    ? _buildMobileLayout()
-                                    : _buildDesktopLayout(),
-                              ),
-                            ),
-                          ),
-                        ),
+          ? _buildErrorWidget()
+          : _room != null
+          ? Stack(
+              children: [
+                // 리액트 UI 스타일: 2컬럼 그리드 레이아웃
+                SingleChildScrollView(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1280),
+                      child: Padding(
+                        padding: EdgeInsets.all(isMobile ? 16 : 32),
+                        child: isMobile
+                            ? _buildMobileLayout()
+                            : _buildDesktopLayout(),
+                      ),
+                    ),
+                  ),
+                ),
 
-                        // 모바일 하단 고정 바
-                        if (isMobile)
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: MobileFloatingBar(
-                              room: _room!,
-                              onTap: _showBookingBottomSheet,
-                            ),
-                          ),
-                      ],
-                    )
-                  : const Center(child: Text('데이터를 불러올 수 없습니다.')),
+                // 모바일 하단 고정 바
+                if (isMobile)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: MobileFloatingBar(
+                      room: _room!,
+                      onTap: _showBookingBottomSheet,
+                    ),
+                  ),
+              ],
+            )
+          : const Center(child: Text('데이터를 불러올 수 없습니다.')),
     );
   }
 
@@ -218,11 +239,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         const SizedBox(height: 24),
 
         // 방 기본 정보
-        FormSection(
-          icon: Icons.home,
-          title: _room!.roomName,
-          child: _buildPropertyInfo(),
-        ),
+        FormSection(title: _room!.roomName, child: _buildPropertyInfo()),
         const SizedBox(height: 24),
 
         // 편의시설
@@ -250,11 +267,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         const SizedBox(height: 24),
 
         // 호스트 정보
-        FormSection(
-          icon: Icons.person,
-          title: '호스트 정보',
-          child: _buildHostContent(),
-        ),
+        FormSection(title: '호스트 정보', child: _buildHostContent()),
         const SizedBox(height: 100), // 하단 바 공간
       ],
     );
@@ -276,53 +289,36 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               const SizedBox(height: 24),
 
               // 방 기본 정보
-              FormSection(
-                icon: Icons.home,
-                title: _room!.roomName,
-                child: _buildPropertyInfo(),
-              ),
+              FormSection(title: _room!.roomName, child: _buildPropertyInfo()),
               const SizedBox(height: 24),
 
               // 편의시설
-              FormSection(
-                icon: Icons.check_circle_outline,
-                title: '편의시설',
-                child: _buildAmenitiesGrid(),
-              ),
+              FormSection(title: '옵션', child: _buildAmenitiesGrid()),
               const SizedBox(height: 24),
 
               // 위치 정보
-              FormSection(
-                icon: Icons.location_on,
-                title: '위치',
-                child: _buildLocationContent(),
-              ),
+              FormSection(title: '위치', child: _buildLocationContent()),
               const SizedBox(height: 24),
 
               // 요금 안내
-              FormSection(
-                icon: Icons.account_balance_wallet,
-                title: '요금 안내',
-                child: _buildPricingContent(),
-              ),
+              FormSection(title: '요금 안내', child: _buildPricingContent()),
               const SizedBox(height: 24),
 
               // 호스트 정보
-              FormSection(
-                icon: Icons.person,
-                title: '호스트 정보',
-                child: _buildHostContent(),
-              ),
+              FormSection(title: '호스트 정보', child: _buildHostContent()),
             ],
           ),
         ),
 
         const SizedBox(width: 32),
 
-        // 오른쪽: 고정 예약 위젯 (1/3 너비)
+        // 오른쪽: Sticky 예약 위젯 (1/3 너비)
         Expanded(
           flex: 1,
-          child: _buildFixedBookingWidget(),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(child: _buildFixedBookingWidget()),
+          ),
         ),
       ],
     );
@@ -336,39 +332,121 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         // 주소
         Row(
           children: [
-            const Icon(Icons.location_on, size: 16, color: AppColors.textSecondary),
+            const Icon(
+              Icons.location_on,
+              size: 16,
+              color: AppColors.textSecondary,
+            ),
             const SizedBox(width: 4),
             Expanded(
               child: Text(
                 _room!.address,
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
 
-        // Grid 2-3열 레이아웃 (리액트: grid-cols-2 sm:grid-cols-3)
-        Wrap(
-          spacing: 16,
-          runSpacing: 12,
+        // Grid 레이아웃
+        Column(
           children: [
-            _buildInfoItem(Icons.straighten, '면적', '${_room!.area}㎡'),
-            _buildInfoItem(Icons.stairs, '층수', '${_room!.floor}층'),
-            _buildInfoItem(Icons.elevator, '엘리베이터', _room!.elevatorAvailable ? '있음' : '없음'),
-            _buildInfoItem(Icons.local_parking, '주차', _room!.parkingAvailable ? '가능' : '불가'),
+            // 1행: 건물유형, 면적, 방 갯수
+            Row(
+              children: [
+                Expanded(
+                  child: _buildInfoItem(
+                    Icons.apartment,
+                    '건물유형',
+                    _room!.buildingType,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildInfoItem(
+                    Icons.straighten,
+                    '면적',
+                    '${_room!.area}㎡',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildInfoItem(
+                    Icons.meeting_room,
+                    '방 갯수',
+                    '${_room!.roomCount}개',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 2행: 화장실, 권장 최대인원, 엘리베이터
+            Row(
+              children: [
+                Expanded(
+                  child: _buildInfoItem(
+                    Icons.bathroom,
+                    '화장실',
+                    '${_room!.bathroomCount}개',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildInfoItem(
+                    Icons.people,
+                    '권장 최대인원',
+                    '${_room!.maxGuests}명',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildInfoItem(
+                    Icons.elevator,
+                    '엘리베이터',
+                    _room!.elevatorAvailable ? '있음' : '없음',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 3행: 주차
+            Row(
+              children: [
+                Expanded(
+                  child: _buildInfoItem(
+                    Icons.local_parking,
+                    '주차',
+                    _room!.parkingAvailable ? '가능' : '불가',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(child: SizedBox()), // 빈 공간
+                const SizedBox(width: 16),
+                const Expanded(child: SizedBox()), // 빈 공간
+              ],
+            ),
           ],
         ),
 
         // 방 설명
         if (_room!.description != null && _room!.description!.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 16),
-          Text(
-            _room!.description!,
-            style: AppTextStyles.bodyMedium,
+          const Text(
+            '방 소개',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+            ),
           ),
+          const SizedBox(height: 12),
+          Text(_room!.description!, style: AppTextStyles.bodyMedium),
         ],
       ],
     );
@@ -376,49 +454,106 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
   /// Info 항목 (아이콘 + 라벨 + 값)
   Widget _buildInfoItem(IconData icon, String label, String value) {
-    return SizedBox(
-      width: 140,
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.primary600),
-          const SizedBox(width: 8),
-          Column(
+    return Row(
+      children: [
+        Icon(icon, size: 28, color: AppColors.primary600),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
-              Text(value, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                label,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   /// 편의시설 그리드 (리액트 UI 스타일 - 기본/편의 옵션 분리)
   Widget _buildAmenitiesGrid() {
     if (_room!.amenity == null) {
-      return Text('제공되는 편의시설이 없습니다.', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary));
+      return Text(
+        '제공되는 편의시설이 없습니다.',
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.textSecondary,
+        ),
+      );
     }
 
+    final amenity = _room!.amenity!;
+
+    // 기본 옵션 (BasicOptions + AdditionalOptions)
     final basicOptions = <String>[];
+
+    // BasicOptions (7개)
+    if (amenity.basicOptions.refrigerator) basicOptions.add('냉장고');
+    if (amenity.basicOptions.washingMachine) basicOptions.add('세탁기');
+    if (amenity.basicOptions.airConditioner) basicOptions.add('에어컨');
+    if (amenity.basicOptions.sink) basicOptions.add('싱크대');
+    if (amenity.basicOptions.bed) basicOptions.add('침대');
+    if (amenity.basicOptions.tv) basicOptions.add('TV');
+    if (amenity.basicOptions.internet) basicOptions.add('인터넷 (Wi-Fi)');
+
+    // AdditionalOptions (16개)
+    if (amenity.additionalOptions.doorLock) basicOptions.add('도어락');
+    if (amenity.additionalOptions.cctv) basicOptions.add('CCTV');
+    if (amenity.additionalOptions.managementOffice) basicOptions.add('관리실');
+    if (amenity.additionalOptions.gasRange) basicOptions.add('가스레인지');
+    if (amenity.additionalOptions.induction) basicOptions.add('인덕션');
+    if (amenity.additionalOptions.microwave) basicOptions.add('전자레인지');
+    if (amenity.additionalOptions.diningTable) basicOptions.add('식탁');
+    if (amenity.additionalOptions.shoeRack) basicOptions.add('신발장');
+    if (amenity.additionalOptions.wardrobe) basicOptions.add('옷장');
+    if (amenity.additionalOptions.dressRoom) basicOptions.add('드레스룸');
+    if (amenity.additionalOptions.vanity) basicOptions.add('화장대');
+    if (amenity.additionalOptions.cableTv) basicOptions.add('케이블 TV');
+    if (amenity.additionalOptions.sofa) basicOptions.add('소파');
+    if (amenity.additionalOptions.desk) basicOptions.add('책상');
+    if (amenity.additionalOptions.curtain) basicOptions.add('커튼');
+    if (amenity.additionalOptions.balcony) basicOptions.add('발코니/베란다');
+
+    // 편의 옵션 (ConvenienceOptions 13개)
     final convenienceOptions = <String>[];
+    if (amenity.convenienceOptions.heatingCooling)
+      convenienceOptions.add('냉난방기');
+    if (amenity.convenienceOptions.heater) convenienceOptions.add('히터');
+    if (amenity.convenienceOptions.airPurifier) convenienceOptions.add('공기청정기');
+    if (amenity.convenienceOptions.dryer) convenienceOptions.add('건조기');
+    if (amenity.convenienceOptions.iron) convenienceOptions.add('다리미');
+    if (amenity.convenienceOptions.waterPurifier) convenienceOptions.add('정수기');
+    if (amenity.convenienceOptions.riceCooker) convenienceOptions.add('전기밥솥');
+    if (amenity.convenienceOptions.electricKettle)
+      convenienceOptions.add('전기포트');
+    if (amenity.convenienceOptions.dishes) convenienceOptions.add('식기(그릇,수저)');
+    if (amenity.convenienceOptions.cookware)
+      convenienceOptions.add('조리도구(팬, 냄비)');
+    if (amenity.convenienceOptions.bathtub) convenienceOptions.add('욕조');
+    if (amenity.convenienceOptions.hairDryer) convenienceOptions.add('드라이어');
+    if (amenity.convenienceOptions.bidet) convenienceOptions.add('비데');
 
-    // 기본 옵션 (basicOptions + additionalOptions)
-    if (_room!.amenity!.basicOptions['wifi'] == true) basicOptions.add('WiFi');
-    if (_room!.amenity!.basicOptions['tv'] == true) basicOptions.add('TV');
-    if (_room!.amenity!.basicOptions['airConditioner'] == true) basicOptions.add('에어컨');
-    if (_room!.amenity!.basicOptions['heater'] == true) basicOptions.add('난방');
-    if (_room!.amenity!.additionalOptions['washer'] == true) basicOptions.add('세탁기');
-    if (_room!.amenity!.additionalOptions['dryer'] == true) basicOptions.add('건조기');
-    if (_room!.amenity!.additionalOptions['iron'] == true) basicOptions.add('다리미');
-
-    // 편의 옵션
-    if (_room!.amenity!.convenienceOptions['microwave'] == true) convenienceOptions.add('전자레인지');
-    if (_room!.amenity!.convenienceOptions['refrigerator'] == true) convenienceOptions.add('냉장고');
-    if (_room!.amenity!.convenienceOptions['dishwasher'] == true) convenienceOptions.add('식기세척기');
+    // 반려동물
+    if (amenity.petsAllowed) convenienceOptions.add('반려동물 동반 가능');
 
     if (basicOptions.isEmpty && convenienceOptions.isEmpty) {
-      return Text('제공되는 편의시설이 없습니다.', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary));
+      return Text(
+        '제공되는 편의시설이 없습니다.',
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.textSecondary,
+        ),
+      );
     }
 
     return Column(
@@ -426,56 +561,145 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       children: [
         // 기본 옵션
         if (basicOptions.isNotEmpty) ...[
-          Text('기본 옵션', style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: basicOptions.map((option) {
-              return OptionToggle(
-                label: option,
-                selected: true,
-                onToggle: () {}, // Read-only
-              );
-            }).toList(),
+          Text(
+            '기본 옵션',
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: _buildOptionsGrid(basicOptions),
           ),
         ],
 
         // 편의 옵션
         if (convenienceOptions.isNotEmpty) ...[
-          if (basicOptions.isNotEmpty) const SizedBox(height: 16),
-          Text('편의 옵션', style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: convenienceOptions.map((option) {
-              return OptionToggle(
-                label: option,
-                selected: true,
-                onToggle: () {}, // Read-only
-              );
-            }).toList(),
+          if (basicOptions.isNotEmpty) const SizedBox(height: 24),
+          Text(
+            '편의 옵션',
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: _buildOptionsGrid(convenienceOptions),
           ),
         ],
       ],
     );
   }
 
-  /// 위치 섹션 컨텐츠
+  /// 옵션을 3열 그리드로 배치
+  Widget _buildOptionsGrid(List<String> options) {
+    final rows = <Widget>[];
+
+    for (int i = 0; i < options.length; i += 3) {
+      final rowItems = <String>[];
+      for (int j = 0; j < 3 && i + j < options.length; j++) {
+        rowItems.add(options[i + j]);
+      }
+
+      rows.add(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var j = 0; j < 3; j++)
+              Expanded(
+                child: j < rowItems.length
+                    ? _buildOptionItem(rowItems[j])
+                    : const SizedBox(),
+              ),
+          ],
+        ),
+      );
+
+      if (i + 3 < options.length) {
+        rows.add(const SizedBox(height: 12));
+      }
+    }
+
+    return Column(children: rows);
+  }
+
+  /// 개별 옵션 아이템
+  Widget _buildOptionItem(String option) {
+    return Row(
+      children: [
+        Text(
+          '• ',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.primary600,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Expanded(child: Text(option, style: AppTextStyles.bodyMedium)),
+      ],
+    );
+  }
+
+  /// 위치 섹션 컨텐츠 (지도 ↔ 로드뷰 토글)
   Widget _buildLocationContent() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(_room!.address, style: AppTextStyles.bodyMedium),
         const SizedBox(height: 16),
-        // 지도 (기존 코드 재사용)
+        // 지도 / 로드뷰 전환 버튼
         SizedBox(
           height: 300,
-          child: SimpleKakaoMap(
-            latitude: _room!.latitude,
-            longitude: _room!.longitude,
-            roomName: _room!.roomName,
+          child: Stack(
+            children: [
+              // 지도 또는 로드뷰 표시
+              _showRoadview
+                  ? KakaoRoadviewWeb(
+                      latitude: _room!.latitude,
+                      longitude: _room!.longitude,
+                      roomName: _room!.roomName,
+                    )
+                  : SimpleKakaoMap(
+                      latitude: _room!.latitude,
+                      longitude: _room!.longitude,
+                      roomName: _room!.roomName,
+                    ),
+              // 지도 ↔ 로드뷰 토글 버튼 (우측하단)
+              Positioned(
+                bottom: 16,
+                right: 16,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: AppRadius.radiusMd,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _showRoadview = !_showRoadview;
+                      });
+                    },
+                    borderRadius: AppRadius.radiusMd,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: AppRadius.radiusMd,
+                      ),
+                      child: Text(
+                        _showRoadview ? '지도 보기' : '로드뷰 보기',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -484,25 +708,133 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
   /// 요금 안내 컨텐츠
   Widget _buildPricingContent() {
+    // 관리비 포함 항목 문자열 생성
+    final includedItems = <String>[];
+    if (_room!.includeElectricity) includedItems.add('전기');
+    if (_room!.includeWater) includedItems.add('수도');
+    if (_room!.includeGas) includedItems.add('가스');
+    if (_room!.includeInternet) includedItems.add('인터넷');
+    final includedItemsText = includedItems.isNotEmpty
+        ? '${includedItems.join(', ')} 포함'
+        : '';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildPriceRow('일일 임대료', _room!.dailyRent),
-        const SizedBox(height: 8),
-        _buildPriceRow('주간 임대료', _room!.weeklyRent),
-        const SizedBox(height: 8),
-        _buildPriceRow('보증금', _room!.deposit),
-        const SizedBox(height: 8),
-        _buildPriceRow('일일 관리비', _room!.dailyMaintenanceFee),
-        const SizedBox(height: 8),
-        _buildPriceRow('청소비', _room!.cleaningFee),
+        // 1. 임대료 (1주)
+        _buildPriceRow('임대료 (1주)', _room!.weeklyRent),
+        const Divider(),
 
-        // 환불 규정
-        if (_room!.refundPolicy != null) ...[
-          const SizedBox(height: 16),
+        // 2. 관리비 (1주)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '관리비 (1주)',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    _currencyFormat.format(_room!.dailyMaintenanceFee * 7),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              if (includedItemsText.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  includedItemsText,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const Divider(),
+
+        // 3. 청소비 (cleaningService 신청 시 5만원, 아니면 호스트 설정값)
+        _buildPriceRow(
+          '청소비',
+          (_room!.freeService?.cleaningService == true) ? 50000 : _room!.cleaningFee,
+        ),
+        const Divider(),
+
+        // 4. 보증금
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '보증금',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    _currencyFormat.format(_room!.deposit),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '제3자 예치기관에 보관되며, 퇴실 완료 후 자동 환급됩니다.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(),
+
+        // 5. 입주/퇴실 시간
+        _buildInfoRow('입주 시간', '15:00 이후'),
+        const SizedBox(height: 8),
+        _buildInfoRow('퇴실 시간', '11:00 이전'),
+
+        // 6. 장기 계약 할인
+        if (_room!.longTermDiscount != null &&
+            _room!.longTermDiscount! > 0) ...[
           const Divider(),
-          const SizedBox(height: 16),
-          Text('환불 규정: ${_room!.refundPolicy}', style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+          _buildDiscountRow(
+            '장기 계약 할인',
+            '${_room!.longTermWeeks ?? 4}주 이상 계약 시 ${_room!.longTermDiscount}% 할인',
+          ),
+        ],
+
+        // 7. 빠른 입주 할인
+        if (_room!.quickMoveInDiscount != null &&
+            _room!.quickMoveInDiscount! > 0) ...[
+          const Divider(),
+          _buildDiscountRow(
+            '빠른 입주 할인',
+            '${_room!.quickMoveIn ?? 3}일 이내 입주 시 ${_currencyFormat.format(_room!.quickMoveInDiscount)}원 할인',
+          ),
+        ],
+
+        // 8. 환불 규정
+        if (_room!.refundPolicy.isNotEmpty) ...[
+          const Divider(),
+          _buildDiscountRow('환불 규정', _room!.refundPolicy),
         ],
       ],
     );
@@ -522,10 +854,52 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     );
   }
 
+  /// 정보 행 (체크인/체크아웃 시간 등)
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: AppTextStyles.bodyMedium),
+        Text(
+          value,
+          style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
+  }
+
+  /// 할인 정보 행
+  Widget _buildDiscountRow(String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 호스트 정보 컨텐츠
   Widget _buildHostContent() {
     final hostName = _room!.hostName ?? '호스트';
     final hostInitial = hostName.isNotEmpty ? hostName[0] : '?';
+    final isVerified =
+        _room!.hostPhoneVerified == true || _room!.hostAccountVerified == true;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -537,7 +911,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               backgroundColor: AppColors.primary100,
               child: Text(
                 hostInitial,
-                style: AppTextStyles.headingSmall.copyWith(color: AppColors.primary600),
+                style: AppTextStyles.headingSmall.copyWith(
+                  color: AppColors.primary600,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -545,27 +921,58 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(hostName, style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
-                  Text('호스트', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+                  Row(
+                    children: [
+                      Text(
+                        hostName,
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (isVerified) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDF4), // green-50
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.check_circle,
+                                size: 14,
+                                color: Color(0xFF15803D), // green-700
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '인증완료',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: const Color(0xFF15803D), // green-700
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '호스트',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () {
-              // TODO: 호스트에게 문의하기 기능
-            },
-            icon: const Icon(Icons.message, size: 18),
-            label: const Text('호스트에게 문의하기'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary600,
-              side: BorderSide(color: AppColors.primary600),
-            ),
-          ),
         ),
       ],
     );
@@ -597,7 +1004,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   void _goToPreviousPhoto() {
     if (_room == null || _room!.photos.isEmpty) return;
     setState(() {
-      _currentPhotoIndex = (_currentPhotoIndex - 1 + _room!.photos.length) % _room!.photos.length;
+      _currentPhotoIndex =
+          (_currentPhotoIndex - 1 + _room!.photos.length) %
+          _room!.photos.length;
     });
     _scrollToSelectedThumbnail();
   }
@@ -668,7 +1077,11 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                       return Container(
                         color: AppColors.neutral200,
                         child: Center(
-                          child: Icon(Icons.home, size: 80, color: AppColors.neutral400),
+                          child: Icon(
+                            Icons.home,
+                            size: 80,
+                            color: AppColors.neutral400,
+                          ),
                         ),
                       );
                     },
@@ -690,7 +1103,10 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                             boxShadow: AppShadows.floatingButton,
                           ),
                           child: IconButton(
-                            icon: Icon(Icons.chevron_left, color: AppColors.neutral900),
+                            icon: Icon(
+                              Icons.chevron_left,
+                              color: AppColors.neutral900,
+                            ),
                             onPressed: _goToPreviousPhoto,
                             iconSize: 24,
                             padding: EdgeInsets.zero,
@@ -715,7 +1131,10 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                             boxShadow: AppShadows.floatingButton,
                           ),
                           child: IconButton(
-                            icon: Icon(Icons.chevron_right, color: AppColors.neutral900),
+                            icon: Icon(
+                              Icons.chevron_right,
+                              color: AppColors.neutral900,
+                            ),
                             onPressed: _goToNextPhoto,
                             iconSize: 24,
                             padding: EdgeInsets.zero,
@@ -729,14 +1148,19 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                     bottom: 16,
                     right: 16,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         '${_currentPhotoIndex + 1} / ${_room!.photos.length}',
-                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.surface),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.surface,
+                        ),
                       ),
                     ),
                   ),
@@ -770,13 +1194,17 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                     decoration: BoxDecoration(
                       borderRadius: AppRadius.radiusLg,
                       border: Border.all(
-                        color: isSelected ? AppColors.primary600 : AppColors.neutral200,
+                        color: isSelected
+                            ? AppColors.primary600
+                            : AppColors.neutral200,
                         width: 2,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: AppColors.primary600.withValues(alpha: 0.2),
+                                color: AppColors.primary600.withValues(
+                                  alpha: 0.2,
+                                ),
                                 blurRadius: 4,
                                 spreadRadius: 0,
                               ),
@@ -784,14 +1212,20 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                           : null,
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(14), // radiusLg - borderWidth
+                      borderRadius: BorderRadius.circular(
+                        14,
+                      ), // radiusLg - borderWidth
                       child: Image.network(
                         _room!.photos[index].url,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: AppColors.neutral100,
-                            child: Icon(Icons.image, color: AppColors.neutral400, size: 24),
+                            child: Icon(
+                              Icons.image,
+                              color: AppColors.neutral400,
+                              size: 24,
+                            ),
                           );
                         },
                       ),
@@ -822,7 +1256,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       bookingState: _bookingState,
     );
 
-    final canRequestContract = _bookingState.hasSelectedDates && validationError == null;
+    final canRequestContract =
+        _bookingState.hasSelectedDates && validationError == null;
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.lg),
@@ -858,7 +1293,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           ),
 
           // 장기계약 할인 정보
-          if (_room!.longTermDiscount != null && _room!.longTermDiscount! > 0) ...[
+          if (_room!.longTermDiscount != null &&
+              _room!.longTermDiscount! > 0) ...[
             SizedBox(height: AppSpacing.md),
             Container(
               padding: EdgeInsets.all(AppSpacing.sm),
@@ -878,9 +1314,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                     ),
                   ),
                   Text(
-                    '${PriceCalculator.formatKRW(
-                      (_room!.weeklyRent! * (1 - _room!.longTermDiscount! / 100)).round(),
-                    )}/주',
+                    '${PriceCalculator.formatKRW((_room!.weeklyRent * (1 - _room!.longTermDiscount! / 100)).round())}/주',
                     style: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -950,10 +1384,42 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               borderRadius: AppRadius.radiusXl,
               border: Border.all(color: AppColors.border),
             ),
-            child: Column(
-              children: _buildRentalItemsList(),
-            ),
+            child: Column(children: _buildRentalItemsList()),
           ),
+
+          // 최소 주문 금액 안내
+          if (priceBreakdown.rentalItemsFee > 0 &&
+              priceBreakdown.rentalItemsFee < 10000) ...[
+            SizedBox(height: AppSpacing.sm),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB), // amber-50
+                borderRadius: AppRadius.radiusMd,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: const Color(0xFFD97706), // amber-600
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '옵션 상품은 최소 10,000원 이상 주문 가능합니다',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: const Color(0xFFD97706), // amber-600
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           // 가격 분석 (날짜 선택 시만 표시)
           if (_bookingState.hasSelectedDates) ...[
@@ -983,10 +1449,20 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
             SizedBox(height: AppSpacing.sm),
 
-            _buildPriceRowDetailed('임대료 (${_bookingState.selectedDays}일)', priceBreakdown.baseRent),
+            _buildPriceRowDetailed(
+              '임대료 (${_bookingState.selectedDays}일)',
+              priceBreakdown.baseRent,
+            ),
             if (priceBreakdown.longTermDiscount > 0)
-              _buildPriceRowDetailed('장기계약 할인', -priceBreakdown.longTermDiscount, isDiscount: true),
-            _buildPriceRowDetailed('관리비 (${_bookingState.selectedDays}일)', priceBreakdown.maintenanceFee),
+              _buildPriceRowDetailed(
+                '장기계약 할인',
+                -priceBreakdown.longTermDiscount,
+                isDiscount: true,
+              ),
+            _buildPriceRowDetailed(
+              '관리비 (${_bookingState.selectedDays}일)',
+              priceBreakdown.maintenanceFee,
+            ),
             _buildPriceRowDetailed('청소비', priceBreakdown.cleaningFee),
             _buildPriceRowDetailed('계약 수수료', priceBreakdown.contractFee),
             if (priceBreakdown.rentalItemsFee > 0)
@@ -1025,9 +1501,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                 foregroundColor: AppColors.textOnPrimary,
                 disabledBackgroundColor: AppColors.neutral300,
                 elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppRadius.radiusMd,
-                ),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
               ),
               child: Text(
                 canRequestContract ? '계약 요청' : '날짜를 선택해주세요',
@@ -1044,15 +1518,18 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   List<Widget> _buildRentalItemsList() {
     final items = <Widget>[];
 
-    if (_room!.availableRentalItems == null) return [
-      Padding(
-        padding: EdgeInsets.all(AppSpacing.sm),
-        child: Text(
-          '옵션 상품이 없습니다.',
-          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+    if (_room!.availableRentalItems == null)
+      return [
+        Padding(
+          padding: EdgeInsets.all(AppSpacing.sm),
+          child: Text(
+            '옵션 상품이 없습니다.',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
         ),
-      ),
-    ];
+      ];
 
     final allItems = [
       ..._room!.availableRentalItems!.beddingSets,
@@ -1063,9 +1540,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
     for (int i = 0; i < allItems.length; i++) {
       final item = allItems[i];
-      items.add(
-        _buildCompactRentalItem(item),
-      );
+      items.add(_buildCompactRentalItem(item));
 
       if (i < allItems.length - 1) {
         items.add(Divider(height: AppSpacing.md * 2, color: AppColors.divider));
@@ -1137,15 +1612,16 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                         onTap: currentQuantity > 0
                             ? () {
                                 setState(() {
-                                  _bookingState = _bookingState.updateRentalItem(
-                                    SelectedRentalItem(
-                                      id: item.id,
-                                      name: item.name,
-                                      description: item.description,
-                                      price: item.price,
-                                      quantity: currentQuantity - 1,
-                                    ),
-                                  );
+                                  _bookingState = _bookingState
+                                      .updateRentalItem(
+                                        SelectedRentalItem(
+                                          id: item.id,
+                                          name: item.name,
+                                          description: item.description,
+                                          price: item.price,
+                                          quantity: currentQuantity - 1,
+                                        ),
+                                      );
                                 });
                               }
                             : null,
@@ -1178,15 +1654,16 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                         onTap: currentQuantity < 4
                             ? () {
                                 setState(() {
-                                  _bookingState = _bookingState.updateRentalItem(
-                                    SelectedRentalItem(
-                                      id: item.id,
-                                      name: item.name,
-                                      description: item.description,
-                                      price: item.price,
-                                      quantity: currentQuantity + 1,
-                                    ),
-                                  );
+                                  _bookingState = _bookingState
+                                      .updateRentalItem(
+                                        SelectedRentalItem(
+                                          id: item.id,
+                                          name: item.name,
+                                          description: item.description,
+                                          price: item.price,
+                                          quantity: currentQuantity + 1,
+                                        ),
+                                      );
                                 });
                               }
                             : null,
@@ -1225,7 +1702,11 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   }
 
   /// 가격 행 (상세 버전 - 할인 표시 포함)
-  Widget _buildPriceRowDetailed(String label, int amount, {bool isDiscount = false}) {
+  Widget _buildPriceRowDetailed(
+    String label,
+    int amount, {
+    bool isDiscount = false,
+  }) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -1234,7 +1715,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           Text(
             label,
             style: AppTextStyles.bodySmall.copyWith(
-              color: isDiscount ? AppColors.primary600 : AppColors.textSecondary,
+              color: isDiscount
+                  ? AppColors.primary600
+                  : AppColors.textSecondary,
             ),
           ),
           Text(

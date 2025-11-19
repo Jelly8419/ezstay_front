@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../models/room.dart';
 import '../models/booking_state.dart';
 
@@ -61,8 +62,20 @@ class PriceCalculator {
     // 2. 관리비 (일 관리비 × 일수)
     final maintenanceFee = room.dailyMaintenanceFee * days;
 
-    // 3. 청소비 (고정)
-    final cleaningFee = room.cleaningFee;
+    // 3. 청소비
+    // - free_services에서 cleaningService 신청했으면 5만원 고정
+    // - 그렇지 않으면 호스트가 설정한 청소비
+    debugPrint('🧹 청소비 계산 디버그:');
+    debugPrint('  - room.freeService: ${room.freeService}');
+    debugPrint('  - room.freeService?.cleaningService: ${room.freeService?.cleaningService}');
+    debugPrint('  - room.cleaningFee (호스트 설정): ${room.cleaningFee}');
+
+    final cleaningFee = (room.freeService?.cleaningService == true)
+        ? 50000
+        : room.cleaningFee;
+
+    debugPrint('  - 최종 청소비: $cleaningFee');
+    debugPrint('  - 조건: cleaningService 신청 ${room.freeService?.cleaningService == true ? "O (5만원)" : "X (호스트 설정값)"}');
 
     // 4. 보증금 (고정)
     final deposit = room.deposit;
@@ -167,8 +180,9 @@ class PriceCalculator {
     required Room room,
     required BookingState bookingState,
   }) {
+    // 초기 상태(날짜 미선택)에서는 validation 에러 표시 안 함
     if (!bookingState.hasSelectedDates) {
-      return '체크인/체크아웃 날짜를 선택해주세요.';
+      return null;
     }
 
     final days = bookingState.selectedDays!;
