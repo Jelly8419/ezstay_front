@@ -51,7 +51,10 @@
       "Bash(git reset:*)",
       "Bash(sed:*)",
       "Bash(timeout 2 sleep:*)",
-      "Bash(dart format:*)"
+      "Bash(dart format:*)",
+      "Bash(curl:*)",
+      "Bash(python -m json.tool:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

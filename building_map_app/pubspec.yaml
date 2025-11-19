@@ -82,6 +82,10 @@ dependencies:
   # HTML 렌더링 (공지사항, FAQ)
   flutter_html: ^3.0.0-beta.2
 
+  # Freezed (불변 객체 및 JSON 직렬화)
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+
   # Firebase (필요한 서비스만 포함)
   firebase_core: ^3.8.1
   firebase_auth: ^5.3.4
@@ -101,6 +105,11 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+
+  # Freezed 코드 생성
+  build_runner: ^2.4.6
+  freezed: ^2.4.5
+  json_serializable: ^6.7.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

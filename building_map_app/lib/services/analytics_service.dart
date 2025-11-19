@@ -122,4 +122,90 @@ class AnalyticsService {
       debugPrint('❌ [Analytics] 화면 조회 기록 실패: $e');
     }
   }
+
+  /// 방 상세 페이지 조회 이벤트
+  ///
+  /// 게스트가 방 상세 페이지에 진입했을 때 호출됩니다.
+  ///
+  /// [roomId] 조회한 방 ID
+  /// [userId] 사용자 ID (선택사항)
+  Future<void> logViewRoomDetail({
+    required int roomId,
+    int? userId,
+  }) async {
+    try {
+      await analytics.logEvent(
+        name: 'view_room_detail',
+        parameters: {
+          'room_id': roomId,
+          if (userId != null) 'user_id': userId,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+      debugPrint('📊 [Analytics] view_room_detail 이벤트 기록: roomId=$roomId');
+    } catch (e) {
+      debugPrint('❌ [Analytics] view_room_detail 이벤트 기록 실패: $e');
+    }
+  }
+
+  /// 가격 안내 시트 열기 이벤트
+  ///
+  /// 게스트가 방 상세 페이지에서 가격 안내 바텀시트를 열었을 때 호출됩니다.
+  ///
+  /// [roomId] 방 ID
+  /// [userId] 사용자 ID (선택사항)
+  Future<void> logClickOpenPricingSheet({
+    required int roomId,
+    int? userId,
+  }) async {
+    try {
+      await analytics.logEvent(
+        name: 'click_open_pricing_sheet',
+        parameters: {
+          'room_id': roomId,
+          if (userId != null) 'user_id': userId,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+      debugPrint('📊 [Analytics] click_open_pricing_sheet 이벤트 기록: roomId=$roomId');
+    } catch (e) {
+      debugPrint('❌ [Analytics] click_open_pricing_sheet 이벤트 기록 실패: $e');
+    }
+  }
+
+  /// 계약 요청 클릭 이벤트
+  ///
+  /// 게스트가 계약 요청 버튼을 클릭했을 때 호출됩니다.
+  ///
+  /// [roomId] 방 ID
+  /// [userId] 사용자 ID (선택사항)
+  /// [checkInDate] 체크인 날짜 (선택사항)
+  /// [checkOutDate] 체크아웃 날짜 (선택사항)
+  Future<void> logClickRequestContract({
+    required int roomId,
+    int? userId,
+    DateTime? checkInDate,
+    DateTime? checkOutDate,
+  }) async {
+    try {
+      final int? numberOfDays = (checkInDate != null && checkOutDate != null)
+          ? checkOutDate.difference(checkInDate).inDays
+          : null;
+
+      await analytics.logEvent(
+        name: 'click_request_contract',
+        parameters: {
+          'room_id': roomId,
+          if (userId != null) 'user_id': userId,
+          if (checkInDate != null) 'check_in_date': checkInDate.toIso8601String(),
+          if (checkOutDate != null) 'check_out_date': checkOutDate.toIso8601String(),
+          if (numberOfDays != null) 'number_of_days': numberOfDays,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+      debugPrint('📊 [Analytics] click_request_contract 이벤트 기록: roomId=$roomId, days=$numberOfDays');
+    } catch (e) {
+      debugPrint('❌ [Analytics] click_request_contract 이벤트 기록 실패: $e');
+    }
+  }
 }

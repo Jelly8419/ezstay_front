@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 /// 방 편의시설 정보 모델
 class RoomAmenity {
@@ -21,12 +22,33 @@ class RoomAmenity {
   });
 
   factory RoomAmenity.fromJson(Map<String, dynamic> json) {
+    // 🔍 디버그: 원본 JSON 데이터 확인
+    debugPrint('=== RoomAmenity.fromJson Raw Data ===');
+    debugPrint('basicOptions RAW: ${json['basicOptions']} (${json['basicOptions'].runtimeType})');
+    debugPrint('additionalOptions RAW: ${json['additionalOptions']} (${json['additionalOptions'].runtimeType})');
+    debugPrint('convenienceOptions RAW: ${json['convenienceOptions']} (${json['convenienceOptions'].runtimeType})');
+
+    // additionalOptions에서 petsAllowed 추출 (백엔드가 잘못된 위치에 넣음)
+    bool petsAllowed = false;
+    if (json['additionalOptions'] != null) {
+      final additionalOpts = json['additionalOptions'];
+      if (additionalOpts is Map && additionalOpts.containsKey('petsAllowed')) {
+        final value = additionalOpts['petsAllowed'];
+        petsAllowed = value is int ? value == 1 : (value as bool? ?? false);
+      }
+    }
+    // JSON 최상위 레벨에서도 확인
+    if (json['petsAllowed'] != null) {
+      final value = json['petsAllowed'];
+      petsAllowed = value is int ? value == 1 : (value as bool? ?? false);
+    }
+
     return RoomAmenity(
       roomId: json['roomId'] as int,
       basicOptions: _parseOptions(json['basicOptions']),
       additionalOptions: _parseOptions(json['additionalOptions']),
       convenienceOptions: _parseOptions(json['convenienceOptions']),
-      petsAllowed: json['petsAllowed'] as bool? ?? false,
+      petsAllowed: petsAllowed,
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,
     );
@@ -34,16 +56,39 @@ class RoomAmenity {
 
   /// JSON 문자열을 Map<String, bool>로 파싱
   static Map<String, bool> _parseOptions(dynamic options) {
+    debugPrint('🔍 _parseOptions INPUT: $options (${options.runtimeType})');
     if (options == null) return {};
+
+    Map<String, dynamic> source;
 
     if (options is String) {
       final decoded = jsonDecode(options);
-      return Map<String, bool>.from(decoded as Map);
+      source = Map<String, dynamic>.from(decoded as Map);
+      debugPrint('  → Decoded from String: $source');
     } else if (options is Map) {
-      return Map<String, bool>.from(options);
+      source = Map<String, dynamic>.from(options);
+      debugPrint('  → Copied from Map: $source');
+    } else {
+      debugPrint('  → Unknown type, returning empty');
+      return {};
     }
 
-    return {};
+    // petsAllowed 키 제거 (별도 필드로 처리)
+    source.remove('petsAllowed');
+    debugPrint('  → After removing petsAllowed: $source');
+
+    // int 값을 bool로 변환 (1 → true, 0 → false)
+    final result = source.map((key, value) {
+      if (value is int) {
+        return MapEntry(key, value == 1);
+      } else if (value is bool) {
+        return MapEntry(key, value);
+      }
+      return MapEntry(key, false);
+    });
+
+    debugPrint('  → RESULT: $result');
+    return result;
   }
 
   Map<String, dynamic> toJson() {

@@ -32,7 +32,7 @@ class RoomFreeService {
 
   factory RoomFreeService.fromJson(Map<String, dynamic> json) {
     return RoomFreeService(
-      roomId: json['roomId'] as int,
+      roomId: json['roomId'] as int? ?? 0,  // ✅ null 안전 처리 + 기본값
       agreeTerms: json['agreeTerms'] as bool? ?? false,
       cleaningService: json['cleaningService'] as bool? ?? false,
       cleaningToolImageUrl: json['cleaningToolImageUrl'] as String?,

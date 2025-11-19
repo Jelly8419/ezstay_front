@@ -10,7 +10,7 @@ class GuestRoomService {
   final ApiClient _apiClient;
 
   GuestRoomService({ApiClient? apiClient})
-      : _apiClient = apiClient ?? ApiClient();
+    : _apiClient = apiClient ?? ApiClient();
 
   /// 지도 범위 내의 방 목록 조회 (필터 적용)
   ///
@@ -37,7 +37,8 @@ class GuestRoomService {
       // 필터 추가
       if (filters != null) {
         if (filters.dateRange != null) {
-          queryParams['startDate'] = filters.dateRange!.startDate.toIso8601String();
+          queryParams['startDate'] = filters.dateRange!.startDate
+              .toIso8601String();
           queryParams['endDate'] = filters.dateRange!.endDate.toIso8601String();
         }
 
@@ -50,9 +51,11 @@ class GuestRoomService {
         }
 
         if (!filters.priceRange.isDefault) {
-          queryParams['minPrice'] = (filters.priceRange.minPrice * 10000).toString();
+          queryParams['minPrice'] = (filters.priceRange.minPrice * 10000)
+              .toString();
           if (filters.priceRange.maxPrice != null) {
-            queryParams['maxPrice'] = (filters.priceRange.maxPrice! * 10000).toString();
+            queryParams['maxPrice'] = (filters.priceRange.maxPrice! * 10000)
+                .toString();
           }
         }
 
@@ -68,16 +71,19 @@ class GuestRoomService {
         // }
       }
 
-      final uri = Uri.parse('${ApiConfig.baseUrl}/api/guest/rooms/search').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '${ApiConfig.baseUrl}/api/guest/rooms/search',
+      ).replace(queryParameters: queryParams);
 
       final response = await _apiClient.get(uri, showErrorDialog: false);
 
       if (response != null && response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body) as Map<String, dynamic>;
+        final Map<String, dynamic> jsonData =
+            json.decode(response.body) as Map<String, dynamic>;
         final List<dynamic> data = jsonData['data'] as List<dynamic>;
-        return data.map((json) => Room.fromJson(json as Map<String, dynamic>)).toList();
+        return data
+            .map((json) => Room.fromJson(json as Map<String, dynamic>))
+            .toList();
       }
 
       // API 실패 시 빈 배열 반환
@@ -91,21 +97,95 @@ class GuestRoomService {
   /// 특정 방 상세 정보 조회
   Future<Room?> getRoomDetail(int roomId) async {
     try {
-      final uri = Uri.parse('${ApiConfig.getRoomById(roomId)}');
+      final uri = Uri.parse(ApiConfig.getRoomById(roomId));
       final response = await _apiClient.get(uri);
 
       if (response != null && response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body) as Map<String, dynamic>;
-        return Room.fromJson(jsonData['data'] as Map<String, dynamic>);
+        final Map<String, dynamic> jsonData =
+            json.decode(response.body) as Map<String, dynamic>;
+        final Map<String, dynamic> roomData =
+            jsonData['data'] as Map<String, dynamic>;
+
+        // 🔍 상세 파싱 로그 (필드별 타입 확인)
+        debugPrint('🔍 [Room $roomId] 필드 검사 시작...');
+        _logFieldTypes(roomData);
+
+        try {
+          return Room.fromJson(roomData);
+        } catch (parseError, stackTrace) {
+          debugPrint('❌ Room.fromJson 파싱 에러: $parseError');
+          debugPrint('📍 스택 트레이스:\n$stackTrace');
+          rethrow;
+        }
       }
 
       return null;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Failed to get room detail: $e');
+      debugPrint('Stack trace: $stackTrace');
       return null;
     }
   }
 
+  /// 필드별 타입 로깅 (디버깅용)
+  void _logFieldTypes(Map<String, dynamic> data) {
+    final intFields = [
+      'id',
+      'roomCount',
+      'bathroomCount',
+      'livingRoomCount',
+      'kitchenCount',
+      'dailyRent',
+      'dailyMaintenanceFee',
+      'cleaningFee',
+      'deposit',
+      'minContractWeeks',
+      'longTermWeeks',
+      'longTermDiscount',
+      'quickMoveIn',
+      'quickMoveInDiscount',
+      'maxGuests',
+    ];
+
+    for (final field in intFields) {
+      final value = data[field];
+      if (value == null) {
+        debugPrint('  ⚠️ $field: null');
+      } else {
+        debugPrint('  ✓ $field: $value (${value.runtimeType})');
+      }
+    }
+
+    // photos 배열 검사
+    if (data['photos'] != null) {
+      final photos = data['photos'] as List<dynamic>;
+      debugPrint('  📷 photos: ${photos.length}개');
+      for (var i = 0; i < photos.length; i++) {
+        final photo = photos[i] as Map<String, dynamic>;
+        debugPrint(
+            '    [$i] order: ${photo['order']} (${photo['order']?.runtimeType})');
+      }
+    }
+
+    // availableRentalItems 검사
+    if (data['availableRentalItems'] != null) {
+      final rental = data['availableRentalItems'] as Map<String, dynamic>;
+      debugPrint('  🛒 availableRentalItems:');
+      for (final category in ['hairDryers', 'beddingSets', 'amenityKits', 'towelSets']) {
+        if (rental[category] != null) {
+          final items = rental[category] as List<dynamic>;
+          debugPrint('    - $category: ${items.length}개');
+          for (var i = 0; i < items.length; i++) {
+            final item = items[i] as Map<String, dynamic>;
+            debugPrint(
+                '      [$i] id: ${item['id']} (${item['id']?.runtimeType})');
+          }
+        } else {
+          debugPrint('    - $category: null');
+        }
+      }
+    }
+  }
 }
 
 /// 지도 경계 모델
@@ -113,10 +193,7 @@ class MapBounds {
   final LatLng southwest; // 남서쪽 좌표
   final LatLng northeast; // 북동쪽 좌표
 
-  const MapBounds({
-    required this.southwest,
-    required this.northeast,
-  });
+  const MapBounds({required this.southwest, required this.northeast});
 
   /// 경계 내에 좌표가 포함되는지 확인
   bool contains(LatLng point) {
@@ -132,10 +209,7 @@ class LatLng {
   final double latitude;
   final double longitude;
 
-  const LatLng({
-    required this.latitude,
-    required this.longitude,
-  });
+  const LatLng({required this.latitude, required this.longitude});
 
   @override
   String toString() => 'LatLng($latitude, $longitude)';
