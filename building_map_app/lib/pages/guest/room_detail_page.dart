@@ -332,11 +332,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         // 주소
         Row(
           children: [
-            const Icon(
-              Icons.location_on,
-              size: 16,
-              color: AppColors.textSecondary,
-            ),
+            const Icon(Icons.location_on, size: 16, color: AppColors.gray600),
             const SizedBox(width: 4),
             Expanded(
               child: Text(
@@ -456,7 +452,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   Widget _buildInfoItem(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 28, color: AppColors.primary600),
+        Icon(icon, size: 28, color: AppColors.gray600),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -766,7 +762,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         // 3. 청소비 (cleaningService 신청 시 5만원, 아니면 호스트 설정값)
         _buildPriceRow(
           '청소비',
-          (_room!.freeService?.cleaningService == true) ? 50000 : _room!.cleaningFee,
+          (_room!.freeService?.cleaningService == true)
+              ? 50000
+              : _room!.cleaningFee,
         ),
         const Divider(),
 
