@@ -598,7 +598,8 @@ class _MapScreenState extends State<MapScreen> {
                         desktop: Row(
                           children: [
                             // 왼쪽: 매물 리스트 (반응형 너비: 화면의 30%, 최소 300px, 최대 450px)
-                            if (_roomsForMap.isNotEmpty)
+                            // 필터링된 결과가 있을 때만 표시
+                            if (_getFilteredRoomsForList().isNotEmpty)
                               LayoutBuilder(
                                 builder: (context, constraints) {
                                   // 부모의 너비를 기준으로 반응형 계산
@@ -633,32 +634,90 @@ class _MapScreenState extends State<MapScreen> {
 
                                   // 결과 없음 메시지 (줌 레벨에 따라 다른 메시지 표시)
                                   if (_roomsForMap.isEmpty)
-                                    Center(
-                                      child: Container(
-                                        padding: const EdgeInsets.all(24),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            12,
+                                    Positioned.fill(
+                                      child: Center(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: 16,
                                           ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.1,
-                                              ),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.95,
                                             ),
-                                          ],
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            border: Border.all(
+                                              color: AppColors.border,
+                                              width: 2,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.15,
+                                                ),
+                                                blurRadius: 20,
+                                                offset: const Offset(0, 10),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Text(
+                                            _currentZoomLevel != null &&
+                                                    _currentZoomLevel! >= 6
+                                                ? '지도를 확대해서 방을 찾아주세요.'
+                                                : '현재 위치에 조건이 일치하는 방이 없습니다.',
+                                            style: AppTextStyles.bodyLarge
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                            textAlign: TextAlign.center,
+                                          ),
                                         ),
-                                        child: Text(
-                                          _currentZoomLevel != null &&
-                                                  _currentZoomLevel! >= 6
-                                              ? '지도를 확대해서 매물을 찾아주세요.'
-                                              : '조건에 일치하는 결과가 없습니다.',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.grey,
+                                      ),
+                                    ),
+
+                                  // 필터링 결과 없음 메시지 (전체 매물은 있지만 필터링으로 걸러진 경우)
+                                  if (!_isLoading &&
+                                      _getFilteredRoomsForList().isEmpty &&
+                                      _roomsForMap.isNotEmpty)
+                                    Positioned.fill(
+                                      child: Center(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: 16,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.95,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            border: Border.all(
+                                              color: AppColors.border,
+                                              width: 2,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.15,
+                                                ),
+                                                blurRadius: 20,
+                                                offset: const Offset(0, 10),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Text(
+                                            '일치하는 조건의 매물이 없습니다',
+                                            style: AppTextStyles.bodyLarge
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                            textAlign: TextAlign.center,
                                           ),
                                         ),
                                       ),
@@ -999,6 +1058,39 @@ class _MapScreenState extends State<MapScreen> {
       children: [
         _buildMap(),
 
+        // 필터링 결과가 없을 때 안내 메시지
+        if (!_isLoading && filteredRooms.isEmpty)
+          Positioned.fill(
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.95),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  '일치하는 조건의 매물이 없습니다',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+
         // 매물 개수 뱃지 (모바일: 하단 중앙, 데스크톱: 좌측 상단)
         // 모바일에서는 슬라이드 카드 표시 시 비노출
         if (filteredRooms.isNotEmpty &&
@@ -1174,8 +1266,8 @@ class _MapScreenState extends State<MapScreen> {
               ),
               child: Text(
                 _currentZoomLevel != null && _currentZoomLevel! >= 6
-                    ? '지도를 확대해서 매물을 찾아주세요.'
-                    : '조건에 일치하는 결과가 없습니다.',
+                    ? '지도를 확대해서 방을 찾아주세요.'
+                    : '현재 위치에 조건이 일치하는 방이 없습니다.',
                 style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
             ),

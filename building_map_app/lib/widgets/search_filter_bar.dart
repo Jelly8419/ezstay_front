@@ -43,7 +43,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
 
   // 임대료 범위
   double _rentMin = 0;
-  double _rentMax = 150;
+  double _rentMax = 160;
 
   @override
   void initState() {
@@ -71,7 +71,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
 
     // 임대료
     _rentMin = _currentFilters.priceRange.minPrice.toDouble();
-    _rentMax = _currentFilters.priceRange.maxPrice?.toDouble() ?? 150;
+    _rentMax = _currentFilters.priceRange.maxPrice?.toDouble() ?? 160;
   }
 
   @override
@@ -193,7 +193,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                           _rangeEnd = null;
                           _selectedBuildingTypes.clear();
                           _rentMin = 0;
-                          _rentMax = 150;
+                          _rentMax = 160;
                         });
                         widget.onFiltersChanged(_currentFilters);
                       },
@@ -207,7 +207,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.close,
+                              Icons.refresh,
                               size: 16,
                               color: Colors.grey[600],
                             ),
@@ -240,7 +240,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                   _rangeEnd = null;
                   _selectedBuildingTypes.clear();
                   _rentMin = 0;
-                  _rentMax = 150;
+                  _rentMax = 160;
                 });
                 widget.onFiltersChanged(_currentFilters);
               },
@@ -391,20 +391,20 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
   }
 
   String _formatRentRangeMobile() {
-    if (_rentMin == 0 && _rentMax == 150) {
+    if (_rentMin == 0 && _rentMax == 160) {
       return '임대료';
     }
-    if (_rentMax == 150) {
+    if (_rentMax == 160) {
       return '${_rentMin.toInt()}만원~';
     }
     return '${_rentMin.toInt()}~${_rentMax.toInt()}만원';
   }
 
   String _formatRentRangeDesktop() {
-    if (_rentMin == 0 && _rentMax == 150) {
+    if (_rentMin == 0 && _rentMax == 160) {
       return '전체';
     }
-    if (_rentMax == 150) {
+    if (_rentMax == 160) {
       return '${_rentMin.toInt()}만원 이상';
     }
     return '${_rentMin.toInt()}~${_rentMax.toInt()}만원';
@@ -1193,7 +1193,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _rentMax == 150 ? '전체' : '${_rentMax.toInt()}만원',
+                  _rentMax == 160 ? '전체' : '${_rentMax.toInt()}만원',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -1210,11 +1210,11 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
         RangeSlider(
           values: RangeValues(_rentMin, _rentMax),
           min: 0,
-          max: 150,
-          divisions: 15,
+          max: 160,
+          divisions: 16,
           labels: RangeLabels(
             '${_rentMin.toInt()}만원',
-            _rentMax == 150 ? '전체' : '${_rentMax.toInt()}만원',
+            _rentMax == 160 ? '전체' : '${_rentMax.toInt()}만원',
           ),
           activeColor: const Color(0xFF3B82F6),
           inactiveColor: Colors.grey[300],
@@ -1236,7 +1236,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                 onPressed: () {
                   setOverlayState(() {
                     _rentMin = 0;
-                    _rentMax = 150;
+                    _rentMax = 160;
                   });
                 },
                 style: OutlinedButton.styleFrom(
@@ -1260,7 +1260,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                     _currentFilters = _currentFilters.copyWith(
                       priceRange: PriceRange(
                         minPrice: _rentMin.toInt(),
-                        maxPrice: _rentMax == 150 ? null : _rentMax.toInt(),
+                        maxPrice: _rentMax == 160 ? null : _rentMax.toInt(),
                       ),
                     );
                   });
