@@ -3,14 +3,13 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/room.dart';
-import '../../models/rental_item.dart';
 import '../../models/booking_state.dart';
-import '../../models/selected_rental_item.dart';
+import '../../models/rental_item.dart';
 import '../../utils/price_calculator.dart';
 import '../common/date_range_picker.dart';
 
 /// 모바일용 예약 Bottom Sheet (React UI 스타일)
-/// 날짜 선택, 옵션 선택, 가격 분석을 포함합니다.
+/// 날짜 선택 및 가격 분석을 포함합니다.
 class BookingBottomSheet extends StatefulWidget {
   final Room room;
   final BookingState initialState;
@@ -32,6 +31,7 @@ class BookingBottomSheet extends StatefulWidget {
 class _BookingBottomSheetState extends State<BookingBottomSheet> {
   late BookingState _bookingState;
   late ScrollController _scrollController;
+  String? _validationError; // 날짜 검증 에러 메시지
 
   @override
   void initState() {
@@ -181,7 +181,6 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                       checkInDate: _bookingState.checkInDate,
                       checkOutDate: _bookingState.checkOutDate,
                       minContractDays: widget.room.minContractDays,
-                      errorMessage: validationError,
                       onDateSelected: (checkIn, checkOut) {
                         _updateState(
                           _bookingState.copyWith(
@@ -190,75 +189,32 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                           ),
                         );
                       },
+                      onValidationError: (errorMessage) {
+                        // 다이얼로그에서 검증 에러 발생 시 하단에 표시
+                        setState(() {
+                          _validationError = errorMessage;
+                        });
+
+                        // 2초 후 자동 제거
+                        Future.delayed(const Duration(seconds: 2), () {
+                          if (mounted) {
+                            setState(() {
+                              _validationError = null;
+                            });
+                          }
+                        });
+                      },
                     ),
 
                     SizedBox(height: AppSpacing.md),
 
-                    // 옵션 상품 섹션
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '옵션 상품(EZstay에서 제공해드려요)',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          '옵션 상품은 계약 승인 후에도 구매할 수 있어요.',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: AppSpacing.sm),
-
-                    Container(
-                      padding: EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: AppRadius.radiusXl,
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Column(children: _buildRentalItemsList()),
-                    ),
-
-                    // 최소 주문 금액 안내
-                    if (priceBreakdown.rentalItemsFee > 0 &&
-                        priceBreakdown.rentalItemsFee < 10000) ...[
-                      SizedBox(height: AppSpacing.sm),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: AppSpacing.xs,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFFBEB), // amber-50
-                          borderRadius: AppRadius.radiusMd,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: 16,
-                              color: const Color(0xFFD97706), // amber-600
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '옵션 상품은 최소 10,000원 이상 주문 가능합니다',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: const Color(0xFFD97706), // amber-600
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    // 렌탈 아이템 섹션 (EZStay 제공)
+                    if (widget.room.availableRentalItems != null &&
+                        widget.room.availableRentalItems!.hasItems) ...[
+                      Divider(color: AppColors.divider),
+                      SizedBox(height: AppSpacing.md),
+                      _buildRentalItemsSection(),
+                      SizedBox(height: AppSpacing.md),
                     ],
 
                     // 가격 분석 (날짜 선택 시만 표시)
@@ -315,191 +271,6 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
     );
   }
 
-  /// 렌탈 아이템 리스트 생성
-  List<Widget> _buildRentalItemsList() {
-    final items = <Widget>[];
-
-    if (widget.room.availableRentalItems == null)
-      return [
-        Padding(
-          padding: EdgeInsets.all(AppSpacing.sm),
-          child: Text(
-            '옵션 상품이 없습니다.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ];
-
-    final allItems = [
-      ...widget.room.availableRentalItems!.beddingSets,
-      ...widget.room.availableRentalItems!.amenityKits,
-      ...widget.room.availableRentalItems!.hairDryers,
-      ...widget.room.availableRentalItems!.towelSets,
-    ];
-
-    for (int i = 0; i < allItems.length; i++) {
-      final item = allItems[i];
-      items.add(_buildCompactRentalItem(item));
-
-      if (i < allItems.length - 1) {
-        items.add(Divider(height: AppSpacing.md * 2, color: AppColors.divider));
-      }
-    }
-
-    return items;
-  }
-
-  /// 컴팩트한 렌탈 아이템 (리액트 UI 스타일)
-  Widget _buildCompactRentalItem(RentalItem item) {
-    final currentQuantity = _bookingState.getQuantity(item.id);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 상품명과 설명
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (item.description.isNotEmpty)
-                    Text(
-                      item.description,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        SizedBox(height: AppSpacing.xs),
-
-        // 가격 및 수량 조절
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // 왼쪽: 단가 + 수량 조절
-            Row(
-              children: [
-                Text(
-                  PriceCalculator.formatKRW(item.price),
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                SizedBox(width: AppSpacing.sm),
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.neutral100,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    children: [
-                      InkWell(
-                        onTap: currentQuantity > 0
-                            ? () {
-                                _updateState(
-                                  _bookingState.updateRentalItem(
-                                    SelectedRentalItem(
-                                      id: item.id,
-                                      name: item.name,
-                                      description: item.description,
-                                      price: item.price,
-                                      quantity: currentQuantity - 1,
-                                    ),
-                                  ),
-                                );
-                              }
-                            : null,
-                        borderRadius: BorderRadius.circular(6),
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          alignment: Alignment.center,
-                          child: Icon(
-                            Icons.remove,
-                            size: 14,
-                            color: currentQuantity > 0
-                                ? AppColors.textSecondary
-                                : AppColors.neutral400,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: 24,
-                        alignment: Alignment.center,
-                        child: Text(
-                          '$currentQuantity',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      InkWell(
-                        onTap: currentQuantity < 4
-                            ? () {
-                                _updateState(
-                                  _bookingState.updateRentalItem(
-                                    SelectedRentalItem(
-                                      id: item.id,
-                                      name: item.name,
-                                      description: item.description,
-                                      price: item.price,
-                                      quantity: currentQuantity + 1,
-                                    ),
-                                  ),
-                                );
-                              }
-                            : null,
-                        borderRadius: BorderRadius.circular(6),
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          alignment: Alignment.center,
-                          child: Icon(
-                            Icons.add,
-                            size: 14,
-                            color: currentQuantity < 4
-                                ? AppColors.textSecondary
-                                : AppColors.neutral400,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // 오른쪽: 총액
-            Text(
-              PriceCalculator.formatKRW(item.price * currentQuantity),
-              style: AppTextStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildPriceBreakdown(PriceBreakdown breakdown) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,7 +292,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
         _buildPriceRow('청소비', breakdown.cleaningFee),
         _buildPriceRow('계약 수수료', breakdown.contractFee),
         if (breakdown.rentalItemsFee > 0)
-          _buildPriceRow('옵션 상품', breakdown.rentalItemsFee),
+          _buildPriceRow('렌탈 아이템', breakdown.rentalItemsFee),
         _buildPriceRow('보증금(퇴실 후 환급)', breakdown.deposit),
 
         SizedBox(height: AppSpacing.sm),
@@ -570,6 +341,212 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
     );
   }
 
+  Widget _buildRentalItemsSection() {
+    final availableItems = widget.room.availableRentalItems!;
+    final allItems = availableItems.allItems; // 평탄화된 리스트
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 헤더
+        Text(
+          '옵션 상품(EZstay에서 제공해드려요)',
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        SizedBox(height: AppSpacing.xs),
+        Text(
+          '옵션 상품은 계약 승인 후에도 구매할 수 있어요.',
+          style: AppTextStyles.bodySmall.copyWith(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        SizedBox(height: AppSpacing.md),
+
+        // 단일 컨테이너에 모든 아이템 표시
+        Container(
+          padding: EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: AppRadius.radiusXl,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            children: allItems.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              final isLast = index == allItems.length - 1;
+              return _buildRentalItemCard(item, isLast);
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRentalItemCard(RentalItem item, bool isLast) {
+    final currentQuantity = _bookingState.getRentalItemQuantity(item.id);
+
+    return Container(
+      padding: EdgeInsets.only(bottom: AppSpacing.sm),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: isLast
+              ? BorderSide.none
+              : BorderSide(color: AppColors.border, width: 1),
+        ),
+      ),
+      margin: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 상품명과 설명 (한 줄로)
+          Padding(
+            padding: EdgeInsets.only(bottom: AppSpacing.xs * 0.75),
+            child: RichText(
+              text: TextSpan(
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+                children: [
+                  TextSpan(
+                    text: item.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF000000),
+                    ),
+                  ),
+                  if (item.description.isNotEmpty)
+                    TextSpan(
+                      text: ' (${item.description})',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // 가격 및 수량 조절
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // 왼쪽: 단가 및 수량 조절
+              Row(
+                children: [
+                  Text(
+                    PriceCalculator.formatKRW(item.price),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Color(0xFF4A5565),
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  _buildQuantitySelector(item),
+                ],
+              ),
+
+              // 오른쪽: 총액
+              Text(
+                PriceCalculator.formatKRW(item.price * currentQuantity),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuantitySelector(RentalItem item) {
+    final currentQuantity = _bookingState.getRentalItemQuantity(item.id);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.radiusSm,
+        border: Border.all(color: AppColors.neutral300),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 감소 버튼
+          InkWell(
+            onTap: currentQuantity > 0
+                ? () {
+                    _updateState(
+                      _bookingState.addRentalItem(item.id, currentQuantity - 1),
+                    );
+                  }
+                : null,
+            borderRadius: BorderRadius.horizontal(left: Radius.circular(6)),
+            child: Container(
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.remove,
+                size: 18,
+                color: currentQuantity > 0
+                    ? AppColors.textPrimary
+                    : AppColors.neutral400,
+              ),
+            ),
+          ),
+          // 수량 표시
+          Container(
+            width: 40,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              border: Border.symmetric(
+                vertical: BorderSide(color: AppColors.neutral300),
+              ),
+            ),
+            child: Text(
+              '$currentQuantity',
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          // 증가 버튼
+          InkWell(
+            onTap: currentQuantity < item.availableStock
+                ? () {
+                    _updateState(
+                      _bookingState.addRentalItem(item.id, currentQuantity + 1),
+                    );
+                  }
+                : null,
+            borderRadius: BorderRadius.horizontal(right: Radius.circular(6)),
+            child: Container(
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.add,
+                size: 18,
+                color: currentQuantity < item.availableStock
+                    ? AppColors.textPrimary
+                    : AppColors.neutral400,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBottomBar(PriceBreakdown breakdown, String? validationError) {
     final bool canRequestContract =
         _bookingState.hasSelectedDates && validationError == null;
@@ -606,6 +583,33 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
               ],
             ),
             SizedBox(height: AppSpacing.md),
+          ],
+
+          // 검증 에러 메시지 (날짜 선택 버튼 위에 표시)
+          if (_validationError != null) ...[
+            Container(
+              padding: EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.error50,
+                borderRadius: AppRadius.radiusMd,
+                border: Border.all(color: AppColors.error500),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, size: 16, color: AppColors.error500),
+                  SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      _validationError!,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.error700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: AppSpacing.sm),
           ],
 
           // 계약 요청 버튼

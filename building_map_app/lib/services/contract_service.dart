@@ -20,14 +20,14 @@ class ContractService {
     required int rentalFee,
     required int maintenanceFee,
     required int cleaningFee,
-    required int rentalItemsFee,
     required int platformFee,
     required int discountAmount,
     required int subtotal,
     required int totalUsageFee,
     required int deposit,
     required int finalTotalAmount,
-    Map<String, dynamic>? rentalItems,
+    int rentalItemsFee = 0,
+    List<Map<String, dynamic>>? rentalItems,
     String? guestMessage,
     String? discountCode,
     String? discountType,
@@ -64,7 +64,6 @@ class ContractService {
       'rentalFee': rentalFee,
       'maintenanceFee': maintenanceFee,
       'cleaningFee': cleaningFee,
-      'rentalItemsFee': rentalItemsFee,
       'platformFee': platformFee,
       'discountAmount': discountAmount,
       'subtotal': subtotal,
@@ -72,7 +71,8 @@ class ContractService {
       'deposit': deposit,
       'finalTotalAmount': finalTotalAmount,
 
-      // 렌탈 아이템
+      // 렌탈 아이템 (EZStay 제공)
+      if (rentalItemsFee > 0) 'rentalItemsFee': rentalItemsFee,
       if (rentalItems != null && rentalItems.isNotEmpty) 'rentalItems': rentalItems,
 
       // 메시지

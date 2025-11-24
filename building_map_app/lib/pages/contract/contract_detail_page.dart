@@ -217,10 +217,6 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
               // 금액 정보
               _buildPriceSection(),
 
-              // 렌탈 아이템
-              if (_contract!.rentalItems != null && _contract!.rentalItems!.isNotEmpty)
-                _buildRentalItemsSection(),
-
               // 게스트/호스트 정보
               _buildPartiesSection(),
 
@@ -399,7 +395,7 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${room.area.toStringAsFixed(1)}㎡ · ${room.buildingType}',
+                      '${room.area.toStringAsFixed(0)}평 · ${room.buildingType}',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey.shade500,
@@ -584,8 +580,6 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
           _buildPriceRow('임대료', _contract!.rentalFee),
           _buildPriceRow('관리비', _contract!.maintenanceFee),
           _buildPriceRow('청소비용', _contract!.cleaningFee),
-          if (_contract!.rentalItemsFee > 0)
-            _buildPriceRow('렌탈 아이템', _contract!.rentalItemsFee),
           if (_contract!.platformFee > 0)
             _buildPriceRow('플랫폼 수수료', _contract!.platformFee),
           if (_contract!.discountAmount > 0) ...[
@@ -928,41 +922,6 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildRentalItemsSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.grey.shade200,
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '렌탈 아이템',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _contract!.rentalItems.toString(),
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade800,
-            ),
-          ),
-        ],
       ),
     );
   }

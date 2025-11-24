@@ -546,16 +546,19 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
   }
 
   Widget _buildAreaField() {
+    // formData['area']는 평수로 저장
     final areaValue = widget.formData['area'] ?? '';
-    final pyeong = areaValue.isNotEmpty && double.tryParse(areaValue) != null
-        ? (double.parse(areaValue) / 3.3).round()
-        : 0;
+
+    // 초기값 설정
+    if (areaValue.isNotEmpty && _areaController.text.isEmpty) {
+      _areaController.text = areaValue;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '전용 면적 (m²)',
+          '전용 면적 (평)',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -565,13 +568,14 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
         const SizedBox(height: 8),
         TextField(
           controller: _areaController,
-          onChanged: (value) => _updateFormData('area', value),
+          onChanged: (value) {
+            // 평수 그대로 저장
+            _updateFormData('area', value);
+          },
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
-            hintText: '예: 33',
+            hintText: '예: 10',
             hintStyle: TextStyle(color: Colors.grey[400]),
-            suffixText: pyeong > 0 ? '($pyeong평)' : null,
-            suffixStyle: const TextStyle(color: AppColors.textSecondary),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(

@@ -126,12 +126,11 @@ class _PropertyCardState extends State<PropertyCard> {
 
                     SizedBox(height: AppSpacing.sm),
 
-                    // 방 정보 (침대만 표시)
-                    if (widget.room.totalBeds > 0)
-                      _buildIconInfo(
-                        Icons.bed,
-                        '침대 ${widget.room.totalBeds}',
-                      ),
+                    // 방 정보 (최대 인원 표시)
+                    _buildIconInfo(
+                      Icons.people,
+                      '최대 ${widget.room.maxGuests}명',
+                    ),
                   ],
                 ),
               ),

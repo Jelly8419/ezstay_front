@@ -5,12 +5,12 @@ import '../../core/theme/app_text_styles.dart';
 
 /// 날짜 범위 선택 위젯 (React UI 스타일 - 범위 선택)
 /// 체크인/체크아웃 날짜를 동시에 선택하고 최소 계약 일수를 검증합니다.
-class DateRangePicker extends StatelessWidget {
+class DateRangePicker extends StatefulWidget {
   final DateTime? checkInDate;
   final DateTime? checkOutDate;
   final int minContractDays; // 최소 계약 일수 (예: 7일)
-  final Function(DateTime checkIn, DateTime checkOut) onDateSelected;
-  final String? errorMessage;
+  final void Function(DateTime checkIn, DateTime checkOut) onDateSelected;
+  final void Function(String)? onValidationError; // 검증 에러 콜백
 
   const DateRangePicker({
     super.key,
@@ -18,9 +18,14 @@ class DateRangePicker extends StatelessWidget {
     this.checkOutDate,
     required this.minContractDays,
     required this.onDateSelected,
-    this.errorMessage,
+    this.onValidationError,
   });
 
+  @override
+  State<DateRangePicker> createState() => _DateRangePickerState();
+}
+
+class _DateRangePickerState extends State<DateRangePicker> {
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -34,9 +39,7 @@ class DateRangePicker extends StatelessWidget {
             padding: EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               border: Border.all(
-                color: errorMessage != null
-                    ? AppColors.error500
-                    : AppColors.border,
+                color: AppColors.border,
                 width: 1,
               ),
               borderRadius: AppRadius.radiusMd,
@@ -47,7 +50,7 @@ class DateRangePicker extends StatelessWidget {
                 Icon(
                   Icons.date_range,
                   size: 20,
-                  color: checkInDate != null && checkOutDate != null
+                  color: widget.checkInDate != null && widget.checkOutDate != null
                       ? AppColors.primary600
                       : AppColors.textSecondary,
                 ),
@@ -71,16 +74,10 @@ class DateRangePicker extends StatelessWidget {
           ),
         ),
 
-        // 에러 메시지 표시
-        if (errorMessage != null) ...[
-          SizedBox(height: AppSpacing.sm),
-          Text(errorMessage!, style: AppTextStyles.bodySmallError),
-        ],
-
         // 최소 계약 일수 안내
         SizedBox(height: AppSpacing.sm),
         Text(
-          '최소 $minContractDays일 이상 선택해주세요',
+          '최소 ${widget.minContractDays}일 이상 선택해주세요',
           style: AppTextStyles.bodySmall.copyWith(
             color: AppColors.textSecondary,
           ),
@@ -96,11 +93,12 @@ class DateRangePicker extends StatelessWidget {
   void _showRangePicker(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => _DateRangePickerDialog(
-        initialCheckIn: checkInDate,
-        initialCheckOut: checkOutDate,
-        minContractDays: minContractDays,
-        onDateRangeSelected: onDateSelected,
+      builder: (dialogContext) => _DateRangePickerDialog(
+        initialCheckIn: widget.checkInDate,
+        initialCheckOut: widget.checkOutDate,
+        minContractDays: widget.minContractDays,
+        onDateRangeSelected: widget.onDateSelected,
+        onValidationError: widget.onValidationError ?? (_) {}, // 콜백 전달 (없으면 빈 함수)
       ),
     );
   }
@@ -111,13 +109,15 @@ class _DateRangePickerDialog extends StatefulWidget {
   final DateTime? initialCheckIn;
   final DateTime? initialCheckOut;
   final int minContractDays;
-  final Function(DateTime checkIn, DateTime checkOut) onDateRangeSelected;
+  final void Function(DateTime checkIn, DateTime checkOut) onDateRangeSelected;
+  final void Function(String) onValidationError;
 
   const _DateRangePickerDialog({
     this.initialCheckIn,
     this.initialCheckOut,
     required this.minContractDays,
     required this.onDateRangeSelected,
+    required this.onValidationError,
   });
 
   @override
@@ -480,17 +480,11 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
         // 최소 기간 체크
         final duration = laterDate.difference(earlierDate).inDays;
         if (duration < widget.minContractDays) {
-          // 에러 표시
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '최소 ${widget.minContractDays}일 이상 선택해주세요. (현재: $duration일)',
-              ),
-              duration: const Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
+          // 에러 메시지를 위젯에 전달 (버튼 아래 표시)
+          widget.onValidationError(
+            '최소 ${widget.minContractDays}일 이상 선택해주세요. (현재: $duration일)',
           );
-          return;
+          return; // 다이얼로그는 열린 상태 유지
         }
 
         // 체크인/체크아웃 날짜 설정 (자동 정렬됨)

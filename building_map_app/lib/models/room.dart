@@ -1,6 +1,6 @@
 import 'room_photo.dart';
 import 'room_amenity_freezed.dart';
-import 'room_free_service.dart';
+import 'room_ez_service.dart';
 import 'rental_item.dart';
 
 /// 방/숙소 정보 모델 (API 응답 기준)
@@ -58,7 +58,7 @@ class Room {
   // 연관 데이터
   final List<RoomPhoto> photos;
   final RoomAmenityFreezed? amenity;
-  final RoomFreeService? freeService;
+  final RoomEzService? ezService;
   final AvailableRentalItems? availableRentalItems;
 
   // UI 전용 필드
@@ -115,7 +115,7 @@ class Room {
     required this.updatedAt,
     required this.photos,
     this.amenity,
-    this.freeService,
+    this.ezService,
     this.availableRentalItems,
     this.isNearSubway = false,
     this.hostProfileImage,
@@ -191,8 +191,16 @@ class Room {
       // 연관 데이터
       photos: photoList,
       amenity: json['amenity'] != null ? RoomAmenityFreezed.fromJson(json['amenity'] as Map<String, dynamic>) : null,
-      freeService: json['freeService'] != null ? RoomFreeService.fromJson(json['freeService'] as Map<String, dynamic>) : null,
-      availableRentalItems: json['availableRentalItems'] != null ? AvailableRentalItems.fromJson(json['availableRentalItems'] as Map<String, dynamic>) : null,
+      // ezService 우선, 없으면 freeService fallback (백엔드 마이그레이션 기간 호환성)
+      ezService: json['ezService'] != null
+          ? RoomEzService.fromJson(json['ezService'] as Map<String, dynamic>)
+          : json['freeService'] != null
+              ? RoomEzService.fromJson(json['freeService'] as Map<String, dynamic>)
+              : null,
+      // EZStay가 제공하는 렌탈 아이템 (모든 방에 표시)
+      availableRentalItems: json['availableRentalItems'] != null
+          ? AvailableRentalItems.fromJson(json['availableRentalItems'] as Map<String, dynamic>)
+          : null,
 
       // UI 전용 필드
       isNearSubway: json['isNearSubway'] as bool? ?? false,
@@ -269,7 +277,7 @@ class Room {
       'updatedAt': updatedAt.toIso8601String(),
       'photos': photos.map((p) => p.toJson()).toList(),
       'amenity': amenity?.toJson(),
-      'freeService': freeService?.toJson(),
+      'ezService': ezService?.toJson(),
       'availableRentalItems': availableRentalItems?.toJson(),
       'isNearSubway': isNearSubway,
       'hostProfileImage': hostProfileImage,
@@ -281,7 +289,6 @@ class Room {
     };
   }
 
-  // === 계산 프로퍼티 (Computed Properties) ===
 
   /// 최소 계약 일수 (주 단위를 일 단위로 변환, React UI 호환)
   int get minContractDays => minContractWeeks * 7;
@@ -314,19 +321,11 @@ class Room {
   /// 장기 계약 할인 적용된 월 임대료
   int get longTermDiscountedMonthlyRent => (longTermDiscountedRent * 4.3).round();
 
-  /// 총 침대 수 (freeService의 bed 정보에서 계산)
-  int get totalBeds {
-    if (freeService == null) return 0;
-    return freeService!.bedSizeSuperSingle +
-           freeService!.bedSizeQueen +
-           freeService!.bedSizeKing;
-  }
-
   /// 편의시설 평탄화 리스트 (UI용)
   List<String> get amenitiesList => amenity?.toFlatList() ?? [];
 
-  /// 무료 서비스 평탄화 리스트 (UI용)
-  List<String> get freeServicesList => freeService?.toFlatList() ?? [];
+  /// 이지스테이 관리 서비스 평탄화 리스트 (UI용)
+  List<String> get ezServicesList => ezService?.toFlatList() ?? [];
 
   /// 반려동물 동반 가능 여부
   bool get isPetFriendly => amenity?.petsAllowed ?? false;
@@ -376,7 +375,7 @@ class Room {
     DateTime? updatedAt,
     List<RoomPhoto>? photos,
     RoomAmenityFreezed? amenity,
-    RoomFreeService? freeService,
+    RoomEzService? ezService,
     AvailableRentalItems? availableRentalItems,
     bool? isNearSubway,
     String? hostProfileImage,
@@ -431,7 +430,7 @@ class Room {
       updatedAt: updatedAt ?? this.updatedAt,
       photos: photos ?? this.photos,
       amenity: amenity ?? this.amenity,
-      freeService: freeService ?? this.freeService,
+      ezService: ezService ?? this.ezService,
       availableRentalItems: availableRentalItems ?? this.availableRentalItems,
       isNearSubway: isNearSubway ?? this.isNearSubway,
       hostProfileImage: hostProfileImage ?? this.hostProfileImage,

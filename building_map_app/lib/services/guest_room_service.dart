@@ -166,25 +166,6 @@ class GuestRoomService {
             '    [$i] order: ${photo['order']} (${photo['order']?.runtimeType})');
       }
     }
-
-    // availableRentalItems 검사
-    if (data['availableRentalItems'] != null) {
-      final rental = data['availableRentalItems'] as Map<String, dynamic>;
-      debugPrint('  🛒 availableRentalItems:');
-      for (final category in ['hairDryers', 'beddingSets', 'amenityKits', 'towelSets']) {
-        if (rental[category] != null) {
-          final items = rental[category] as List<dynamic>;
-          debugPrint('    - $category: ${items.length}개');
-          for (var i = 0; i < items.length; i++) {
-            final item = items[i] as Map<String, dynamic>;
-            debugPrint(
-                '      [$i] id: ${item['id']} (${item['id']?.runtimeType})');
-          }
-        } else {
-          debugPrint('    - $category: null');
-        }
-      }
-    }
   }
 }
 

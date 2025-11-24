@@ -345,7 +345,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${contract.roomArea.toStringAsFixed(1)}㎡ · ${contract.buildingType}',
+                          '${contract.roomArea.toStringAsFixed(0)}평 · ${contract.buildingType}',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade500,

@@ -1,15 +1,13 @@
-import 'selected_rental_item.dart';
-
-/// 예약/가격 계산 상태 (React UI의 상태와 동일)
+/// 예약/가격 계산 상태 (날짜 및 렌탈 아이템 관리)
 class BookingState {
   final DateTime? checkInDate;
   final DateTime? checkOutDate;
-  final List<SelectedRentalItem> selectedRentalItems;
+  final Map<int, int> selectedRentalItems; // 아이템 ID → 수량
 
   const BookingState({
     this.checkInDate,
     this.checkOutDate,
-    this.selectedRentalItems = const [],
+    this.selectedRentalItems = const {},
   });
 
   /// 선택된 날짜 일수 (checkOut - checkIn)
@@ -21,26 +19,10 @@ class BookingState {
   /// 날짜가 선택되었는지 여부
   bool get hasSelectedDates => checkInDate != null && checkOutDate != null;
 
-  /// 렌탈 아이템 총 가격
-  int get rentalItemsTotalPrice {
-    return selectedRentalItems.fold(0, (sum, item) => sum + item.totalPrice);
-  }
-
-  /// 특정 렌탈 아이템의 수량 가져오기
-  int getQuantity(int itemId) {
-    final item = selectedRentalItems.where((i) => i.id == itemId).firstOrNull;
-    return item?.quantity ?? 0;
-  }
-
-  /// 렌탈 아이템이 선택되어 있는지 확인
-  bool hasRentalItem(int itemId) {
-    return selectedRentalItems.any((i) => i.id == itemId && i.quantity > 0);
-  }
-
   BookingState copyWith({
     DateTime? checkInDate,
     DateTime? checkOutDate,
-    List<SelectedRentalItem>? selectedRentalItems,
+    Map<int, int>? selectedRentalItems,
   }) {
     return BookingState(
       checkInDate: checkInDate ?? this.checkInDate,
@@ -58,45 +40,34 @@ class BookingState {
     );
   }
 
-  /// 렌탈 아이템 추가/업데이트
-  BookingState updateRentalItem(SelectedRentalItem item) {
-    final List<SelectedRentalItem> updated = [...selectedRentalItems];
-    final index = updated.indexWhere((i) => i.id == item.id);
-
-    if (index >= 0) {
-      // 수량이 0이면 제거, 아니면 업데이트
-      if (item.quantity <= 0) {
-        updated.removeAt(index);
-      } else {
-        updated[index] = item;
-      }
-    } else if (item.quantity > 0) {
-      // 새 아이템 추가
-      updated.add(item);
+  /// 렌탈 아이템 추가/수량 변경
+  BookingState addRentalItem(int itemId, int quantity) {
+    final updatedItems = Map<int, int>.from(selectedRentalItems);
+    if (quantity > 0) {
+      updatedItems[itemId] = quantity;
+    } else {
+      updatedItems.remove(itemId);
     }
-
-    return BookingState(
-      checkInDate: checkInDate,
-      checkOutDate: checkOutDate,
-      selectedRentalItems: updated,
-    );
+    return copyWith(selectedRentalItems: updatedItems);
   }
 
   /// 렌탈 아이템 제거
   BookingState removeRentalItem(int itemId) {
-    return BookingState(
-      checkInDate: checkInDate,
-      checkOutDate: checkOutDate,
-      selectedRentalItems: selectedRentalItems.where((i) => i.id != itemId).toList(),
-    );
+    final updatedItems = Map<int, int>.from(selectedRentalItems);
+    updatedItems.remove(itemId);
+    return copyWith(selectedRentalItems: updatedItems);
   }
 
-  /// 모든 렌탈 아이템 제거
-  BookingState clearRentalItems() {
-    return BookingState(
-      checkInDate: checkInDate,
-      checkOutDate: checkOutDate,
-      selectedRentalItems: [],
-    );
+  /// 렌탈 아이템 수량 조회
+  int getRentalItemQuantity(int itemId) {
+    return selectedRentalItems[itemId] ?? 0;
   }
+
+  /// 렌탈 아이템 초기화
+  BookingState clearRentalItems() {
+    return copyWith(selectedRentalItems: {});
+  }
+
+  /// 렌탈 아이템이 선택되었는지 여부
+  bool get hasRentalItems => selectedRentalItems.isNotEmpty;
 }

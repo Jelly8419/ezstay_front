@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../models/room.dart';
 import '../../models/booking_state.dart';
+import '../../models/refund_policy.dart';
 import '../../models/rental_item.dart';
-import '../../models/selected_rental_item.dart';
 import '../../services/guest_room_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/refund_policy_service.dart';
 import '../../widgets/simple_kakao_map.dart';
 import '../../widgets/room_detail/booking_bottom_sheet.dart';
 import '../../widgets/common/app_gnb.dart';
@@ -31,6 +32,7 @@ class RoomDetailPage extends StatefulWidget {
 class _RoomDetailPageState extends State<RoomDetailPage> {
   final GuestRoomService _guestRoomService = GuestRoomService();
   final AnalyticsService _analyticsService = AnalyticsService();
+  final RefundPolicyService _refundPolicyService = RefundPolicyService();
   final NumberFormat _currencyFormat = NumberFormat('#,###');
   final ScrollController _thumbnailScrollController = ScrollController();
 
@@ -45,6 +47,10 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
   // 예약 상태 (React UI 스타일)
   BookingState _bookingState = const BookingState();
+  String? _validationError; // 날짜 검증 에러 메시지
+
+  // 환불 정책
+  RefundPolicy? _refundPolicy;
 
   @override
   void dispose() {
@@ -74,6 +80,11 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           _isLoading = false;
         });
 
+        // 환불 정책 로드 (room에 refundPolicy가 있는 경우)
+        if (room.refundPolicy.isNotEmpty) {
+          _loadRefundPolicy(room.refundPolicy);
+        }
+
         // 📊 Analytics: 방 상세 페이지 조회
         await _analyticsService.logViewRoomDetail(roomId: widget.roomId);
       } else {
@@ -88,6 +99,21 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         _isLoading = false;
       });
       debugPrint('❌ 방 상세 정보 로드 실패: $e');
+    }
+  }
+
+  /// 환불 정책 상세 정보 로드
+  Future<void> _loadRefundPolicy(String policyType) async {
+    try {
+      final policy = await _refundPolicyService.getRefundPolicyByType(
+        policyType,
+      );
+      setState(() {
+        _refundPolicy = policy;
+      });
+    } catch (e) {
+      debugPrint('❌ [ROOM_DETAIL] 환불 정책 로드 실패: $e');
+      // 에러 발생 시에도 기존 문자열 표시는 유지됨
     }
   }
 
@@ -129,40 +155,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       checkOutDate: _bookingState.checkOutDate,
     );
 
-    // BookingState에서 개별 데이터 추출
-    final selectedItems = _bookingState.selectedRentalItems;
-
-    // 각 렌탈 아이템 타입별로 선택된 항목 찾기
-    int? selectedHairDryerId;
-    int? selectedBeddingSetId;
-    int? selectedAmenityKitId;
-    int? selectedTowelSetId;
-    int beddingSetQuantity = 1;
-    int amenityKitQuantity = 1;
-    int towelSetQuantity = 1;
-
-    for (final item in selectedItems) {
-      // ID 범위로 타입 구분 (임시 방법, 나중에 type 필드 추가 고려)
-      if (_room!.availableRentalItems!.hairDryers.any((h) => h.id == item.id)) {
-        selectedHairDryerId = item.id;
-      } else if (_room!.availableRentalItems!.beddingSets.any(
-        (b) => b.id == item.id,
-      )) {
-        selectedBeddingSetId = item.id;
-        beddingSetQuantity = item.quantity;
-      } else if (_room!.availableRentalItems!.amenityKits.any(
-        (a) => a.id == item.id,
-      )) {
-        selectedAmenityKitId = item.id;
-        amenityKitQuantity = item.quantity;
-      } else if (_room!.availableRentalItems!.towelSets.any(
-        (t) => t.id == item.id,
-      )) {
-        selectedTowelSetId = item.id;
-        towelSetQuantity = item.quantity;
-      }
-    }
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -170,13 +162,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           room: _room!,
           checkInDate: _bookingState.checkInDate!,
           checkOutDate: _bookingState.checkOutDate!,
-          selectedHairDryerId: selectedHairDryerId,
-          selectedBeddingSetId: selectedBeddingSetId,
-          selectedAmenityKitId: selectedAmenityKitId,
-          selectedTowelSetId: selectedTowelSetId,
-          beddingSetQuantity: beddingSetQuantity,
-          amenityKitQuantity: amenityKitQuantity,
-          towelSetQuantity: towelSetQuantity,
         ),
       ),
     );
@@ -336,7 +321,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
             const SizedBox(width: 4),
             Expanded(
               child: Text(
-                _room!.address,
+                '${_room!.address} · ${_room!.floor}층',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -364,7 +349,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                   child: _buildInfoItem(
                     Icons.straighten,
                     '면적',
-                    '${_room!.area}㎡',
+                    '${(double.tryParse(_room!.area) ?? 0).toStringAsFixed(0)}평',
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -642,7 +627,10 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_room!.address, style: AppTextStyles.bodyMedium),
+        Text(
+          '${_room!.address} · ${_room!.floor}층',
+          style: AppTextStyles.bodyMedium,
+        ),
         const SizedBox(height: 16),
         // 지도 / 로드뷰 전환 버튼
         SizedBox(
@@ -717,11 +705,14 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. 임대료 (1주)
-        _buildPriceRow('임대료 (1주)', _room!.weeklyRent),
+        // 1. 임대료 (1주) - py-4
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: _buildPriceRow('임대료 (1주)', _room!.weeklyRent),
+        ),
         const Divider(),
 
-        // 2. 관리비 (1주)
+        // 2. 관리비 (1주) - py-4
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
@@ -759,16 +750,19 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         ),
         const Divider(),
 
-        // 3. 청소비 (cleaningService 신청 시 5만원, 아니면 호스트 설정값)
-        _buildPriceRow(
-          '청소비',
-          (_room!.freeService?.cleaningService == true)
-              ? 50000
-              : _room!.cleaningFee,
+        // 3. 청소비 (cleaningService 신청 시 5만원, 아니면 호스트 설정값) - py-4
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: _buildPriceRow(
+            '청소비',
+            (_room!.ezService?.cleaningService == true)
+                ? 50000
+                : _room!.cleaningFee,
+          ),
         ),
         const Divider(),
 
-        // 4. 보증금
+        // 4. 보증금 - py-4
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
@@ -804,12 +798,19 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         ),
         const Divider(),
 
-        // 5. 입주/퇴실 시간
-        _buildInfoRow('입주 시간', '15:00 이후'),
-        const SizedBox(height: 8),
-        _buildInfoRow('퇴실 시간', '11:00 이전'),
+        // 5. 입주/퇴실 시간 (하나의 py-4 블록으로 묶음)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            children: [
+              _buildInfoRow('입주 시간', '15:00 이후'),
+              const SizedBox(height: 8),
+              _buildInfoRow('퇴실 시간', '11:00 이전'),
+            ],
+          ),
+        ),
 
-        // 6. 장기 계약 할인
+        // 6. 장기 계약 할인 - py-4
         if (_room!.longTermDiscount != null &&
             _room!.longTermDiscount! > 0) ...[
           const Divider(),
@@ -819,7 +820,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           ),
         ],
 
-        // 7. 빠른 입주 할인
+        // 7. 빠른 입주 할인 - py-4
         if (_room!.quickMoveInDiscount != null &&
             _room!.quickMoveInDiscount! > 0) ...[
           const Divider(),
@@ -829,10 +830,10 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           ),
         ],
 
-        // 8. 환불 규정
+        // 8. 환불 규정 - py-4 (마지막 항목, border 없음)
         if (_room!.refundPolicy.isNotEmpty) ...[
           const Divider(),
-          _buildDiscountRow('환불 규정', _room!.refundPolicy),
+          _buildRefundPolicySection(),
         ],
       ],
     );
@@ -887,6 +888,103 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               color: AppColors.textSecondary,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// 환불 규정 섹션
+  Widget _buildRefundPolicySection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '환불 규정',
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // API에서 로드된 상세 정책이 있으면 표시
+          if (_refundPolicy != null) ...[
+            // 정책 설명
+            if (_refundPolicy!.description.isNotEmpty) ...[
+              Text(
+                _refundPolicy!.description,
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // 환불 규칙 목록
+            ..._refundPolicy!.rules.map(
+              (rule) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('• ', style: TextStyle(fontSize: 14)),
+                    Expanded(
+                      child: Text(
+                        '${rule.description} : 임대료의 ${rule.refundRate}% 환불',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // 특별 규칙
+            if (_refundPolicy!.specialRules?.alwaysRefund != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primary200),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: AppColors.primary600,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _refundPolicy!.specialRules!.alwaysRefund!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.primary700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ] else ...[
+            // API 로드 실패 시 기본 텍스트만 표시
+            Text(
+              _room!.refundPolicy,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1255,7 +1353,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     );
 
     final canRequestContract =
-        _bookingState.hasSelectedDates && validationError == null;
+        _bookingState.hasSelectedDates &&
+        validationError == null &&
+        _validationError == null;
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.lg),
@@ -1339,7 +1439,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
             checkInDate: _bookingState.checkInDate,
             checkOutDate: _bookingState.checkOutDate,
             minContractDays: _room!.minContractDays,
-            errorMessage: validationError,
             onDateSelected: (checkIn, checkOut) {
               setState(() {
                 _bookingState = _bookingState.copyWith(
@@ -1348,75 +1447,32 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                 );
               });
             },
+            onValidationError: (errorMessage) {
+              // 다이얼로그에서 검증 에러 발생 시 상태에 저장
+              setState(() {
+                _validationError = errorMessage;
+              });
+
+              // 2초 후 자동 제거
+              Future.delayed(const Duration(seconds: 2), () {
+                if (mounted) {
+                  setState(() {
+                    _validationError = null;
+                  });
+                }
+              });
+            },
           ),
 
           SizedBox(height: AppSpacing.md),
 
-          // 옵션 상품
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '옵션 상품(EZstay에서 제공해드려요)',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                '옵션 상품은 계약 승인 후에도 구매할 수 있어요.',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppSpacing.sm),
-
-          Container(
-            padding: EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: AppRadius.radiusXl,
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(children: _buildRentalItemsList()),
-          ),
-
-          // 최소 주문 금액 안내
-          if (priceBreakdown.rentalItemsFee > 0 &&
-              priceBreakdown.rentalItemsFee < 10000) ...[
-            SizedBox(height: AppSpacing.sm),
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFBEB), // amber-50
-                borderRadius: AppRadius.radiusMd,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: const Color(0xFFD97706), // amber-600
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '옵션 상품은 최소 10,000원 이상 주문 가능합니다',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: const Color(0xFFD97706), // amber-600
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // 렌탈 아이템 섹션 (EZStay 제공)
+          if (_room!.availableRentalItems != null &&
+              _room!.availableRentalItems!.hasItems) ...[
+            Divider(color: AppColors.divider),
+            SizedBox(height: AppSpacing.md),
+            _buildDesktopRentalItemsSection(),
+            SizedBox(height: AppSpacing.md),
           ],
 
           // 가격 분석 (날짜 선택 시만 표시)
@@ -1462,9 +1518,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               priceBreakdown.maintenanceFee,
             ),
             _buildPriceRowDetailed('청소비', priceBreakdown.cleaningFee),
-            _buildPriceRowDetailed('계약 수수료', priceBreakdown.contractFee),
             if (priceBreakdown.rentalItemsFee > 0)
-              _buildPriceRowDetailed('옵션 상품', priceBreakdown.rentalItemsFee),
+              _buildPriceRowDetailed('렌탈 아이템', priceBreakdown.rentalItemsFee),
+            _buildPriceRowDetailed('계약 수수료', priceBreakdown.contractFee),
             _buildPriceRowDetailed('보증금(퇴실 후 환급)', priceBreakdown.deposit),
 
             SizedBox(height: AppSpacing.sm),
@@ -1488,6 +1544,37 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
           SizedBox(height: AppSpacing.lg),
 
+          // 검증 에러 메시지 (날짜 선택 버튼 위에 표시)
+          if (_validationError != null) ...[
+            Container(
+              padding: EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.error50,
+                borderRadius: AppRadius.radiusMd,
+                border: Border.all(color: AppColors.error500),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 16,
+                    color: AppColors.error500,
+                  ),
+                  SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      _validationError!,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.error700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: AppSpacing.sm),
+          ],
+
           // 계약 요청 버튼
           SizedBox(
             width: double.infinity,
@@ -1509,193 +1596,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           ),
         ],
       ),
-    );
-  }
-
-  /// 렌탈 아이템 리스트 생성
-  List<Widget> _buildRentalItemsList() {
-    final items = <Widget>[];
-
-    if (_room!.availableRentalItems == null)
-      return [
-        Padding(
-          padding: EdgeInsets.all(AppSpacing.sm),
-          child: Text(
-            '옵션 상품이 없습니다.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ];
-
-    final allItems = [
-      ..._room!.availableRentalItems!.beddingSets,
-      ..._room!.availableRentalItems!.amenityKits,
-      ..._room!.availableRentalItems!.hairDryers,
-      ..._room!.availableRentalItems!.towelSets,
-    ];
-
-    for (int i = 0; i < allItems.length; i++) {
-      final item = allItems[i];
-      items.add(_buildCompactRentalItem(item));
-
-      if (i < allItems.length - 1) {
-        items.add(Divider(height: AppSpacing.md * 2, color: AppColors.divider));
-      }
-    }
-
-    return items;
-  }
-
-  /// 컴팩트한 렌탈 아이템 (리액트 UI 스타일)
-  Widget _buildCompactRentalItem(RentalItem item) {
-    final currentQuantity = _bookingState.getQuantity(item.id);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 상품명과 설명
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (item.description.isNotEmpty)
-                    Text(
-                      item.description,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        SizedBox(height: AppSpacing.xs),
-
-        // 가격 및 수량 조절
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // 왼쪽: 단가 + 수량 조절
-            Row(
-              children: [
-                Text(
-                  PriceCalculator.formatKRW(item.price),
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                SizedBox(width: AppSpacing.sm),
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.neutral100,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    children: [
-                      InkWell(
-                        onTap: currentQuantity > 0
-                            ? () {
-                                setState(() {
-                                  _bookingState = _bookingState
-                                      .updateRentalItem(
-                                        SelectedRentalItem(
-                                          id: item.id,
-                                          name: item.name,
-                                          description: item.description,
-                                          price: item.price,
-                                          quantity: currentQuantity - 1,
-                                        ),
-                                      );
-                                });
-                              }
-                            : null,
-                        borderRadius: BorderRadius.circular(6),
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          alignment: Alignment.center,
-                          child: Icon(
-                            Icons.remove,
-                            size: 14,
-                            color: currentQuantity > 0
-                                ? AppColors.textSecondary
-                                : AppColors.neutral400,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: 24,
-                        alignment: Alignment.center,
-                        child: Text(
-                          '$currentQuantity',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      InkWell(
-                        onTap: currentQuantity < 4
-                            ? () {
-                                setState(() {
-                                  _bookingState = _bookingState
-                                      .updateRentalItem(
-                                        SelectedRentalItem(
-                                          id: item.id,
-                                          name: item.name,
-                                          description: item.description,
-                                          price: item.price,
-                                          quantity: currentQuantity + 1,
-                                        ),
-                                      );
-                                });
-                              }
-                            : null,
-                        borderRadius: BorderRadius.circular(6),
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          alignment: Alignment.center,
-                          child: Icon(
-                            Icons.add,
-                            size: 14,
-                            color: currentQuantity < 4
-                                ? AppColors.textSecondary
-                                : AppColors.neutral400,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // 오른쪽: 총액
-            Text(
-              PriceCalculator.formatKRW(item.price * currentQuantity),
-              style: AppTextStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -1731,33 +1631,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
   /// 계약 요청 핸들러
   void _handleContractRequest() {
-    // BookingState의 selectedRentalItems에서 개별 아이템 ID와 수량 추출
-    int? hairDryerId;
-    int? beddingSetId;
-    int? amenityKitId;
-    int? towelSetId;
-    int beddingSetQty = 1;
-    int amenityKitQty = 1;
-    int towelSetQty = 1;
-
-    for (final item in _bookingState.selectedRentalItems) {
-      if (item.quantity > 0) {
-        // 아이템 이름으로 타입 판별 (간단한 방법)
-        if (item.name.contains('헤어드라이어') || item.name.contains('드라이어')) {
-          hairDryerId = item.id;
-        } else if (item.name.contains('침구')) {
-          beddingSetId = item.id;
-          beddingSetQty = item.quantity;
-        } else if (item.name.contains('어메니티')) {
-          amenityKitId = item.id;
-          amenityKitQty = item.quantity;
-        } else if (item.name.contains('타올')) {
-          towelSetId = item.id;
-          towelSetQty = item.quantity;
-        }
-      }
-    }
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1765,15 +1638,226 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           room: _room!,
           checkInDate: _bookingState.checkInDate!,
           checkOutDate: _bookingState.checkOutDate!,
-          selectedHairDryerId: hairDryerId,
-          selectedBeddingSetId: beddingSetId,
-          selectedAmenityKitId: amenityKitId,
-          selectedTowelSetId: towelSetId,
-          beddingSetQuantity: beddingSetQty,
-          amenityKitQuantity: amenityKitQty,
-          towelSetQuantity: towelSetQty,
         ),
       ),
+    );
+  }
+
+  /// 렌탈 아이템 섹션 (데스크톱 버전 - 리액트 UI 스타일)
+  Widget _buildDesktopRentalItemsSection() {
+    final availableItems = _room!.availableRentalItems!;
+    final allItems = availableItems.allItems; // 카테고리 구분 없이 평탄화
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 헤더
+        Text(
+          '옵션 상품(EZstay에서 제공해드려요)',
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        SizedBox(height: AppSpacing.xs),
+        Text(
+          '옵션 상품은 계약 승인 후에도 구매할 수 있어요.',
+          style: AppTextStyles.bodySmall.copyWith(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        SizedBox(height: AppSpacing.md),
+
+        // 단일 컨테이너에 모든 아이템 표시
+        Container(
+          padding: EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: AppRadius.radiusXl,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            children: allItems.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              final isLast = index == allItems.length - 1;
+              return _buildDesktopRentalItemCard(item, isLast);
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 렌탈 아이템 카드 (데스크톱 버전 - 리액트 UI 스타일)
+  Widget _buildDesktopRentalItemCard(RentalItem item, bool isLast) {
+    final currentQuantity = _bookingState.getRentalItemQuantity(item.id);
+
+    return Container(
+      padding: EdgeInsets.only(bottom: AppSpacing.sm * 1.25), // pb-2.5 (10px)
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: isLast
+              ? BorderSide.none
+              : BorderSide(color: AppColors.border, width: 1),
+        ),
+      ),
+      margin: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.sm * 1.25),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1행: 상품명과 설명 (한 줄로)
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: AppSpacing.xs * 0.75,
+            ), // mb-1.5 (6px)
+            child: RichText(
+              text: TextSpan(
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+                children: [
+                  TextSpan(
+                    text: item.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF000000),
+                    ),
+                  ),
+                  if (item.description.isNotEmpty)
+                    TextSpan(
+                      text: ' (${item.description})',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // 2행: 가격 정보와 수량 조절
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // 왼쪽: 단가 및 수량 조절
+              Row(
+                children: [
+                  // 단가
+                  Text(
+                    PriceCalculator.formatKRW(item.price),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Color(0xFF4A5565), // rgb(74,85,101)
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.sm * 1.5), // gap-3 (12px)
+                  // 수량 조절
+                  _buildDesktopQuantitySelector(item),
+                ],
+              ),
+
+              // 오른쪽: 총액
+              Text(
+                PriceCalculator.formatKRW(item.price * currentQuantity),
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 수량 선택기 (데스크톱 버전 - 리액트 UI 스타일)
+  Widget _buildDesktopQuantitySelector(RentalItem item) {
+    final currentQuantity = _bookingState.getRentalItemQuantity(item.id);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 감소 버튼 (w-6 h-6 = 24x24)
+        InkWell(
+          onTap: currentQuantity > 0
+              ? () {
+                  setState(() {
+                    _bookingState = _bookingState.addRentalItem(
+                      item.id,
+                      currentQuantity - 1,
+                    );
+                  });
+                }
+              : null,
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: AppColors.neutral100, // bg-gray-100
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.remove,
+                size: 14, // w-3.5 h-3.5 = 14px
+                color: currentQuantity > 0
+                    ? AppColors.textPrimary
+                    : AppColors.neutral400,
+              ),
+            ),
+          ),
+        ),
+
+        // 수량 표시 (w-6 = 24px width)
+        Container(
+          width: 24,
+          alignment: Alignment.center,
+          child: Text(
+            '$currentQuantity',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+
+        // 증가 버튼 (w-6 h-6 = 24x24)
+        InkWell(
+          onTap: currentQuantity < item.availableStock
+              ? () {
+                  setState(() {
+                    _bookingState = _bookingState.addRentalItem(
+                      item.id,
+                      currentQuantity + 1,
+                    );
+                  });
+                }
+              : null,
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: AppColors.neutral100, // bg-gray-100
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.add,
+                size: 14, // w-3.5 h-3.5 = 14px
+                color: currentQuantity < item.availableStock
+                    ? AppColors.textPrimary
+                    : AppColors.neutral400,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

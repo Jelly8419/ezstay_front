@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/room.dart';
+import '../../models/refund_policy.dart';
 import '../../services/contract_service.dart';
+import '../../services/refund_policy_service.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/common/responsive_page_layout.dart';
 import '../../core/theme/app_colors.dart';
@@ -10,26 +12,12 @@ class ContractStartPage extends StatefulWidget {
   final Room room;
   final DateTime checkInDate;
   final DateTime checkOutDate;
-  final int? selectedHairDryerId;
-  final int? selectedBeddingSetId;
-  final int? selectedAmenityKitId;
-  final int? selectedTowelSetId;
-  final int beddingSetQuantity;
-  final int amenityKitQuantity;
-  final int towelSetQuantity;
 
   const ContractStartPage({
     super.key,
     required this.room,
     required this.checkInDate,
     required this.checkOutDate,
-    this.selectedHairDryerId,
-    this.selectedBeddingSetId,
-    this.selectedAmenityKitId,
-    this.selectedTowelSetId,
-    this.beddingSetQuantity = 1,
-    this.amenityKitQuantity = 1,
-    this.towelSetQuantity = 1,
   });
 
   @override
@@ -40,7 +28,12 @@ class _ContractStartPageState extends State<ContractStartPage> {
   final _currencyFormat = NumberFormat('#,###');
   final _messageController = TextEditingController();
   late final ContractService _contractService;
+  final RefundPolicyService _refundPolicyService = RefundPolicyService();
   bool _isLoading = false;
+
+  // 환불 정책
+  RefundPolicy? _refundPolicy;
+  bool _isLoadingPolicy = false;
 
   // 약관 동의
   bool _serviceTermsAgreed = false;
@@ -55,6 +48,35 @@ class _ContractStartPageState extends State<ContractStartPage> {
   void initState() {
     super.initState();
     _contractService = ContractService();
+    _loadRefundPolicy();
+  }
+
+  /// 환불 정책 로드
+  Future<void> _loadRefundPolicy() async {
+    if (widget.room.refundPolicy.isEmpty) return;
+
+    setState(() {
+      _isLoadingPolicy = true;
+    });
+
+    try {
+      final policy = await _refundPolicyService.getRefundPolicyByType(
+        widget.room.refundPolicy,
+      );
+      if (mounted) {
+        setState(() {
+          _refundPolicy = policy;
+          _isLoadingPolicy = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ [CONTRACT_START] 환불 정책 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingPolicy = false;
+        });
+      }
+    }
   }
 
   @override
@@ -63,16 +85,6 @@ class _ContractStartPageState extends State<ContractStartPage> {
     super.dispose();
   }
 
-  /// 렌탈 아이템 가격 조회
-  int _getRentalItemPrice(int? itemId, List items) {
-    if (itemId == null || items.isEmpty) return 0;
-    try {
-      final item = items.firstWhere((item) => item.id == itemId);
-      return item.price;
-    } catch (e) {
-      return 0;
-    }
-  }
 
   /// 총 임대료 계산
   int _calculateRentalTotal() {
@@ -88,17 +100,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
     return widget.room.maintenanceFee * weeks;
   }
 
-  /// 총 옵션 금액 계산
+  /// 총 옵션 금액 계산 (렌탈 아이템 제거로 항상 0 반환)
   int _calculateOptionsTotal() {
-    final rentalItems = widget.room.availableRentalItems;
-    if (rentalItems == null) return 0;
-
-    int hairDryerPrice = _getRentalItemPrice(widget.selectedHairDryerId, rentalItems.hairDryers);
-    int beddingPrice = _getRentalItemPrice(widget.selectedBeddingSetId, rentalItems.beddingSets) * widget.beddingSetQuantity;
-    int amenityKitPrice = _getRentalItemPrice(widget.selectedAmenityKitId, rentalItems.amenityKits) * widget.amenityKitQuantity;
-    int towelSetPrice = _getRentalItemPrice(widget.selectedTowelSetId, rentalItems.towelSets) * widget.towelSetQuantity;
-
-    return hairDryerPrice + beddingPrice + amenityKitPrice + towelSetPrice;
+    return 0;
   }
 
   /// 할인 금액 계산
@@ -537,7 +541,6 @@ class _ContractStartPageState extends State<ContractStartPage> {
     final rentalTotal = _calculateRentalTotal();
     final maintenanceTotal = _calculateMaintenanceTotal();
     final cleaningFee = widget.room.cleaningFee;
-    final optionsTotal = _calculateOptionsTotal();
     final platformFee = _calculatePlatformFee();
     final discount = _calculateDiscount();
     final finalTotal = _calculateFinalTotal();
@@ -565,10 +568,6 @@ class _ContractStartPageState extends State<ContractStartPage> {
           _buildPriceRow('관리비', maintenanceTotal),
           const SizedBox(height: 8),
           _buildPriceRow('청소비용', cleaningFee),
-          if (optionsTotal > 0) ...[
-            const SizedBox(height: 8),
-            _buildPriceRow('렌탈 아이템', optionsTotal),
-          ],
           const SizedBox(height: 8),
           _buildPriceRow('계약 수수료 (임대료의 10%)', platformFee),
           if (discount > 0) ...[
@@ -664,13 +663,76 @@ class _ContractStartPageState extends State<ContractStartPage> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildBulletText('2025년 12월 03일까지 취소 시 : 임대료와 계약 수수료의 90% 환불'),
-          _buildBulletText('2025년 12월 10일까지 취소 시 : 임대료와 계약 수수료의 70% 환불'),
-          _buildBulletText('2025년 12월 17일까지 취소 시 : 임대료와 계약 수수료의 50% 환불'),
-          _buildBulletText('2025년 12월 18일 0시 뒤터 : 환불 불가'),
+
+          // 로딩 중
+          if (_isLoadingPolicy)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          // API에서 로드한 환불 정책 표시
+          else if (_refundPolicy != null) ...[
+            ..._refundPolicy!.rules.map((rule) {
+              final cancellationText = _calculateCancellationText(rule);
+              return _buildBulletText(cancellationText);
+            }),
+          ]
+          // Fallback: 하드코딩된 기본값 (API 실패 시)
+          else ...[
+            _buildBulletText('환불 정책을 불러오는데 실패했습니다.'),
+            _buildBulletText('자세한 환불 규정은 호스트에게 문의해주세요.'),
+          ],
         ],
       ),
     );
+  }
+
+  /// 환불 규칙을 취소 날짜 텍스트로 변환
+  String _calculateCancellationText(RefundRule rule) {
+    final description = rule.description;
+    final refundRate = rule.refundRate;
+
+    // "결제 당일" 또는 "계약 당일"은 날짜 계산 없이 그대로 표시
+    // (결제/계약 시점은 입주일과 다른 날짜이므로 계산 불가)
+    if (description.contains('결제') || description.contains('계약')) {
+      return '$description : 임대료와 계약 수수료의 $refundRate% 환불';
+    }
+
+    // "입주일 20일 이전" 형식 파싱
+    final beforeMatch = RegExp(r'입주일\s+(\d+)일\s+이전').firstMatch(description);
+    if (beforeMatch != null) {
+      final days = int.parse(beforeMatch.group(1)!);
+      final deadline = widget.checkInDate.subtract(Duration(days: days));
+      final dateStr = DateFormat('yyyy년 MM월 dd일', 'ko_KR').format(deadline);
+      return '$dateStr까지 취소 시 : 임대료와 계약 수수료의 $refundRate% 환불';
+    }
+
+    // "입주일 19일 ~ 10일 이전" 형식 파싱
+    final rangeMatch = RegExp(r'입주일\s+(\d+)일\s+~\s+(\d+)일\s+이전').firstMatch(description);
+    if (rangeMatch != null) {
+      final startDays = int.parse(rangeMatch.group(1)!);
+      final endDays = int.parse(rangeMatch.group(2)!);
+      final startDate = widget.checkInDate.subtract(Duration(days: startDays));
+      final endDate = widget.checkInDate.subtract(Duration(days: endDays));
+      final startStr = DateFormat('yyyy년 MM월 dd일', 'ko_KR').format(startDate);
+      final endStr = DateFormat('yyyy년 MM월 dd일', 'ko_KR').format(endDate);
+      return '$startStr ~ $endStr 취소 시 : 임대료와 계약 수수료의 $refundRate% 환불';
+    }
+
+    // "입주일 당일 이후" 또는 기타 형식
+    if (description.contains('입주') && (description.contains('당일') || description.contains('이후'))) {
+      final dateStr = DateFormat('yyyy년 MM월 dd일', 'ko_KR').format(widget.checkInDate);
+      if (refundRate == 0) {
+        return '$dateStr 0시 이후 : 환불 불가';
+      } else {
+        return '$dateStr 이후 취소 시 : 임대료와 계약 수수료의 $refundRate% 환불';
+      }
+    }
+
+    // 파싱 실패 시 원본 텍스트 표시
+    return '$description : 임대료와 계약 수수료의 $refundRate% 환불';
   }
 
   /// 안내사항
@@ -699,8 +761,14 @@ class _ContractStartPageState extends State<ContractStartPage> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildBulletText('결제 당일 취소 시, 환불 규정과 관계 없이 입대료와 계약 수수료를 합계한 10%만 위약금으로 부과됩니다. 단, 무료 취소 기간에 해당하는 경우 전액 환불됩니다.'),
-          _buildBulletText('관리비, 청소비, 보증금은 전액 환불됩니다.'),
+          _buildBulletText('결제 당일 취소 시, 환불 규정과 관계 없이 임대료와 계약 수수료를 합계한 10%만 위약금으로 부과됩니다. 단, 무료 취소 기간에 해당하는 경우 전액 환불됩니다.'),
+
+          // API에서 로드한 특별 규칙 표시
+          if (_refundPolicy?.specialRules?.alwaysRefund != null)
+            _buildBulletText(_refundPolicy!.specialRules!.alwaysRefund!)
+          else
+            _buildBulletText('관리비, 청소비, 보증금은 전액 환불됩니다.'),
+
           _buildBulletText('환불 규정은 호스트의 설정에 따라 달라집니다.'),
         ],
       ),
@@ -909,7 +977,6 @@ class _ContractStartPageState extends State<ContractStartPage> {
       final rentalTotal = _calculateRentalTotal();
       final maintenanceTotal = _calculateMaintenanceTotal();
       final cleaningFee = widget.room.cleaningFee;
-      final rentalItemsFee = _calculateOptionsTotal();
       final platformFee = _calculatePlatformFee();
       final discount = _calculateDiscount();
       final finalTotal = _calculateFinalTotal();
@@ -918,30 +985,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
       final totalDays = widget.checkOutDate.difference(widget.checkInDate).inDays;
       final totalWeeks = (totalDays / 7).ceil();
 
-      final subtotal = rentalTotal + maintenanceTotal + cleaningFee + rentalItemsFee;
+      final subtotal = rentalTotal + maintenanceTotal + cleaningFee;
 
-      // 렌탈 아이템 데이터 구성
-      Map<String, dynamic>? rentalItemsData;
-      if (rentalItemsFee > 0) {
-        rentalItemsData = {};
-        if (widget.selectedHairDryerId != null) {
-          rentalItemsData['hairDryerId'] = widget.selectedHairDryerId;
-        }
-        if (widget.selectedBeddingSetId != null) {
-          rentalItemsData['beddingSetId'] = widget.selectedBeddingSetId;
-          rentalItemsData['beddingSetQuantity'] = widget.beddingSetQuantity;
-        }
-        if (widget.selectedAmenityKitId != null) {
-          rentalItemsData['amenityKitId'] = widget.selectedAmenityKitId;
-          rentalItemsData['amenityKitQuantity'] = widget.amenityKitQuantity;
-        }
-        if (widget.selectedTowelSetId != null) {
-          rentalItemsData['towelSetId'] = widget.selectedTowelSetId;
-          rentalItemsData['towelSetQuantity'] = widget.towelSetQuantity;
-        }
-      }
-
-      final result = await _contractService.requestContract(
+      await _contractService.requestContract(
         roomId: widget.room.id,
         checkInDate: widget.checkInDate,
         checkOutDate: widget.checkOutDate,
@@ -950,14 +996,12 @@ class _ContractStartPageState extends State<ContractStartPage> {
         rentalFee: rentalTotal,
         maintenanceFee: maintenanceTotal,
         cleaningFee: cleaningFee,
-        rentalItemsFee: rentalItemsFee,
         platformFee: platformFee,
         discountAmount: discount,
         subtotal: subtotal,
         totalUsageFee: finalTotal,
         deposit: deposit,
         finalTotalAmount: finalTotal + deposit,
-        rentalItems: rentalItemsData,
         guestMessage: _messageController.text.trim().isNotEmpty
             ? _messageController.text.trim()
             : null,

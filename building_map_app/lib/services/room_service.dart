@@ -209,29 +209,29 @@ class RoomService {
     }
   }
 
-  /// 5. 무료 부가서비스 설정
-  Future<bool> updateFreeServices(int roomId, Map<String, dynamic> servicesData) async {
+  /// 5. 이지스테이 관리 서비스 설정 (EZ Service)
+  Future<bool> updateEzServices(int roomId, Map<String, dynamic> servicesData) async {
     try {
-      debugPrint('🎁 [SERVICES] 무료 부가서비스 설정 시작 - roomId: $roomId');
-      debugPrint('📦 [SERVICES] 요청 데이터: $servicesData');
+      debugPrint('🎁 [EZ_SERVICES] 이지스테이 관리 서비스 설정 시작 - roomId: $roomId');
+      debugPrint('📦 [EZ_SERVICES] 요청 데이터: $servicesData');
 
       final response = await http.patch(
-        Uri.parse(ApiConfig.roomFreeServicesUrl(roomId)),
+        Uri.parse(ApiConfig.roomEzServicesUrl(roomId)),
         headers: await _getHeaders(),
         body: json.encode(servicesData),
       ).timeout(ApiConfig.timeout);
 
-      debugPrint('📡 [SERVICES] 응답 상태: ${response.statusCode}');
+      debugPrint('📡 [EZ_SERVICES] 응답 상태: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        debugPrint('✅ [SERVICES] 무료 부가서비스 설정 성공');
+        debugPrint('✅ [EZ_SERVICES] 이지스테이 관리 서비스 설정 성공');
         return true;
       } else {
-        debugPrint('❌ [SERVICES] 무료 부가서비스 설정 실패: ${response.statusCode}');
+        debugPrint('❌ [EZ_SERVICES] 이지스테이 관리 서비스 설정 실패: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      debugPrint('❌ [SERVICES] 무료 부가서비스 설정 에러: $e');
+      debugPrint('❌ [EZ_SERVICES] 이지스테이 관리 서비스 설정 에러: $e');
       return false;
     }
   }

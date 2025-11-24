@@ -3,7 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../components/form_section.dart';
 
-/// Step 4: 무료 부가 서비스 (리액트 ServicesStep 복제)
+/// Step 4: 이지스테이 관리 서비스 (리액트 ServicesStep 복제)
 class ServicesStep extends StatefulWidget {
   final Map<String, dynamic> formData;
   final ValueChanged<Map<String, dynamic>> onFormDataChange;
@@ -22,21 +22,6 @@ class ServicesStep extends StatefulWidget {
 
 class _ServicesStepState extends State<ServicesStep> {
   bool _showServicePasswordKeypad = false;
-
-  // 게스트용 대여/구매 서비스
-  static const List<Map<String, String>> _guestServices = [
-    {
-      'id': 'beddingRentalService',
-      'title': '침구류 대여',
-      'description': '침대 1set당 (이불+베개+커버)',
-    },
-    {'id': 'hairDryerRental', 'title': '헤어드라이기 대여', 'description': ''},
-    {
-      'id': 'amenityKitPurchase',
-      'title': '어메니티 키트',
-      'description': '샴푸·바디워시(30ml), 폼클렌징(50ml)·비누, 빗, 두루마리 휴지, 티슈',
-    },
-  ];
 
   // 호스트 방 관리 서비스
   static const List<Map<String, String>> _hostServices = [
@@ -364,7 +349,7 @@ class _ServicesStepState extends State<ServicesStep> {
               borderRadius: AppRadius.radiusLg,
             ),
             child: const Text(
-              '💡무료 부가 서비스를 사용하면 방에 직접 가지 않고 관리할 수 있으며, 사용하지 않을 때보다 게스트 예약율이 훨씬 높아져요!',
+              '💡이지스테이 관리 서비스를 사용하면 방에 직접 가지 않고 관리할 수 있으며, 사용하지 않을 때보다 게스트 예약율이 훨씬 높아져요!',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -394,37 +379,6 @@ class _ServicesStepState extends State<ServicesStep> {
                   ),
                 );
               }).toList(),
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // 게스트용 대여/구매 서비스
-          FormSection(
-            title: '게스트용 대여/구매 서비스',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '옵션 선택 시, 게스트는 입주에 필요한 상품을 직접 구매할 수 있어요. 호스트님은 물품을 별도로 제공하지 않아도 됩니다.',
-                  style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                ),
-                const SizedBox(height: 16),
-                ...(_guestServices.map((service) {
-                  final serviceId = service['id']!;
-                  final isSelected =
-                      (widget.formData[serviceId] as bool?) ?? false;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildServiceCard(
-                      serviceId: serviceId,
-                      title: service['title']!,
-                      description: service['description']!,
-                      isSelected: isSelected,
-                    ),
-                  );
-                }).toList()),
-              ],
             ),
           ),
 

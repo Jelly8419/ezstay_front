@@ -54,7 +54,8 @@
       "Bash(dart format:*)",
       "Bash(curl:*)",
       "Bash(python -m json.tool:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

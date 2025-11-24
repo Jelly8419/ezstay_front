@@ -63,25 +63,38 @@ class PriceCalculator {
     final maintenanceFee = room.dailyMaintenanceFee * days;
 
     // 3. 청소비
-    // - free_services에서 cleaningService 신청했으면 5만원 고정
+    // - ez_services에서 cleaningService 신청했으면 5만원 고정
     // - 그렇지 않으면 호스트가 설정한 청소비
     debugPrint('🧹 청소비 계산 디버그:');
-    debugPrint('  - room.freeService: ${room.freeService}');
-    debugPrint('  - room.freeService?.cleaningService: ${room.freeService?.cleaningService}');
+    debugPrint('  - room.ezService: ${room.ezService}');
+    debugPrint('  - room.ezService?.cleaningService: ${room.ezService?.cleaningService}');
     debugPrint('  - room.cleaningFee (호스트 설정): ${room.cleaningFee}');
 
-    final cleaningFee = (room.freeService?.cleaningService == true)
+    final cleaningFee = (room.ezService?.cleaningService == true)
         ? 50000
         : room.cleaningFee;
 
     debugPrint('  - 최종 청소비: $cleaningFee');
-    debugPrint('  - 조건: cleaningService 신청 ${room.freeService?.cleaningService == true ? "O (5만원)" : "X (호스트 설정값)"}');
+    debugPrint('  - 조건: cleaningService 신청 ${room.ezService?.cleaningService == true ? "O (5만원)" : "X (호스트 설정값)"}');
 
     // 4. 보증금 (고정)
     final deposit = room.deposit;
 
-    // 5. 렌탈 아이템 총 비용
-    final rentalItemsFee = bookingState.rentalItemsTotalPrice;
+    // 5. 렌탈 아이템 총 비용 (EZStay 제공)
+    int rentalItemsFee = 0;
+    if (room.availableRentalItems != null &&
+        bookingState.selectedRentalItems.isNotEmpty) {
+      final allItems = room.availableRentalItems!.allItems;
+      for (final entry in bookingState.selectedRentalItems.entries) {
+        final itemId = entry.key;
+        final quantity = entry.value;
+        final item = allItems.firstWhere(
+          (item) => item.id == itemId,
+          orElse: () => throw Exception('렌탈 아이템을 찾을 수 없습니다 (ID: $itemId)'),
+        );
+        rentalItemsFee += item.price * quantity;
+      }
+    }
 
     // 6. 장기 계약 할인 계산
     int longTermDiscount = 0;

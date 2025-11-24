@@ -23,7 +23,7 @@ import 'components/registration_flow_indicator.dart';
 /// 1. 기본 정보
 /// 2. 사진 및 편의옵션
 /// 3. 요금 설정
-/// 4. 무료 부가 서비스
+/// 4. 이지스테이 관리 서비스
 /// 5. 방 소개 및 안내
 class RoomRegistrationFlowPage extends StatefulWidget {
   /// 편집할 방 ID (null이면 신규 등록)
@@ -86,12 +86,9 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     'earlyCheckinDiscountDays': '',
     'earlyCheckinDiscountAmount': '',
 
-    // Step 4: 무료 부가 서비스
+    // Step 4: 이지스테이 관리 서비스
     'cleaningService': false,
     'exitInspectionService': false,
-    'beddingRentalService': false,
-    'hairDryerRental': false,
-    'amenityKitPurchase': false,
     'servicePassword': '',
 
     // Step 5: 방 소개 및 안내
@@ -163,10 +160,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                   : url;
 
               photosList.add(fullUrl);
-              photoObjects.add({
-                'id': photo['id'],
-                'url': fullUrl,
-              });
+              photoObjects.add({'id': photo['id'], 'url': fullUrl});
             }
 
             _formData['uploadedImages'] = photosList;
@@ -300,23 +294,19 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           _formData['earlyCheckinDiscountAmount'] =
               roomData['earlyCheckinDiscountAmount']?.toString() ?? '';
 
-          // Step 4: 무료 부가 서비스 (API freeServices 객체에서 가져오기)
-          if (roomData['freeServices'] != null &&
-              roomData['freeServices'] is Map) {
-            final freeServices = roomData['freeServices'] as Map<String, dynamic>;
-            debugPrint('📦 freeServices 데이터: $freeServices');
+          // Step 4: 이지스테이 관리 서비스 (API ezServices 객체에서 가져오기)
+          if (roomData['ezServices'] != null && roomData['ezServices'] is Map) {
+            final ezServices = roomData['ezServices'] as Map<String, dynamic>;
+            debugPrint('📦 ezServices 데이터: $ezServices');
 
             // API 필드명 → Frontend 필드명 매핑
-            _formData['cleaningService'] = freeServices['cleaningService'] ?? false;
+            _formData['cleaningService'] =
+                ezServices['cleaningService'] ?? false;
             _formData['exitInspectionService'] =
-                freeServices['autoPasswordChange'] ?? false;  // API: autoPasswordChange
-            _formData['beddingRentalService'] =
-                freeServices['beddingService'] ?? false;  // API: beddingService
-            _formData['hairDryerRental'] = freeServices['hairDryerRental'] ?? false;
-            _formData['amenityKitPurchase'] =
-                freeServices['amenityKit'] ?? false;  // API: amenityKit
+                ezServices['autoPasswordChange'] ??
+                false; // API: autoPasswordChange
             _formData['servicePassword'] =
-                freeServices['roomPassword'] ?? '';  // API: roomPassword
+                ezServices['roomPassword'] ?? ''; // API: roomPassword
 
             debugPrint('✅ servicePassword 로드: ${_formData['servicePassword']}');
           }
@@ -369,8 +359,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     } else if (steps['pricing'] == false) {
       debugPrint('📍 pricing 미완료 → Step 3으로 이동');
       return 3;
-    } else if (steps['freeServices'] == false) {
-      debugPrint('📍 freeServices 미완료 → Step 4로 이동');
+    } else if (steps['ezServices'] == false) {
+      debugPrint('📍 ezServices 미완료 → Step 4로 이동');
       return 4;
     } else if (steps['description'] == false) {
       debugPrint('📍 description 미완료 → Step 5로 이동');
@@ -568,7 +558,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         bool amenitiesSuccess = false;
 
         // 1. 사진 삭제 API 호출 (삭제된 사진들)
-        final deletedPhotoIds = _formData['deletedPhotoIds'] as List<int>? ?? [];
+        final deletedPhotoIds =
+            _formData['deletedPhotoIds'] as List<int>? ?? [];
         if (deletedPhotoIds.isNotEmpty) {
           debugPrint('🗑️ 사진 삭제 시작: ${deletedPhotoIds.length}개');
           for (final photoId in deletedPhotoIds) {
@@ -594,19 +585,28 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
             _formData['uploadedImages'] as List<dynamic>? ?? [];
 
         // 이미 업로드된 이미지 개수 (URL 형식)
-        final existingImageCount = uploadedImages.where((img) =>
-          img is String && (img.startsWith('http') || img.startsWith('/'))
-        ).length;
+        final existingImageCount = uploadedImages
+            .where(
+              (img) =>
+                  img is String &&
+                  (img.startsWith('http') || img.startsWith('/')),
+            )
+            .length;
 
         // 새로 추가된 XFile만 필터링 (uploadedImages의 기존 URL 개수를 제외)
-        final newXFiles = uploadedXFiles.skip(0).take(
-          uploadedXFiles.length > existingImageCount
-            ? uploadedXFiles.length - existingImageCount
-            : uploadedXFiles.length
-        ).toList();
+        final newXFiles = uploadedXFiles
+            .skip(0)
+            .take(
+              uploadedXFiles.length > existingImageCount
+                  ? uploadedXFiles.length - existingImageCount
+                  : uploadedXFiles.length,
+            )
+            .toList();
 
         if (newXFiles.isNotEmpty) {
-          debugPrint('📸 새 이미지 업로드 시작: ${newXFiles.length}개 (전체: ${uploadedImages.length}개)');
+          debugPrint(
+            '📸 새 이미지 업로드 시작: ${newXFiles.length}개 (전체: ${uploadedImages.length}개)',
+          );
           final photoResult = await _roomService.uploadPhotos(
             _currentRoomId!,
             newXFiles,
@@ -624,14 +624,13 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           final uploadedPhotos =
               _formData['uploadedPhotos'] as List<dynamic>? ?? [];
           for (var photo in photoResult) {
-            uploadedPhotos.add({
-              'id': photo['id'],
-              'url': photo['url'],
-            });
+            uploadedPhotos.add({'id': photo['id'], 'url': photo['url']});
           }
           _formData['uploadedPhotos'] = uploadedPhotos;
 
-          debugPrint('✅ 사진 업로드 성공: ${photoResult.length}개 (중복 방지: uploadedXFiles 초기화)');
+          debugPrint(
+            '✅ 사진 업로드 성공: ${photoResult.length}개 (중복 방지: uploadedXFiles 초기화)',
+          );
         } else {
           debugPrint('⚠️ 새로 추가된 사진이 없습니다 (기존: $existingImageCount개)');
         }
@@ -815,7 +814,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         break;
 
       case 4:
-        // Step 4: 무료 부가 서비스 저장
+        // Step 4: 이지스테이 관리 서비스 저장
         if (_currentRoomId == null) {
           throw Exception('roomId가 없습니다. Step 1을 먼저 완료해주세요.');
         }
@@ -823,19 +822,17 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         // Frontend → API 필드명 매핑
         final servicesData = {
           'cleaningService': _formData['cleaningService'] ?? false,
-          'autoPasswordChange': _formData['exitInspectionService'] ?? false,  // API 필드명
-          'beddingService': _formData['beddingRentalService'] ?? false,  // API 필드명
-          'hairDryerRental': _formData['hairDryerRental'] ?? false,
-          'amenityKit': _formData['amenityKitPurchase'] ?? false,  // API 필드명
-          'roomPassword': _formData['servicePassword'],  // API 필드명
+          'autoPasswordChange':
+              _formData['exitInspectionService'] ?? false, // API 필드명
+          'roomPassword': _formData['servicePassword'], // API 필드명
         };
 
-        final servicesSuccess = await _roomService.updateFreeServices(
+        final servicesSuccess = await _roomService.updateEzServices(
           _currentRoomId!,
           servicesData,
         );
         if (!servicesSuccess) {
-          throw Exception('무료 부가 서비스 설정 실패');
+          throw Exception('이지스테이 관리 서비스 설정 실패');
         }
         debugPrint('✅ Step 4 저장 완료');
         break;
@@ -848,7 +845,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
         final descriptionData = {
           'maxGuests': int.tryParse(_formData['maxGuests'] ?? ''),
-          'description': _formData['propertyDescription'],  // 백엔드가 'description' 필드를 기대함
+          'description':
+              _formData['propertyDescription'], // 백엔드가 'description' 필드를 기대함
           // checkInTime, checkOutTime은 백엔드가 아직 처리하지 않으므로 주석 처리
           // 'checkInTime': _formData['checkInTime'],
           // 'checkOutTime': _formData['checkOutTime'],
@@ -964,10 +962,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                   ),
                   child: const Text(
                     '확인',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -1052,7 +1047,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                     '기본 정보',
                     '사진·편의옵션',
                     '요금 설정',
-                    '무료 부가 서비스',
+                    'EZ서비스',
                     '방 소개',
                   ],
                 ),

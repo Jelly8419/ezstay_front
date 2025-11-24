@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../models/refund_policy.dart';
+import '../../../../services/refund_policy_service.dart';
 import '../components/form_section.dart';
 import '../components/option_toggle.dart';
 
@@ -24,6 +25,7 @@ class PricingStep extends StatefulWidget {
 
 class _PricingStepState extends State<PricingStep> {
   final NumberFormat _numberFormat = NumberFormat('#,###', 'ko_KR');
+  final RefundPolicyService _refundPolicyService = RefundPolicyService();
 
   // TextEditingController 선언
   late final TextEditingController _dailyRentController;
@@ -43,43 +45,10 @@ class _PricingStepState extends State<PricingStep> {
   // 관리비 포함 항목
   static const List<String> _maintenanceOptions = ['수도세', '전기세', '가스비', '인터넷'];
 
-  // 환불 규정 옵션
-  static const List<Map<String, String>> _refundPolicies = [
-    {'value': '', 'label': '선택'},
-    {'value': '약하게', 'label': '약하게'},
-    {'value': '보통', 'label': '보통'},
-    {'value': '엄격하게', 'label': '엄격하게'},
-  ];
-
-  // 환불 규정 상세 내용
-  static const Map<String, List<String>> _refundPolicyDetails = {
-    '약하게': [
-      '• 입주일 15일 이전 : 임대료의 100% 환불',
-      '• 입주일 14일 ~ 8일 이전 : 임대료의 80% 환불',
-      '• 입주일 7일 ~ 1일 이전 : 임대료의 60% 환불',
-      '• 입주일 당일 : 환불 불가',
-      '',
-      '계약 당일 취소는 환불 규정에 상관없이 임대료의 90%가 환불됩니다.',
-      '청소비와 관리비는 100% 환불됩니다.',
-    ],
-    '보통': [
-      '• 입주일 20일 이전 : 임대료의 100% 환불',
-      '• 입주일 19일 ~ 10일 이전 : 임대료의 70% 환불',
-      '• 입주일 9일 ~ 1일 이전 : 임대료의 50% 환불',
-      '• 입주일 당일 : 환불 불가',
-      '',
-      '계약 당일 취소는 환불 규정에 상관없이 임대료의 90%가 환불됩니다.',
-      '청소비와 관리비는 100% 환불됩니다.',
-    ],
-    '엄격하게': [
-      '• 입주일 30일 이전 : 임대료의 100% 환불',
-      '• 입주일 29일 ~ 15일 이전 : 임대료의 50% 환불',
-      '• 입주일 14일 이내 : 환불 불가',
-      '',
-      '계약 당일 취소는 환불 규정에 상관없이 임대료의 90%가 환불됩니다.',
-      '청소비와 관리비는 100% 환불됩니다.',
-    ],
-  };
+  // 환불 정책 상태
+  List<RefundPolicy> _refundPolicies = [];
+  bool _isLoadingPolicies = false;
+  String? _policyLoadError;
 
   String get _dailyRent => (widget.formData['dailyRent'] as String?) ?? '';
 
@@ -173,6 +142,31 @@ class _PricingStepState extends State<PricingStep> {
         _handleCleaningFeeBlur();
       }
     });
+
+    // 환불 정책 로드
+    _loadRefundPolicies();
+  }
+
+  /// 환불 정책 목록을 API에서 로드
+  Future<void> _loadRefundPolicies() async {
+    setState(() {
+      _isLoadingPolicies = true;
+      _policyLoadError = null;
+    });
+
+    try {
+      final policies = await _refundPolicyService.getRefundPolicies();
+      setState(() {
+        _refundPolicies = policies;
+        _isLoadingPolicies = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingPolicies = false;
+        _policyLoadError = '환불 정책을 불러오는데 실패했습니다: $e';
+      });
+      debugPrint('❌ [PRICING_STEP] Failed to load refund policies: $e');
+    }
   }
 
   @override
@@ -810,76 +804,159 @@ class _PricingStepState extends State<PricingStep> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DropdownButtonFormField<String>(
-                  initialValue:
-                      _refundPolicies.any((p) => p['value'] == _refundPolicy)
-                      ? _refundPolicy
-                      : '',
-                  items: _refundPolicies
-                      .map(
-                        (policy) => DropdownMenuItem(
-                          value: policy['value'],
-                          child: Text(policy['label']!),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      _updateFormData('refundPolicy', value);
-                    }
-                  },
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                // 로딩 중
+                if (_isLoadingPolicies)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.gray300),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.gray300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
-                        color: AppColors.primary600,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-                if (_refundPolicy.isNotEmpty &&
-                    _refundPolicyDetails.containsKey(_refundPolicy)) ...[
-                  const SizedBox(height: 16),
+                  )
+                // 에러 발생
+                else if (_policyLoadError != null)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.gray50,
-                      border: Border.all(color: AppColors.gray200),
+                      color: AppColors.error50,
+                      border: Border.all(color: AppColors.error500),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: _refundPolicyDetails[_refundPolicy]!
-                          .map(
-                            (line) => Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                line,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.black,
-                                ),
-                              ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: AppColors.error600,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _policyLoadError!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.error600,
                             ),
-                          )
-                          .toList(),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _loadRefundPolicies,
+                          child: const Text('재시도'),
+                        ),
+                      ],
+                    ),
+                  )
+                // 정상 로드됨
+                else ...[
+                  DropdownButtonFormField<String>(
+                    initialValue:
+                        _refundPolicies.any(
+                          (p) => p.policyType == _refundPolicy,
+                        )
+                        ? _refundPolicy
+                        : null,
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('선택')),
+                      ..._refundPolicies.map(
+                        (policy) => DropdownMenuItem(
+                          value: policy.policyType,
+                          child: Text(policy.displayName),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        _updateFormData('refundPolicy', value);
+                      }
+                    },
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.gray300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.gray300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary600,
+                          width: 2,
+                        ),
+                      ),
                     ),
                   ),
+                  // 선택된 정책의 상세 내용 표시
+                  if (_refundPolicy.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Builder(
+                      builder: (context) {
+                        final selectedPolicy = _refundPolicies.firstWhere(
+                          (p) => p.policyType == _refundPolicy,
+                          orElse: () => _refundPolicies.first,
+                        );
+
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.gray50,
+                            border: Border.all(color: AppColors.gray200),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 정책 설명
+                              if (selectedPolicy.description.isNotEmpty) ...[
+                                Text(
+                                  selectedPolicy.description,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                              // 환불 규칙
+                              ...selectedPolicy.rules.map(
+                                (rule) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Text(
+                                    '• ${rule.period} : 임대료의 ${rule.refundRate}% 환불',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // 특별 규칙
+                              if (selectedPolicy.specialRules?.alwaysRefund !=
+                                  null) ...[
+                                const SizedBox(height: 8),
+                                const Divider(color: AppColors.gray300),
+                                const SizedBox(height: 8),
+                                Text(
+                                  selectedPolicy.specialRules!.alwaysRefund!,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.primary600,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ],
                 if (_hasError('refundPolicy'))
                   const Padding(
