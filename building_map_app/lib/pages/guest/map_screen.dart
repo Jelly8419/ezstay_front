@@ -12,9 +12,11 @@ import '../../config/api_config.dart';
 import '../../widgets/kakao_map_web.dart';
 import '../../widgets/property_card.dart';
 import '../../widgets/search_filter_bar.dart';
-import '../../constants/app_constants.dart' hide AppColors; // AppColors 충돌 방지
+import '../../constants/app_constants.dart'
+    hide AppColors, AppTextStyles; // 충돌 방지
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../services/map_interaction_coordinator.dart';
@@ -33,7 +35,7 @@ class _MapScreenState extends State<MapScreen> {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final KakaoMapWebController _mapController = KakaoMapWebController();
   final PageController _mobileCardController = PageController(
-    viewportFraction: 0.9, // 카드가 약간 겹쳐 보이도록
+    viewportFraction: 0.63, // 카드 너비 210px + 마진 16px ≈ 화면의 63%
   );
   final ScrollController _listScrollController =
       ScrollController(); // 리스트 스크롤 컨트롤러
@@ -415,7 +417,9 @@ class _MapScreenState extends State<MapScreen> {
         // 개별 마커(클러스터 크기 1)는 onMarkerTap 콜백이 처리하므로 여기서는 스킵
         // (중복 토글 방지: 이 리스너와 onMarkerTap 콜백이 동시에 토글하는 버그 수정)
         if (clusterRoomIds.length == 1) {
-          debugPrint('📍 [MAP] 개별 마커 감지 (클러스터 크기 1) - onMarkerTap 콜백이 처리 예정, 여기서는 스킵');
+          debugPrint(
+            '📍 [MAP] 개별 마커 감지 (클러스터 크기 1) - onMarkerTap 콜백이 처리 예정, 여기서는 스킵',
+          );
           return;
         }
 
@@ -442,7 +446,8 @@ class _MapScreenState extends State<MapScreen> {
           _clusterRoomIds = clusterRoomIds;
           _selectedRoom = null; // 선택된 방 초기화
           _currentMobileCardIndex = 0; // 모바일 카드 인덱스를 0으로 리셋 (첫 번째 매물 표시)
-          _showMobileCardList = true; // 다른 클러스터 클릭 시 카드 리스트 무조건 노출 (같은 클러스터 재클릭은 clusterRoomIds.isEmpty로 별도 처리)
+          _showMobileCardList =
+              true; // 다른 클러스터 클릭 시 카드 리스트 무조건 노출 (같은 클러스터 재클릭은 clusterRoomIds.isEmpty로 별도 처리)
         });
 
         // 클러스터 마커 선택 (파란색으로 표시)
@@ -807,7 +812,7 @@ class _MapScreenState extends State<MapScreen> {
       // 가격 범위 필터 (guest_home_page에서 전달받은 값, 주간 임대료 기준)
       if (_minPrice != null || _maxPrice != null) {
         final dailyRent = room['dailyRent'] as int? ?? 0;
-        final weeklyRent = dailyRent * 7;  // 일일 임대료를 주간 임대료로 변환
+        final weeklyRent = dailyRent * 7; // 일일 임대료를 주간 임대료로 변환
         if (_minPrice != null && weeklyRent < _minPrice!) {
           return false;
         }
@@ -1013,10 +1018,11 @@ class _MapScreenState extends State<MapScreen> {
                 onTap: ResponsiveUtil.isMobile(context)
                     ? () {
                         // 🎯 Coordinator: 마커 선택 모드 진입 + 300ms 이벤트 잠금
-                        final coordinator = Provider.of<MapInteractionCoordinator>(
-                          context,
-                          listen: false,
-                        );
+                        final coordinator =
+                            Provider.of<MapInteractionCoordinator>(
+                              context,
+                              listen: false,
+                            );
                         coordinator.enterMode(
                           InteractionMode.markerSelecting,
                           lockDuration: const Duration(milliseconds: 300),
@@ -1085,10 +1091,10 @@ class _MapScreenState extends State<MapScreen> {
           AnimatedPositioned(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            bottom: _showMobileCardList ? 80 : -160, // 숨김 시 화면 밖으로
+            bottom: _showMobileCardList ? 80 : -320, // 숨김 시 화면 밖으로 (카드 높이만큼)
             left: 0,
             right: 0,
-            height: 160,
+            height: 320, // 카드 높이 축소 (이미지 180 + 패딩 26 + 텍스트 ~110)
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 300),
               opacity: _showMobileCardList ? 1.0 : 0.0,
@@ -1464,124 +1470,161 @@ class _MapScreenState extends State<MapScreen> {
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
+        width: 210, // 고정 너비 (4분의 1 축소)
         margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16), // rounded-2xl
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
-          ],
+          ], // shadow-xl
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min, // Column 크기를 내용물에 맞춤
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 썸네일 이미지
+            // 상단: 이미지 (180px 고정 높이)
             ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
-                bottomLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
               child: firstPhotoUrl != null && firstPhotoUrl.isNotEmpty
                   ? Image.network(
                       firstPhotoUrl,
-                      width: 120,
-                      height: 160,
+                      width: double.infinity,
+                      height: 180,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          width: 120,
-                          height: 160,
-                          color: Colors.grey[200],
-                          child: const Icon(
+                          width: double.infinity,
+                          height: 180,
+                          color: AppColors.neutral200,
+                          child: Icon(
                             Icons.home,
                             size: 48,
-                            color: Colors.grey,
+                            color: AppColors.neutral400,
                           ),
                         );
                       },
                     )
                   : Container(
-                      width: 120,
-                      height: 160,
-                      color: Colors.grey[200],
-                      child: const Icon(
+                      width: double.infinity,
+                      height: 180,
+                      color: AppColors.neutral200,
+                      child: Icon(
                         Icons.home,
                         size: 48,
-                        color: Colors.grey,
+                        color: AppColors.neutral400,
                       ),
                     ),
             ),
 
-            // 정보 영역
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // 방 이름
-                    Text(
-                      roomName,
+            // 하단: 방 정보 (p-4 = 16px, bottom padding 최소화)
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: 10, // bottom padding 최소화
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // Column 크기를 내용물에 맞춤
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 방 이름 (font-bold, text-gray-900, mb-1)
+                  Text(
+                    roomName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF111827), // text-gray-900
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4), // mb-1
+                  // 주소 (text-xs, text-gray-600, mb-2)
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 12,
+                        color: Color(0xFF4B5563),
+                      ), // text-gray-600
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          address,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF4B5563), // text-gray-600
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8), // mb-2
+                  // 가격 (font-bold, text-[rgb(0,0,0)], mb-2)
+                  RichText(
+                    text: TextSpan(
                       style: const TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1F2937),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black, // text-[rgb(0,0,0)]
+                        height: 1.2, // line height 줄임
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      children: [
+                        TextSpan(text: _formatPriceShort(dailyRent * 7)),
+                        const TextSpan(
+                          text: ' / 주',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 6),
+                  ),
 
-                    // 주소
-                    Text(
-                      address,
-                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 12),
+                  // 할인 정보가 있을 때만 여백 추가 (간격 줄임)
+                  if (hasQuickMoveIn || hasLongTerm) const SizedBox(height: 4),
 
-                    // 가격 (주간 기준)
+                  // 할인 정보 (text-xs, text-blue-600, font-semibold)
+                  if (hasQuickMoveIn) ...[
                     Text(
-                      '${NumberFormat('#,###').format(dailyRent * 7)}원/주',
+                      '• $quickMoveInDays일 이내 ${_formatPriceShort(quickMoveInDiscount)} 할인',
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
+                        fontSize: 12,
+                        color: Color(0xFF2563EB), // text-blue-600
+                        fontWeight: FontWeight.w600,
+                        height: 1.3, // line height 줄임
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-
-                    // 할인 정보 (데스크탑과 동일)
-                    if (hasQuickMoveIn) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        '* $quickMoveInDays일 이내 입주시 ${_formatPrice(quickMoveInDiscount)}원 할인',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF3B82F6),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    if (hasLongTerm) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        '* $longTermWeeks주 이상 계약시 $longTermDiscount% 할인',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF3B82F6),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                    const SizedBox(height: 2),
                   ],
-                ),
+                  if (hasLongTerm) ...[
+                    Text(
+                      '• $longTermWeeks주 이상 $longTermDiscount% 할인',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF2563EB), // text-blue-600
+                        fontWeight: FontWeight.w600,
+                        height: 1.3, // line height 줄임
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
               ),
             ),
           ],
@@ -1590,17 +1633,10 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /// 가격 포맷팅 (만원 단위)
-  String _formatPrice(int price) {
-    if (price >= 10000) {
-      final manWon = price ~/ 10000;
-      final remainder = price % 10000;
-      if (remainder == 0) {
-        return '$manWon만원';
-      }
-      return '$manWon.${(remainder / 1000).toStringAsFixed(0)}만원';
-    }
-    return '${price.toString()}원';
+  /// 가격 포맷팅 (짧은 형식 - React formatCurrencyShort 동일)
+  String _formatPriceShort(int price) {
+    final manWon = price ~/ 10000;
+    return '${NumberFormat('#,###').format(manWon)}만원';
   }
 
   /// 드래그 가능한 스크롤 인디케이터
@@ -1676,7 +1712,7 @@ class _MapScreenState extends State<MapScreen> {
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary500.withOpacity(0.3),
+                            color: AppColors.primary500.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
