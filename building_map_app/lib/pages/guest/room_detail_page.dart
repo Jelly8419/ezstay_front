@@ -814,14 +814,63 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         ),
         const Divider(),
 
-        // 3. 청소비 (cleaningService 신청 시 5만원, 아니면 호스트 설정값) - py-4
+        // 3. 청소비 (EZ서비스 클리닝서비스 사용 시: 기본 5만원 + 10평 초과시 10평당 2만원)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          child: _buildPriceRow(
-            '청소비',
-            (_room!.ezService?.cleaningService == true)
-                ? 50000
-                : _room!.cleaningFee,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '청소비',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    '${_currencyFormat.format((_room!.ezService?.cleaningService == true) ? PriceCalculator.calculateEzCleaningFee(_room!.area) : _room!.cleaningFee)}원',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              if (_room!.ezService?.cleaningService == true) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '이 방은 퇴실 후 EZ스테이에서 청소하는 방입니다.',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Tooltip(
+                      message: '기본요금은 5만원, 10평 초과될 때 마다 2만원씩 추가됩니다.',
+                      preferBelow: false,
+                      decoration: BoxDecoration(
+                        color: AppColors.neutral800,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      textStyle: AppTextStyles.caption.copyWith(
+                        color: AppColors.textOnPrimary,
+                      ),
+                      child: Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
           ),
         ),
         const Divider(),
@@ -1620,7 +1669,23 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               '관리비 (${_bookingState.selectedDays}일)',
               priceBreakdown.maintenanceFee,
             ),
-            _buildPriceRowDetailed('청소비', priceBreakdown.cleaningFee),
+            _buildPriceRowDetailed(
+              _room!.ezService?.cleaningService == true
+                  ? '청소비 (EZ서비스)'
+                  : '청소비',
+              priceBreakdown.cleaningFee,
+            ),
+            if (_room!.ezService?.cleaningService == true)
+              Padding(
+                padding: EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '기본 5만원 + 10평 초과시 10평당 2만원',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
             if (priceBreakdown.rentalItemsFee > 0)
               _buildPriceRowDetailed('렌탈 아이템', priceBreakdown.rentalItemsFee),
             _buildPriceRowDetailed('계약 수수료', priceBreakdown.contractFee),

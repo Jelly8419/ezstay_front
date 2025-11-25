@@ -7,6 +7,7 @@ import '../../services/refund_policy_service.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/common/responsive_page_layout.dart';
 import '../../core/theme/app_colors.dart';
+import '../../utils/price_calculator.dart';
 
 /// 계약 시작하기 페이지
 class ContractStartPage extends StatefulWidget {
@@ -102,10 +103,12 @@ class _ContractStartPageState extends State<ContractStartPage> {
     return widget.room.dailyMaintenanceFee * _contractDays;
   }
 
-  /// 청소비 계산 (EZ서비스 청소 신청시 5만원 고정)
+  /// 청소비 계산
+  /// - EZ서비스 청소 신청시: 기본 5만원 + 10평 초과시 10평당 2만원 추가
+  /// - 그렇지 않으면: 호스트 설정 청소비
   int _calculateCleaningFee() {
     return (widget.room.ezService?.cleaningService == true)
-        ? 50000
+        ? PriceCalculator.calculateEzCleaningFee(widget.room.area)
         : widget.room.cleaningFee;
   }
 
@@ -173,16 +176,18 @@ class _ContractStartPageState extends State<ContractStartPage> {
   }
 
   /// 플랫폼 수수료 계산 (9.9%)
-  /// 기준: 임대료 + 관리비 + 청소비 (EZ서비스 cleaning 사용 중일 경우 청소비 제외)
+  /// 기준: (임대료 + 관리비 + 청소비 - 할인금액) × 9.9%
+  /// 할인 적용 후 금액에 수수료 부과
   int _calculatePlatformFee() {
     final rentalTotal = _calculateRentalTotal();
     final maintenanceTotal = _calculateMaintenanceTotal();
     final cleaningFee = _calculateCleaningFee();
+    final totalDiscount = _calculateTotalDiscount();
 
     final isEzCleaningService = widget.room.ezService?.cleaningService == true;
     final feeBase = isEzCleaningService
-        ? rentalTotal + maintenanceTotal  // EZ청소 사용시 청소비 제외
-        : rentalTotal + maintenanceTotal + cleaningFee;
+        ? rentalTotal + maintenanceTotal - totalDiscount  // EZ청소 사용시 청소비 제외
+        : rentalTotal + maintenanceTotal + cleaningFee - totalDiscount;
 
     return (feeBase * 0.099).floor();
   }

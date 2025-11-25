@@ -63,19 +63,20 @@ class PriceCalculator {
     final maintenanceFee = room.dailyMaintenanceFee * days;
 
     // 3. 청소비
-    // - ez_services에서 cleaningService 신청했으면 5만원 고정
+    // - ez_services에서 cleaningService 신청했으면: 기본 5만원 + 10평 초과시 10평당 2만원 추가
     // - 그렇지 않으면 호스트가 설정한 청소비
     debugPrint('🧹 청소비 계산 디버그:');
     debugPrint('  - room.ezService: ${room.ezService}');
     debugPrint('  - room.ezService?.cleaningService: ${room.ezService?.cleaningService}');
     debugPrint('  - room.cleaningFee (호스트 설정): ${room.cleaningFee}');
+    debugPrint('  - room.area (평수): ${room.area}');
 
     final cleaningFee = (room.ezService?.cleaningService == true)
-        ? 50000
+        ? calculateEzCleaningFee(room.area)
         : room.cleaningFee;
 
     debugPrint('  - 최종 청소비: $cleaningFee');
-    debugPrint('  - 조건: cleaningService 신청 ${room.ezService?.cleaningService == true ? "O (5만원)" : "X (호스트 설정값)"}');
+    debugPrint('  - 조건: cleaningService 신청 ${room.ezService?.cleaningService == true ? "O (평수 기반 계산)" : "X (호스트 설정값)"}');
 
     // 4. 보증금 (고정)
     final deposit = room.deposit;
@@ -125,11 +126,13 @@ class PriceCalculator {
     }
 
     // 8. 계약 수수료 (9.9%)
-    // 수수료 기준: 임대료 + 관리비 + 청소비 (EZ서비스 cleaning 사용 중일 경우 청소비 제외)
+    // 수수료 기준: (임대료 + 관리비 + 청소비 - 할인금액) × 9.9%
+    // 할인 적용 후 금액에 수수료 부과
     final isEzCleaningService = room.ezService?.cleaningService == true;
+    final totalDiscount = longTermDiscount + quickMoveInDiscount;
     final feeBase = isEzCleaningService
-        ? baseRent + maintenanceFee  // EZ청소 사용시 청소비 제외
-        : baseRent + maintenanceFee + cleaningFee;
+        ? baseRent + maintenanceFee - totalDiscount  // EZ청소 사용시 청소비 제외
+        : baseRent + maintenanceFee + cleaningFee - totalDiscount;
     final contractFee = (feeBase * 0.099).floor();
 
     return PriceBreakdown(
@@ -206,5 +209,36 @@ class PriceCalculator {
     }
 
     return null; // 유효함
+  }
+
+  /// EZ서비스 청소비 계산
+  /// - 기본금: 5만원
+  /// - 10평 초과시: 10평당 2만원 추가 (올림)
+  /// - 예: 12평(7만원), 20평(7만원), 21평(9만원), 40평(11만원)
+  ///
+  /// [areaString] - 전용면적 (평수 문자열, 예: "12", "40")
+  static int calculateEzCleaningFee(String areaString) {
+    const baseFee = 50000; // 기본 5만원
+    const additionalFeePerUnit = 20000; // 10평당 2만원
+    const pyeongPerUnit = 10; // 10평 단위
+
+    // 평수 파싱
+    final pyeong = double.tryParse(areaString) ?? 0;
+
+    debugPrint('  - 평수: ${pyeong.toStringAsFixed(1)}평');
+
+    // 10평 이하: 기본 5만원
+    if (pyeong <= 10) {
+      debugPrint('  - EZ청소비: $baseFee원 (10평 이하, 기본금)');
+      return baseFee;
+    }
+
+    // 10평 초과: 기본 5만원 + 10평당 2만원 추가
+    final excessPyeong = pyeong - 10;
+    final additionalUnits = (excessPyeong / pyeongPerUnit).ceil();
+    final totalFee = baseFee + (additionalUnits * additionalFeePerUnit);
+
+    debugPrint('  - EZ청소비: $totalFee원 (10평 초과 ${excessPyeong.toStringAsFixed(1)}평 → $additionalUnits단위 추가)');
+    return totalFee;
   }
 }

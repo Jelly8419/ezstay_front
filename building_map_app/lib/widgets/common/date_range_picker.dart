@@ -51,10 +51,7 @@ class _DateRangePickerState extends State<DateRangePicker> {
           child: Container(
             padding: EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              border: Border.all(
-                color: AppColors.border,
-                width: 1,
-              ),
+              border: Border.all(color: AppColors.border, width: 1),
               borderRadius: AppRadius.radiusMd,
               color: AppColors.surface,
             ),
@@ -63,7 +60,8 @@ class _DateRangePickerState extends State<DateRangePicker> {
                 Icon(
                   Icons.date_range,
                   size: 20,
-                  color: widget.checkInDate != null && widget.checkOutDate != null
+                  color:
+                      widget.checkInDate != null && widget.checkOutDate != null
                       ? AppColors.primary600
                       : AppColors.textSecondary,
                 ),
@@ -75,7 +73,9 @@ class _DateRangePickerState extends State<DateRangePicker> {
                       color: widget.checkInDate != null
                           ? AppColors.textPrimary
                           : AppColors.textSecondary,
-                      fontWeight: widget.checkInDate != null && widget.checkOutDate != null
+                      fontWeight:
+                          widget.checkInDate != null &&
+                              widget.checkOutDate != null
                           ? FontWeight.w600
                           : FontWeight.normal,
                     ),
@@ -110,7 +110,8 @@ class _DateRangePickerState extends State<DateRangePicker> {
         initialCheckOut: widget.checkOutDate,
         minContractDays: widget.minContractDays,
         onDateRangeSelected: widget.onDateSelected,
-        onValidationError: widget.onValidationError ?? (_) {}, // 콜백 전달 (없으면 빈 함수)
+        onValidationError:
+            widget.onValidationError ?? (_) {}, // 콜백 전달 (없으면 빈 함수)
       ),
     );
   }
@@ -494,7 +495,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
         if (duration < widget.minContractDays) {
           // 에러 메시지를 위젯에 전달 (버튼 아래 표시)
           widget.onValidationError(
-            '최소 ${widget.minContractDays}일 이상 선택해주세요. (현재: $duration일)',
+            '이 방의 최소 계약기간은 ${widget.minContractDays}일 입니다.',
           );
           return; // 다이얼로그는 열린 상태 유지
         }

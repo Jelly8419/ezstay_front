@@ -7,6 +7,7 @@ import '../../models/booking_state.dart';
 import '../../models/rental_item.dart';
 import '../../utils/price_calculator.dart';
 import '../common/date_range_picker.dart';
+import '../common/overlay_toast.dart';
 
 /// 모바일용 예약 Bottom Sheet (React UI 스타일)
 /// 날짜 선택 및 가격 분석을 포함합니다.
@@ -31,7 +32,6 @@ class BookingBottomSheet extends StatefulWidget {
 class _BookingBottomSheetState extends State<BookingBottomSheet> {
   late BookingState _bookingState;
   late ScrollController _scrollController;
-  String? _validationError; // 날짜 검증 에러 메시지
 
   @override
   void initState() {
@@ -216,19 +216,13 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                         );
                       },
                       onValidationError: (errorMessage) {
-                        // 다이얼로그에서 검증 에러 발생 시 하단에 표시
-                        setState(() {
-                          _validationError = errorMessage;
-                        });
-
-                        // 2초 후 자동 제거
-                        Future.delayed(const Duration(seconds: 2), () {
-                          if (mounted) {
-                            setState(() {
-                              _validationError = null;
-                            });
-                          }
-                        });
+                        // 오버레이 토스트로 최상단에 표시
+                        OverlayToast.show(
+                          context,
+                          message: errorMessage,
+                          duration: const Duration(seconds: 3),
+                          type: ToastType.error,
+                        );
                       },
                     ),
 
@@ -321,7 +315,23 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
           '관리비 (${_bookingState.selectedDays}일)',
           breakdown.maintenanceFee,
         ),
-        _buildPriceRow('청소비', breakdown.cleaningFee),
+        _buildPriceRow(
+          widget.room.ezService?.cleaningService == true
+              ? '청소비 (EZ서비스)'
+              : '청소비',
+          breakdown.cleaningFee,
+        ),
+        if (widget.room.ezService?.cleaningService == true)
+          Padding(
+            padding: EdgeInsets.only(left: 0, bottom: 4),
+            child: Text(
+              '기본 5만원 + 10평 초과시 10평당 2만원',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+          ),
         _buildPriceRow('계약 수수료', breakdown.contractFee),
         if (breakdown.rentalItemsFee > 0)
           _buildPriceRow('렌탈 아이템', breakdown.rentalItemsFee),
@@ -587,7 +597,6 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
 
     final bool canRequestContract = _bookingState.hasSelectedDates &&
         validationError == null &&
-        _validationError == null &&
         !hasInvalidRentalAmount;
 
     return Container(
@@ -622,33 +631,6 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
               ],
             ),
             SizedBox(height: AppSpacing.md),
-          ],
-
-          // 검증 에러 메시지 (날짜 선택 버튼 위에 표시)
-          if (_validationError != null) ...[
-            Container(
-              padding: EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.error50,
-                borderRadius: AppRadius.radiusMd,
-                border: Border.all(color: AppColors.error500),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline, size: 16, color: AppColors.error500),
-                  SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      _validationError!,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.error700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: AppSpacing.sm),
           ],
 
           // 렌탈 아이템 최소 금액 에러 메시지
