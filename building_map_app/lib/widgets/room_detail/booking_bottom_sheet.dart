@@ -165,6 +165,32 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                       ),
                     ],
 
+                    // 빠른 입주 할인 정보
+                    if (widget.room.quickMoveIn != null &&
+                        widget.room.quickMoveInDiscount != null &&
+                        widget.room.quickMoveInDiscount! > 0) ...[
+                      SizedBox(height: AppSpacing.sm),
+                      Container(
+                        padding: EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: AppColors.neutral100,
+                          borderRadius: AppRadius.radiusLg,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${widget.room.quickMoveIn}일 이내 입주 시 ${PriceCalculator.formatKRW(widget.room.quickMoveInDiscount!)} 할인',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     SizedBox(height: AppSpacing.md),
 
                     // 날짜 선택 섹션
@@ -279,6 +305,12 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
           '임대료 (${_bookingState.selectedDays}일)',
           breakdown.baseRent,
         ),
+        if (breakdown.quickMoveInDiscount > 0)
+          _buildPriceRow(
+            '빠른 입주 할인',
+            -breakdown.quickMoveInDiscount,
+            isDiscount: true,
+          ),
         if (breakdown.longTermDiscount > 0)
           _buildPriceRow(
             '장기계약 할인',
@@ -548,8 +580,15 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
   }
 
   Widget _buildBottomBar(PriceBreakdown breakdown, String? validationError) {
-    final bool canRequestContract =
-        _bookingState.hasSelectedDates && validationError == null;
+    // 렌탈 아이템 최소 금액 검증 (10,000원 이상)
+    final hasInvalidRentalAmount = _bookingState.hasRentalItems &&
+        breakdown.rentalItemsFee > 0 &&
+        breakdown.rentalItemsFee < 10000;
+
+    final bool canRequestContract = _bookingState.hasSelectedDates &&
+        validationError == null &&
+        _validationError == null &&
+        !hasInvalidRentalAmount;
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.lg),
@@ -601,6 +640,33 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                   Expanded(
                     child: Text(
                       _validationError!,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.error700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: AppSpacing.sm),
+          ],
+
+          // 렌탈 아이템 최소 금액 에러 메시지
+          if (hasInvalidRentalAmount) ...[
+            Container(
+              padding: EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.error50,
+                borderRadius: AppRadius.radiusMd,
+                border: Border.all(color: AppColors.error500),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, size: 16, color: AppColors.error500),
+                  SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      '옵션상품은 최소 10,000원 이상 선택해주세요. (현재: ${PriceCalculator.formatKRW(breakdown.rentalItemsFee)})',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.error700,
                       ),

@@ -96,19 +96,7 @@ class PriceCalculator {
       }
     }
 
-    // 6. 장기 계약 할인 계산
-    int longTermDiscount = 0;
-    if (room.longTermWeeks != null &&
-        room.longTermDiscount != null &&
-        room.longTermDiscount! > 0) {
-      final weeks = days / 7;
-      if (weeks >= room.longTermWeeks!) {
-        // 할인율을 기본 임대료에 적용
-        longTermDiscount = (baseRent * room.longTermDiscount! / 100).round();
-      }
-    }
-
-    // 7. 빠른 입주 할인 계산
+    // 6. 빠른 입주 할인 계산 (먼저 적용)
     int quickMoveInDiscount = 0;
     if (room.quickMoveIn != null &&
         room.quickMoveInDiscount != null &&
@@ -123,12 +111,26 @@ class PriceCalculator {
       }
     }
 
-    // 8. 소계 계산 (임대료 + 관리비 + 청소비 + 렌탈 아이템 - 할인)
-    final subtotal = baseRent + maintenanceFee + cleaningFee + rentalItemsFee -
-                     longTermDiscount - quickMoveInDiscount;
+    // 7. 장기 계약 할인 계산 (빠른 입주 할인 적용 후 계산)
+    int longTermDiscount = 0;
+    if (room.longTermWeeks != null &&
+        room.longTermDiscount != null &&
+        room.longTermDiscount! > 0) {
+      final weeks = days / 7;
+      if (weeks >= room.longTermWeeks!) {
+        // 빠른 입주 할인 적용 후 임대료에 장기계약 할인율 적용
+        final adjustedRent = baseRent - quickMoveInDiscount;
+        longTermDiscount = (adjustedRent * room.longTermDiscount! / 100).floor();
+      }
+    }
 
-    // 9. 계약 수수료 (소계의 10%)
-    final contractFee = (subtotal * 0.10).round();
+    // 8. 계약 수수료 (9.9%)
+    // 수수료 기준: 임대료 + 관리비 + 청소비 (EZ서비스 cleaning 사용 중일 경우 청소비 제외)
+    final isEzCleaningService = room.ezService?.cleaningService == true;
+    final feeBase = isEzCleaningService
+        ? baseRent + maintenanceFee  // EZ청소 사용시 청소비 제외
+        : baseRent + maintenanceFee + cleaningFee;
+    final contractFee = (feeBase * 0.099).floor();
 
     return PriceBreakdown(
       baseRent: baseRent,

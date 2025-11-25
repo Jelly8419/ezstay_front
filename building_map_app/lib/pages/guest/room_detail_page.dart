@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../models/room.dart';
 import '../../models/booking_state.dart';
@@ -162,6 +163,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           room: _room!,
           checkInDate: _bookingState.checkInDate!,
           checkOutDate: _bookingState.checkOutDate!,
+          selectedRentalItems: _bookingState.selectedRentalItems,
         ),
       ),
     );
@@ -191,11 +193,79 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                         padding: EdgeInsets.all(isMobile ? 16 : 32),
                         child: isMobile
                             ? _buildMobileLayout()
-                            : _buildDesktopLayout(),
+                            : _buildDesktopLeftContent(),
                       ),
                     ),
                   ),
                 ),
+
+                // 데스크톱 오른쪽 고정 예약 위젯
+                if (!isMobile)
+                  Positioned(
+                    top: 100,
+                    right: MediaQuery.of(context).size.width > 1280
+                        ? (MediaQuery.of(context).size.width - 1280) / 2 + 32
+                        : 32,
+                    child: Container(
+                      width:
+                          (min(MediaQuery.of(context).size.width, 1280.0) -
+                              64 -
+                              32) /
+                          3,
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height - 120,
+                      ),
+                      child: SingleChildScrollView(
+                        child: _buildFixedBookingWidget(),
+                      ),
+                    ),
+                  ),
+
+                // 모바일 플로팅 뒤로가기 버튼
+                if (isMobile)
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.shadowMedium,
+                              blurRadius: 12,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            } else {
+                              // 직접 진입 시 게스트 홈으로 이동
+                              Navigator.of(
+                                context,
+                              ).pushReplacementNamed('/guest-home');
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.arrow_back,
+                              size: 20,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
 
                 // 모바일 하단 고정 바
                 if (isMobile)
@@ -258,8 +328,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     );
   }
 
-  /// 데스크톱 레이아웃 (2컬럼 그리드)
-  Widget _buildDesktopLayout() {
+  /// 데스크톱 레이아웃 - 왼쪽 컨텐츠 (스크롤 가능)
+  Widget _buildDesktopLeftContent() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -297,14 +367,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
         const SizedBox(width: 32),
 
-        // 오른쪽: Sticky 예약 위젯 (1/3 너비)
-        Expanded(
-          flex: 1,
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: SizedBox(child: _buildFixedBookingWidget()),
-          ),
-        ),
+        // 오른쪽: 빈 공간 유지 (고정 위젯이 Positioned로 처리됨)
+        Expanded(flex: 1, child: SizedBox()),
       ],
     );
   }
@@ -341,7 +405,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                   child: _buildInfoItem(
                     Icons.apartment,
                     '건물유형',
-                    _room!.buildingType,
+                    '${_room!.buildingType}${_room!.isDuplex ? ' (복층)' : ''}',
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -1352,10 +1416,17 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       bookingState: _bookingState,
     );
 
+    // 렌탈 아이템 최소 금액 검증 (10,000원 이상)
+    final hasInvalidRentalAmount =
+        _bookingState.hasRentalItems &&
+        priceBreakdown.rentalItemsFee > 0 &&
+        priceBreakdown.rentalItemsFee < 10000;
+
     final canRequestContract =
         _bookingState.hasSelectedDates &&
         validationError == null &&
-        _validationError == null;
+        _validationError == null &&
+        !hasInvalidRentalAmount;
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.lg),
@@ -1416,6 +1487,32 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                     style: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // 빠른 입주 할인 정보
+          if (_room!.quickMoveIn != null &&
+              _room!.quickMoveInDiscount != null &&
+              _room!.quickMoveInDiscount! > 0) ...[
+            SizedBox(height: AppSpacing.sm),
+            Container(
+              padding: EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.neutral100,
+                borderRadius: AppRadius.radiusLg,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${_room!.quickMoveIn}일 이내 입주 시 ${PriceCalculator.formatKRW(_room!.quickMoveInDiscount!)} 할인',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
                 ],
@@ -1507,6 +1604,12 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               '임대료 (${_bookingState.selectedDays}일)',
               priceBreakdown.baseRent,
             ),
+            if (priceBreakdown.quickMoveInDiscount > 0)
+              _buildPriceRowDetailed(
+                '빠른 입주 할인',
+                -priceBreakdown.quickMoveInDiscount,
+                isDiscount: true,
+              ),
             if (priceBreakdown.longTermDiscount > 0)
               _buildPriceRowDetailed(
                 '장기계약 할인',
@@ -1564,6 +1667,37 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                   Expanded(
                     child: Text(
                       _validationError!,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.error700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: AppSpacing.sm),
+          ],
+
+          // 렌탈 아이템 최소 금액 에러 메시지
+          if (hasInvalidRentalAmount) ...[
+            Container(
+              padding: EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.error50,
+                borderRadius: AppRadius.radiusMd,
+                border: Border.all(color: AppColors.error500),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 16,
+                    color: AppColors.error500,
+                  ),
+                  SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      '옵션상품은 최소 10,000원 이상 선택해주세요. (현재: ${PriceCalculator.formatKRW(priceBreakdown.rentalItemsFee)})',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.error700,
                       ),
@@ -1638,6 +1772,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           room: _room!,
           checkInDate: _bookingState.checkInDate!,
           checkOutDate: _bookingState.checkOutDate!,
+          selectedRentalItems: _bookingState.selectedRentalItems,
         ),
       ),
     );

@@ -206,8 +206,8 @@ class Room {
       isNearSubway: json['isNearSubway'] as bool? ?? false,
       // host 객체에서 정보 추출
       hostProfileImage: json['host'] != null ? json['host']['profileImageUrl'] as String? : json['hostProfileImage'] as String?,
-      hostPhoneVerified: json['host'] != null ? json['host']['phoneVerified'] as bool? : json['hostPhoneVerified'] as bool?,
-      hostAccountVerified: json['host'] != null ? json['host']['accountVerified'] as bool? : json['hostAccountVerified'] as bool?,
+      hostPhoneVerified: json['host'] != null ? _parseBool(json['host']['phoneVerified']) : _parseBool(json['hostPhoneVerified']),
+      hostAccountVerified: json['host'] != null ? _parseBool(json['host']['accountVerified']) : _parseBool(json['hostAccountVerified']),
       hostName: json['host'] != null ? json['host']['name'] as String? : json['hostName'] as String?,
       hostId: json['host'] != null ? json['host']['id'] as int? : json['hostId'] as int?,
       status: json['status'] as String? ?? 'draft',
@@ -228,6 +228,15 @@ class Room {
     if (value == null) return null;
     if (value is int) return value;
     if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  /// bool 값을 안전하게 파싱 (bool, int(1/0), String 지원)
+  static bool? _parseBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
     return null;
   }
 

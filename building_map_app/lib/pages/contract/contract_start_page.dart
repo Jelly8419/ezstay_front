@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/room.dart';
 import '../../models/refund_policy.dart';
+import '../../models/rental_item.dart';
 import '../../services/contract_service.dart';
 import '../../services/refund_policy_service.dart';
 import 'package:intl/intl.dart';
@@ -12,12 +13,14 @@ class ContractStartPage extends StatefulWidget {
   final Room room;
   final DateTime checkInDate;
   final DateTime checkOutDate;
+  final Map<int, int> selectedRentalItems; // {아이템ID: 수량}
 
   const ContractStartPage({
     super.key,
     required this.room,
     required this.checkInDate,
     required this.checkOutDate,
+    this.selectedRentalItems = const {},
   });
 
   @override
@@ -86,58 +89,116 @@ class _ContractStartPageState extends State<ContractStartPage> {
   }
 
 
-  /// 총 임대료 계산
+  /// 계약 일수 계산
+  int get _contractDays => widget.checkOutDate.difference(widget.checkInDate).inDays;
+
+  /// 총 임대료 계산 (일 단위)
   int _calculateRentalTotal() {
-    final days = widget.checkOutDate.difference(widget.checkInDate).inDays;
-    final weeks = (days / 7).ceil();
-    return widget.room.weeklyRent * weeks;
+    return widget.room.dailyRent * _contractDays;
   }
 
-  /// 총 관리비 계산
+  /// 총 관리비 계산 (일 단위)
   int _calculateMaintenanceTotal() {
-    final days = widget.checkOutDate.difference(widget.checkInDate).inDays;
-    final weeks = (days / 7).ceil();
-    return widget.room.maintenanceFee * weeks;
+    return widget.room.dailyMaintenanceFee * _contractDays;
   }
 
-  /// 총 옵션 금액 계산 (렌탈 아이템 제거로 항상 0 반환)
-  int _calculateOptionsTotal() {
-    return 0;
+  /// 청소비 계산 (EZ서비스 청소 신청시 5만원 고정)
+  int _calculateCleaningFee() {
+    return (widget.room.ezService?.cleaningService == true)
+        ? 50000
+        : widget.room.cleaningFee;
   }
 
-  /// 할인 금액 계산
-  int _calculateDiscount() {
-    final days = widget.checkOutDate.difference(widget.checkInDate).inDays;
-    final weeks = (days / 7).ceil();
+  /// 렌탈 아이템 총 비용 계산
+  int _calculateRentalItemsFee() {
+    if (widget.room.availableRentalItems == null ||
+        widget.selectedRentalItems.isEmpty) {
+      return 0;
+    }
 
-    if (widget.room.longTermDiscount != null &&
-        widget.room.longTermDiscount! > 0 &&
-        widget.room.longTermWeeks != null &&
-        weeks >= widget.room.longTermWeeks!) {
+    int total = 0;
+    final allItems = widget.room.availableRentalItems!.allItems;
+    for (final entry in widget.selectedRentalItems.entries) {
+      final itemId = entry.key;
+      final quantity = entry.value;
+      try {
+        final item = allItems.firstWhere((item) => item.id == itemId);
+        total += item.price * quantity;
+      } catch (e) {
+        debugPrint('❌ [CONTRACT] 렌탈 아이템 찾기 실패 (ID: $itemId)');
+      }
+    }
+    return total;
+  }
+
+  /// 장기 계약 할인 계산 (빠른 입주 할인 적용 후 계산)
+  int _calculateLongTermDiscount() {
+    if (widget.room.longTermWeeks == null ||
+        widget.room.longTermDiscount == null ||
+        widget.room.longTermDiscount! <= 0) {
+      return 0;
+    }
+
+    final weeks = _contractDays / 7;
+    if (weeks >= widget.room.longTermWeeks!) {
       final rentalTotal = _calculateRentalTotal();
-      return (rentalTotal * widget.room.longTermDiscount! / 100).round();
+      // 빠른 입주 할인 적용 후 임대료에 장기계약 할인율 적용
+      final quickMoveInDiscount = _calculateQuickMoveInDiscount();
+      final adjustedRent = rentalTotal - quickMoveInDiscount;
+      return (adjustedRent * widget.room.longTermDiscount! / 100).floor();
     }
     return 0;
   }
 
-  /// 플랫폼 수수료 계산 (임대료 + 관리비의 10%)
+  /// 빠른 입주 할인 계산
+  int _calculateQuickMoveInDiscount() {
+    if (widget.room.quickMoveIn == null ||
+        widget.room.quickMoveInDiscount == null ||
+        widget.room.quickMoveInDiscount! <= 0) {
+      return 0;
+    }
+
+    final now = DateTime.now();
+    final daysUntilCheckIn = widget.checkInDate.difference(now).inDays;
+
+    if (daysUntilCheckIn <= widget.room.quickMoveIn!) {
+      return widget.room.quickMoveInDiscount!;
+    }
+    return 0;
+  }
+
+  /// 총 할인 금액 계산
+  int _calculateTotalDiscount() {
+    return _calculateLongTermDiscount() + _calculateQuickMoveInDiscount();
+  }
+
+  /// 플랫폼 수수료 계산 (9.9%)
+  /// 기준: 임대료 + 관리비 + 청소비 (EZ서비스 cleaning 사용 중일 경우 청소비 제외)
   int _calculatePlatformFee() {
     final rentalTotal = _calculateRentalTotal();
     final maintenanceTotal = _calculateMaintenanceTotal();
+    final cleaningFee = _calculateCleaningFee();
 
-    // 계약 수수료: (임대료 + 관리비)의 10%
-    final baseForContractFee = rentalTotal + maintenanceTotal;
-    return (baseForContractFee * 0.1).round();
+    final isEzCleaningService = widget.room.ezService?.cleaningService == true;
+    final feeBase = isEzCleaningService
+        ? rentalTotal + maintenanceTotal  // EZ청소 사용시 청소비 제외
+        : rentalTotal + maintenanceTotal + cleaningFee;
+
+    return (feeBase * 0.099).floor();
   }
 
-  /// 최종 금액 계산 (수수료 포함)
+  /// 보증금
+  int get _deposit => widget.room.deposit;
+
+  /// 최종 금액 계산 (수수료, 보증금 포함)
   int _calculateFinalTotal() {
     return _calculateRentalTotal() +
            _calculateMaintenanceTotal() +
-           widget.room.cleaningFee +
-           _calculateOptionsTotal() +
-           _calculatePlatformFee() -
-           _calculateDiscount();
+           _calculateCleaningFee() +
+           _calculateRentalItemsFee() +
+           _calculatePlatformFee() +
+           _deposit -
+           _calculateTotalDiscount();
   }
 
   @override
@@ -540,11 +601,14 @@ class _ContractStartPageState extends State<ContractStartPage> {
   Widget _buildPaymentDetails() {
     final rentalTotal = _calculateRentalTotal();
     final maintenanceTotal = _calculateMaintenanceTotal();
-    final cleaningFee = widget.room.cleaningFee;
+    final cleaningFee = _calculateCleaningFee();
+    final rentalItemsFee = _calculateRentalItemsFee();
     final platformFee = _calculatePlatformFee();
-    final discount = _calculateDiscount();
+    final longTermDiscount = _calculateLongTermDiscount();
+    final quickMoveInDiscount = _calculateQuickMoveInDiscount();
     final finalTotal = _calculateFinalTotal();
-    const deposit = 330000;
+    final deposit = _deposit;
+    final isEzCleaningService = widget.room.ezService?.cleaningService == true;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -563,25 +627,43 @@ class _ContractStartPageState extends State<ContractStartPage> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildPriceRow('임대료', rentalTotal),
+          _buildPriceRow('임대료 ($_contractDays일)', rentalTotal),
           const SizedBox(height: 8),
-          _buildPriceRow('관리비', maintenanceTotal),
+          _buildPriceRow('관리비 ($_contractDays일)', maintenanceTotal),
           const SizedBox(height: 8),
-          _buildPriceRow('청소비용', cleaningFee),
+          _buildPriceRow(
+            isEzCleaningService ? '청소비 (EZ서비스)' : '청소비용',
+            cleaningFee,
+          ),
+          if (rentalItemsFee > 0) ...[
+            const SizedBox(height: 8),
+            _buildPriceRow('옵션상품', rentalItemsFee),
+          ],
           const SizedBox(height: 8),
-          _buildPriceRow('계약 수수료 (임대료의 10%)', platformFee),
-          if (discount > 0) ...[
-            const Divider(height: 24),
+          _buildPriceRow(
+            '계약 수수료 (9.9%)',
+            platformFee,
+          ),
+          if (quickMoveInDiscount > 0) ...[
+            const SizedBox(height: 8),
             _buildPriceRow(
-              '할인 금액',
-              -discount,
+              '빠른 입주 할인',
+              -quickMoveInDiscount,
+              isDiscount: true,
+            ),
+          ],
+          if (longTermDiscount > 0) ...[
+            const SizedBox(height: 8),
+            _buildPriceRow(
+              '장기 계약 할인',
+              -longTermDiscount,
               isDiscount: true,
             ),
           ],
           const Divider(height: 24),
           _buildPriceRow(
             '실이용 금액',
-            finalTotal,
+            finalTotal - deposit,
             isBold: true,
             fontSize: 16,
           ),
@@ -591,7 +673,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           Padding(
             padding: const EdgeInsets.only(left: 4),
             child: Text(
-              '* 보증금은 상상열매에서 보관하며, 퇴실 후 반환됩니다.',
+              '* 보증금은 EZstay에서 보관하며, 퇴실 후 반환됩니다.',
               style: TextStyle(
                 fontSize: 11,
                 color: Colors.grey[600],
@@ -601,7 +683,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           const Divider(height: 24),
           _buildPriceRow(
             '최종 결제 금액',
-            finalTotal + deposit,
+            finalTotal,
             isBold: true,
             fontSize: 18,
             valueColor: AppColors.primary600,
@@ -976,16 +1058,17 @@ class _ContractStartPageState extends State<ContractStartPage> {
     try {
       final rentalTotal = _calculateRentalTotal();
       final maintenanceTotal = _calculateMaintenanceTotal();
-      final cleaningFee = widget.room.cleaningFee;
+      final cleaningFee = _calculateCleaningFee();
+      final rentalItemsFee = _calculateRentalItemsFee();
       final platformFee = _calculatePlatformFee();
-      final discount = _calculateDiscount();
+      final discount = _calculateTotalDiscount();
       final finalTotal = _calculateFinalTotal();
-      const deposit = 330000;
+      final deposit = _deposit;
 
       final totalDays = widget.checkOutDate.difference(widget.checkInDate).inDays;
       final totalWeeks = (totalDays / 7).ceil();
 
-      final subtotal = rentalTotal + maintenanceTotal + cleaningFee;
+      final subtotal = rentalTotal + maintenanceTotal + cleaningFee + rentalItemsFee;
 
       await _contractService.requestContract(
         roomId: widget.room.id,
@@ -1010,7 +1093,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
         refundPolicyAgreed: _refundPolicyAgreed,
         dailyRentalFee: widget.room.dailyRent.toDouble(),
         dailyMaintenanceFee: widget.room.dailyMaintenanceFee.toDouble(),
-        platformFeeRate: 0.1,
+        platformFeeRate: 0.099,
         depositRate: 0.0,
       );
 

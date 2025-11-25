@@ -26,6 +26,19 @@ class DateRangePicker extends StatefulWidget {
 }
 
 class _DateRangePickerState extends State<DateRangePicker> {
+  /// 날짜 범위 포맷팅 (React UI 스타일)
+  String _formatDateRange() {
+    if (widget.checkInDate == null) return '임대 기간 선택';
+
+    final startDate = widget.checkInDate!;
+    if (widget.checkOutDate == null) {
+      return '${startDate.year}.${startDate.month.toString().padLeft(2, '0')}.${startDate.day.toString().padLeft(2, '0')} - 종료일 선택';
+    }
+
+    final endDate = widget.checkOutDate!;
+    return '${startDate.year}.${startDate.month.toString().padLeft(2, '0')}.${startDate.day.toString().padLeft(2, '0')} - ${endDate.year}.${endDate.month.toString().padLeft(2, '0')}.${endDate.day.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -56,17 +69,16 @@ class _DateRangePickerState extends State<DateRangePicker> {
                 ),
                 SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '임대 기간 선택',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                    ],
+                  child: Text(
+                    _formatDateRange(),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: widget.checkInDate != null
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                      fontWeight: widget.checkInDate != null && widget.checkOutDate != null
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
                   ),
                 ),
               ],
