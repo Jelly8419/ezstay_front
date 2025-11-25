@@ -4,6 +4,7 @@ import '../../models/room.dart';
 import '../../models/booking_state.dart';
 import '../../models/refund_policy.dart';
 import '../../models/rental_item.dart';
+import '../../models/calculated_pricing.dart';
 import '../../services/guest_room_service.dart';
 import '../../services/analytics_service.dart';
 import '../../services/refund_policy_service.dart';
@@ -156,14 +157,77 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       checkOutDate: _bookingState.checkOutDate,
     );
 
+    // 가격 계산 (PRD: 상세페이지에서 계산된 값을 그대로 전달)
+    final priceBreakdown = PriceCalculator.calculate(
+      room: _room!,
+      bookingState: _bookingState,
+    );
+    final days = _bookingState.selectedDays ?? 0;
+    final weeks = (days / 7).ceil();
+
+    // 할인 유형 결정
+    String? discountType;
+    if (priceBreakdown.longTermDiscount > 0) {
+      discountType = 'long_term';
+    } else if (priceBreakdown.quickMoveInDiscount > 0) {
+      discountType = 'quick_move_in';
+    }
+
+    // CalculatedPricing 생성
+    final calculatedPricing = CalculatedPricing(
+      totalDays: days,
+      totalWeeks: weeks,
+      rentalFee: priceBreakdown.baseRent,
+      maintenanceFee: priceBreakdown.maintenanceFee,
+      cleaningFee: priceBreakdown.cleaningFee,
+      discount: priceBreakdown.totalDiscount,
+      discountType: discountType,
+      longTermWeeks: _room!.longTermWeeks,
+      longTermDiscount: _room!.longTermDiscount,
+      quickMoveInDiscount: priceBreakdown.quickMoveInDiscount > 0
+          ? priceBreakdown.quickMoveInDiscount
+          : null,
+      platformFee: priceBreakdown.contractFee,
+      rentalItemsFee: priceBreakdown.rentalItemsFee,
+      subtotal: priceBreakdown.subtotal,
+      totalUsageFee: priceBreakdown.subtotal + priceBreakdown.contractFee,
+      deposit: priceBreakdown.deposit,
+      finalTotalAmount: priceBreakdown.total,
+    );
+
+    // Map<int, int> -> List<SelectedRentalItem> 변환
+    final List<SelectedRentalItem> selectedRentalItemsList = [];
+    if (_room!.availableRentalItems != null &&
+        _bookingState.selectedRentalItems.isNotEmpty) {
+      final allItems = _room!.availableRentalItems!.allItems;
+      for (final entry in _bookingState.selectedRentalItems.entries) {
+        final itemId = entry.key;
+        final quantity = entry.value;
+        final item = allItems.firstWhere(
+          (item) => item.id == itemId,
+          orElse: () => throw Exception('렌탈 아이템을 찾을 수 없습니다 (ID: $itemId)'),
+        );
+        selectedRentalItemsList.add(
+          SelectedRentalItem(
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            price: item.price,
+            quantity: quantity,
+          ),
+        );
+      }
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ContractStartPage(
           room: _room!,
-          checkInDate: _bookingState.checkInDate!,
-          checkOutDate: _bookingState.checkOutDate!,
-          selectedRentalItems: _bookingState.selectedRentalItems,
+          checkInDate: _bookingState.checkInDate,
+          checkOutDate: _bookingState.checkOutDate,
+          calculatedPricing: calculatedPricing,
+          selectedRentalItems: selectedRentalItemsList,
         ),
       ),
     );
@@ -1670,9 +1734,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               priceBreakdown.maintenanceFee,
             ),
             _buildPriceRowDetailed(
-              _room!.ezService?.cleaningService == true
-                  ? '청소비 (EZ서비스)'
-                  : '청소비',
+              _room!.ezService?.cleaningService == true ? '청소비 (EZ서비스)' : '청소비',
               priceBreakdown.cleaningFee,
             ),
             if (_room!.ezService?.cleaningService == true)
@@ -1830,17 +1892,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
   /// 계약 요청 핸들러
   void _handleContractRequest() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ContractStartPage(
-          room: _room!,
-          checkInDate: _bookingState.checkInDate!,
-          checkOutDate: _bookingState.checkOutDate!,
-          selectedRentalItems: _bookingState.selectedRentalItems,
-        ),
-      ),
-    );
+    _navigateToContractPage();
   }
 
   /// 렌탈 아이템 섹션 (데스크톱 버전 - 리액트 UI 스타일)
