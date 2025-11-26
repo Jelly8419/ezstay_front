@@ -77,12 +77,15 @@ enum PaymentMethod {
 /// 계약 목록 아이템 (간단한 정보)
 class ContractListItem {
   final int id;
+  final String? contractNumber; // 계약번호 (승인 시 생성)
   final ContractStatus status;
   final DateTime checkInDate;
   final DateTime checkOutDate;
   final int totalDays;
   final int finalTotalAmount;
   final String? guestMessage; // 호스트용
+  final String? rejectionReason; // 거절 사유
+  final List<RentalItem>? rentalItems; // 옵션 상품
 
   // 방 정보
   final int roomId;
@@ -102,12 +105,15 @@ class ContractListItem {
 
   ContractListItem({
     required this.id,
+    this.contractNumber,
     required this.status,
     required this.checkInDate,
     required this.checkOutDate,
     required this.totalDays,
     required this.finalTotalAmount,
     this.guestMessage,
+    this.rejectionReason,
+    this.rentalItems,
     required this.roomId,
     required this.roomName,
     required this.roomAddress,
@@ -128,12 +134,15 @@ class ContractListItem {
 
     return ContractListItem(
       id: json['id'],
+      contractNumber: json['contractNumber'],
       status: ContractStatus.fromString(json['status']),
       checkInDate: DateTime.parse(json['checkInDate']),
       checkOutDate: DateTime.parse(json['checkOutDate']),
       totalDays: json['totalDays'],
       finalTotalAmount: json['finalTotalAmount'],
       guestMessage: json['guestMessage'],
+      rejectionReason: json['rejectionReason'],
+      rentalItems: _parseRentalItems(json['rentalItems']),
       // 방 정보 - 백엔드 필드명: roomName, thumbnailUrl
       roomId: room['id'],
       roomName: room['roomName'] ?? room['name'],
@@ -179,7 +188,7 @@ class Contract {
   final int finalTotalAmount;
 
   // 렌탈 아이템 정보
-  final Map<String, dynamic>? rentalItems;
+  final List<RentalItem>? rentalItems;
 
   // 결제 정보
   final PaymentMethod? paymentMethod;
@@ -287,7 +296,7 @@ class Contract {
       totalUsageFee: json['totalUsageFee'] as int? ?? 0,
       deposit: json['deposit'] as int? ?? 0,
       finalTotalAmount: json['finalTotalAmount'] as int? ?? 0,
-      rentalItems: json['rentalItems'] as Map<String, dynamic>?,
+      rentalItems: _parseRentalItems(json['rentalItems']),
       paymentMethod: json['paymentMethod'] != null ? PaymentMethod.fromString(json['paymentMethod'] as String) : null,
       installmentMonths: json['installmentMonths'] as int? ?? 0,
       guestMessage: json['guestMessage'] as String?,
@@ -362,5 +371,252 @@ class UserInfo {
       phone: json['phoneNumber'] ?? json['phone'] ?? '',
       email: json['email'],
     );
+  }
+}
+
+/// 배송 상태
+enum DeliveryStatus {
+  pending('pending', '배송 대기'),
+  preparing('preparing', '배송 준비중'),
+  inTransit('in_transit', '배송중'),
+  delivered('delivered', '배송 완료');
+
+  final String value;
+  final String label;
+
+  const DeliveryStatus(this.value, this.label);
+
+  static DeliveryStatus fromString(String value) {
+    return DeliveryStatus.values.firstWhere(
+      (status) => status.value == value,
+      orElse: () => DeliveryStatus.pending,
+    );
+  }
+}
+
+/// 렌탈 아이템 (옵션 상품)
+class RentalItem {
+  final String id;
+  final String name;
+  final String? description;
+  final int price;
+  final int quantity;
+  final DeliveryStatus deliveryStatus;
+
+  RentalItem({
+    required this.id,
+    required this.name,
+    this.description,
+    required this.price,
+    required this.quantity,
+    required this.deliveryStatus,
+  });
+
+  factory RentalItem.fromJson(Map<String, dynamic> json) {
+    return RentalItem(
+      id: json['id']?.toString() ?? '',
+      name: json['name'] ?? '',
+      description: json['description'],
+      price: json['price'] as int? ?? 0,
+      quantity: json['quantity'] as int? ?? 0,
+      deliveryStatus: DeliveryStatus.fromString(json['deliveryStatus'] ?? 'pending'),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'price': price,
+      'quantity': quantity,
+      'deliveryStatus': deliveryStatus.value,
+    };
+  }
+
+  /// 수량 변경된 복사본 생성
+  RentalItem copyWith({
+    String? id,
+    String? name,
+    String? description,
+    int? price,
+    int? quantity,
+    DeliveryStatus? deliveryStatus,
+  }) {
+    return RentalItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      quantity: quantity ?? this.quantity,
+      deliveryStatus: deliveryStatus ?? this.deliveryStatus,
+    );
+  }
+}
+
+/// 사용 가능한 옵션 상품
+class AvailableOption {
+  final String id;
+  final String name;
+  final String description;
+  final int price;
+  final int maxQuantity;
+
+  AvailableOption({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.price,
+    required this.maxQuantity,
+  });
+
+  /// 기본 옵션 목록
+  static final List<AvailableOption> defaultOptions = [
+    AvailableOption(
+      id: '1',
+      name: '침구류 대여',
+      description: '침대 1set당 (이불+베개+침대커버)',
+      price: 25000,
+      maxQuantity: 4,
+    ),
+    AvailableOption(
+      id: '2',
+      name: '어메니티 키트',
+      description: '샴푸(30mlx2개)·바디워시(30ml)·폼클렌징(50ml)·비누·빗·두루마리 휴지(1개)·물티슈(1팩)',
+      price: 5000,
+      maxQuantity: 4,
+    ),
+    AvailableOption(
+      id: '3',
+      name: '헤어드라이기 대여',
+      description: '',
+      price: 2000,
+      maxQuantity: 4,
+    ),
+    AvailableOption(
+      id: '4',
+      name: '수건 세트',
+      description: '대형 수건 2개, 소형 수건 2개',
+      price: 10000,
+      maxQuantity: 4,
+    ),
+  ];
+}
+
+/// 옵션 변경 추적
+class OptionChange {
+  final String itemId;
+  final String itemName;
+  final int originalQuantity;
+  final int newQuantity;
+  final int pricePerUnit;
+
+  OptionChange({
+    required this.itemId,
+    required this.itemName,
+    required this.originalQuantity,
+    required this.newQuantity,
+    required this.pricePerUnit,
+  });
+
+  /// 수량 차이
+  int get quantityDiff => newQuantity - originalQuantity;
+
+  /// 가격 차이
+  int get priceDiff => quantityDiff * pricePerUnit;
+}
+
+/// rentalItems JSON 파싱 헬퍼 (Map 또는 List 형식 모두 처리)
+List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
+  if (rentalItemsJson == null) return null;
+
+  try {
+    // List 형식인 경우
+    if (rentalItemsJson is List) {
+      final items = <RentalItem>[];
+      for (final item in rentalItemsJson) {
+        if (item is Map<String, dynamic>) {
+          items.add(RentalItem.fromJson(item));
+        } else {
+          debugPrint('⚠️ [PARSE_ERROR] List item is not a Map: ${item.runtimeType} = $item');
+        }
+      }
+      return items.isEmpty ? null : items;
+    }
+
+    // Map 형식인 경우 (Map의 values를 List로 변환)
+    if (rentalItemsJson is Map) {
+      final items = <RentalItem>[];
+      final itemMap = <String, Map<String, dynamic>>{}; // 아이템별 데이터 임시 저장
+
+      for (final entry in rentalItemsJson.entries) {
+        final key = entry.key as String;
+        final value = entry.value;
+
+        // value가 Map인 경우 - 정상적인 RentalItem 객체
+        if (value is Map<String, dynamic>) {
+          items.add(RentalItem.fromJson(value));
+        }
+        // 비표준 형식: {itemType}Id: {id}, {itemType}Quantity: {quantity}
+        else if (value is int) {
+          // {itemType}Id 형식 (예: hairDryerId: 3)
+          if (key.endsWith('Id')) {
+            final itemType = key.substring(0, key.length - 2); // 'Id' 제거
+            itemMap[itemType] ??= {};
+            itemMap[itemType]!['id'] = value.toString();
+            debugPrint('⚠️ [PARSE_NONSTANDARD] Detected ${itemType}Id = $value');
+          }
+          // {itemType}Quantity 형식 (예: beddingSetQuantity: 1)
+          else if (key.endsWith('Quantity')) {
+            final itemType = key.substring(0, key.length - 8); // 'Quantity' 제거
+            itemMap[itemType] ??= {};
+            itemMap[itemType]!['quantity'] = value;
+            debugPrint('⚠️ [PARSE_NONSTANDARD] Detected ${itemType}Quantity = $value');
+          }
+          // 기타 int 값 (key를 id로 사용)
+          else {
+            debugPrint('⚠️ [PARSE_WARNING] Simplified format: $key = $value');
+            items.add(RentalItem(
+              id: key,
+              name: '', // API에서 채워질 예정
+              price: 0, // API에서 채워질 예정
+              quantity: value,
+              deliveryStatus: DeliveryStatus.pending,
+            ));
+          }
+        }
+        else {
+          debugPrint('⚠️ [PARSE_ERROR] Map value is unexpected type: ${value.runtimeType} = $value');
+        }
+      }
+
+      // itemMap에서 RentalItem 생성 (비표준 형식 처리)
+      for (final entry in itemMap.entries) {
+        final itemType = entry.key;
+        final itemData = entry.value;
+
+        if (itemData['id'] != null) {
+          items.add(RentalItem(
+            id: itemData['id'] as String,
+            name: '', // API에서 채워질 예정
+            price: 0, // API에서 채워질 예정
+            quantity: itemData['quantity'] as int? ?? 1, // 기본값 1
+            deliveryStatus: DeliveryStatus.pending,
+          ));
+          debugPrint('✅ [PARSE_NONSTANDARD] Created RentalItem: id=${itemData['id']}, quantity=${itemData['quantity'] ?? 1}, type=$itemType');
+        }
+      }
+
+      return items.isEmpty ? null : items;
+    }
+
+    // 예상치 못한 형식
+    debugPrint('⚠️ [PARSE_ERROR] Unexpected rentalItems format: ${rentalItemsJson.runtimeType}');
+    debugPrint('⚠️ [PARSE_ERROR] Content: $rentalItemsJson');
+    return null;
+  } catch (e, stackTrace) {
+    debugPrint('⚠️ [PARSE_ERROR] Failed to parse rentalItems: $e');
+    debugPrint('⚠️ [PARSE_ERROR] Stack trace: $stackTrace');
+    return null;
   }
 }

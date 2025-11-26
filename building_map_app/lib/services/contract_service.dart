@@ -203,7 +203,29 @@ class ContractService {
           debugPrint('📦 [CONTRACT_GUEST] 계약 개수: ${contractsList.length}');
         }
 
-        return contractsList.map((json) => ContractListItem.fromJson(json)).toList();
+        // 각 계약 파싱 시도 (하나 실패해도 나머지는 계속 처리)
+        final parsedContracts = <ContractListItem>[];
+        for (int i = 0; i < contractsList.length; i++) {
+          try {
+            final contract = ContractListItem.fromJson(contractsList[i]);
+            parsedContracts.add(contract);
+            if (!ApiConfig.isProduction) {
+              debugPrint('✅ [CONTRACT_PARSE] 계약 #${i + 1} 파싱 성공: ID=${contract.id}, status=${contract.status}');
+            }
+          } catch (e, stackTrace) {
+            debugPrint('❌ [CONTRACT_PARSE] 계약 #${i + 1} 파싱 실패: $e');
+            debugPrint('📍 [CONTRACT_PARSE] JSON: ${contractsList[i]}');
+            debugPrint('📍 [CONTRACT_PARSE] Stack trace: $stackTrace');
+            // 파싱 실패한 계약은 건너뛰고 계속 진행
+            continue;
+          }
+        }
+
+        if (!ApiConfig.isProduction) {
+          debugPrint('📦 [CONTRACT_GUEST] 최종 파싱된 계약 개수: ${parsedContracts.length}/${contractsList.length}');
+        }
+
+        return parsedContracts;
       } else if (response.statusCode == 401) {
         throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
       } else {
@@ -597,6 +619,96 @@ class ContractService {
       ContractStatusFilter('거절됨', 'REJECTED'),
       ContractStatusFilter('취소', 'CANCELLED_BY_HOST'),
     ];
+  }
+
+  /// 렌탈 아이템 전체 목록 조회 (완전한 데이터)
+  ///
+  /// [itemType]: 필터할 아이템 타입 (선택) - hair_dryer, bedding_set, amenity_kit, towel_set, other
+  /// [inStock]: 재고 있는 것만 조회 (기본값: true)
+  ///
+  /// 반환: 렌탈 아이템 목록 (id, itemType, itemTypeLabel, name, description, price, availableStock, imageUrl)
+  Future<List<dynamic>?> getAllRentalItems({
+    String? itemType,
+    bool inStock = true,
+  }) async {
+    try {
+      // 개발 환경에서는 skipExpiryCheck도 시도
+      var token = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (token == null && !ApiConfig.isProduction) {
+        debugPrint('⚠️ [RENTAL_ITEMS] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        token = await TokenService.getAccessToken(skipExpiryCheck: true);
+      }
+
+      if (token == null) {
+        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      if (!ApiConfig.isProduction) {
+        debugPrint('✅ [RENTAL_ITEMS] 토큰 확보 성공 (${token.length}자)');
+      }
+
+      // 쿼리 파라미터 구성
+      final queryParams = <String, String>{
+        'inStock': inStock.toString(),
+      };
+      if (itemType != null && itemType.isNotEmpty) {
+        queryParams['itemType'] = itemType;
+      }
+
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/rental-items').replace(
+        queryParameters: queryParams,
+      );
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(
+        Duration(seconds: ApiConfig.timeoutSeconds),
+        onTimeout: () {
+          throw Exception('요청 시간이 초과되었습니다.');
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(utf8.decode(response.bodyBytes));
+
+        if (!ApiConfig.isProduction) {
+          debugPrint('📦 [RENTAL_ITEMS] 응답 데이터 구조: ${responseData.keys}');
+        }
+
+        // 백엔드 응답 구조: { success: true, data: [...], message: "..." }
+        if (responseData['success'] == true && responseData['data'] != null) {
+          final List<dynamic> itemsList = responseData['data'];
+
+          if (!ApiConfig.isProduction) {
+            debugPrint('📦 [RENTAL_ITEMS] 렌탈 아이템 개수: ${itemsList.length}');
+          }
+
+          return itemsList;
+        } else {
+          throw Exception('예상하지 못한 응답 형식입니다.');
+        }
+      } else if (response.statusCode == 401) {
+        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+      } else {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '렌탈 아이템 목록을 불러오는데 실패했습니다.');
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버와 통신할 수 없습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception('요청 시간이 초과되었습니다.');
+      }
+      rethrow;
+    }
   }
 }
 
