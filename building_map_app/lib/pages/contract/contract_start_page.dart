@@ -6,7 +6,6 @@ import '../../models/calculated_pricing.dart';
 import '../../services/contract_service.dart';
 import '../../services/refund_policy_service.dart';
 import 'package:intl/intl.dart';
-import '../../widgets/common/responsive_page_layout.dart';
 import '../../core/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -121,71 +120,71 @@ class _ContractStartPageState extends State<ContractStartPage> {
               )
             : null,
       ),
-      body: ResponsivePageLayout(
-        maxWidth: 1400,
-        scrollable: false,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 왼쪽: 메인 컨텐츠
-            Expanded(
-              flex: isWideScreen ? 3 : 1,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 날짜 미선택 경고
-                    if (!_hasValidDates) _buildDateWarning(),
-
-                    // 방 정보 섹션 (이미지 포함)
-                    _buildRoomInfoSection(isWideScreen),
-                    const SizedBox(height: 24),
-
-                    // 호스트 정보 섹션 (아바타 포함)
-                    _buildHostInfoSection(),
-                    const SizedBox(height: 24),
-
-                    // 옵션 상품 섹션 (항상 표시, 빈 상태 UI 포함)
-                    _buildRentalItemsSection(),
-                    const SizedBox(height: 24),
-
-                    // 호스트에게 전할 메시지
-                    _buildHostMessageSection(),
-                    const SizedBox(height: 24),
-
-                    // 모바일: 예상 금액 카드 (React와 동일한 위치)
-                    if (!isWideScreen) ...[
-                      _buildMobilePaymentSummaryCard(),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // 계약 해지 조항 (안내사항 포함)
-                    _buildCancellationPolicyWithNotice(),
-
-                    // 모바일용 여백
-                    if (!isWideScreen) const SizedBox(height: 100),
-                  ],
-                ),
-              ),
-            ),
-
-            // 오른쪽: 결제 금액 (데스크톱에서만 표시)
-            if (isWideScreen) ...[
-              const SizedBox(width: 24),
-              SizedBox(
-                width: 400,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1400),
+          child: Stack(
+            children: [
+              // 배경: 전체 영역 스크롤 가능
+              SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: 24,
+                    right: isWideScreen ? 424 : 24, // 데스크톱: 오른쪽 카드 공간 확보
                     top: 24,
-                    right: 24,
-                    bottom: 24,
+                    bottom: isWideScreen ? 24 : 100,
                   ),
-                  child: _buildPaymentSummaryCard(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 날짜 미선택 경고
+                      if (!_hasValidDates) _buildDateWarning(),
+
+                      // 방 정보 섹션 (이미지 포함)
+                      _buildRoomInfoSection(isWideScreen),
+                      const SizedBox(height: 24),
+
+                      // 호스트 정보 섹션 (아바타 포함)
+                      _buildHostInfoSection(),
+                      const SizedBox(height: 24),
+
+                      // 옵션 상품 섹션 (항상 표시, 빈 상태 UI 포함)
+                      _buildRentalItemsSection(),
+                      const SizedBox(height: 24),
+
+                      // 호스트에게 전할 메시지
+                      _buildHostMessageSection(),
+                      const SizedBox(height: 24),
+
+                      // 모바일: 예상 금액 카드 (React와 동일한 위치)
+                      if (!isWideScreen) ...[
+                        _buildMobilePaymentSummaryCard(),
+                        const SizedBox(height: 24),
+                      ],
+
+                      // 계약 해지 조항 (안내사항 포함)
+                      _buildCancellationPolicyWithNotice(),
+                    ],
+                  ),
                 ),
               ),
+
+              // 오른쪽: 결제 금액 카드 고정 (데스크톱에서만 표시)
+              if (isWideScreen)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: SizedBox(
+                    width: 400,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: _buildPaymentSummaryCard(),
+                    ),
+                  ),
+                ),
             ],
-          ],
+          ),
         ),
       ),
       // 모바일/태블릿용 하단 고정 버튼 (버튼만, 금액은 위에 표시)
@@ -856,18 +855,13 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 Padding(padding: const EdgeInsets.only(left: 4)),
 
                 const Divider(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '* 보증금은 3자 예치기관에 보관되며, 퇴실 완료 후 2일 내 자동 환급\n됩니다.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.normal,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
+                Text(
+                  '* 보증금은 3자 예치기관에 보관되며, 퇴실 완료 후 2일 내 자동 환급됩니다.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.normal,
+                    color: Colors.grey[600],
+                  ),
                 ),
                 const SizedBox(height: 10),
                 _buildPriceRow(
