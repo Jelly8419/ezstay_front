@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/room.dart';
 import '../../models/booking_state.dart';
 import '../../models/refund_policy.dart';
@@ -18,7 +19,6 @@ import '../../core/theme/app_text_styles.dart';
 import '../../utils/price_calculator.dart';
 import '../host/room_registration/components/form_section.dart';
 import 'package:intl/intl.dart';
-import '../contract/contract_start_page.dart';
 import '../../widgets/kakao_roadview_web.dart';
 
 /// 방 상세 정보 페이지
@@ -130,7 +130,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => BookingBottomSheet(
+      builder: (bottomSheetContext) => BookingBottomSheet(
         room: _room!,
         initialState: _bookingState,
         onStateChanged: (newState) {
@@ -139,8 +139,13 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           });
         },
         onRequestContract: () {
-          Navigator.pop(context); // Bottom sheet 닫기
-          _navigateToContractPage();
+          Navigator.pop(bottomSheetContext); // Bottom sheet 닫기
+          // 바텀시트가 완전히 닫힌 후 go_router로 네비게이션
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _navigateToContractPage();
+            }
+          });
         },
       ),
     );
@@ -219,17 +224,20 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       }
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ContractStartPage(
-          room: _room!,
-          checkInDate: _bookingState.checkInDate,
-          checkOutDate: _bookingState.checkOutDate,
-          calculatedPricing: calculatedPricing,
-          selectedRentalItems: selectedRentalItemsList,
-        ),
-      ),
+    // go_router를 사용하여 URL이 변경되도록 명시적 호출
+    final targetPath = '/contract/request/${widget.roomId}';
+    debugPrint('🚀 Navigating to $targetPath');
+
+    // push 대신 go 사용하여 URL 변경 테스트
+    context.go(
+      targetPath,
+      extra: {
+        'room': _room!,
+        'checkInDate': _bookingState.checkInDate,
+        'checkOutDate': _bookingState.checkOutDate,
+        'calculatedPricing': calculatedPricing,
+        'selectedRentalItems': selectedRentalItemsList,
+      },
     );
   }
 

@@ -21,6 +21,8 @@ import '../pages/contract/guest_contracts_page.dart'
 import '../pages/contract/host_contracts_page.dart' deferred as host_contracts;
 import '../pages/contract/contract_detail_page.dart'
     deferred as contract_detail;
+import '../pages/contract/contract_start_page.dart'
+    deferred as contract_start;
 import '../pages/chat/chat_list_page.dart' deferred as chat_list;
 import '../pages/chat/chat_detail_page.dart' deferred as chat_detail;
 import '../pages/support/support_center_page.dart' deferred as support_center;
@@ -300,6 +302,43 @@ class AppRouter {
           path: '/map',
           name: 'map',
           builder: (context, state) => const MapScreen(),
+        ),
+        GoRoute(
+          path: '/contract/request/:roomId',
+          name: 'contract-request',
+          builder: (context, state) {
+            final roomId = _parseIntParameter(state.pathParameters['roomId']);
+
+            if (roomId == null) {
+              return _buildInvalidAccessPage(
+                context,
+                message: '잘못된 접근입니다.',
+                buttonText: '홈으로 돌아가기',
+                redirectPath: '/guest',
+              );
+            }
+
+            final extra = state.extra as Map<String, dynamic>?;
+            if (extra == null) {
+              return _buildInvalidAccessPage(
+                context,
+                message: '예약 정보가 필요합니다.',
+                buttonText: '방 상세로 돌아가기',
+                redirectPath: '/guest/room/detail/$roomId',
+              );
+            }
+
+            return _deferredWidget(
+              contract_start.loadLibrary,
+              () => contract_start.ContractStartPage(
+                room: extra['room'],
+                checkInDate: extra['checkInDate'],
+                checkOutDate: extra['checkOutDate'],
+                calculatedPricing: extra['calculatedPricing'],
+                selectedRentalItems: extra['selectedRentalItems'],
+              ),
+            );
+          },
         ),
         GoRoute(
           path: '/guest/contracts',
