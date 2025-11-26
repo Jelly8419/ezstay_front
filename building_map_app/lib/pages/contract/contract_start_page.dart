@@ -110,6 +110,16 @@ class _ContractStartPageState extends State<ContractStartPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
+        // 모바일 환경에서 뒤로가기 버튼 표시
+        leading: !isWideScreen
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios),
+                onPressed: () {
+                  // 방 상세 페이지로 돌아가기
+                  context.go('/guest/room/detail/${widget.room.id}');
+                },
+              )
+            : null,
       ),
       body: ResponsivePageLayout(
         maxWidth: 1400,
