@@ -41,18 +41,109 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     });
 
     try {
+      // 1. 계약 상세 조회 (rentalItems에 itemId, quantity만 있음)
       final detail = await _contractService.getGuestContractDetail(
         widget.contractId,
       );
 
-      if (detail != null) {
-        setState(() {
-          _contractDetail = detail;
-          _isLoading = false;
-        });
-      } else {
+      if (detail == null) {
         setState(() {
           _errorMessage = '계약 정보를 찾을 수 없습니다.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // 2. 렌탈 아이템이 있으면 전체 목록 조회하여 매칭
+      if (detail.rentalItems.isNotEmpty) {
+        try {
+          final allRentalItems = await _contractService.getAllRentalItems(
+            inStock: false, // 재고 여부 무관하게 전체 조회
+          );
+
+          if (allRentalItems != null && allRentalItems.isNotEmpty) {
+            // itemId로 매칭하여 완전한 정보로 교체
+            final enrichedRentalItems = detail.rentalItems.map((contractItem) {
+              // 전체 목록에서 itemId가 일치하는 아이템 찾기
+              final fullItemData = allRentalItems.firstWhere(
+                (fullItem) => fullItem['id'] == contractItem.id,
+                orElse: () => <String, dynamic>{},
+              );
+
+              // 완전한 정보가 있으면 병합
+              if (fullItemData.isNotEmpty) {
+                // fullItemData에 계약의 quantity와 deliveryStatus 추가
+                final mergedData = Map<String, dynamic>.from(fullItemData);
+                mergedData['quantity'] = contractItem.quantity;
+                mergedData['deliveryStatus'] = contractItem.deliveryStatus;
+
+                // ContractRentalItem.fromJson()으로 안전하게 파싱 (price 타입 변환 포함)
+                return ContractRentalItem.fromJson(mergedData);
+              }
+
+              // 매칭 실패 시 기존 데이터 유지
+              return contractItem;
+            }).toList();
+
+            // 매칭된 데이터로 ContractDetail 재생성
+            final enrichedDetail = ContractDetail(
+              id: detail.id,
+              orderId: detail.orderId,
+              roomId: detail.roomId,
+              roomName: detail.roomName,
+              roomPhoto: detail.roomPhoto,
+              address: detail.address,
+              detailAddress: detail.detailAddress,
+              floor: detail.floor,
+              checkInDate: detail.checkInDate,
+              checkOutDate: detail.checkOutDate,
+              totalDays: detail.totalDays,
+              rentalFee: detail.rentalFee,
+              maintenanceFee: detail.maintenanceFee,
+              cleaningFee: detail.cleaningFee,
+              deposit: detail.deposit,
+              rentalItemsFee: detail.rentalItemsFee,
+              platformFee: detail.platformFee,
+              finalTotalAmount: detail.finalTotalAmount,
+              status: detail.status,
+              paidAt: detail.paidAt,
+              refundPolicy: detail.refundPolicy,
+              refundPolicyDetail: detail.refundPolicyDetail,
+              refundPolicySnapshot: detail.refundPolicySnapshot,
+              rentalItems: enrichedRentalItems, // 완전한 정보로 교체
+              paymentHistory: detail.paymentHistory,
+              hostName: detail.hostName,
+              hostProfileImage: detail.hostProfileImage,
+              hostPhoneNumber: detail.hostPhoneNumber,
+              guestName: detail.guestName,
+              guestPhone: detail.guestPhone,
+              guestMessage: detail.guestMessage,
+              isEzCleaning: detail.isEzCleaning,
+            );
+
+            setState(() {
+              _contractDetail = enrichedDetail;
+              _isLoading = false;
+            });
+          } else {
+            // 렌탈 아이템 목록 조회 실패 시 원본 데이터 사용
+            setState(() {
+              _contractDetail = detail;
+              _isLoading = false;
+            });
+          }
+        } catch (rentalItemsError) {
+          // 렌탈 아이템 매칭 실패해도 계약 정보는 표시
+          debugPrint('⚠️ 렌탈 아이템 매칭 실패: $rentalItemsError');
+          setState(() {
+            _contractDetail = detail;
+            _isLoading = false;
+          });
+        }
+      } else {
+        // 렌탈 아이템이 없으면 바로 표시
+        setState(() {
+          _contractDetail = detail;
           _isLoading = false;
         });
       }
@@ -703,42 +794,98 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     );
   }
 
-  /// 옵션 상품 섹션
+  /// 옵션 상품 섹션 (React UI 기반)
   Widget _buildOptionProductsSection() {
     final contract = _contractDetail!;
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gray200),
+        borderRadius: BorderRadius.circular(12), // rounded-xl
+        border: Border.all(color: const Color(0xFFE5E7EB)), // border-gray-200
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.05), // shadow-sm
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24), // p-6
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '옵션 상품',
-            style: AppTextStyles.headingMedium.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF111827),
-            ),
+          // 헤더: 아이콘 + 제목 + 전체 배송 상태 뱃지
+          Row(
+            children: [
+              // Package 아이콘 (w-5 h-5 text-gray-700)
+              const Icon(
+                Icons.inventory_2_outlined,
+                size: 20, // w-5 h-5
+                color: Color(0xFF374151), // text-gray-700
+              ),
+              const SizedBox(width: 8), // gap-2
+
+              // 제목
+              const Text(
+                '옵션 상품 (EZstay에서 제공)',
+                style: TextStyle(
+                  fontSize: 18, // text-lg
+                  fontWeight: FontWeight.w700, // font-bold
+                  color: Color(0xFF111827), // text-gray-900
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // 전체 배송 상태 뱃지
+              _buildOverallDeliveryStatusBadge(contract.rentalItems),
+            ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 16), // mb-4
 
-          ...contract.rentalItems.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildRentalItemTile(item),
+          // space-y-3: 아이템 간 12px 간격
+          ...contract.rentalItems.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            return Padding(
+              padding: EdgeInsets.only(top: index > 0 ? 12 : 0), // space-y-3
+              child: _buildRentalItemCard(item),
+            );
+          }),
+
+          // 합계
+          Container(
+            padding: const EdgeInsets.only(top: 12), // pt-3
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: Color(0xFFE5E7EB), // border-gray-200
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '옵션 상품 합계',
+                  style: TextStyle(
+                    fontSize: 16, // font-bold text-gray-900
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                Text(
+                  '${_formatCurrency(contract.rentalItemsFee)}원',
+                  style: const TextStyle(
+                    fontSize: 16, // text-lg text-[16px]
+                    fontWeight: FontWeight.w700, // font-bold
+                    color: Color(0xFF111827), // text-gray-900
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -746,99 +893,123 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     );
   }
 
-  /// 렌탈 아이템 타일
-  Widget _buildRentalItemTile(ContractRentalItem item) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 이미지
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: AppColors.gray50,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: item.imageUrl != null
-              ? CachedNetworkImage(
-                  imageUrl: _getFullImageUrl(item.imageUrl),
-                  fit: BoxFit.cover,
-                  errorWidget: (context, url, error) =>
-                      const Icon(Icons.category, size: 32),
-                )
-              : Icon(Icons.category, size: 32, color: AppColors.gray600),
-        ),
+  /// 전체 배송 상태 뱃지 (React UI 로직 복제)
+  Widget _buildOverallDeliveryStatusBadge(List<ContractRentalItem> items) {
+    // hasShipping: 배송 중인 아이템이 하나라도 있는지
+    final hasShipping = items.any((item) => item.deliveryStatus == 'SHIPPING');
+    // allDelivered: 모든 아이템이 배송 완료인지
+    final allDelivered = items.every((item) => item.deliveryStatus == 'DELIVERED');
 
-        const SizedBox(width: 12),
+    final String status;
+    if (hasShipping) {
+      status = 'SHIPPING';
+    } else if (allDelivered) {
+      status = 'DELIVERED';
+    } else {
+      status = 'PENDING';
+    }
 
-        // 정보
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.name,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF111827),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${_formatCurrency(item.price)}원 × ${item.quantity}개',
-                style: AppTextStyles.bodySmall.copyWith(
-                  fontSize: 14,
-                  color: AppColors.gray600,
-                ),
-              ),
-              if (item.deliveryStatus != null) ...[
-                const SizedBox(height: 6),
-                _buildDeliveryStatusBadge(item.deliveryStatus!),
-              ],
-            ],
-          ),
-        ),
+    // 상태별 설정
+    final Map<String, dynamic> config = {
+      'PENDING': {
+        'text': '배송 대기',
+        'bgColor': const Color(0xFFF3F4F6), // bg-gray-100
+        'textColor': const Color(0xFF374151), // text-gray-700
+      },
+      'SHIPPING': {
+        'text': '배송 중',
+        'bgColor': const Color(0xFFDBEAFE), // bg-blue-100
+        'textColor': const Color(0xFF1D4ED8), // text-blue-700
+      },
+      'DELIVERED': {
+        'text': '배송 완료',
+        'bgColor': const Color(0xFFD1FAE5), // bg-green-100
+        'textColor': const Color(0xFF047857), // text-green-700
+      },
+    }[status]!;
 
-        // 총 금액
-        Text(
-          '${_formatCurrency(item.totalPrice)}원',
-          style: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF111827),
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // px-2 py-0.5
+      decoration: BoxDecoration(
+        color: config['bgColor'],
+        borderRadius: BorderRadius.circular(4), // rounded
+      ),
+      child: Text(
+        config['text'],
+        style: TextStyle(
+          fontSize: 12, // text-xs
+          fontWeight: FontWeight.w700, // font-bold
+          color: config['textColor'],
         ),
-      ],
+      ),
     );
   }
 
-  /// 배송 상태 배지
-  Widget _buildDeliveryStatusBadge(String status) {
-    final config = _getDeliveryStatusConfig(status);
-
+  /// 렌탈 아이템 카드 (React UI 기반)
+  Widget _buildRentalItemCard(ContractRentalItem item) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.all(16), // p-4
       decoration: BoxDecoration(
-        color: (config['color'] as Color).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: const Color(0xFFE5E7EB), // border-gray-200
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(8), // rounded-lg
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, // justify-between
         children: [
-          Icon(
-            config['icon'] as IconData,
-            size: 14,
-            color: config['color'] as Color,
+          // 왼쪽: 아이템 정보
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 아이템명 (font-bold text-gray-900 mb-1)
+                Text(
+                  item.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700, // font-bold
+                    color: Color(0xFF111827), // text-gray-900
+                  ),
+                ),
+
+                const SizedBox(height: 4), // mb-1
+
+                // 설명 (text-sm text-gray-600)
+                if (item.description != null && item.description!.isNotEmpty)
+                  Text(
+                    item.description!,
+                    style: const TextStyle(
+                      fontSize: 14, // text-sm
+                      color: Color(0xFF4B5563), // text-gray-600
+                    ),
+                  ),
+
+                const SizedBox(height: 4), // mt-1
+
+                // 수량 (text-sm text-gray-600 mt-1)
+                Text(
+                  '수량: ${item.quantity}개',
+                  style: const TextStyle(
+                    fontSize: 14, // text-sm
+                    color: Color(0xFF4B5563), // text-gray-600
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 4),
+
+          const SizedBox(width: 12),
+
+          // 오른쪽: 가격 (font-bold text-gray-900)
           Text(
-            config['text'] as String,
-            style: AppTextStyles.bodySmall.copyWith(
-              fontSize: 12,
-              color: config['color'] as Color,
-              fontWeight: FontWeight.bold,
+            '${_formatCurrency(item.price * item.quantity)}원',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700, // font-bold
+              color: Color(0xFF111827), // text-gray-900
             ),
           ),
         ],
@@ -1330,29 +1501,6 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     };
 
     return statusMap[status] ?? statusMap['PENDING_APPROVAL']!;
-  }
-
-  /// 배송 상태 설정 가져오기
-  Map<String, dynamic> _getDeliveryStatusConfig(String status) {
-    final statusMap = {
-      'PENDING': {
-        'text': '배송 준비 중',
-        'color': AppColors.warning500, // yellow-500
-        'icon': Icons.schedule,
-      },
-      'IN_DELIVERY': {
-        'text': '배송 중',
-        'color': AppColors.primary500, // blue-500
-        'icon': Icons.local_shipping,
-      },
-      'DELIVERED': {
-        'text': '배송 완료',
-        'color': AppColors.success500, // green-500
-        'icon': Icons.check_circle,
-      },
-    };
-
-    return statusMap[status] ?? statusMap['PENDING']!;
   }
 
   /// 결제 상태 설정 가져오기
