@@ -12,8 +12,6 @@ import '../../config/api_config.dart';
 import '../../widgets/kakao_map_web.dart';
 import '../../widgets/property_card.dart';
 import '../../widgets/search_filter_bar.dart';
-import '../../constants/app_constants.dart'
-    hide AppColors, AppTextStyles; // 충돌 방지
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -93,6 +91,9 @@ class _MapScreenState extends State<MapScreen> {
   /// 🎯 Coordinator 리스너 설정: 모드 변경 시 지도 드래그 자동 제어
   void _setupCoordinatorListener() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 🔒 위젯이 dispose된 후에는 콜백 처리하지 않음
+      if (!mounted) return;
+
       final coordinator = Provider.of<MapInteractionCoordinator>(
         context,
         listen: false,
@@ -385,6 +386,9 @@ class _MapScreenState extends State<MapScreen> {
     if (!kIsWeb) return;
 
     _clusterClickListener = (html.Event event) {
+      // 🔒 위젯이 dispose된 후에는 콜백 처리하지 않음
+      if (!mounted) return;
+
       final messageEvent = event as html.MessageEvent;
       if (messageEvent.data is Map &&
           messageEvent.data['type'] == 'marker_click') {
@@ -1298,6 +1302,9 @@ class _MapScreenState extends State<MapScreen> {
         controller: _mapController,
         rooms: roomsForKakaoMap,
         onMarkerTap: (roomData) {
+          // 🔒 위젯이 dispose된 후에는 콜백 처리하지 않음
+          if (!mounted) return;
+
           final roomId = roomData['id'] as int;
 
           // roomId: -1은 개별 마커 재클릭 (선택 해제) 이벤트
@@ -1477,6 +1484,9 @@ class _MapScreenState extends State<MapScreen> {
           }
         },
         onBoundsChanged: (swLat, swLng, neLat, neLng, zoom) {
+          // 🔒 위젯이 dispose된 후에는 콜백 처리하지 않음
+          if (!mounted) return;
+
           // 모바일 환경에서 슬라이드 카드가 표시 중이면 숨김 (지도 드래그 시)
           if (ResponsiveUtil.isMobile(context) && _showMobileCardList) {
             debugPrint('📱 [MOBILE] 지도 드래그 감지 - 슬라이드 카드 숨김 및 매물 개수 뱃지 재표시');

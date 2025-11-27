@@ -87,6 +87,21 @@ class ContractListItem {
   final String? rejectionReason; // 거절 사유
   final List<RentalItem>? rentalItems; // 옵션 상품
 
+  // 금액 상세 정보 (호스트용 - 선택적)
+  final int? rentalFee; // 임대료
+  final int? maintenanceFee; // 관리비
+  final int? cleaningFee; // 청소비
+  final int? rentalItemsFee; // 렌탈 아이템 비용
+  final int? platformFee; // 플랫폼 수수료
+  final int? discountAmount; // 할인 금액
+  final DiscountType? discountType; // 할인 유형
+  final String? discountCode; // 할인 쿠폰 코드
+  final int? subtotal; // 소계 (할인 전)
+  final int? totalUsageFee; // 실이용 금액 (할인 후)
+  final int? deposit; // 보증금
+  final int? hostEarnings; // 호스트 실수령액 (NEW)
+  final bool? isEzCleaning; // EZ청소 서비스 여부
+
   // 방 정보
   final int roomId;
   final String roomName;
@@ -114,6 +129,19 @@ class ContractListItem {
     this.guestMessage,
     this.rejectionReason,
     this.rentalItems,
+    this.rentalFee,
+    this.maintenanceFee,
+    this.cleaningFee,
+    this.rentalItemsFee,
+    this.platformFee,
+    this.discountAmount,
+    this.discountType,
+    this.discountCode,
+    this.subtotal,
+    this.totalUsageFee,
+    this.deposit,
+    this.hostEarnings,
+    this.isEzCleaning,
     required this.roomId,
     required this.roomName,
     required this.roomAddress,
@@ -143,6 +171,22 @@ class ContractListItem {
       guestMessage: json['guestMessage'],
       rejectionReason: json['rejectionReason'],
       rentalItems: _parseRentalItems(json['rentalItems']),
+      // 금액 상세 정보 (호스트용 - 선택적)
+      rentalFee: json['rentalFee'] as int?,
+      maintenanceFee: json['maintenanceFee'] as int?,
+      cleaningFee: json['cleaningFee'] as int?,
+      rentalItemsFee: json['rentalItemsFee'] as int?,
+      platformFee: json['platformFee'] as int?,
+      discountAmount: json['discountAmount'] as int?,
+      discountType: json['discountType'] != null
+        ? DiscountType.fromString(json['discountType'] as String)
+        : null,
+      discountCode: json['discountCode'] as String?,
+      subtotal: json['subtotal'] as int?,
+      totalUsageFee: json['totalUsageFee'] as int?,
+      deposit: json['deposit'] as int?,
+      hostEarnings: json['hostEarnings'] as int?,
+      isEzCleaning: json['isEzCleaning'] as bool?,
       // 방 정보 - 백엔드 필드명: roomName, thumbnailUrl
       roomId: room['id'],
       roomName: room['roomName'] ?? room['name'],

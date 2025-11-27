@@ -94,6 +94,9 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
     // bounds_changed 이벤트 리스너 등록
     _boundsChangedListener = (html.Event event) {
+      // 🔒 위젯이 dispose된 후에는 콜백 호출하지 않음
+      if (!mounted) return;
+
       final messageEvent = event as html.MessageEvent;
       if (messageEvent.data is Map &&
           messageEvent.data['type'] == 'bounds_changed') {
@@ -125,6 +128,9 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
     // marker_click 이벤트 리스너 등록
     _markerClickListener = (html.Event event) {
+      // 🔒 위젯이 dispose된 후에는 콜백 호출하지 않음
+      if (!mounted) return;
+
       final messageEvent = event as html.MessageEvent;
       if (messageEvent.data is Map &&
           messageEvent.data['type'] == 'marker_click') {
@@ -172,6 +178,8 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
     // 지도 초기화
     debugPrint('⏰ [MAP WEB] addPostFrameCallback 등록 (다음 프레임에서 _initMap 호출 예정)');
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 🔒 위젯이 dispose된 후에는 초기화하지 않음
+      if (!mounted) return;
       debugPrint('▶️ [MAP WEB] PostFrameCallback 실행됨! _initMap 호출 시작');
       _initMap();
     });
@@ -506,6 +514,12 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
     int attempts = 0;
 
     void tryInit() {
+      // 🔒 위젯이 dispose된 후에는 초기화 중단
+      if (!mounted) {
+        debugPrint('⏹️ [MAP WEB] 위젯 dispose됨 - 초기화 중단');
+        return;
+      }
+
       attempts++;
       debugPrint('🔄 [MAP WEB] tryInit 시도 #$attempts - Kakao SDK 확인 중...');
 

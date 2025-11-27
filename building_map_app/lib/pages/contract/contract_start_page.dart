@@ -1501,29 +1501,33 @@ class _ContractStartPageState extends State<ContractStartPage> {
       );
 
       if (mounted) {
+        // 로딩 상태 먼저 해제
+        setState(() {
+          _isLoading = false;
+        });
+
+        // SnackBar 표시
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('계약 승인 요청이 완료되었습니다.'),
             backgroundColor: Colors.green,
           ),
         );
-        // 게스트 계약 관리 페이지로 이동
-        context.go('/guest/contracts');
+
+        // 게스트 홈으로 이동
+        context.go('/guest');
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('계약 요청 실패: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
   }

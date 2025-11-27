@@ -29,7 +29,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   String? _errorMessage;
 
   // 탭 기반 필터링
-  String _selectedTab = 'in_progress'; // 'in_progress', 'completed', 'cancelled'
+  String _selectedTab =
+      'in_progress'; // 'in_progress', 'completed', 'cancelled'
 
   // 옵션 관리 상태
   int? _editingContractId; // 현재 편집 중인 계약 ID
@@ -68,7 +69,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   }
 
   /// 렌탈 아이템 API를 호출하여 완전한 데이터 구성
-  Future<void> _fetchCompleteRentalItemsForAllContracts(List<ContractListItem> contracts) async {
+  Future<void> _fetchCompleteRentalItemsForAllContracts(
+    List<ContractListItem> contracts,
+  ) async {
     try {
       // 렌탈 아이템 전체 목록 가져오기 (inStock=true는 기본값)
       final rentalItemsResponse = await _contractService.getAllRentalItems();
@@ -81,27 +84,31 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       // API 응답에서 렌탈 아이템 리스트 추출
       final allRentalItems = <String, Map<String, dynamic>>{};
 
-      if (rentalItemsResponse is List) {
-        for (final item in rentalItemsResponse) {
-          if (item is Map<String, dynamic> && item['id'] != null) {
-            final id = item['id'].toString();
-            allRentalItems[id] = {
-              'id': id,
-              'name': item['name'] ?? '',
-              'description': item['description'] ?? '',
-              'price': _parsePriceFromString(item['price']),
-              'itemType': item['itemType'] ?? '',
-              'itemTypeLabel': item['itemTypeLabel'] ?? '',
-              'availableStock': item['availableStock'] ?? 0,
-              'imageUrl': item['imageUrl'],
-            };
-            debugPrint('📦 [RENTAL_ITEMS] Added item: id=$id, name=${item['name']}, price=${item['price']}');
-          }
+      for (final item in rentalItemsResponse) {
+        if (item is Map<String, dynamic> && item['id'] != null) {
+          final id = item['id'].toString();
+          allRentalItems[id] = {
+            'id': id,
+            'name': item['name'] ?? '',
+            'description': item['description'] ?? '',
+            'price': _parsePriceFromString(item['price']),
+            'itemType': item['itemType'] ?? '',
+            'itemTypeLabel': item['itemTypeLabel'] ?? '',
+            'availableStock': item['availableStock'] ?? 0,
+            'imageUrl': item['imageUrl'],
+          };
+          debugPrint(
+            '📦 [RENTAL_ITEMS] Added item: id=$id, name=${item['name']}, price=${item['price']}',
+          );
         }
       }
 
-      debugPrint('✅ [RENTAL_ITEMS] Loaded ${allRentalItems.length} rental items from API');
-      debugPrint('📋 [RENTAL_ITEMS] Available IDs: ${allRentalItems.keys.toList()}');
+      debugPrint(
+        '✅ [RENTAL_ITEMS] Loaded ${allRentalItems.length} rental items from API',
+      );
+      debugPrint(
+        '📋 [RENTAL_ITEMS] Available IDs: ${allRentalItems.keys.toList()}',
+      );
 
       // 각 계약의 렌탈 아이템을 완전한 데이터로 변환
       for (final contract in contracts) {
@@ -109,30 +116,42 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           continue;
         }
 
-        debugPrint('🔍 [RENTAL_ITEMS] Contract ${contract.id}: Processing ${contract.rentalItems!.length} items');
+        debugPrint(
+          '🔍 [RENTAL_ITEMS] Contract ${contract.id}: Processing ${contract.rentalItems!.length} items',
+        );
         final completeRentalItems = <RentalItem>[];
 
         for (final contractItem in contract.rentalItems!) {
-          debugPrint('🔍 [RENTAL_ITEMS] Looking for item ID: "${contractItem.id}" (type: ${contractItem.id.runtimeType})');
+          debugPrint(
+            '🔍 [RENTAL_ITEMS] Looking for item ID: "${contractItem.id}" (type: ${contractItem.id.runtimeType})',
+          );
 
           // API에서 가져온 렌탈 아이템 데이터 찾기
           // ✅ FIX: ID를 String으로 변환하여 Map 조회 (allRentalItems의 키가 String이므로)
           final itemData = allRentalItems[contractItem.id.toString()];
 
           if (itemData != null) {
-            debugPrint('✅ [RENTAL_ITEMS] Found match: ${itemData['name']} (${itemData['price']}원)');
+            debugPrint(
+              '✅ [RENTAL_ITEMS] Found match: ${itemData['name']} (${itemData['price']}원)',
+            );
             // 완전한 데이터로 RentalItem 생성
-            completeRentalItems.add(RentalItem(
-              id: itemData['id'] as String,
-              name: itemData['name'] as String,
-              description: itemData['description'] as String,
-              price: itemData['price'] as int,
-              quantity: contractItem.quantity, // 계약의 수량 사용
-              deliveryStatus: contractItem.deliveryStatus,
-            ));
+            completeRentalItems.add(
+              RentalItem(
+                id: itemData['id'] as String,
+                name: itemData['name'] as String,
+                description: itemData['description'] as String,
+                price: itemData['price'] as int,
+                quantity: contractItem.quantity, // 계약의 수량 사용
+                deliveryStatus: contractItem.deliveryStatus,
+              ),
+            );
           } else {
-            debugPrint('⚠️ [RENTAL_ITEMS] Item ${contractItem.id} not found in API response');
-            debugPrint('⚠️ [RENTAL_ITEMS] Current item: name="${contractItem.name}", price=${contractItem.price}');
+            debugPrint(
+              '⚠️ [RENTAL_ITEMS] Item ${contractItem.id} not found in API response',
+            );
+            debugPrint(
+              '⚠️ [RENTAL_ITEMS] Current item: name="${contractItem.name}", price=${contractItem.price}',
+            );
             // API에서 찾지 못한 경우 기존 데이터 유지
             completeRentalItems.add(contractItem);
           }
@@ -145,9 +164,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         contract.rentalItems?.clear();
         contract.rentalItems?.addAll(completeRentalItems);
 
-        debugPrint('✅ [RENTAL_ITEMS] Contract ${contract.id}: Populated ${completeRentalItems.length} items');
+        debugPrint(
+          '✅ [RENTAL_ITEMS] Contract ${contract.id}: Populated ${completeRentalItems.length} items',
+        );
       }
-
     } catch (e, stackTrace) {
       debugPrint('❌ [RENTAL_ITEMS] Failed to fetch rental items: $e');
       debugPrint('📍 Stack trace: $stackTrace');
@@ -179,23 +199,33 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   // 탭별 계약 필터링
   List<ContractListItem> get _filteredContracts {
     if (_selectedTab == 'in_progress') {
-      return _allContracts.where((c) => [
-        ContractStatus.pendingApproval,
-        ContractStatus.approved,
-        ContractStatus.paymentCompleted,
-        ContractStatus.inProgress,
-      ].contains(c.status)).toList();
+      return _allContracts
+          .where(
+            (c) => [
+              ContractStatus.pendingApproval,
+              ContractStatus.approved,
+              ContractStatus.paymentCompleted,
+              ContractStatus.inProgress,
+            ].contains(c.status),
+          )
+          .toList();
     } else if (_selectedTab == 'completed') {
-      return _allContracts.where((c) => c.status == ContractStatus.completed).toList();
+      return _allContracts
+          .where((c) => c.status == ContractStatus.completed)
+          .toList();
     } else if (_selectedTab == 'cancelled') {
-      return _allContracts.where((c) => [
-        ContractStatus.rejected,
-        ContractStatus.cancelledByGuest,
-        ContractStatus.cancelledByHost,
-        ContractStatus.refunded,
-        ContractStatus.approvalExpired,
-        ContractStatus.paymentExpired,
-      ].contains(c.status)).toList();
+      return _allContracts
+          .where(
+            (c) => [
+              ContractStatus.rejected,
+              ContractStatus.cancelledByGuest,
+              ContractStatus.cancelledByHost,
+              ContractStatus.refunded,
+              ContractStatus.approvalExpired,
+              ContractStatus.paymentExpired,
+            ].contains(c.status),
+          )
+          .toList();
     }
     return _allContracts;
   }
@@ -305,13 +335,15 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
       final originalQty = _getOriginalQuantity(contract.id, item.id);
       if (item.quantity != originalQty) {
-        changes.add(OptionChange(
-          itemId: item.id,
-          itemName: item.name,
-          originalQuantity: originalQty,
-          newQuantity: item.quantity,
-          pricePerUnit: item.price,
-        ));
+        changes.add(
+          OptionChange(
+            itemId: item.id,
+            itemName: item.name,
+            originalQuantity: originalQty,
+            newQuantity: item.quantity,
+            pricePerUnit: item.price,
+          ),
+        );
       }
     }
 
@@ -325,14 +357,21 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     }
 
     // TODO: API 호출하여 옵션 변경사항 저장
-    debugPrint('💾 [SAVE OPTIONS] Contract ID: ${contract.id}, Changes: ${changes.length}');
+    debugPrint(
+      '💾 [SAVE OPTIONS] Contract ID: ${contract.id}, Changes: ${changes.length}',
+    );
     for (final change in changes) {
-      debugPrint('  - ${change.itemName}: ${change.originalQuantity} → ${change.newQuantity} (${change.quantityDiff > 0 ? '+' : ''}${change.priceDiff})');
+      debugPrint(
+        '  - ${change.itemName}: ${change.originalQuantity} → ${change.newQuantity} (${change.quantityDiff > 0 ? '+' : ''}${change.priceDiff})',
+      );
     }
 
     // 결제 완료 상태에서 수량 감소 시 환불 모달 표시
     if (contract.status == ContractStatus.paymentCompleted) {
-      final totalDiff = changes.fold<int>(0, (sum, change) => sum + change.priceDiff);
+      final totalDiff = changes.fold<int>(
+        0,
+        (sum, change) => sum + change.priceDiff,
+      );
       if (totalDiff < 0) {
         // 옵션 환불 모달 표시
         if (!mounted) return;
@@ -345,7 +384,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
               // 환불 확정 처리
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('옵션 수량이 변경되었습니다. ${_currencyFormat.format(-totalDiff)}원은 영업일 기준 3-5일 내 환불됩니다.'),
+                  content: Text(
+                    '옵션 수량이 변경되었습니다. ${_currencyFormat.format(-totalDiff)}원은 영업일 기준 3-5일 내 환불됩니다.',
+                  ),
                   backgroundColor: const Color(0xFF10B981), // green-600
                 ),
               );
@@ -382,23 +423,33 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   // 탭별 계약 개수
   int _getTabCount(String tab) {
     if (tab == 'in_progress') {
-      return _allContracts.where((c) => [
-        ContractStatus.pendingApproval,
-        ContractStatus.approved,
-        ContractStatus.paymentCompleted,
-        ContractStatus.inProgress,
-      ].contains(c.status)).length;
+      return _allContracts
+          .where(
+            (c) => [
+              ContractStatus.pendingApproval,
+              ContractStatus.approved,
+              ContractStatus.paymentCompleted,
+              ContractStatus.inProgress,
+            ].contains(c.status),
+          )
+          .length;
     } else if (tab == 'completed') {
-      return _allContracts.where((c) => c.status == ContractStatus.completed).length;
+      return _allContracts
+          .where((c) => c.status == ContractStatus.completed)
+          .length;
     } else if (tab == 'cancelled') {
-      return _allContracts.where((c) => [
-        ContractStatus.rejected,
-        ContractStatus.cancelledByGuest,
-        ContractStatus.cancelledByHost,
-        ContractStatus.refunded,           // ← 환불 완료
-        ContractStatus.approvalExpired,    // ← 미승인 만료
-        ContractStatus.paymentExpired,     // ← 미결제 만료
-      ].contains(c.status)).length;
+      return _allContracts
+          .where(
+            (c) => [
+              ContractStatus.rejected,
+              ContractStatus.cancelledByGuest,
+              ContractStatus.cancelledByHost,
+              ContractStatus.refunded, // ← 환불 완료
+              ContractStatus.approvalExpired, // ← 미승인 만료
+              ContractStatus.paymentExpired, // ← 미결제 만료
+            ].contains(c.status),
+          )
+          .length;
     }
     return 0;
   }
@@ -496,7 +547,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             color: Colors.white,
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: AppConstants.maxContentWidth),
+                constraints: const BoxConstraints(
+                  maxWidth: AppConstants.maxContentWidth,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -521,9 +574,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           ),
 
           // 계약 목록
-          Expanded(
-            child: _buildContractsList(),
-          ),
+          Expanded(child: _buildContractsList()),
         ],
       ),
     );
@@ -546,23 +597,11 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       ),
       child: Row(
         children: [
-          _buildTabButton(
-            'in_progress',
-            '진행중',
-            _getTabCount('in_progress'),
-          ),
+          _buildTabButton('in_progress', '진행중', _getTabCount('in_progress')),
           const SizedBox(width: 8),
-          _buildTabButton(
-            'completed',
-            '지난 계약',
-            _getTabCount('completed'),
-          ),
+          _buildTabButton('completed', '지난 계약', _getTabCount('completed')),
           const SizedBox(width: 8),
-          _buildTabButton(
-            'cancelled',
-            '취소',
-            _getTabCount('cancelled'),
-          ),
+          _buildTabButton('cancelled', '취소', _getTabCount('cancelled')),
         ],
       ),
     );
@@ -587,7 +626,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.white : const Color(0xFF6B7280), // gray-600
+                    color: isSelected
+                        ? Colors.white
+                        : const Color(0xFF6B7280), // gray-600
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -609,9 +650,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
   Widget _buildContractsList() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_errorMessage != null) {
@@ -619,11 +658,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red.shade300,
-            ),
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
@@ -649,7 +684,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       onRefresh: _loadContracts,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: AppConstants.maxContentWidth),
+          constraints: const BoxConstraints(
+            maxWidth: AppConstants.maxContentWidth,
+          ),
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -661,10 +698,12 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
               if (_filteredContracts.isEmpty)
                 _buildEmptyState()
               else
-                ..._filteredContracts.map((contract) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _buildContractCard(contract),
-                )),
+                ..._filteredContracts.map(
+                  (contract) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _buildContractCard(contract),
+                  ),
+                ),
             ],
           ),
         ),
@@ -737,18 +776,11 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.home_outlined,
-            size: 64,
-            color: Colors.grey.shade300,
-          ),
+          Icon(Icons.home_outlined, size: 64, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
             '계약 내역이 없습니다.',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -795,7 +827,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                   children: [
                     // 상태 배지
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: statusBgColor,
                         borderRadius: BorderRadius.circular(20),
@@ -824,10 +859,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     if (statusMessage.isNotEmpty)
                       Text(
                         statusMessage,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: statusColor,
-                        ),
+                        style: TextStyle(fontSize: 13, color: statusColor),
                       ),
                   ],
                 ),
@@ -987,7 +1019,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                 },
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(color: Color(0xFFD1D5DB), width: 2), // gray-300
+                  side: const BorderSide(
+                    color: Color(0xFFD1D5DB),
+                    width: 2,
+                  ), // gray-300
                 ),
                 child: const Text(
                   '요청 취소',
@@ -1013,10 +1048,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                 icon: const Icon(Icons.credit_card, size: 16),
                 label: const Text(
                   '결제하기',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1041,7 +1073,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                       context: context,
                       builder: (context) => AlertDialog(
                         title: const Text('계약 취소'),
-                        content: const Text('계약을 취소하시겠습니까?\n환불 정책에 따라 환불 금액이 계산됩니다.'),
+                        content: const Text(
+                          '계약을 취소하시겠습니까?\n환불 정책에 따라 환불 금액이 계산됩니다.',
+                        ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
@@ -1069,7 +1103,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     side: const BorderSide(color: Color(0xFFD1D5DB), width: 2),
                   ),
                   child: const Text(
@@ -1104,7 +1141,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                         onSubmit: (reason) {
                           Navigator.of(context).pop();
                           // API 호출: 취소 요청 전송
-                          debugPrint('⚠️ [CANCEL_REQUEST] Contract ID: ${contract.id}, Reason: $reason');
+                          debugPrint(
+                            '⚠️ [CANCEL_REQUEST] Contract ID: ${contract.id}, Reason: $reason',
+                          );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('취소 요청이 관리자에게 전송되었습니다.'),
@@ -1118,7 +1157,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     side: const BorderSide(color: Color(0xFFD1D5DB), width: 2),
                   ),
                   child: const Text(
@@ -1154,7 +1196,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     final canEdit = _canShowEditButton(contract);
 
     // 입주일 5일 전 체크
-    final canChangeOptions = contract.status != ContractStatus.paymentCompleted ||
+    final canChangeOptions =
+        contract.status != ContractStatus.paymentCompleted ||
         _isDaysBeforeCheckIn(contract.checkInDate, 5);
 
     // 옵션 변경사항 계산
@@ -1164,17 +1207,22 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         if (item.quantity == 0) continue;
         final originalQty = _getOriginalQuantity(contract.id, item.id);
         if (item.quantity != originalQty) {
-          changes.add(OptionChange(
-            itemId: item.id,
-            itemName: item.name,
-            originalQuantity: originalQty,
-            newQuantity: item.quantity,
-            pricePerUnit: item.price,
-          ));
+          changes.add(
+            OptionChange(
+              itemId: item.id,
+              itemName: item.name,
+              originalQuantity: originalQty,
+              newQuantity: item.quantity,
+              pricePerUnit: item.price,
+            ),
+          );
         }
       }
     }
-    final totalDiff = changes.fold<int>(0, (sum, change) => sum + change.priceDiff);
+    final totalDiff = changes.fold<int>(
+      0,
+      (sum, change) => sum + change.priceDiff,
+    );
 
     return Container(
       margin: const EdgeInsets.only(top: 16),
@@ -1214,7 +1262,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     ),
                   ),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     backgroundColor: canChangeOptions
                         ? const Color(0xFFEFF6FF) // blue-50
                         : const Color(0xFFF9FAFB), // gray-50
@@ -1229,7 +1280,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           const SizedBox(height: 12),
 
           // 옵션 목록
-          if (currentOptions.where((item) => item.quantity > 0 || isEditing).isEmpty && !isEditing)
+          if (currentOptions
+                  .where((item) => item.quantity > 0 || isEditing)
+                  .isEmpty &&
+              !isEditing)
             const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
@@ -1270,8 +1324,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     totalDiff > 0
                         ? '총 추가금액'
                         : (contract.status == ContractStatus.paymentCompleted
-                            ? '총 환불받을 금액'
-                            : '총 차감할 금액'),
+                              ? '총 환불받을 금액'
+                              : '총 차감할 금액'),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -1303,7 +1357,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     onPressed: () => _handleCancelOptionChanges(contract.id),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(color: Color(0xFFD1D5DB), width: 2), // gray-300
+                      side: const BorderSide(
+                        color: Color(0xFFD1D5DB),
+                        width: 2,
+                      ), // gray-300
                     ),
                     child: const Text(
                       '취소',
@@ -1328,10 +1385,14 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                           : const Color(0xFF2563EB), // blue-600
                       foregroundColor: Colors.white,
                       disabledBackgroundColor: const Color(0xFFD1D5DB),
-                      disabledForegroundColor: const Color(0xFF6B7280), // gray-500
+                      disabledForegroundColor: const Color(
+                        0xFF6B7280,
+                      ), // gray-500
                     ),
                     child: Text(
-                      contract.status == ContractStatus.paymentCompleted ? '결제 및 환불' : '저장',
+                      contract.status == ContractStatus.paymentCompleted
+                          ? '결제 및 환불'
+                          : '저장',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -1348,7 +1409,11 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   }
 
   /// 옵션 아이템 구현
-  Widget _buildOptionItem(ContractListItem contract, RentalItem item, bool isEditing) {
+  Widget _buildOptionItem(
+    ContractListItem contract,
+    RentalItem item,
+    bool isEditing,
+  ) {
     final originalQty = _getOriginalQuantity(contract.id, item.id);
     final qtyDiff = item.quantity - originalQty;
     final diffPrice = qtyDiff * item.price;
@@ -1414,7 +1479,11 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                         // 마이너스 버튼
                         InkWell(
                           onTap: item.quantity > 0
-                              ? () => _handleOptionQuantityChange(contract.id, item.id, -1)
+                              ? () => _handleOptionQuantityChange(
+                                  contract.id,
+                                  item.id,
+                                  -1,
+                                )
                               : null,
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
@@ -1428,7 +1497,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(8),
-                              color: item.quantity > 0 ? Colors.white : const Color(0xFFF9FAFB),
+                              color: item.quantity > 0
+                                  ? Colors.white
+                                  : const Color(0xFFF9FAFB),
                             ),
                             child: Icon(
                               Icons.remove,
@@ -1459,7 +1530,11 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
                         // 플러스 버튼
                         InkWell(
-                          onTap: () => _handleOptionQuantityChange(contract.id, item.id, 1),
+                          onTap: () => _handleOptionQuantityChange(
+                            contract.id,
+                            item.id,
+                            1,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
                             width: 28,
@@ -1586,11 +1661,13 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         Expanded(
           child: Text(
             value,
-            style: valueStyle ?? const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.normal,
-              color: Color(0xFF000000),
-            ),
+            style:
+                valueStyle ??
+                const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.normal,
+                  color: Color(0xFF000000),
+                ),
           ),
         ),
       ],

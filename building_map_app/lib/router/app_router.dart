@@ -18,9 +18,11 @@ import '../pages/host/room_registration/room_registration_flow_page.dart'
     deferred as room_registration;
 import '../pages/contract/guest_contracts_page.dart'
     deferred as guest_contracts;
-import '../pages/contract/host_contracts_page.dart' deferred as host_contracts;
-import '../pages/contract/contract_detail_page.dart'
-    deferred as contract_detail;
+import '../pages/contract/guest_contract_detail_page.dart'
+    deferred as guest_contract_detail;
+import '../pages/contract/host_contracts_page_new.dart' deferred as host_contracts;
+import '../pages/contract/host_contract_detail_page.dart'
+    deferred as host_contract_detail;
 import '../pages/contract/contract_start_page.dart'
     deferred as contract_start;
 import '../pages/chat/chat_list_page.dart' deferred as chat_list;
@@ -352,10 +354,22 @@ class AppRouter {
               path: ':contractId',
               name: 'guest-contract-detail',
               builder: (context, state) {
-                final contractId = state.pathParameters['contractId'] ?? '';
+                final contractId = _parseIntParameter(
+                  state.pathParameters['contractId'],
+                );
+
+                if (contractId == null) {
+                  return _buildInvalidAccessPage(
+                    context,
+                    message: '잘못된 접근입니다.',
+                    buttonText: '계약 목록으로 돌아가기',
+                    redirectPath: '/guest/contracts',
+                  );
+                }
+
                 return _deferredWidget(
-                  contract_detail.loadLibrary,
-                  () => contract_detail.ContractDetailPage(
+                  guest_contract_detail.loadLibrary,
+                  () => guest_contract_detail.GuestContractDetailPage(
                     contractId: contractId,
                   ),
                 );
@@ -368,7 +382,7 @@ class AppRouter {
           name: 'host-contracts',
           builder: (context, state) => _deferredWidget(
             host_contracts.loadLibrary,
-            () => host_contracts.HostContractsPage(),
+            () => host_contracts.HostContractsPageNew(),
           ),
           routes: [
             GoRoute(
@@ -377,9 +391,9 @@ class AppRouter {
               builder: (context, state) {
                 final contractId = state.pathParameters['contractId'] ?? '';
                 return _deferredWidget(
-                  contract_detail.loadLibrary,
-                  () => contract_detail.ContractDetailPage(
-                    contractId: contractId,
+                  host_contract_detail.loadLibrary,
+                  () => host_contract_detail.HostContractDetailPage(
+                    contractId: int.parse(contractId),
                   ),
                 );
               },

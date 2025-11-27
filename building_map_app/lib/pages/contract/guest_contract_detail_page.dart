@@ -1,0 +1,1420 @@
+import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
+import '../../config/api_config.dart';
+import '../../models/contract_detail.dart';
+import '../../models/payment_history.dart';
+import '../../services/contract_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../utils/responsive_util.dart';
+
+/// 게스트 계약 상세 페이지 (React UI 기반)
+class GuestContractDetailPage extends StatefulWidget {
+  final int contractId;
+
+  const GuestContractDetailPage({super.key, required this.contractId});
+
+  @override
+  State<GuestContractDetailPage> createState() =>
+      _GuestContractDetailPageState();
+}
+
+class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
+  final ContractService _contractService = ContractService();
+
+  bool _isLoading = true;
+  String? _errorMessage;
+  ContractDetail? _contractDetail;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContractDetail();
+  }
+
+  /// 계약 상세 정보 로드
+  Future<void> _loadContractDetail() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final detail = await _contractService.getGuestContractDetail(
+        widget.contractId,
+      );
+
+      if (detail != null) {
+        setState(() {
+          _contractDetail = detail;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = '계약 정보를 찾을 수 없습니다.';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // React: bg-gray-50
+      backgroundColor: AppColors.gray50,
+      appBar: AppBar(
+        title: const Text('계약 상세'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+          ? _buildErrorView()
+          : _contractDetail != null
+          ? _buildDetailView()
+          : const Center(child: Text('데이터를 불러올 수 없습니다.')),
+    );
+  }
+
+  /// 에러 뷰
+  Widget _buildErrorView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: AppColors.error500),
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage ?? '오류가 발생했습니다.',
+            style: AppTextStyles.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _loadContractDetail,
+            icon: const Icon(Icons.refresh),
+            label: const Text('다시 시도'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 상세 정보 뷰 (React: max-w-4xl mx-auto px-4 py-6)
+  Widget _buildDetailView() {
+    return SingleChildScrollView(
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(
+            maxWidth: 1024,
+          ), // max-w-4xl = 56rem = 896px, 여유있게 1024
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // React: h2 className="font-bold text-xl text-gray-900 mb-6"
+              Text(
+                '계약 상세 정보',
+                style: AppTextStyles.headingLarge.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.gray900, // text-gray-900
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              _buildBasicInfoSection(),
+              const SizedBox(height: 24),
+
+              _buildPartyInfoSection(),
+              const SizedBox(height: 24),
+
+              _buildRentalAmountSection(),
+
+              if (_contractDetail!.rentalItems.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                _buildOptionProductsSection(),
+              ],
+
+              const SizedBox(height: 24),
+              _buildCancellationPolicySection(),
+
+              if (_contractDetail!.paymentHistory.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                _buildPaymentHistorySection(),
+              ],
+
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 기본 정보 섹션 (React 구조와 일치)
+  Widget _buildBasicInfoSection() {
+    final contract = _contractDetail!;
+
+    // React: bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12), // rounded-xl
+        border: Border.all(color: AppColors.gray200), // border-gray-200
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05), // shadow-sm
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(24), // p-6 = 24px
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // React: 헤더 - 제목 + 계약번호 (왼쪽), 상태 배지 (오른쪽)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // React: h3 className="font-bold text-lg text-gray-900 text-[18px]"
+                    Text(
+                      '기본 정보',
+                      style: AppTextStyles.headingMedium.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF111827),
+                      ),
+                    ),
+
+                    // React: 계약주문번호 (있을 경우에만 표시)
+                    if (contract.orderId != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text(
+                            '계약번호: ',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontSize: 16,
+                              color: AppColors.gray600, // text-gray-600
+                            ),
+                          ),
+                          Text(
+                            contract.orderId!,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold, // 값 강조
+                              color: AppColors.blue600, // text-blue-600
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // 상태 배지 (오른쪽)
+              _buildStatusBadge(contract.status),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // React: 방 정보 - 사진(128x128) + 텍스트 (가로 배치)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // React: w-32 h-32 rounded-lg (128x128px)
+              Container(
+                width: 128,
+                height: 128,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8), // rounded-lg
+                  color: AppColors.gray50, // bg-gray-100
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: CachedNetworkImage(
+                  imageUrl: _getFullImageUrl(contract.roomPhoto),
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    color: AppColors.gray50,
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: AppColors.gray50,
+                    child: Icon(
+                      Icons.image_not_supported,
+                      size: 40,
+                      color: AppColors.gray600,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 16), // gap-4
+              // React: flex-1 (방 정보 텍스트)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // React: h4 className="font-bold text-lg text-gray-900 mb-3 text-[20px]"
+                    Text(
+                      contract.roomName,
+                      style: AppTextStyles.headingMedium.copyWith(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF111827),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // React: 주소 (상태에 따라 floor 또는 detailAddress)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 70,
+                          child: Text(
+                            '주소',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: 16,
+                              color: AppColors.gray600, // text-gray-600
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            _getAddressDisplay(contract),
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: 16,
+                              color: AppColors.gray900, // text-gray-900
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // React: 체크인/체크아웃
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 70,
+                          child: Text(
+                            '계약 기간',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: 16,
+                              color: AppColors.gray600,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            '${_formatDate(contract.checkInDate)} ~ ${_formatDate(contract.checkOutDate)} (${contract.totalDays}일)',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: 16,
+                              color: AppColors.gray900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // 결제 금액
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 70,
+                          child: Text(
+                            '결제 금액',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: 16,
+                              color: AppColors.gray600,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            '${_formatCurrency(contract.finalTotalAmount)}원',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: 16,
+                              color: AppColors.gray900,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 호스트/게스트 정보 섹션 (React: grid grid-cols-1 md:grid-cols-2 gap-6)
+  Widget _buildPartyInfoSection() {
+    final contract = _contractDetail!;
+    final isMobile = ResponsiveUtil.isMobile(context);
+
+    if (isMobile) {
+      return Column(
+        children: [
+          _buildHostCard(contract),
+          const SizedBox(height: 24),
+          _buildGuestCard(contract),
+        ],
+      );
+    } else {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildHostCard(contract)),
+          const SizedBox(width: 24), // gap-6 = 24px
+          Expanded(child: _buildGuestCard(contract)),
+        ],
+      );
+    }
+  }
+
+  /// 호스트 정보 카드
+  Widget _buildHostCard(ContractDetail contract) {
+    final showPhone = _shouldShowHostPhone(contract);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gray200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // React: h3 className="font-bold text-lg text-gray-900 mb-4"
+          Text(
+            '호스트',
+            style: AppTextStyles.headingMedium.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF111827),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // React: flex items-center gap-3
+          Row(
+            children: [
+              // React: w-12 h-12 rounded-full (48x48px)
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.gray50,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: contract.hostProfileImage != null
+                    ? CachedNetworkImage(
+                        imageUrl: _getFullImageUrl(contract.hostProfileImage),
+                        fit: BoxFit.cover,
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.person, size: 28),
+                      )
+                    : Icon(Icons.person, size: 28, color: AppColors.gray600),
+              ),
+
+              const SizedBox(width: 12), // gap-3
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // React: font-bold text-gray-900
+                    Text(
+                      contract.hostName,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF111827),
+                      ),
+                    ),
+
+                    // React: 결제 완료/진행 중/완료 상태에서만 전화번호 표시
+                    if (showPhone && contract.hostPhoneNumber != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        contract.hostPhoneNumber!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontSize: 14,
+                          color: AppColors.gray600, // text-gray-600
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 게스트 정보 카드
+  Widget _buildGuestCard(ContractDetail contract) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gray200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '게스트',
+                style: AppTextStyles.headingMedium.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF111827),
+                ),
+              ),
+
+              // EZ청소 배지
+              if (contract.isEzCleaning)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.green100, // bg-green-100
+                    borderRadius: BorderRadius.circular(999), // rounded-full
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.cleaning_services,
+                        size: 14,
+                        color: AppColors.green600, // text-green-600
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'EZ청소',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.green600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          Row(
+            children: [
+              Icon(Icons.person, size: 20, color: AppColors.gray600),
+              const SizedBox(width: 8),
+              Text(
+                contract.guestName,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF111827),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          Row(
+            children: [
+              Icon(Icons.phone, size: 20, color: AppColors.gray600),
+              const SizedBox(width: 8),
+              Text(
+                contract.guestPhone,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontSize: 16,
+                  color: const Color(0xFF111827),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 임대 금액 섹션
+  Widget _buildRentalAmountSection() {
+    final contract = _contractDetail!;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gray200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '임대 계약 금액',
+            style: AppTextStyles.headingMedium.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF111827),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildAmountRow('임대료', contract.rentalFee),
+          _buildAmountRow('관리비', contract.maintenanceFee),
+          _buildAmountRow('청소비', contract.cleaningFee),
+          _buildAmountRow('계약 수수료', contract.platformFee),
+
+          if (contract.rentalItemsFee > 0)
+            _buildAmountRow('옵션 상품', contract.rentalItemsFee),
+
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, color: AppColors.gray200),
+          ),
+
+          _buildAmountRow(
+            '보증금 (퇴실 시 반환 예정)',
+            contract.deposit,
+            isHighlight: true,
+          ),
+
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 2, thickness: 2, color: AppColors.gray200),
+          ),
+
+          _buildAmountRow(
+            '총 임대 계약 금액',
+            contract.finalTotalAmount,
+            isTotal: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 금액 행
+  Widget _buildAmountRow(
+    String label,
+    int amount, {
+    bool isHighlight = false,
+    bool isTotal = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontSize: isTotal ? 18 : 16,
+              fontWeight: isTotal || isHighlight
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+              color: AppColors.gray900,
+            ),
+          ),
+          Text(
+            '${_formatCurrency(amount)}원',
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontSize: isTotal ? 18 : 16,
+              fontWeight: isTotal || isHighlight
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+              color: isTotal ? AppColors.blue600 : AppColors.gray900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 옵션 상품 섹션
+  Widget _buildOptionProductsSection() {
+    final contract = _contractDetail!;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gray200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '옵션 상품',
+            style: AppTextStyles.headingMedium.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF111827),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          ...contract.rentalItems.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildRentalItemTile(item),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 렌탈 아이템 타일
+  Widget _buildRentalItemTile(ContractRentalItem item) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 이미지
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: AppColors.gray50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: item.imageUrl != null
+              ? CachedNetworkImage(
+                  imageUrl: _getFullImageUrl(item.imageUrl),
+                  fit: BoxFit.cover,
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.category, size: 32),
+                )
+              : Icon(Icons.category, size: 32, color: AppColors.gray600),
+        ),
+
+        const SizedBox(width: 12),
+
+        // 정보
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.name,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF111827),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${_formatCurrency(item.price)}원 × ${item.quantity}개',
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontSize: 14,
+                  color: AppColors.gray600,
+                ),
+              ),
+              if (item.deliveryStatus != null) ...[
+                const SizedBox(height: 6),
+                _buildDeliveryStatusBadge(item.deliveryStatus!),
+              ],
+            ],
+          ),
+        ),
+
+        // 총 금액
+        Text(
+          '${_formatCurrency(item.totalPrice)}원',
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF111827),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 배송 상태 배지
+  Widget _buildDeliveryStatusBadge(String status) {
+    final config = _getDeliveryStatusConfig(status);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: (config['color'] as Color).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            config['icon'] as IconData,
+            size: 14,
+            color: config['color'] as Color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            config['text'] as String,
+            style: AppTextStyles.bodySmall.copyWith(
+              fontSize: 12,
+              color: config['color'] as Color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 취소 정책 섹션 (계약 요청 페이지와 동일한 UI)
+  Widget _buildCancellationPolicySection() {
+    final contract = _contractDetail!;
+    final snapshot = contract.refundPolicySnapshot;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gray200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 제목 + 환불 정책 라벨
+          Row(
+            children: [
+              Text(
+                '계약 해지 조항',
+                style: AppTextStyles.headingMedium.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF111827),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _buildPolicyBadge(contract.refundPolicy),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // 환불 정책 규칙 표시
+          if (snapshot != null && snapshot.rules.isNotEmpty) ...[
+            ...snapshot.rules.map((rule) {
+              final text = _calculateCancellationText(rule);
+              return _buildBulletText(text);
+            }),
+          ] else ...[
+            // Fallback: 기존 상세 설명
+            Text(
+              contract.refundPolicyDetail.isNotEmpty
+                  ? contract.refundPolicyDetail
+                  : '환불 정책 정보를 불러올 수 없습니다.',
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontSize: 14,
+                color: const Color(0xFF374151),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 20),
+
+          // 안내사항 박스
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.blue50, // blue-50
+              border: Border.all(color: AppColors.blue100), // blue-100
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: AppColors.blue600, // blue-600
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '안내사항',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.blue700, // blue-800
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildNoticeBulletText(
+                  '결제 당일 취소 시, 환불 규정과 관계 없이 임대료와 계약 수수료를 합계한 10%만 위약금으로 부과됩니다.',
+                ),
+                // 특별 규칙 표시
+                if (snapshot?.specialRules?.alwaysRefund != null &&
+                    snapshot!
+                        .specialRules!
+                        .alwaysRefund!
+                        .displayText
+                        .isNotEmpty)
+                  _buildNoticeBulletText(
+                    snapshot.specialRules!.alwaysRefund!.displayText,
+                  )
+                else
+                  _buildNoticeBulletText('관리비, 청소비, 보증금은 전액 환불됩니다.'),
+                _buildNoticeBulletText('환불 규정은 호스트의 설정에 따라 달라집니다.'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 환불 규칙을 텍스트로 변환
+  String _calculateCancellationText(RefundPolicyRule rule) {
+    final description = rule.description;
+    final refundRate = rule.refundRate;
+
+    // 환불 불가인 경우
+    if (refundRate == 0) {
+      return '$description : 환불 불가';
+    }
+
+    // 일반적인 경우: 원본 텍스트 + 환불율
+    return '$description : 임대료의 $refundRate% 환불';
+  }
+
+  /// 불릿 텍스트
+  Widget _buildBulletText(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Container(
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[500],
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[700],
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 안내사항 불릿 텍스트 (blue 스타일)
+  Widget _buildNoticeBulletText(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Container(
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.blue600, // blue-600
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.blue700, // blue-800
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 환불 정책 배지
+  Widget _buildPolicyBadge(String policy) {
+    final config = _getPolicyConfig(policy);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: (config['color'] as Color).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: config['color'] as Color),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            config['icon'] as IconData,
+            size: 16,
+            color: config['color'] as Color,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            config['text'] as String,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontSize: 14,
+              color: config['color'] as Color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 결제 내역 섹션
+  Widget _buildPaymentHistorySection() {
+    final contract = _contractDetail!;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gray200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '결제 내역',
+            style: AppTextStyles.headingMedium.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF111827),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          ...contract.paymentHistory.map(
+            (payment) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildPaymentHistoryTile(payment),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 결제 내역 타일
+  Widget _buildPaymentHistoryTile(PaymentHistory payment) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 아이콘
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: payment.isPayment
+                ? AppColors
+                      .blue100 // bg-blue-100
+                : AppColors.error50, // bg-red-100
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            payment.isPayment ? Icons.payment : Icons.replay,
+            color: payment.isPayment ? AppColors.blue600 : AppColors.error600,
+            size: 20,
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // 정보
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                payment.isPayment ? '결제' : '환불',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF111827),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _formatDateTime(payment.transactionDate),
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontSize: 14,
+                  color: AppColors.gray600,
+                ),
+              ),
+              if (payment.description != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  payment.description!,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontSize: 14,
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 6),
+              _buildPaymentStatusBadge(payment.status),
+            ],
+          ),
+        ),
+
+        // 금액
+        Text(
+          '${payment.isPayment ? '' : '-'}${_formatCurrency(payment.amount)}원',
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: payment.isPayment ? AppColors.gray900 : AppColors.error600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 결제 상태 배지
+  Widget _buildPaymentStatusBadge(String status) {
+    final config = _getPaymentStatusConfig(status);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: (config['color'] as Color).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        config['text'] as String,
+        style: AppTextStyles.bodySmall.copyWith(
+          fontSize: 12,
+          color: config['color'] as Color,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  /// 상태 배지 (React 색상과 일치)
+  Widget _buildStatusBadge(String status) {
+    final config = _getStatusConfig(status);
+
+    // React: inline-block px-3 py-1 rounded-full text-sm font-bold
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: config['color'] as Color,
+        borderRadius: BorderRadius.circular(999), // rounded-full
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            config['icon'] as IconData,
+            size: 16,
+            color: config['textColor'] as Color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            config['text'] as String,
+            style: AppTextStyles.bodySmall.copyWith(
+              fontSize: 14,
+              color: config['textColor'] as Color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ========== 유틸리티 메서드 ==========
+
+  /// 이미지 URL에 baseUrl 추가 (상대경로 → 절대경로)
+  String _getFullImageUrl(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) return '';
+    // 이미 절대 경로인 경우 그대로 반환
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    // 상대 경로인 경우 baseUrl 추가
+    return '${ApiConfig.baseUrl}$imageUrl';
+  }
+
+  /// 주소 표시 로직 (React와 일치)
+  String _getAddressDisplay(ContractDetail contract) {
+    // React: PENDING_APPROVAL 또는 APPROVED 상태에서는 floor 표시
+    if (contract.status == 'PENDING_APPROVAL' ||
+        contract.status == 'APPROVED') {
+      return '${contract.address} ${contract.floor}';
+    } else {
+      // 그 외 상태에서는 detailAddress 표시
+      return '${contract.address} ${contract.detailAddress}';
+    }
+  }
+
+  /// 호스트 전화번호 표시 여부 (React와 일치)
+  bool _shouldShowHostPhone(ContractDetail contract) {
+    return [
+      'PAYMENT_COMPLETED',
+      'IN_PROGRESS',
+      'COMPLETED',
+    ].contains(contract.status);
+  }
+
+  /// 상태 설정 가져오기 (React 색상 스킴과 일치)
+  Map<String, dynamic> _getStatusConfig(String status) {
+    final statusMap = {
+      'PENDING_APPROVAL': {
+        'text': '승인 대기',
+        'color': AppColors.warning50, // bg-yellow-100
+        'textColor': AppColors.secondary700, // text-yellow-700
+        'icon': Icons.schedule,
+      },
+      'APPROVED': {
+        'text': '결제 대기',
+        'color': AppColors.blue100, // bg-blue-100
+        'textColor': AppColors.blue700, // text-blue-700
+        'icon': Icons.payment,
+      },
+      'PAYMENT_COMPLETED': {
+        'text': '결제 완료',
+        'color': AppColors.green100, // bg-green-100
+        'textColor': AppColors.success700, // text-green-700
+        'icon': Icons.check_circle,
+      },
+      'IN_PROGRESS': {
+        'text': '임대 중',
+        'color': AppColors.purple50, // bg-purple-100
+        'textColor': AppColors.purple600, // text-purple-700
+        'icon': Icons.home,
+      },
+      'COMPLETED': {
+        'text': '계약 종료',
+        'color': AppColors.gray50, // bg-gray-100
+        'textColor': AppColors.neutral700, // text-gray-700
+        'icon': Icons.check_circle_outline,
+      },
+      'CANCELLED_BY_GUEST': {
+        'text': '계약 취소',
+        'color': AppColors.error50, // bg-red-100
+        'textColor': AppColors.error700, // text-red-700
+        'icon': Icons.cancel,
+      },
+      'CANCELLED_BY_HOST': {
+        'text': '계약 취소',
+        'color': AppColors.error50, // bg-red-100
+        'textColor': AppColors.error700, // text-red-700
+        'icon': Icons.cancel,
+      },
+    };
+
+    return statusMap[status] ?? statusMap['PENDING_APPROVAL']!;
+  }
+
+  /// 배송 상태 설정 가져오기
+  Map<String, dynamic> _getDeliveryStatusConfig(String status) {
+    final statusMap = {
+      'PENDING': {
+        'text': '배송 준비 중',
+        'color': AppColors.warning500, // yellow-500
+        'icon': Icons.schedule,
+      },
+      'IN_DELIVERY': {
+        'text': '배송 중',
+        'color': AppColors.primary500, // blue-500
+        'icon': Icons.local_shipping,
+      },
+      'DELIVERED': {
+        'text': '배송 완료',
+        'color': AppColors.success500, // green-500
+        'icon': Icons.check_circle,
+      },
+    };
+
+    return statusMap[status] ?? statusMap['PENDING']!;
+  }
+
+  /// 결제 상태 설정 가져오기
+  Map<String, dynamic> _getPaymentStatusConfig(String status) {
+    final statusMap = {
+      'COMPLETED': {
+        'text': '완료',
+        'color': AppColors.success500, // green-500
+      },
+      'PENDING': {
+        'text': '대기',
+        'color': AppColors.warning500, // yellow-500
+      },
+      'FAILED': {
+        'text': '실패',
+        'color': AppColors.error500, // red-500
+      },
+    };
+
+    return statusMap[status] ?? statusMap['PENDING']!;
+  }
+
+  /// 환불 정책 설정 가져오기
+  Map<String, dynamic> _getPolicyConfig(String policy) {
+    final policyMap = {
+      'flexible': {
+        'text': '유연한 환불',
+        'color': AppColors.success500, // green-500
+        'icon': Icons.check_circle,
+      },
+      'moderate': {
+        'text': '보통 환불',
+        'color': AppColors.warning500, // yellow-500
+        'icon': Icons.info,
+      },
+      'strict': {
+        'text': '엄격한 환불',
+        'color': AppColors.error500, // red-500
+        'icon': Icons.warning,
+      },
+    };
+
+    return policyMap[policy] ?? policyMap['moderate']!;
+  }
+
+  /// 날짜 포맷 (yyyy-MM-dd)
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('yyyy-MM-dd').format(date);
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  /// 날짜/시간 포맷 (yyyy-MM-dd HH:mm)
+  String _formatDateTime(DateTime dateTime) {
+    return DateFormat('yyyy-MM-dd HH:mm').format(dateTime);
+  }
+
+  /// 금액 포맷 (천 단위 콤마)
+  String _formatCurrency(int amount) {
+    return NumberFormat('#,###').format(amount);
+  }
+}

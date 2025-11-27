@@ -178,7 +178,9 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
       }
 
       // 배송 중인 옵션이 있으면 왕복 배송비 차감
-      if (items.any((item) => item.deliveryStatus == DeliveryStatus.inTransit)) {
+      if (items.any(
+        (item) => item.deliveryStatus == DeliveryStatus.inTransit,
+      )) {
         shippingFee = 7000;
       }
     } else {
@@ -191,15 +193,18 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
       }
 
       // 배송 중인 옵션이 선택되어 있으면 배송비 차감
-      final hasInTransitOptions = items.any((item) =>
-          item.deliveryStatus == DeliveryStatus.inTransit &&
-          (_selectedOptions[item.id] ?? 0) > 0);
+      final hasInTransitOptions = items.any(
+        (item) =>
+            item.deliveryStatus == DeliveryStatus.inTransit &&
+            (_selectedOptions[item.id] ?? 0) > 0,
+      );
       if (hasInTransitOptions) {
         shippingFee = 7000;
       }
     }
 
-    final totalRefund = rentalRefund +
+    final totalRefund =
+        rentalRefund +
         platformFeeRefund +
         maintenanceRefund +
         cleaningRefund +
@@ -207,7 +212,8 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
         optionsRefund -
         shippingFee;
 
-    final penalty = widget.contract.rentalFee -
+    final penalty =
+        widget.contract.rentalFee -
         rentalRefund +
         (widget.contract.platformFee - platformFeeRefund);
 
@@ -298,7 +304,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
         constraints: const BoxConstraints(maxWidth: 672), // max-w-2xl (672px)
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.radiusXl),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           boxShadow: AppShadows.modal,
         ),
         child: ConstrainedBox(
@@ -355,11 +361,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.error_outline,
-          color: Colors.orange[700],
-          size: 24,
-        ),
+        Icon(Icons.error_outline, color: Colors.orange[700], size: 24),
         SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Column(
@@ -372,7 +374,9 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
               SizedBox(height: AppSpacing.xs),
               Text(
                 widget.contract.room?.name ?? '방 정보 없음',
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -389,11 +393,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
 
   /// 환불 정책 정보
   Widget _buildRefundPolicyInfo() {
-    final policyNames = {
-      'flexible': '유연',
-      'moderate': '보통',
-      'strict': '엄격',
-    };
+    final policyNames = {'flexible': '유연', 'moderate': '보통', 'strict': '엄격'};
     final policy = _getRefundPolicy();
 
     return Container(
@@ -401,7 +401,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
       decoration: BoxDecoration(
         color: Colors.blue[50],
         border: Border.all(color: Colors.blue[200]!),
-        borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -420,7 +420,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.blue[600],
-                  borderRadius: BorderRadius.circular(AppRadius.radiusSm),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Text(
                   policyNames[policy] ?? '보통',
@@ -454,14 +454,16 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '공통 환불 정책',
-            style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold),
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           SizedBox(height: AppSpacing.xs),
           Text(
@@ -481,7 +483,10 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
   }
 
   /// 환불 유형 선택
-  Widget _buildRefundTypeSelection(int refundRate, DeliveryStatus overallDeliveryStatus) {
+  Widget _buildRefundTypeSelection(
+    int refundRate,
+    DeliveryStatus overallDeliveryStatus,
+  ) {
     final items = widget.contract.rentalItems ?? [];
 
     return Container(
@@ -489,14 +494,16 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: Colors.blue[300]!, width: 2),
-        borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '환불 유형 선택',
-            style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold),
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           SizedBox(height: AppSpacing.sm),
 
@@ -507,9 +514,12 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
             subtitle: refundRate == 0
                 ? '환불 불가 기간입니다. 옵션 상품만 환불 가능합니다.'
                 : '해당 계약에서 결제했던 모든 내용을 환불',
-            subtitleColor: refundRate == 0 ? Colors.red[600] : AppColors.textSecondary,
+            subtitleColor: refundRate == 0
+                ? Colors.red[600]
+                : AppColors.textSecondary,
             isDisabled: refundRate == 0,
-            additionalContent: _refundType == 'all' &&
+            additionalContent:
+                _refundType == 'all' &&
                     overallDeliveryStatus == DeliveryStatus.inTransit
                 ? Padding(
                     padding: EdgeInsets.only(top: AppSpacing.sm),
@@ -522,7 +532,11 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.local_shipping, size: 16, color: AppColors.textSecondary),
+                          Icon(
+                            Icons.local_shipping,
+                            size: 16,
+                            color: AppColors.textSecondary,
+                          ),
                           SizedBox(width: AppSpacing.xs),
                           Expanded(
                             child: Text(
@@ -579,7 +593,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
             color: isDisabled ? AppColors.border : AppColors.border,
             width: 2,
           ),
-          borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           color: isDisabled ? AppColors.surface : Colors.white,
         ),
         child: Row(
@@ -613,7 +627,9 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
                     subtitle,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: subtitleColor ?? AppColors.textSecondary,
-                      fontWeight: subtitleColor != null ? FontWeight.bold : null,
+                      fontWeight: subtitleColor != null
+                          ? FontWeight.bold
+                          : null,
                       fontSize: 12,
                     ),
                   ),
@@ -628,12 +644,31 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
   }
 
   /// 옵션 환불 리스트
-  Widget _buildOptionsRefundList(List<RentalItem> items, DeliveryStatus overallDeliveryStatus) {
+  Widget _buildOptionsRefundList(
+    List<RentalItem> items,
+    DeliveryStatus overallDeliveryStatus,
+  ) {
     final deliveryStatusLabels = {
-      DeliveryStatus.pending: {'text': '배송 전', 'color': Colors.grey[100]!, 'textColor': Colors.grey[700]!},
-      DeliveryStatus.preparing: {'text': '배송 준비', 'color': Colors.blue[100]!, 'textColor': Colors.blue[700]!},
-      DeliveryStatus.inTransit: {'text': '배송 중', 'color': Colors.orange[100]!, 'textColor': Colors.orange[700]!},
-      DeliveryStatus.delivered: {'text': '배송 완료', 'color': Colors.green[100]!, 'textColor': Colors.green[700]!},
+      DeliveryStatus.pending: {
+        'text': '배송 전',
+        'color': Colors.grey[100]!,
+        'textColor': Colors.grey[700]!,
+      },
+      DeliveryStatus.preparing: {
+        'text': '배송 준비',
+        'color': Colors.blue[100]!,
+        'textColor': Colors.blue[700]!,
+      },
+      DeliveryStatus.inTransit: {
+        'text': '배송 중',
+        'color': Colors.orange[100]!,
+        'textColor': Colors.orange[700]!,
+      },
+      DeliveryStatus.delivered: {
+        'text': '배송 완료',
+        'color': Colors.green[100]!,
+        'textColor': Colors.green[700]!,
+      },
     };
 
     return Padding(
@@ -641,9 +676,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
       child: Container(
         padding: EdgeInsets.only(top: AppSpacing.sm),
         decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(color: AppColors.border),
-          ),
+          border: Border(top: BorderSide(color: AppColors.border)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -654,18 +687,28 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
               children: [
                 Text(
                   '옵션 상품',
-                  style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: deliveryStatusLabels[overallDeliveryStatus]!['color'] as Color,
-                    borderRadius: BorderRadius.circular(AppRadius.radiusSm),
+                    color:
+                        deliveryStatusLabels[overallDeliveryStatus]!['color']
+                            as Color,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
-                    deliveryStatusLabels[overallDeliveryStatus]!['text'] as String,
+                    deliveryStatusLabels[overallDeliveryStatus]!['text']
+                        as String,
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: deliveryStatusLabels[overallDeliveryStatus]!['textColor'] as Color,
+                      color:
+                          deliveryStatusLabels[overallDeliveryStatus]!['textColor']
+                              as Color,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -681,7 +724,11 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
                 padding: EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Row(
                   children: [
-                    Icon(Icons.local_shipping, size: 16, color: AppColors.textSecondary),
+                    Icon(
+                      Icons.local_shipping,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
                     SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: Text(
@@ -714,7 +761,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -722,7 +769,9 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
           // 상품 정보
           Text(
             item.name,
-            style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold),
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           if (item.description != null && item.description!.isNotEmpty) ...[
             SizedBox(height: AppSpacing.xs / 2),
@@ -750,9 +799,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
             Container(
               padding: EdgeInsets.only(top: AppSpacing.xs),
               decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey[300]!),
-                ),
+                border: Border(top: BorderSide(color: Colors.grey[300]!)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -776,15 +823,19 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
                           height: 24,
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: selectedQty > 0 ? Colors.grey[300]! : Colors.grey[200]!,
+                              color: selectedQty > 0
+                                  ? Colors.grey[300]!
+                                  : Colors.grey[200]!,
                               width: 2,
                             ),
-                            borderRadius: BorderRadius.circular(AppRadius.radiusSm),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                           child: Icon(
                             Icons.remove,
                             size: 16,
-                            color: selectedQty > 0 ? AppColors.textSecondary : Colors.grey[400],
+                            color: selectedQty > 0
+                                ? AppColors.textSecondary
+                                : Colors.grey[400],
                           ),
                         ),
                       ),
@@ -794,7 +845,9 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
                         child: Text(
                           '$selectedQty',
                           textAlign: TextAlign.center,
-                          style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       SizedBox(width: AppSpacing.xs),
@@ -813,7 +866,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
                                   : Colors.grey[200]!,
                               width: 2,
                             ),
-                            borderRadius: BorderRadius.circular(AppRadius.radiusSm),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                           child: Icon(
                             Icons.add,
@@ -836,13 +889,17 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
   }
 
   /// 현재 상황
-  Widget _buildCurrentSituation(int daysLeft, int refundRate, bool isPaidTodayFlag) {
+  Widget _buildCurrentSituation(
+    int daysLeft,
+    int refundRate,
+    bool isPaidTodayFlag,
+  ) {
     return Container(
       padding: AppSpacing.paddingMd,
       decoration: BoxDecoration(
         color: Colors.yellow[50],
         border: Border.all(color: Colors.yellow[200]!),
-        borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -891,14 +948,16 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: AppColors.border, width: 2),
-        borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '환불 예정 금액 상세',
-            style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold),
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           SizedBox(height: AppSpacing.sm),
 
@@ -914,14 +973,34 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
               refund['platformFeeRefund']!,
               originalAmount: widget.contract.platformFee.toDouble(),
             ),
-            _buildRefundRow('관리비', refund['maintenanceRefund']!, isFullRefund: true),
-            _buildRefundRow('청소비', refund['cleaningRefund']!, isFullRefund: true),
-            _buildRefundRow('보증금', refund['depositRefund']!, isFullRefund: true),
+            _buildRefundRow(
+              '관리비',
+              refund['maintenanceRefund']!,
+              isFullRefund: true,
+            ),
+            _buildRefundRow(
+              '청소비',
+              refund['cleaningRefund']!,
+              isFullRefund: true,
+            ),
+            _buildRefundRow(
+              '보증금',
+              refund['depositRefund']!,
+              isFullRefund: true,
+            ),
           ],
           if (refund['optionsRefund']! > 0)
-            _buildRefundRow('옵션 상품 합계', refund['optionsRefund']!, isFullRefund: true),
+            _buildRefundRow(
+              '옵션 상품 합계',
+              refund['optionsRefund']!,
+              isFullRefund: true,
+            ),
           if (refund['shippingFee']! > 0)
-            _buildRefundRow('왕복 배송비 (차감)', -refund['shippingFee']!, isNegative: true),
+            _buildRefundRow(
+              '왕복 배송비 (차감)',
+              -refund['shippingFee']!,
+              isNegative: true,
+            ),
 
           // 총 환불 금액
           Container(
@@ -937,13 +1016,17 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
               children: [
                 Text(
                   '총 환불 금액',
-                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   '${refund['totalRefund']! < 0 ? '-' : ''}'
                   '${_currencyFormat.format(refund['totalRefund']!.abs())}원',
                   style: AppTextStyles.headingSmall.copyWith(
-                    color: refund['totalRefund']! < 0 ? Colors.red[600] : AppColors.primary500,
+                    color: refund['totalRefund']! < 0
+                        ? Colors.red[600]
+                        : AppColors.primary500,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -973,7 +1056,9 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
         children: [
           Text(
             label,
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
           Row(
             children: [
@@ -983,8 +1068,8 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
                   color: isPartial || isNegative
                       ? Colors.red[600]
                       : isFullRefund
-                          ? Colors.black
-                          : AppColors.textPrimary,
+                      ? Colors.black
+                      : AppColors.textPrimary,
                   fontWeight: isFullRefund ? FontWeight.bold : null,
                 ),
               ),
@@ -1010,7 +1095,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
       decoration: BoxDecoration(
         color: Colors.red[50],
         border: Border.all(color: Colors.red[200]!, width: 2),
-        borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1067,7 +1152,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
             padding: AppSpacing.paddingSm,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Text(
               '위약금 결제 후 계약이 취소되며, 해당 기간이 다시 임대 가능 상태로 변경됩니다.',
@@ -1091,7 +1176,9 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
         children: [
           Text(
             label,
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
           Text(
             '${_currencyFormat.format(amount)}원',
@@ -1130,15 +1217,17 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
           child: ElevatedButton(
             onPressed: _handleConfirmClick,
             style: ElevatedButton.styleFrom(
-              backgroundColor: widget.isHost ? Colors.red[600] : AppColors.primary500,
+              backgroundColor: widget.isHost
+                  ? Colors.red[600]
+                  : AppColors.primary500,
               padding: const EdgeInsets.symmetric(vertical: 10),
             ),
             child: Text(
               widget.isHost
                   ? '위약금 결제하고 취소'
                   : _refundType == 'all'
-                      ? '계약 취소'
-                      : '옵션 환불 요청',
+                  ? '계약 취소'
+                  : '옵션 환불 요청',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
