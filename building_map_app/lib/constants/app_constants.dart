@@ -27,6 +27,14 @@ class AppColors {
   static const primary = Color(0xFF4A90E2);
   static const accent = Color(0xFF4DB5BD);
   static const background = Color(0xFFF5F5F5);
+  static const surface = Color(0xFFFFFFFF);
+
+  // Primary 색상 변형
+  static const primary50 = Color(0xFFE3F2FD);
+  static const primary100 = Color(0xFFBBDEFB);
+  static const primary200 = Color(0xFF90CAF9);
+  static const primary500 = Color(0xFF4A90E2);
+  static const primary600 = Color(0xFF3B7AC7);
 
   // 텍스트 색상
   static const textPrimary = Color(0xFF2C3E50);
@@ -45,6 +53,9 @@ class AppColors {
   static final grey200 = Colors.grey[200]!;
   static final grey300 = Colors.grey[300]!;
   static final grey600 = Colors.grey[600]!;
+
+  // 기타 유틸리티 색상
+  static final border = Colors.grey[300]!;
 }
 
 /// 색상 확장 메서드
@@ -99,6 +110,30 @@ class AppTextStyles {
   static const bodySmall = TextStyle(
     fontSize: 12,
     color: AppColors.textSecondary,
+  );
+
+  static const headingSmall = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
+
+  static const headingMedium = TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
+
+  static const bodyMediumBold = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
+
+  static const priceText = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    color: AppColors.primary,
   );
 
   static const button = TextStyle(
@@ -271,4 +306,38 @@ class AppTheme {
       ),
     );
   }
+}
+
+/// 앱 Radius (둥근 모서리) 상수
+class AppRadius {
+  static const double radiusSm = 8.0;
+  static const double radiusMd = 12.0;
+  static const double radiusLg = 16.0;
+  static const double radiusXl = 20.0;
+}
+
+/// 앱 Spacing (간격) 상수
+class AppSpacing {
+  static const EdgeInsets paddingXs = EdgeInsets.all(4.0);
+  static const EdgeInsets paddingSm = EdgeInsets.all(8.0);
+  static const EdgeInsets paddingMd = EdgeInsets.all(16.0);
+  static const EdgeInsets paddingLg = EdgeInsets.all(24.0);
+  static const EdgeInsets paddingXl = EdgeInsets.all(32.0);
+
+  // 수평/수직 패딩
+  static const EdgeInsets paddingHorizontalMd = EdgeInsets.symmetric(horizontal: 16.0);
+  static const EdgeInsets paddingVerticalMd = EdgeInsets.symmetric(vertical: 16.0);
+  static const EdgeInsets paddingHorizontalLg = EdgeInsets.symmetric(horizontal: 24.0);
+  static const EdgeInsets paddingVerticalLg = EdgeInsets.symmetric(vertical: 24.0);
+
+  // SizedBox용 간격
+  static const double xs = 4.0;
+  static const double sm = 8.0;
+  static const double md = 16.0;
+  static const double lg = 24.0;
+  static const double xl = 32.0;
+
+  // 명시적 픽셀 값 (기존 코드 호환성)
+  static const double space12 = 12.0;
+  static const double space24 = 24.0;
 }
