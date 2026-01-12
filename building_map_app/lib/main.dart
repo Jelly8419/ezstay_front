@@ -26,8 +26,17 @@ import 'widgets/splash_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // .env 파일 로드
-  await dotenv.load(fileName: ".env");
+  // .env 파일 로드 (환경별 분리)
+  // 빌드 시 --dart-define=ENVIRONMENT=test/production 으로 지정
+  const environment = String.fromEnvironment('ENVIRONMENT', defaultValue: 'development');
+  final envFile = environment == 'production'
+      ? '.env.production'
+      : environment == 'test'
+          ? '.env.test'
+          : '.env';
+
+  debugPrint('🔧 [ENV] 환경: $environment, 로드할 파일: $envFile');
+  await dotenv.load(fileName: envFile);
 
   // 🔥 Firebase 초기화를 백그라운드로 이동 (await 제거)
   final firebaseInitFuture = _initializeFirebase();
