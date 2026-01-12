@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/api_config.dart';
+import '../../config/payment_config.dart';
 import '../../models/contract_detail.dart';
 import '../../models/payment_history.dart';
 import '../../services/contract_service.dart';
+import '../../services/payment_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
+import '../../widgets/payment_webview.dart';
+import '../../widgets/common/app_gnb.dart';
 
 /// 게스트 계약 상세 페이지 (React UI 기반)
 class GuestContractDetailPage extends StatefulWidget {
@@ -22,10 +28,14 @@ class GuestContractDetailPage extends StatefulWidget {
 
 class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
   final ContractService _contractService = ContractService();
+  final PaymentService _paymentService = PaymentService();
 
   bool _isLoading = true;
   String? _errorMessage;
   ContractDetail? _contractDetail;
+
+  // 결제 관련
+  bool _isPaymentProcessing = false;
 
   @override
   void initState() {
@@ -160,15 +170,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     return Scaffold(
       // React: bg-gray-50
       backgroundColor: AppColors.gray50,
-      appBar: AppBar(
-        title: const Text('계약 상세'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      appBar: const AppGNB(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
@@ -176,6 +178,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
           : _contractDetail != null
           ? _buildDetailView()
           : const Center(child: Text('데이터를 불러올 수 없습니다.')),
+      bottomNavigationBar: _buildBottomBar(),
     );
   }
 
@@ -1564,5 +1567,345 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
   /// 금액 포맷 (천 단위 콤마)
   String _formatCurrency(int amount) {
     return NumberFormat('#,###').format(amount);
+  }
+
+  /// 하단 고정 바 (게스트 전용 - APPROVED 상태 시 결제 버튼)
+  Widget _buildBottomBar() {
+    if (_contractDetail == null) return const SizedBox.shrink();
+
+    final contract = _contractDetail!;
+
+    // APPROVED 상태일 때만 결제 버튼 표시
+    if (contract.status == 'APPROVED') {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _isPaymentProcessing ? null : _processPayment,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary500,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: _isPaymentProcessing
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.payment, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          '₩${_formatCurrency(contract.finalTotalAmount)} 결제하기',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  /// 결제 처리
+  Future<void> _processPayment() async {
+    if (_contractDetail == null) return;
+
+    setState(() => _isPaymentProcessing = true);
+
+    try {
+      // Mock 모드일 경우 백엔드 Mock API 호출
+      if (PaymentConfig.useMockMode) {
+        await _processPaymentWithMock();
+        return;
+      }
+
+      // 1. 백엔드에서 결제 정보 조회
+      final paymentInfo = await _paymentService.getPaymentInfo(widget.contractId);
+
+      // 2. 토스 결제창 URL 생성
+      final paymentUrl = _buildTossPaymentUrl(
+        clientKey: PaymentConfig.clientKey,
+        amount: paymentInfo['amount'] as int,
+        orderId: paymentInfo['orderId'] as String,
+        orderName: paymentInfo['orderName'] as String,
+        customerEmail: paymentInfo['customerEmail'] as String?,
+        customerName: paymentInfo['customerName'] as String?,
+        successUrl: PaymentConfig.successUrl,
+        failUrl: PaymentConfig.failUrl,
+      );
+
+      // 3. 웹/모바일 구분 처리
+      if (kIsWeb) {
+        // 웹: 새 탭으로 토스 결제 페이지 열기
+        await _processPaymentWeb(paymentUrl);
+      } else {
+        // 모바일: WebView로 토스 결제창 열기
+        await _processPaymentMobile(paymentUrl);
+      }
+    } catch (e) {
+      debugPrint('❌ [GuestContractDetail] 결제 오류: $e');
+      _showErrorDialog('결제 중 오류가 발생했습니다.\n${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() => _isPaymentProcessing = false);
+      }
+    }
+  }
+
+  /// 웹에서 결제 처리
+  Future<void> _processPaymentWeb(String paymentUrl) async {
+    try {
+      final uri = Uri.parse(paymentUrl);
+
+      // 새 탭으로 토스 결제 페이지 열기 (웹에서는 canLaunchUrl 체크 불필요)
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+      // 사용자 안내 다이얼로그
+      if (mounted) {
+        final result = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('결제 진행 중'),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('새 탭에서 토스 결제창이 열렸습니다.'),
+                SizedBox(height: 16),
+                Text('결제를 완료하신 후, 이 페이지로 돌아와서 "확인" 버튼을 눌러주세요.'),
+                SizedBox(height: 16),
+                Text(
+                  '⚠️ 결제를 취소하셨다면 "취소" 버튼을 눌러주세요.',
+                  style: TextStyle(color: Colors.orange, fontSize: 12),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(false); // 취소
+                },
+                child: const Text('취소'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(true); // 완료
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary500,
+                ),
+                child: const Text('결제 완료'),
+              ),
+            ],
+          ),
+        );
+
+        // 결제 완료 시 페이지 새로고침
+        if (result == true) {
+          await _loadContractDetail();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('결제 페이지 열기 실패: ${e.toString()}');
+      }
+    }
+  }
+
+  /// 모바일에서 결제 처리
+  Future<void> _processPaymentMobile(String paymentUrl) async {
+    try {
+      // WebView로 토스 결제창 열기
+      final result = await Navigator.of(context).push<Map<String, dynamic>>(
+        MaterialPageRoute(
+          builder: (context) => PaymentWebView(
+            paymentUrl: paymentUrl,
+            contractId: widget.contractId,
+          ),
+          fullscreenDialog: true,
+        ),
+      );
+
+      // 결제 결과 처리
+      if (result != null && result['success'] == true) {
+        // 결제 성공 - 백엔드 승인 API 호출
+        await _confirmPayment(
+          paymentKey: result['paymentKey'] as String,
+          orderId: result['orderId'] as String,
+          amount: result['amount'] as int,
+        );
+      } else {
+        // 결제 실패 또는 취소
+        final errorMessage = result?['errorMessage'] as String? ?? '결제가 취소되었습니다.';
+        _showErrorDialog(errorMessage);
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('결제 처리 실패: ${e.toString()}');
+      }
+    }
+  }
+
+  /// Mock 결제 처리
+  Future<void> _processPaymentWithMock() async {
+    try {
+      final paymentInfo = await _paymentService.getPaymentInfo(widget.contractId);
+
+      // Mock 결제 승인
+      await _paymentService.confirmPaymentMock(
+        contractId: widget.contractId,
+        orderId: paymentInfo['orderId'] as String,
+        amount: paymentInfo['amount'] as int,
+      );
+
+      if (mounted) {
+        _showSuccessDialog('[Mock] 결제가 완료되었습니다!');
+        // 계약 상세 다시 로드
+        await _loadContractDetail();
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('[Mock] 결제 실패: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPaymentProcessing = false);
+      }
+    }
+  }
+
+  /// 토스 결제창 URL 생성
+  String _buildTossPaymentUrl({
+    required String clientKey,
+    required int amount,
+    required String orderId,
+    required String orderName,
+    String? customerEmail,
+    String? customerName,
+    required String successUrl,
+    required String failUrl,
+  }) {
+    final params = {
+      'clientKey': clientKey,
+      'amount': amount.toString(),
+      'orderId': orderId,
+      'orderName': orderName,
+      'successUrl': successUrl,
+      'failUrl': failUrl,
+      if (customerEmail != null) 'customerEmail': customerEmail,
+      if (customerName != null) 'customerName': customerName,
+    };
+
+    final queryString = params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+
+    debugPrint('🔗 [TossPayment] URL 생성: https://pay.toss.im/web/v2?$queryString');
+
+    // 토스 결제창 URL (웹용 결제 위젯 v2)
+    return 'https://pay.toss.im/web/v2?$queryString';
+  }
+
+  /// 결제 승인
+  Future<void> _confirmPayment({
+    required String paymentKey,
+    required String orderId,
+    required int amount,
+  }) async {
+    try {
+      await _paymentService.confirmPayment(
+        contractId: widget.contractId,
+        paymentKey: paymentKey,
+        orderId: orderId,
+        amount: amount,
+      );
+
+      if (mounted) {
+        _showSuccessDialog('결제가 완료되었습니다!');
+        // 계약 상세 다시 로드
+        await _loadContractDetail();
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('결제 승인 실패: ${e.toString()}');
+      }
+    }
+  }
+
+  /// 성공 다이얼로그
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: AppColors.success500, size: 28),
+            const SizedBox(width: 8),
+            const Text('결제 완료'),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary500,
+            ),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 에러 다이얼로그
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.error, color: AppColors.error500, size: 28),
+            const SizedBox(width: 8),
+            const Text('결제 실패'),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
   }
 }

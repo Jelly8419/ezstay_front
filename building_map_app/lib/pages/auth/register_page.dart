@@ -50,11 +50,29 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // 은행 목록
   static const List<String> _banks = [
-    '국민은행', '신한은행', '우리은행', '하나은행', 'KB국민은행',
-    '기업은행', '농협은행', '카카오뱅크', '토스뱅크', '새마을금고',
-    '신협', '우체국예금보험', '경남은행', '광주은행', '대구은행',
-    '부산은행', '수협은행', '전북은행', '제주은행', '산업은행',
-    '수출입은행', 'SC제일은행', '씨티은행'
+    '국민은행',
+    '신한은행',
+    '우리은행',
+    '하나은행',
+    'KB국민은행',
+    '기업은행',
+    '농협은행',
+    '카카오뱅크',
+    '토스뱅크',
+    '새마을금고',
+    '신협',
+    '우체국예금보험',
+    '경남은행',
+    '광주은행',
+    '대구은행',
+    '부산은행',
+    '수협은행',
+    '전북은행',
+    '제주은행',
+    '산업은행',
+    '수출입은행',
+    'SC제일은행',
+    '씨티은행',
   ];
 
   @override
@@ -132,13 +150,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   // 부제목 (선택한 모드 표시)
                   Text(
-                    widget.mode == UserMode.guest
-                        ? '게스트로 가입하기'
-                        : '호스트로 가입하기',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: textGray,
-                    ),
+                    widget.mode == UserMode.guest ? '게스트로 가입하기' : '호스트로 가입하기',
+                    style: const TextStyle(fontSize: 16, color: textGray),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
@@ -196,266 +209,269 @@ class _RegisterPageState extends State<RegisterPage> {
                     // 이메일 라벨
                     const Text(
                       '이메일 주소',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: textGray,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // 이메일 입력
-                  SizedBox(
-                    height: 52,
-                    child: TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        color: primaryBlack,
+                        color: textGray,
                       ),
-                      decoration: InputDecoration(
-                        hintText: 'email@example.com',
-                        hintStyle: const TextStyle(
+                    ),
+                    const SizedBox(height: 8),
+
+                    // 이메일 입력
+                    SizedBox(
+                      height: 52,
+                      child: TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
-                          color: hintGray,
+                          color: primaryBlack,
                         ),
-                        filled: true,
-                        fillColor: backgroundWhite,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: borderGray,
-                            width: 1,
+                        decoration: InputDecoration(
+                          hintText: 'email@example.com',
+                          hintStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: hintGray,
+                          ),
+                          filled: true,
+                          fillColor: backgroundWhite,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: AppColors.primary600,
+                              width: 1.5,
+                            ),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: AppColors.error500,
+                              width: 1,
+                            ),
                           ),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: borderGray,
-                            width: 1,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: AppColors.primary600,
-                            width: 1.5,
-                          ),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: AppColors.error500,
-                            width: 1,
-                          ),
-                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '이메일을 입력해주세요';
+                          }
+                          if (!RegExp(
+                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                          ).hasMatch(value)) {
+                            return '올바른 이메일 형식이 아닙니다';
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return '이메일을 입력해주세요';
-                        }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(value)) {
-                          return '올바른 이메일 형식이 아닙니다';
-                        }
-                        return null;
-                      },
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // 비밀번호 라벨
-                  const Text(
-                    '비밀번호',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: textGray,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // 비밀번호 입력
-                  SizedBox(
-                    height: 52,
-                    child: TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      style: const TextStyle(
-                        fontSize: 16,
+                    // 비밀번호 라벨
+                    const Text(
+                      '비밀번호',
+                      style: TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        color: primaryBlack,
+                        color: textGray,
                       ),
-                      decoration: InputDecoration(
-                        hintText: '8자 이상, 영문과 숫자 포함',
-                        hintStyle: const TextStyle(
+                    ),
+                    const SizedBox(height: 8),
+
+                    // 비밀번호 입력
+                    SizedBox(
+                      height: 52,
+                      child: TextFormField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
-                          color: hintGray,
+                          color: primaryBlack,
                         ),
-                        filled: true,
-                        fillColor: backgroundWhite,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: borderGray,
-                            width: 1,
+                        decoration: InputDecoration(
+                          hintText: '8자 이상, 영문과 숫자 포함',
+                          hintStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: hintGray,
+                          ),
+                          filled: true,
+                          fillColor: backgroundWhite,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: AppColors.primary600,
+                              width: 1.5,
+                            ),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: AppColors.error500,
+                              width: 1,
+                            ),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: secondaryGray,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: borderGray,
-                            width: 1,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: AppColors.primary600,
-                            width: 1.5,
-                          ),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: AppColors.error500,
-                            width: 1,
-                          ),
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: secondaryGray,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '비밀번호를 입력해주세요';
+                          }
+                          if (value.length < 8) {
+                            return '비밀번호는 8자 이상이어야 합니다';
+                          }
+                          if (!RegExp(
+                            r'^(?=.*[a-zA-Z])(?=.*\d).+$',
+                          ).hasMatch(value)) {
+                            return '영문과 숫자를 포함해야 합니다';
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return '비밀번호를 입력해주세요';
-                        }
-                        if (value.length < 8) {
-                          return '비밀번호는 8자 이상이어야 합니다';
-                        }
-                        if (!RegExp(r'^(?=.*[a-zA-Z])(?=.*\d).+$')
-                            .hasMatch(value)) {
-                          return '영문과 숫자를 포함해야 합니다';
-                        }
-                        return null;
-                      },
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // 비밀번호 확인 라벨
-                  const Text(
-                    '비밀번호 확인',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: textGray,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // 비밀번호 확인 입력
-                  SizedBox(
-                    height: 52,
-                    child: TextFormField(
-                      controller: _confirmPasswordController,
-                      obscureText: _obscureConfirmPassword,
-                      style: const TextStyle(
-                        fontSize: 16,
+                    // 비밀번호 확인 라벨
+                    const Text(
+                      '비밀번호 확인',
+                      style: TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        color: primaryBlack,
+                        color: textGray,
                       ),
-                      decoration: InputDecoration(
-                        hintText: '비밀번호를 다시 입력해 주세요.',
-                        hintStyle: const TextStyle(
+                    ),
+                    const SizedBox(height: 8),
+
+                    // 비밀번호 확인 입력
+                    SizedBox(
+                      height: 52,
+                      child: TextFormField(
+                        controller: _confirmPasswordController,
+                        obscureText: _obscureConfirmPassword,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
-                          color: hintGray,
+                          color: primaryBlack,
                         ),
-                        filled: true,
-                        fillColor: backgroundWhite,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: borderGray,
-                            width: 1,
+                        decoration: InputDecoration(
+                          hintText: '비밀번호를 다시 입력해 주세요.',
+                          hintStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: hintGray,
+                          ),
+                          filled: true,
+                          fillColor: backgroundWhite,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: AppColors.primary600,
+                              width: 1.5,
+                            ),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: AppColors.error500,
+                              width: 1,
+                            ),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: secondaryGray,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword =
+                                    !_obscureConfirmPassword;
+                              });
+                            },
                           ),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: borderGray,
-                            width: 1,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: AppColors.primary600,
-                            width: 1.5,
-                          ),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: AppColors.error500,
-                            width: 1,
-                          ),
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmPassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: secondaryGray,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
-                            });
-                          },
-                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '비밀번호 확인을 입력해주세요';
+                          }
+                          if (value != _passwordController.text) {
+                            return '비밀번호가 일치하지 않습니다';
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return '비밀번호 확인을 입력해주세요';
-                        }
-                        if (value != _passwordController.text) {
-                          return '비밀번호가 일치하지 않습니다';
-                        }
-                        return null;
-                      },
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
                   ],
 
                   // 이름 라벨 (소셜 로그인 시 읽기 전용)
@@ -489,7 +505,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                         filled: true,
                         fillColor: widget.isSocialLogin
-                            ? Color(0xFFF5F5F5)  // 소셜 로그인 시 회색 배경
+                            ? Color(0xFFF5F5F5) // 소셜 로그인 시 회색 배경
                             : backgroundWhite,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -613,8 +629,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           return '전화번호를 입력해주세요';
                         }
                         // 010-0000-0000 또는 01000000000 형식
-                        if (!RegExp(r'^01[016789][-]?\d{3,4}[-]?\d{4}$')
-                            .hasMatch(value)) {
+                        if (!RegExp(
+                          r'^01[016789][-]?\d{3,4}[-]?\d{4}$',
+                        ).hasMatch(value)) {
                           return '올바른 전화번호 형식이 아닙니다';
                         }
                         return null;
@@ -637,10 +654,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 8),
                     Text(
                       '수익 정산을 위한 계좌 정보를 입력해주세요',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: textGray,
-                      ),
+                      style: TextStyle(fontSize: 14, color: textGray),
                     ),
                     const SizedBox(height: 20),
 
@@ -783,7 +797,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                   : AppColors.primary600,
                               foregroundColor: backgroundWhite,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -977,7 +993,8 @@ class _RegisterPageState extends State<RegisterPage> {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.5,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                    backgroundWhite),
+                                  backgroundWhite,
+                                ),
                               ),
                             )
                           : const Text(
@@ -998,10 +1015,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     Row(
                       children: [
                         const Expanded(
-                          child: Divider(
-                            color: borderGray,
-                            thickness: 1,
-                          ),
+                          child: Divider(color: borderGray, thickness: 1),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1015,10 +1029,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                         const Expanded(
-                          child: Divider(
-                            color: borderGray,
-                            thickness: 1,
-                          ),
+                          child: Divider(color: borderGray, thickness: 1),
                         ),
                       ],
                     ),
@@ -1040,10 +1051,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.chat_bubble,
-                              size: 20,
-                            ),
+                            Icon(Icons.chat_bubble, size: 20),
                             const SizedBox(width: 8),
                             const Text(
                               '카카오로 간편가입',
@@ -1076,7 +1084,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
     // 호스트 모드일 때 계좌 인증 확인
     if (widget.mode == UserMode.host) {
-      if (_selectedBank == null || _accountController.text.isEmpty || _accountHolderController.text.isEmpty) {
+      if (_selectedBank == null ||
+          _accountController.text.isEmpty ||
+          _accountHolderController.text.isEmpty) {
         _showErrorDialog('정산 정보를 모두 입력해주세요.');
         return;
       }
@@ -1143,7 +1153,7 @@ class _RegisterPageState extends State<RegisterPage> {
       _showInfoDialog(
         '카카오 간편가입',
         '로그인 페이지에서 "카카오로 계속하기" 버튼을 눌러주세요.\n'
-        '카카오 로그인 후 자동으로 회원가입 페이지로 이동됩니다.',
+            '카카오 로그인 후 자동으로 회원가입 페이지로 이동됩니다.',
         onConfirm: () {
           context.go('/login');
         },
@@ -1182,7 +1192,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
   /// 계좌 인증
   Future<void> _verifyAccount() async {
-    if (_accountController.text.isEmpty || _selectedBank == null || _accountHolderController.text.isEmpty) {
+    if (_accountController.text.isEmpty ||
+        _selectedBank == null ||
+        _accountHolderController.text.isEmpty) {
       _showErrorDialog('모든 정보를 입력해주세요.');
       return;
     }
@@ -1291,9 +1303,7 @@ class _RegisterPageState extends State<RegisterPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: backgroundWhite,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text(
           '회원가입 실패',
           style: TextStyle(
@@ -1327,14 +1337,16 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  void _showInfoDialog(String title, String message, {VoidCallback? onConfirm}) {
+  void _showInfoDialog(
+    String title,
+    String message, {
+    VoidCallback? onConfirm,
+  }) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: backgroundWhite,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           title,
           style: const TextStyle(
