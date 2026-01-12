@@ -77,11 +77,14 @@ jobs:
         env:
           ENVIRONMENT: ${{ github.event.inputs.environment || 'test' }}
           API_URL: ${{ github.event.inputs.environment == 'production' && 'https://api.ezstay.com' || 'https://ezstay-api.duckdns.org' }}
+          # 환경별 카카오 키 설정
+          KAKAO_REST_KEY: ${{ github.event.inputs.environment == 'production' && '88df9fa560e1447eb0930e5bae9ff017' || '32ea67da1f7c3d55fd573c285a5fc0f2' }}
+          KAKAO_JS_KEY: ${{ github.event.inputs.environment == 'production' && '7b8e75100e5af72db70a46c3fef81128' || '8fa88a5c7a3edac4ee6d8dd52af14f60' }}
         run: |
           cat > .env << EOF
-          # Kakao API Keys (Public - 안전함)
-          KAKAO_REST_API_KEY=88df9fa560e1447eb0930e5bae9ff017
-          KAKAO_JAVASCRIPT_KEY=7b8e75100e5af72db70a46c3fef81128
+          # Kakao API Keys (환경별 분리)
+          KAKAO_REST_API_KEY=$KAKAO_REST_KEY
+          KAKAO_JAVASCRIPT_KEY=$KAKAO_JS_KEY
 
           # Backend API URLs
           API_BASE_URL=$API_URL
@@ -94,6 +97,8 @@ jobs:
 
           echo "✅ .env file created for $ENVIRONMENT environment"
           echo "🌐 API URL: $API_URL"
+          echo "🔑 Kakao REST Key: ${KAKAO_REST_KEY:0:10}..."
+          echo "🔑 Kakao JS Key: ${KAKAO_JS_KEY:0:10}..."
 
       - name: 📦 Install dependencies
         working-directory: ./building_map_app
