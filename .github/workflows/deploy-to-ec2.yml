@@ -125,6 +125,18 @@ jobs:
             --dart-define=ENVIRONMENT=$ENVIRONMENT \
             --dart-define=API_BASE_URL=$API_URL
 
+      - name: 🔑 Inject Kakao Key into index.html
+        working-directory: ./building_map_app/build/web
+        env:
+          KAKAO_JS_KEY: ${{ github.event.inputs.environment == 'production' && '7b8e75100e5af72db70a46c3fef81128' || '8fa88a5c7a3edac4ee6d8dd52af14f60' }}
+        run: |
+          echo "🔑 Injecting Kakao JS Key: ${KAKAO_JS_KEY:0:10}..."
+
+          # index.html에서 주석 처리된 kakao 스크립트 태그를 찾아서 환경별 키로 교체
+          sed -i "s|<!-- <script type=\"text/javascript\" src=\"//dapi.kakao.com/v2/maps/sdk.js?appkey=KAKAO_KEY\"></script> -->|<script type=\"text/javascript\" src=\"//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}\"></script>|g" index.html
+
+          echo "✅ Kakao key injection completed"
+
       # ==========================================
       # 3. SSH 설정
       # ==========================================
