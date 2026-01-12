@@ -22,6 +22,9 @@ class AuthService extends ChangeNotifier {
   bool get isLoggedIn => _currentUser != null;
   bool get isInitialized => _isInitialized; // 초기화 완료 여부 getter
 
+  /// 본인인증이 필요한 상태인지 확인
+  bool get needsPhoneVerification => _currentUser != null && !(_currentUser!.phoneVerified);
+
   /// 로그인 상태 변경
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -422,22 +425,27 @@ class AuthService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint('백엔드 인증 성공: $data');
+        debugPrint('✅ [KAKAO_AUTH] 백엔드 인증 응답: $data');
 
-        // JWT 토큰 저장 등 추가 처리
-        if (data['accessToken'] != null && data['refreshToken'] != null) {
-          await _saveTokens(data['accessToken'], data['refreshToken']);
+        // JWT 토큰 저장
+        final accessToken = data['accessToken'];
+        final refreshToken = data['refreshToken'];
+
+        if (accessToken != null && refreshToken != null) {
+          debugPrint('🔐 [KAKAO_AUTH] JWT 토큰 저장');
+          await _saveTokens(accessToken, refreshToken);
+          return true;
         }
 
-        return true;
+        debugPrint('⚠️ [KAKAO_AUTH] 응답에 토큰 정보가 없습니다');
+        return false;
       } else {
-        debugPrint('백엔드 인증 실패: ${response.statusCode} - ${response.body}');
+        debugPrint('❌ [KAKAO_AUTH] 백엔드 인증 실패: ${response.statusCode} - ${response.body}');
         return false;
       }
     } catch (e) {
-      debugPrint('백엔드 인증 에러: $e');
-      // 백엔드 연결 실패해도 로그인은 성공으로 처리 (개발 환경)
-      return true;
+      debugPrint('❌ [KAKAO_AUTH] 백엔드 인증 에러: $e');
+      return false;
     }
   }
 
@@ -559,13 +567,36 @@ class AuthService extends ChangeNotifier {
           }
 
           // 서버에서 검증된 사용자 정보로 설정
+          String userMode;
+          if (user['mode'] != null) {
+            userMode = user['mode'];
+            debugPrint('🔍 [USER_MODE] user[mode]에서 가져옴: $userMode');
+          } else if (user['userMode'] != null) {
+            userMode = user['userMode'];
+            debugPrint('🔍 [USER_MODE] user[userMode]에서 가져옴: $userMode');
+          } else {
+            // 백엔드가 userMode를 보내주지 않는 경우: 기본값 guest
+            // (hasBank로 추론하면 계좌 등록한 게스트가 호스트로 잘못 인식됨)
+            userMode = 'guest';
+            debugPrint('⚠️ [USER_MODE] 서버 응답에 userMode 없음 - 기본값 guest로 설정');
+            debugPrint('⚠️ [USER_MODE] 백엔드에 userMode 필드 추가 필요! (hasBank=${user['hasBank']})');
+          }
+
+          debugPrint('🎯 [USER_MODE] 최종 결정된 userMode: $userMode');
+          debugPrint('📊 [USER_MODE] 사용자 정보: phoneVerified=${user['phoneVerified']}, hasBank=${user['hasBank']}');
+
           _currentUser = User(
             id: user['id'].toString(),
             email: user['email'] ?? 'user@kakao.com',
             name: user['name'] ?? '카카오 사용자',
             profileImageUrl: user['profileImageUrl'],
-            mode: UserMode.guest, // 기본값, 나중에 사용자가 선택
+            mode: UserMode.values.firstWhere(
+              (m) => m.name == userMode,
+              orElse: () => UserMode.guest,
+            ),
             provider: AuthProvider.kakao,
+            phoneVerified: user['phoneVerified'] ?? false,
+            hasBank: user['hasBank'] ?? false,
           );
 
           // 검증된 토큰 저장
@@ -896,9 +927,12 @@ class AuthService extends ChangeNotifier {
         profileImageUrl: _currentUser!.profileImageUrl,
         mode: newMode,
         provider: _currentUser!.provider,
+        phoneVerified: _currentUser!.phoneVerified, // 유지
+        hasBank: _currentUser!.hasBank, // 유지
       );
       await UserRepository.updateUserMode(newMode);
       notifyListeners();
+      debugPrint('✅ [AUTH] 사용자 모드 변경: ${newMode.name}');
     }
   }
 }

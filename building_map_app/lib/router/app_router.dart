@@ -11,9 +11,12 @@ import '../pages/guest/map_screen.dart';
 
 // 지연 로딩 (필요할 때만 로드) - 웹 번들 크기 최적화
 import '../pages/auth/mode_selection_page.dart' deferred as mode_selection;
-import '../pages/auth/register_page.dart' deferred as register;
+import '../pages/auth/register_flow_page.dart' deferred as register_flow;
 import '../pages/guest/room_detail_page.dart' deferred as room_detail;
+import '../pages/guest/guest_my_page.dart' deferred as guest_my_page;
 import '../pages/host/host_home_page.dart' deferred as host_home;
+import '../pages/host/host_account_setup_standalone_page.dart'
+    deferred as host_account_setup_standalone;
 import '../pages/host/room_registration/room_registration_flow_page.dart'
     deferred as room_registration;
 import '../pages/contract/guest_contracts_page.dart'
@@ -93,11 +96,13 @@ class AppRouter {
       redirect: (BuildContext context, GoRouterState state) {
         final isInitialized = authService.isInitialized;
         final isLoggedIn = authService.isLoggedIn;
+        final needsPhoneVerification = authService.needsPhoneVerification;
         final isGoingToRoot = state.matchedLocation == '/';
         final isGoingToLogin = state.matchedLocation == '/login';
         final isGoingToBypass = state.matchedLocation.startsWith('/bypass');
         final isGoingToMap = state.matchedLocation == '/map';
         final isGoingToGuest = state.matchedLocation == '/guest';
+        final isGoingToRegister = state.matchedLocation.startsWith('/register');
 
         // 초기화가 완료되지 않았으면 리다이렉트하지 않음 (로딩 중)
         if (!isInitialized) {
@@ -109,29 +114,21 @@ class AppRouter {
           return null;
         }
 
-        // 루트 경로(/) 접근 시 사용자 모드에 따라 리다이렉트
-        if (isGoingToRoot) {
-          if (isLoggedIn) {
-            final userMode = authService.currentUser?.mode;
-            if (userMode == UserMode.host) {
-              return '/host';
-            } else {
-              return '/guest';
-            }
-          } else {
-            // 로그인 안 된 경우 게스트 홈으로
-            return '/guest';
-          }
+        // 로그인은 되어 있지만 본인인증이 안 된 경우 회원가입 Step 2로 리다이렉트
+        if (isLoggedIn && needsPhoneVerification && !isGoingToRegister) {
+          return '/register?verify=true';
         }
 
-        // 로그인된 상태에서 로그인 페이지 접근 시 홈으로 리다이렉트
+        // 루트 경로(/) 접근 시 무조건 게스트 홈으로 리다이렉트
+        // (호스트 모드는 GNB에서 명시적으로 전환할 때만 /host로 이동)
+        if (isGoingToRoot) {
+          return '/guest';
+        }
+
+        // 로그인된 상태에서 로그인 페이지 접근 시 게스트 홈으로 리다이렉트
+        // (호스트 모드는 GNB에서 명시적으로 전환할 때만 /host로 이동)
         if (isLoggedIn && isGoingToLogin) {
-          final userMode = authService.currentUser?.mode;
-          if (userMode == UserMode.host) {
-            return '/host';
-          } else {
-            return '/guest';
-          }
+          return '/guest';
         }
 
         // 로그인 안 된 상태에서 호스트 전용 페이지 접근 시 게스트 홈으로 리다이렉트
@@ -178,7 +175,7 @@ class AppRouter {
 
                 if (loginType == 'email') {
                   // 이메일 회원가입 플로우 - 회원가입 페이지로 이동
-                  await register.loadLibrary();
+                  await register_flow.loadLibrary();
                   if (context.mounted) {
                     context.push('/register', extra: mode);
                   }
@@ -194,9 +191,9 @@ class AppRouter {
                 }
 
                 if (success && context.mounted) {
-                  // 소셜 로그인 성공 → RegisterPage로 이동 (추가 정보 입력)
+                  // 소셜 로그인 성공 → RegisterFlowPage로 이동 (추가 정보 입력)
                   final currentUser = authService.currentUser;
-                  await register.loadLibrary();
+                  await register_flow.loadLibrary();
 
                   if (context.mounted) {
                     context.push(
@@ -220,24 +217,50 @@ class AppRouter {
           path: '/register',
           name: 'register',
           builder: (context, state) {
+            // 쿼리 파라미터로 본인인증 플래그 확인
+            final isVerifyMode = state.uri.queryParameters['verify'] == 'true';
+
+            // 본인인증 모드인 경우 현재 로그인된 사용자 정보 사용
+            if (isVerifyMode) {
+              final authService = Provider.of<AuthService>(context, listen: false);
+              final currentUser = authService.currentUser;
+
+              if (currentUser != null) {
+                return _deferredWidget(
+                  register_flow.loadLibrary,
+                  () => register_flow.RegisterFlowPage(
+                    mode: currentUser.mode,
+                    isSocialLogin: true,
+                    initialEmail: currentUser.email,
+                    initialName: currentUser.name,
+                    profileImageUrl: currentUser.profileImageUrl,
+                  ),
+                );
+              }
+            }
+
             // extra가 Map이면 소셜 로그인, UserMode면 일반 회원가입
             if (state.extra is Map<String, dynamic>) {
               final params = state.extra as Map<String, dynamic>;
               return _deferredWidget(
-                register.loadLibrary,
-                () => register.RegisterPage(
+                register_flow.loadLibrary,
+                () => register_flow.RegisterFlowPage(
                   mode: params['mode'] as UserMode? ?? UserMode.guest,
+                  isSocialLogin: params['isSocialLogin'] as bool? ?? false,
                   initialEmail: params['email'] as String?,
                   initialName: params['name'] as String?,
-                  isSocialLogin: params['isSocialLogin'] as bool? ?? false,
+                  profileImageUrl: null, // Kakao profile image if available
                 ),
               );
             } else {
               // 일반 회원가입 (이메일)
               final mode = state.extra as UserMode? ?? UserMode.guest;
               return _deferredWidget(
-                register.loadLibrary,
-                () => register.RegisterPage(mode: mode),
+                register_flow.loadLibrary,
+                () => register_flow.RegisterFlowPage(
+                  mode: mode,
+                  isSocialLogin: false,
+                ),
               );
             }
           },
@@ -246,6 +269,14 @@ class AppRouter {
           path: '/guest',
           name: 'guest',
           builder: (context, state) => const GuestHomePage(),
+        ),
+        GoRoute(
+          path: '/guest/my-page',
+          name: 'guest-my-page',
+          builder: (context, state) => _deferredWidget(
+            guest_my_page.loadLibrary,
+            () => guest_my_page.GuestMyPage(),
+          ),
         ),
         GoRoute(
           path: '/guest/room/detail/:roomId',
@@ -274,6 +305,15 @@ class AppRouter {
           builder: (context, state) => _deferredWidget(
             host_home.loadLibrary,
             () => host_home.HostHomePage(),
+          ),
+        ),
+        // 게스트→호스트 전환 - 계좌 설정 페이지 (Standalone)
+        GoRoute(
+          path: '/host/account-setup-standalone',
+          name: 'host-account-setup-standalone',
+          builder: (context, state) => _deferredWidget(
+            host_account_setup_standalone.loadLibrary,
+            () => host_account_setup_standalone.HostAccountSetupStandalonePage(),
           ),
         ),
         // 신규 방 등록 (roomId 없음)
