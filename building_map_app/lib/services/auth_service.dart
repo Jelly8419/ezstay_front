@@ -302,11 +302,7 @@ class AuthService extends ChangeNotifier {
   /// 카카오 로그인
   Future<bool> loginWithKakao(UserMode? mode) async {
     debugPrint('🚀 [KAKAO] 로그인 시작');
-    debugPrint('🔧 [KAKAO] API 키: ${KakaoConfig.restApiKey}');
-    debugPrint('🔧 [KAKAO] ApiConfig.baseUrl: ${ApiConfig.baseUrl}');
     debugPrint('🔧 [KAKAO] Redirect URL: ${KakaoConfig.redirectUrl}');
-    debugPrint('🔧 [KAKAO] Auth URL: ${KakaoConfig.authUrl}');
-    debugPrint('🔧 [DEBUG] dart-define API_BASE_URL: ${const String.fromEnvironment('API_BASE_URL')}');
     _setLoading(true);
 
     try {
@@ -532,6 +528,34 @@ class AuthService extends ChangeNotifier {
     } catch (error) {
       debugPrint('❌ 웹 카카오 콜백 처리 에러: $error');
       html.window.history.replaceState({}, '', '/');
+      return false;
+    }
+  }
+
+  /// OAuth 콜백에서 전달받은 토큰으로 인증 (라우터에서 호출)
+  Future<bool> handleOAuthCallback(String accessToken, String refreshToken) async {
+    try {
+      debugPrint('✅ [AUTH_CALLBACK] OAuth 콜백 처리 시작');
+      debugPrint('🔐 Access Token: ${accessToken.substring(0, 20)}...');
+      debugPrint('🔄 Refresh Token: ${refreshToken.substring(0, 20)}...');
+
+      // 토큰들 저장
+      await _saveTokens(accessToken, refreshToken);
+
+      // 토큰으로 사용자 정보 요청
+      final success = await _authenticateWithToken(accessToken);
+
+      if (success) {
+        debugPrint('✅ [AUTH_CALLBACK] 인증 성공');
+        return true;
+      } else {
+        debugPrint('❌ [AUTH_CALLBACK] 사용자 정보 가져오기 실패');
+        await _clearTokens();
+        return false;
+      }
+    } catch (error) {
+      debugPrint('❌ [AUTH_CALLBACK] 에러: $error');
+      await _clearTokens();
       return false;
     }
   }

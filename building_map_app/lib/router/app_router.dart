@@ -100,12 +100,18 @@ class AppRouter {
         final isGoingToRoot = state.matchedLocation == '/';
         final isGoingToLogin = state.matchedLocation == '/login';
         final isGoingToBypass = state.matchedLocation.startsWith('/bypass');
+        final isGoingToAuthCallback = state.matchedLocation == '/auth/callback';
         final isGoingToMap = state.matchedLocation == '/map';
         final isGoingToGuest = state.matchedLocation == '/guest';
         final isGoingToRegister = state.matchedLocation.startsWith('/register');
 
         // 초기화가 완료되지 않았으면 리다이렉트하지 않음 (로딩 중)
         if (!isInitialized) {
+          return null;
+        }
+
+        // OAuth 콜백 경로는 리다이렉트 안 함 (백엔드에서 토큰 전달)
+        if (isGoingToAuthCallback) {
           return null;
         }
 
@@ -157,6 +163,75 @@ class AppRouter {
           path: '/login',
           name: 'login',
           builder: (context, state) => const LoginPage(),
+        ),
+        GoRoute(
+          path: '/auth/callback',
+          name: 'auth-callback',
+          builder: (context, state) {
+            // 백엔드에서 전달한 JWT 토큰 추출
+            final token = state.uri.queryParameters['token'];
+            final refreshToken = state.uri.queryParameters['refresh'];
+
+            // 토큰이 없으면 로그인 페이지로 리다이렉트
+            if (token == null || refreshToken == null) {
+              debugPrint('❌ [AUTH_CALLBACK] 토큰이 없습니다.');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  context.go('/login');
+                }
+              });
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            // AuthService에 토큰 저장 및 사용자 정보 로드
+            final authService = Provider.of<AuthService>(context, listen: false);
+
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              try {
+                // OAuth 콜백 처리
+                final success = await authService.handleOAuthCallback(token, refreshToken);
+
+                if (success && context.mounted) {
+                  final user = authService.currentUser;
+                  if (user != null) {
+                    debugPrint('✅ [AUTH_CALLBACK] 로그인 완료: ${user.email}');
+
+                    // 사용자 모드에 따라 적절한 페이지로 리다이렉트
+                    if (user.mode == UserMode.host) {
+                      context.go('/host');
+                    } else {
+                      context.go('/guest');
+                    }
+                  } else if (context.mounted) {
+                    context.go('/login');
+                  }
+                } else if (context.mounted) {
+                  debugPrint('❌ [AUTH_CALLBACK] 인증 실패');
+                  context.go('/login');
+                }
+              } catch (e) {
+                debugPrint('❌ [AUTH_CALLBACK] 에러: $e');
+                if (context.mounted) {
+                  context.go('/login');
+                }
+              }
+            });
+
+            return const Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('로그인 처리 중...'),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
         GoRoute(
           path: '/mode-selection',
