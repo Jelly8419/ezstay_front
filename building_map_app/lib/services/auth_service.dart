@@ -303,8 +303,10 @@ class AuthService extends ChangeNotifier {
   Future<bool> loginWithKakao(UserMode? mode) async {
     debugPrint('🚀 [KAKAO] 로그인 시작');
     debugPrint('🔧 [KAKAO] API 키: ${KakaoConfig.restApiKey}');
+    debugPrint('🔧 [KAKAO] ApiConfig.baseUrl: ${ApiConfig.baseUrl}');
     debugPrint('🔧 [KAKAO] Redirect URL: ${KakaoConfig.redirectUrl}');
     debugPrint('🔧 [KAKAO] Auth URL: ${KakaoConfig.authUrl}');
+    debugPrint('🔧 [DEBUG] dart-define API_BASE_URL: ${const String.fromEnvironment('API_BASE_URL')}');
     _setLoading(true);
 
     try {
