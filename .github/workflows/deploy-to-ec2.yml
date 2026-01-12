@@ -138,8 +138,8 @@ jobs:
         run: |
           echo "🔑 Injecting Kakao JS Key: ${KAKAO_JS_KEY:0:10}..."
 
-          # index.html에서 주석 처리된 kakao 스크립트 태그를 찾아서 환경별 키로 교체
-          sed -i "s|<!-- <script type=\"text/javascript\" src=\"//dapi.kakao.com/v2/maps/sdk.js?appkey=KAKAO_KEY\"></script> -->|<script type=\"text/javascript\" src=\"//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}\"></script>|g" index.html
+          # index.html에서 로컬 개발용 스크립트를 환경별 키로 교체
+          sed -i "s|<script type=\"text/javascript\" src=\"//dapi.kakao.com/v2/maps/sdk.js?appkey=8fa88a5c7a3edac4ee6d8dd52af14f60\"></script>|<script type=\"text/javascript\" src=\"//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}\"></script>|g" index.html
 
           echo "✅ Kakao key injection completed"
 
