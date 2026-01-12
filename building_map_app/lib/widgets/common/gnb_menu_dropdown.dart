@@ -107,13 +107,9 @@ class GNBMenuDropdown extends StatelessWidget {
 
       case 'profile':
         // 내 정보 관리 페이지로 이동
-        // TODO: 프로필 페이지 라우트 추가 필요
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('내 정보 관리 페이지 준비 중입니다.'),
-            backgroundColor: AppColors.primary500,
-          ),
-        );
+        // 게스트: /guest/my-page, 호스트: 추후 구현
+        final route = isHostMode ? '/guest/my-page' : '/guest/my-page';
+        context.go(route);
         break;
 
       case 'support':

@@ -43,6 +43,9 @@ dependencies:
   webview_flutter_android: ^3.16.7
   webview_flutter_wkwebview: ^3.15.0
 
+  # URL Launcher (웹에서 결제 페이지 열기)
+  url_launcher: ^6.3.0
+
   # Web-specific dependencies
   js: ^0.6.7
 
