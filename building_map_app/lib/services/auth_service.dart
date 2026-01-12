@@ -532,6 +532,34 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// OAuth 콜백에서 전달받은 토큰으로 인증 (라우터에서 호출)
+  Future<bool> handleOAuthCallback(String accessToken, String refreshToken) async {
+    try {
+      debugPrint('✅ [AUTH_CALLBACK] OAuth 콜백 처리 시작');
+      debugPrint('🔐 Access Token: ${accessToken.substring(0, 20)}...');
+      debugPrint('🔄 Refresh Token: ${refreshToken.substring(0, 20)}...');
+
+      // 토큰들 저장
+      await _saveTokens(accessToken, refreshToken);
+
+      // 토큰으로 사용자 정보 요청
+      final success = await _authenticateWithToken(accessToken);
+
+      if (success) {
+        debugPrint('✅ [AUTH_CALLBACK] 인증 성공');
+        return true;
+      } else {
+        debugPrint('❌ [AUTH_CALLBACK] 사용자 정보 가져오기 실패');
+        await _clearTokens();
+        return false;
+      }
+    } catch (error) {
+      debugPrint('❌ [AUTH_CALLBACK] 에러: $error');
+      await _clearTokens();
+      return false;
+    }
+  }
+
   /// JWT 토큰으로 사용자 정보 인증
   Future<bool> _authenticateWithToken(String token) async {
     try {
