@@ -42,7 +42,10 @@ class PaymentServiceUnified {
     required Map<String, dynamic> paymentInfo,
   }) async {
     if (kIsWeb) {
-      return await _requestPaymentWeb(paymentInfo: paymentInfo);
+      return await _requestPaymentWeb(
+        contractId: contractId,
+        paymentInfo: paymentInfo,
+      );
     } else {
       return await _requestPaymentMobile(
         contractId: contractId,
@@ -56,6 +59,7 @@ class PaymentServiceUnified {
   /// 토스페이먼츠 SDK가 자체적으로 결제수단 선택 UI를 제공하므로
   /// 별도의 결제수단 선택 모달이 필요 없습니다.
   Future<Map<String, dynamic>?> _requestPaymentWeb({
+    required int contractId,
     required Map<String, dynamic> paymentInfo,
   }) async {
     if (_webService == null) {
@@ -69,12 +73,15 @@ class PaymentServiceUnified {
     final customerEmail = paymentInfo['customerEmail'] as String?;
 
     debugPrint('🌐 [PaymentServiceUnified] 웹 결제 요청');
+    debugPrint('  - contractId: $contractId');
     debugPrint('  - orderId: $orderId');
     debugPrint('  - amount: $amount');
 
     try {
       // 토스 SDK가 모든 결제수단을 표시하므로 통합 메서드 호출
-      await _webService!.requestPayment(
+      // contractId를 successUrl/failUrl에 포함시켜 callback에서 사용
+      await _webService!.requestPaymentWithContractId(
+        contractId: contractId,
         orderId: orderId,
         amount: amount,
         orderName: orderName,

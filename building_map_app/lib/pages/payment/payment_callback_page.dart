@@ -7,10 +7,11 @@ import '../../core/theme/app_text_styles.dart';
 /// 결제 성공/실패 콜백 페이지
 ///
 /// 토스페이먼츠 결제 후 리다이렉트되는 페이지입니다.
-/// - 성공: /payment/success?paymentKey=xxx&orderId=xxx&amount=xxx
-/// - 실패: /payment/fail?code=xxx&message=xxx
+/// - 성공: /payment/success?contractId=xxx&paymentKey=xxx&orderId=xxx&amount=xxx
+/// - 실패: /payment/fail?contractId=xxx&code=xxx&message=xxx
 class PaymentCallbackPage extends StatefulWidget {
   final bool isSuccess;
+  final int? contractId;
   final String? paymentKey;
   final String? orderId;
   final String? amount;
@@ -20,6 +21,7 @@ class PaymentCallbackPage extends StatefulWidget {
   const PaymentCallbackPage({
     super.key,
     required this.isSuccess,
+    this.contractId,
     this.paymentKey,
     this.orderId,
     this.amount,
@@ -54,16 +56,14 @@ class _PaymentCallbackPageState extends State<PaymentCallbackPage> {
 
     // 결제 성공 - 백엔드 승인 처리
     try {
+      final contractId = widget.contractId;
       final paymentKey = widget.paymentKey;
       final orderId = widget.orderId;
       final amount = widget.amount;
 
-      if (paymentKey == null || orderId == null || amount == null) {
+      if (contractId == null || paymentKey == null || orderId == null || amount == null) {
         throw Exception('결제 정보가 올바르지 않습니다.');
       }
-
-      // orderId에서 contractId 추출 (예: "contract_123" -> 123)
-      final contractId = _extractContractId(orderId);
 
       debugPrint('✅ [PaymentCallback] 결제 승인 요청');
       debugPrint('  - contractId: $contractId');
@@ -90,16 +90,6 @@ class _PaymentCallbackPageState extends State<PaymentCallbackPage> {
         _errorMessage = e.toString();
       });
     }
-  }
-
-  /// orderId에서 contractId 추출
-  int _extractContractId(String orderId) {
-    // 예: "contract_123_20240113" -> 123
-    final parts = orderId.split('_');
-    if (parts.length >= 2) {
-      return int.parse(parts[1]);
-    }
-    throw Exception('잘못된 주문 ID 형식: $orderId');
   }
 
   @override

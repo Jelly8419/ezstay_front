@@ -350,6 +350,70 @@ class PaymentServiceWeb {
     );
   }
 
+  /// 통합 결제 요청 (contractId 포함)
+  ///
+  /// successUrl/failUrl에 contractId를 쿼리 파라미터로 추가하여
+  /// callback 페이지에서 contractId를 직접 사용할 수 있도록 합니다.
+  ///
+  /// [contractId]: 계약 ID
+  /// [orderId]: 주문 ID (백엔드에서 생성)
+  /// [amount]: 결제 금액
+  /// [orderName]: 주문명
+  /// [customerName]: 구매자 이름 (선택)
+  /// [customerEmail]: 구매자 이메일 (선택)
+  Future<void> requestPaymentWithContractId({
+    required int contractId,
+    required String orderId,
+    required int amount,
+    required String orderName,
+    String? customerName,
+    String? customerEmail,
+  }) async {
+    _ensureInitialized();
+
+    debugPrint('💳 [PaymentServiceWeb] 통합 결제 요청 (contractId 포함)');
+    debugPrint('  - contractId: $contractId');
+    debugPrint('  - orderId: $orderId');
+    debugPrint('  - amount: $amount');
+
+    try {
+      // successUrl/failUrl에 contractId를 쿼리 파라미터로 추가
+      final baseSuccessUrl = config.PaymentConfig.successUrl;
+      final baseFailUrl = config.PaymentConfig.failUrl;
+
+      final successUrl = '$baseSuccessUrl?contractId=$contractId';
+      final failUrl = '$baseFailUrl?contractId=$contractId';
+
+      final request = PaymentRequest(
+        method: 'CARD',
+        amount: AmountJS(
+          currency: 'KRW',
+          value: amount,
+        ),
+        orderId: orderId,
+        orderName: orderName,
+        successUrl: successUrl,
+        failUrl: failUrl,
+        customerName: customerName,
+        customerEmail: customerEmail,
+        card: CardOptionsJS(
+          useEscrow: false,
+          flowMode: 'DEFAULT',
+          useCardPoint: false,
+          useAppCardOnly: false,
+        ),
+      );
+
+      final promise = _payment!.requestPayment(request);
+      await _promiseToFuture(promise);
+
+      debugPrint('✅ [PaymentServiceWeb] 결제 요청 성공 (리다이렉트 중...)');
+    } catch (e) {
+      debugPrint('❌ [PaymentServiceWeb] 결제 요청 실패: $e');
+      rethrow;
+    }
+  }
+
   /// Promise를 Future로 변환
   Future<T> _promiseToFuture<T>(Promise promise) {
     final completer = Completer<T>();
