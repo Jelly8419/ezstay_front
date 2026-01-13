@@ -651,6 +651,7 @@ class AppRouter {
           path: '/payment/success',
           name: 'payment-success',
           builder: (context, state) {
+            final contractId = state.uri.queryParameters['contractId'];
             final paymentKey = state.uri.queryParameters['paymentKey'];
             final orderId = state.uri.queryParameters['orderId'];
             final amount = state.uri.queryParameters['amount'];
@@ -659,6 +660,7 @@ class AppRouter {
               payment_callback.loadLibrary,
               () => payment_callback.PaymentCallbackPage(
                 isSuccess: true,
+                contractId: contractId != null ? int.tryParse(contractId) : null,
                 paymentKey: paymentKey,
                 orderId: orderId,
                 amount: amount,
@@ -672,6 +674,7 @@ class AppRouter {
           path: '/payment/fail',
           name: 'payment-fail',
           builder: (context, state) {
+            final contractId = state.uri.queryParameters['contractId'];
             final errorCode = state.uri.queryParameters['code'];
             final errorMessage = state.uri.queryParameters['message'];
 
@@ -679,6 +682,7 @@ class AppRouter {
               payment_callback.loadLibrary,
               () => payment_callback.PaymentCallbackPage(
                 isSuccess: false,
+                contractId: contractId != null ? int.tryParse(contractId) : null,
                 errorCode: errorCode,
                 errorMessage: errorMessage,
               ),
