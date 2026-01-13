@@ -190,15 +190,23 @@ jobs:
             ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }}:${{ env.REMOTE_UPLOAD_PATH }}/
 
       - name: 🚀 Deploy to Nginx
+        env:
+          KAKAO_JS_KEY: ${{ github.event.inputs.environment == 'production' && '7b8e75100e5af72db70a46c3fef81128' || '8fa88a5c7a3edac4ee6d8dd52af14f60' }}
         run: |
           ssh -i ~/.ssh/deploy_key.pem \
             -p ${{ secrets.TEST_SERVER_PORT }} \
             -o StrictHostKeyChecking=no \
-            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} << 'DEPLOY_SCRIPT'
+            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} << DEPLOY_SCRIPT
 
           # Nginx 디렉토리로 복사
           sudo mkdir -p ${{ env.REMOTE_NGINX_PATH }}
           sudo cp -r ${{ env.REMOTE_UPLOAD_PATH }}/web/* ${{ env.REMOTE_NGINX_PATH }}/
+
+          # index.html에 Kakao Maps SDK 스크립트 주입 (빌드 시 누락되는 경우 대비)
+          if ! grep -q "dapi.kakao.com/v2/maps/sdk.js" ${{ env.REMOTE_NGINX_PATH }}/index.html; then
+            echo "⚠️ Kakao Maps script missing, injecting..."
+            sudo sed -i 's|</head>|  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=${{ env.KAKAO_JS_KEY }}"></script>\n</head>|' ${{ env.REMOTE_NGINX_PATH }}/index.html
+          fi
 
           # 권한 설정
           sudo chown -R nginx:nginx ${{ env.REMOTE_NGINX_PATH }}
