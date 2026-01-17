@@ -23,11 +23,11 @@ import '../pages/contract/guest_contracts_page.dart'
     deferred as guest_contracts;
 import '../pages/contract/guest_contract_detail_page.dart'
     deferred as guest_contract_detail;
-import '../pages/contract/host_contracts_page_new.dart' deferred as host_contracts;
+import '../pages/contract/host_contracts_page_new.dart'
+    deferred as host_contracts;
 import '../pages/contract/host_contract_detail_page.dart'
     deferred as host_contract_detail;
-import '../pages/contract/contract_start_page.dart'
-    deferred as contract_start;
+import '../pages/contract/contract_start_page.dart' deferred as contract_start;
 import '../pages/chat/chat_list_page.dart' deferred as chat_list;
 import '../pages/chat/chat_detail_page.dart' deferred as chat_detail;
 import '../pages/support/support_center_page.dart' deferred as support_center;
@@ -37,6 +37,8 @@ import '../pages/support/faq_list_page.dart' deferred as faq_list;
 import '../pages/support/inquiry_list_page.dart' deferred as inquiry_list;
 import '../pages/support/inquiry_form_page.dart' deferred as inquiry_form;
 import '../pages/support/inquiry_detail_page.dart' deferred as inquiry_detail;
+import '../pages/host/room_management_page.dart' deferred as room_management;
+import '../pages/host/room_schedule_page.dart'; // 즉시 로딩으로 변경 (Focus 에러 방지)
 
 class AppRouter {
   /// Deferred 라이브러리 로딩 위젯
@@ -186,12 +188,18 @@ class AppRouter {
             }
 
             // AuthService에 토큰 저장 및 사용자 정보 로드
-            final authService = Provider.of<AuthService>(context, listen: false);
+            final authService = Provider.of<AuthService>(
+              context,
+              listen: false,
+            );
 
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               try {
                 // OAuth 콜백 처리
-                final success = await authService.handleOAuthCallback(token, refreshToken);
+                final success = await authService.handleOAuthCallback(
+                  token,
+                  refreshToken,
+                );
 
                 if (success && context.mounted) {
                   final user = authService.currentUser;
@@ -297,7 +305,10 @@ class AppRouter {
 
             // 본인인증 모드인 경우 현재 로그인된 사용자 정보 사용
             if (isVerifyMode) {
-              final authService = Provider.of<AuthService>(context, listen: false);
+              final authService = Provider.of<AuthService>(
+                context,
+                listen: false,
+              );
               final currentUser = authService.currentUser;
 
               if (currentUser != null) {
@@ -388,7 +399,8 @@ class AppRouter {
           name: 'host-account-setup-standalone',
           builder: (context, state) => _deferredWidget(
             host_account_setup_standalone.loadLibrary,
-            () => host_account_setup_standalone.HostAccountSetupStandalonePage(),
+            () =>
+                host_account_setup_standalone.HostAccountSetupStandalonePage(),
           ),
         ),
         // 신규 방 등록 (roomId 없음)
@@ -413,6 +425,24 @@ class AppRouter {
               room_registration.loadLibrary,
               () => room_registration.RoomRegistrationFlowPage(roomId: roomId),
             );
+          },
+        ),
+        // 방 관리 페이지
+        GoRoute(
+          path: '/host/room-management',
+          name: 'room-management',
+          builder: (context, state) => _deferredWidget(
+            room_management.loadLibrary,
+            () => room_management.RoomManagementPage(),
+          ),
+        ),
+        // 방 일정 관리 페이지
+        GoRoute(
+          path: '/host/room-schedule/:roomId',
+          name: 'room-schedule',
+          builder: (context, state) {
+            final roomId = state.pathParameters['roomId'] ?? '';
+            return RoomSchedulePage(roomId: roomId); // 즉시 로딩
           },
         ),
         GoRoute(
@@ -651,28 +681,23 @@ class AppRouter {
           builder: (context, state) {
             final userId = state.pathParameters['userId'] ?? '';
 
-            // 개발 환경에서만 동작
-            return FutureBuilder(
-              future: _handleDevBypass(context, userId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(
-                    body: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text('개발자 바이패스 로그인 중...'),
-                        ],
-                      ),
-                    ),
-                  );
-                }
+            // 빌드 완료 후 로그인 실행 (setState 에러 방지)
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _handleDevBypass(context, userId);
+            });
 
-                // 로그인 완료 후 리다이렉트는 redirect 로직에서 처리
-                return const GuestHomePage();
-              },
+            // 로딩 화면 표시
+            return const Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('개발자 바이패스 로그인 중...'),
+                  ],
+                ),
+              ),
             );
           },
         ),

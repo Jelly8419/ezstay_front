@@ -22,6 +22,32 @@ import 'router/app_router.dart';
 import 'widgets/kakao_map_web.dart';
 import 'widgets/splash_screen.dart';
 
+/// Flutter Web Focus 에러 방지를 위한 안전한 Focus Traversal Policy
+/// inactive element의 renderObject 접근 시도를 안전하게 처리
+class SafeFocusTraversalPolicy extends ReadingOrderTraversalPolicy {
+  @override
+  Iterable<FocusNode> sortDescendants(Iterable<FocusNode> descendants, FocusNode currentNode) {
+    try {
+      return super.sortDescendants(descendants, currentNode);
+    } catch (e) {
+      // inactive element 에러 무시하고 빈 리스트 반환
+      debugPrint('⚠️ [SafeFocusTraversalPolicy] Focus 정렬 중 에러 무시: $e');
+      return <FocusNode>[];
+    }
+  }
+
+  @override
+  FocusNode? findFirstFocus(FocusNode currentNode, {bool ignoreCurrentFocus = false}) {
+    try {
+      return super.findFirstFocus(currentNode, ignoreCurrentFocus: ignoreCurrentFocus);
+    } catch (e) {
+      // inactive element 에러 무시
+      debugPrint('⚠️ [SafeFocusTraversalPolicy] 첫 Focus 찾기 중 에러 무시: $e');
+      return null;
+    }
+  }
+}
+
 /// 앱의 진입점
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -166,6 +192,13 @@ class _MyAppState extends State<MyApp> {
           debugShowCheckedModeBanner: false,
           routerConfig: _router!,
           theme: AppTheme.lightTheme(),
+          // Flutter Web Focus 에러 방지: 커스텀 Focus Traversal Policy 적용
+          builder: (context, child) {
+            return FocusTraversalGroup(
+              policy: SafeFocusTraversalPolicy(),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
         );
       },
     );

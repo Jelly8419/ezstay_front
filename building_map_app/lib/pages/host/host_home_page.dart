@@ -644,6 +644,11 @@ class _HostHomePageState extends State<HostHomePage> {
                     childAspectRatio: 2.0, // 세로 높이를 절반으로 줄임 (가로:세로 = 2:1)
                     children: [
                       _buildQuickMenuButton(
+                        icon: Icons.home_work_outlined,
+                        label: '방 관리',
+                        onTap: () => context.go('/host/room-management'),
+                      ),
+                      _buildQuickMenuButton(
                         icon: Icons.chat_bubble_outline,
                         label: '채팅',
                         onTap: () => _showComingSoonDialog(context),
