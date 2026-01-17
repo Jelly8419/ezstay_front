@@ -68,7 +68,9 @@ class Room {
   final bool? hostAccountVerified;
   final String? hostName;
   final int? hostId;
-  final String status; // 방 상태 (draft, submitted, approved, rejected, published)
+  final String status; // 방 상태 (draft, pending_review, approved, rejected)
+  final bool isActive; // 게시 여부 (approved 상태에서만 의미 있음)
+  final String? rejectionReason; // 반려 사유
 
   const Room({
     required this.id,
@@ -124,6 +126,8 @@ class Room {
     this.hostName,
     this.hostId,
     this.status = 'draft',
+    this.isActive = false,
+    this.rejectionReason,
   });
 
 
@@ -210,8 +214,18 @@ class Room {
       hostAccountVerified: json['host'] != null ? _parseBool(json['host']['accountVerified']) : _parseBool(json['hostAccountVerified']),
       hostName: json['host'] != null ? json['host']['name'] as String? : json['hostName'] as String?,
       hostId: json['host'] != null ? json['host']['id'] as int? : json['hostId'] as int?,
-      status: json['status'] as String? ?? 'draft',
+      status: _normalizeStatus(json['status'] as String?),
+      isActive: json['isActive'] as bool? ?? false,
+      rejectionReason: json['rejectionReason'] as String?,
     );
+  }
+
+  /// status 값 정규화 (API 응답값을 앱 내부 상태값으로 변환)
+  /// - published → approved (백엔드 API와 앱 내부 용어 불일치 해결)
+  static String _normalizeStatus(String? status) {
+    if (status == null) return 'draft';
+    if (status == 'published') return 'approved';
+    return status;
   }
 
   /// latitude/longitude를 String 또는 num에서 double로 안전하게 파싱
@@ -295,6 +309,8 @@ class Room {
       'hostName': hostName,
       'hostId': hostId,
       'status': status,
+      'isActive': isActive,
+      'rejectionReason': rejectionReason,
     };
   }
 
@@ -393,6 +409,8 @@ class Room {
     String? hostName,
     int? hostId,
     String? status,
+    bool? isActive,
+    String? rejectionReason,
   }) {
     return Room(
       id: id ?? this.id,
@@ -448,6 +466,35 @@ class Room {
       hostName: hostName ?? this.hostName,
       hostId: hostId ?? this.hostId,
       status: status ?? this.status,
+      isActive: isActive ?? this.isActive,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
     );
   }
+
+  /// 방 관리 페이지용 헬퍼 메서드들
+
+  /// 현재 표시할 상태 라벨 (status + isActive 조합)
+  String get displayStatus {
+    if (status == 'approved' && isActive) return '게시중';
+    if (status == 'approved' && !isActive) return '게시중단';
+    if (status == 'pending_review') return '심사중';
+    if (status == 'rejected') return '등록 반려';
+    return '등록중';
+  }
+
+  /// 수정 가능 여부 (React: draft, rejected, approved일 때)
+  bool get canEdit => status == 'draft' || status == 'rejected' || status == 'approved';
+
+  /// 일정관리 가능 여부 (React: approved 또는 inactive일 때)
+  bool get canSchedule => status == 'approved';
+
+  /// 복제 가능 여부 (React: draft가 아닐 때)
+  bool get canDuplicate => status != 'draft';
+
+  /// 삭제 가능 여부 (React: 항상 표시)
+  bool get canDelete => true;
+
+  /// 게시/비공개 토글 가능 여부 (React: approved 또는 inactive일 때)
+  bool get canTogglePublish => status == 'approved';
 }
+

@@ -105,7 +105,7 @@ class AppGNB extends StatelessWidget implements PreferredSizeWidget {
         _buildTextButton(
           context,
           label: '방 관리',
-          onPressed: () => context.go('/host/rooms'),
+          onPressed: () => context.go('/host/room-management'),
         ),
         SizedBox(width: AppSpacing.md),
         _buildTextButton(
