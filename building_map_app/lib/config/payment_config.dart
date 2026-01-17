@@ -1,9 +1,10 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
 
 /// 토스페이먼츠 결제 설정
 ///
-/// Flutter에는 공식 Toss SDK가 없으므로 WebView 기반으로 구현합니다.
-/// 토스 결제창을 WebView로 열고 URL 리다이렉트로 성공/실패를 감지합니다.
+/// 웹: JavaScript SDK 사용 (dart:js 바인딩)
+/// 모바일: WebView 기반 구현
 class PaymentConfig {
   /// 토스 클라이언트 키 (테스트 환경)
   static String get clientKey => dotenv.env['TOSS_CLIENT_KEY']!;
@@ -32,8 +33,24 @@ class PaymentConfig {
   }
 
   /// 결제 성공 시 리다이렉트 URL
-  static String get successUrl => '$baseUrl/payment/success';
+  static String get successUrl {
+    if (kIsWeb) {
+      // 웹: 현재 도메인의 /payment/success로 리다이렉트
+      return '${Uri.base.origin}/payment/success';
+    } else {
+      // 모바일: 백엔드 URL 사용
+      return '$baseUrl/payment/success';
+    }
+  }
 
   /// 결제 실패 시 리다이렉트 URL
-  static String get failUrl => '$baseUrl/payment/fail';
+  static String get failUrl {
+    if (kIsWeb) {
+      // 웹: 현재 도메인의 /payment/fail로 리다이렉트
+      return '${Uri.base.origin}/payment/fail';
+    } else {
+      // 모바일: 백엔드 URL 사용
+      return '$baseUrl/payment/fail';
+    }
+  }
 }

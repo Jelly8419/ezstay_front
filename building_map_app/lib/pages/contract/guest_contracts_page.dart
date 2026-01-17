@@ -1,12 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../constants/app_constants.dart' hide AppColors, AppTextStyles;
 import '../../models/contract.dart';
 import '../../services/contract_service.dart';
+import '../../services/payment_service_unified.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/common/app_gnb.dart';
+import '../../widgets/payment_webview.dart';
 // import '../../widgets/modals/refund_calculation_modal.dart'; // TODO: API로 전체 Contract 가져오기 후 사용
 import '../../widgets/modals/option_refund_modal.dart';
 import '../../widgets/modals/cancel_request_modal.dart';
@@ -1041,10 +1044,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  // 결제 페이지로 이동
-                  context.push('/guest/payment/${contract.id}');
-                },
+                onPressed: () => _handlePayment(contract),
                 icon: const Icon(Icons.credit_card, size: 16),
                 label: const Text(
                   '결제하기',
@@ -1672,5 +1672,78 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         ),
       ],
     );
+  }
+
+  /// 결제 처리
+  ///
+  /// 토스페이먼츠 SDK가 자체적으로 결제수단 선택 UI를 제공하므로
+  /// 별도의 결제수단 선택 모달 없이 바로 결제를 요청합니다.
+  Future<void> _handlePayment(ContractListItem contract) async {
+    try {
+      // 1. PaymentServiceUnified 인스턴스 생성
+      final paymentService = PaymentServiceUnified();
+
+      // 2. 결제 정보 조회
+      final paymentInfo = await paymentService.getPaymentInfo(contract.id);
+
+      if (!mounted) return;
+
+      // 3. 플랫폼별 결제 처리
+      if (kIsWeb) {
+        // 웹: JavaScript SDK로 결제창 호출
+        // 토스 SDK가 자체적으로 결제수단 선택 UI를 제공함
+        await paymentService.requestPayment(
+          contractId: contract.id,
+          paymentInfo: paymentInfo,
+        );
+        // 이후 /payment/success 또는 /payment/fail로 자동 리다이렉트됨
+      } else {
+        // 모바일: WebView로 결제창 표시
+        final result = await Navigator.push<Map<String, dynamic>>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentWebView(
+              paymentUrl: paymentInfo['paymentUrl'] as String,
+              contractId: contract.id,
+            ),
+          ),
+        );
+
+        if (!mounted) return;
+
+        if (result != null && result['success'] == true) {
+          // 결제 승인 처리
+          await paymentService.confirmPayment(
+            contractId: contract.id,
+            paymentKey: result['paymentKey'] as String,
+            orderId: result['orderId'] as String,
+            amount: result['amount'] as int,
+          );
+
+          if (!mounted) return;
+
+          // 성공 메시지 표시
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('결제가 완료되었습니다!'),
+              backgroundColor: Color(0xFF10B981),
+            ),
+          );
+
+          // 계약 목록 새로고침
+          _loadContracts();
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      // 에러 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('결제 오류: $e'),
+          backgroundColor: const Color(0xFFF44336),
+        ),
+      );
+    }
   }
 }

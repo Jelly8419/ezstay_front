@@ -39,6 +39,8 @@ import '../pages/support/inquiry_form_page.dart' deferred as inquiry_form;
 import '../pages/support/inquiry_detail_page.dart' deferred as inquiry_detail;
 import '../pages/host/room_management_page.dart' deferred as room_management;
 import '../pages/host/room_schedule_page.dart'; // 즉시 로딩으로 변경 (Focus 에러 방지)
+import '../pages/payment/payment_callback_page.dart' deferred as payment_callback;
+
 
 class AppRouter {
   /// Deferred 라이브러리 로딩 위젯
@@ -675,6 +677,50 @@ class AppRouter {
             ),
           ],
         ),
+        // 결제 성공 콜백
+        GoRoute(
+          path: '/payment/success',
+          name: 'payment-success',
+          builder: (context, state) {
+            final contractId = state.uri.queryParameters['contractId'];
+            final paymentKey = state.uri.queryParameters['paymentKey'];
+            final orderId = state.uri.queryParameters['orderId'];
+            final amount = state.uri.queryParameters['amount'];
+
+            return _deferredWidget(
+              payment_callback.loadLibrary,
+              () => payment_callback.PaymentCallbackPage(
+                isSuccess: true,
+                contractId: contractId != null ? int.tryParse(contractId) : null,
+                paymentKey: paymentKey,
+                orderId: orderId,
+                amount: amount,
+              ),
+            );
+          },
+        ),
+
+        // 결제 실패 콜백
+        GoRoute(
+          path: '/payment/fail',
+          name: 'payment-fail',
+          builder: (context, state) {
+            final contractId = state.uri.queryParameters['contractId'];
+            final errorCode = state.uri.queryParameters['code'];
+            final errorMessage = state.uri.queryParameters['message'];
+
+            return _deferredWidget(
+              payment_callback.loadLibrary,
+              () => payment_callback.PaymentCallbackPage(
+                isSuccess: false,
+                contractId: contractId != null ? int.tryParse(contractId) : null,
+                errorCode: errorCode,
+                errorMessage: errorMessage,
+              ),
+            );
+          },
+        ),
+
         GoRoute(
           path: '/bypass/:userId',
           name: 'dev-bypass',

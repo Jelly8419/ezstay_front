@@ -16,6 +16,7 @@ import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
 import 'services/room_service.dart';
 import 'services/map_interaction_coordinator.dart';
+import 'services/payment_service_unified.dart';
 import 'providers/chat_provider.dart';
 import 'providers/gnb_provider.dart';
 import 'router/app_router.dart';
@@ -95,6 +96,13 @@ Future<void> main() async {
   // 웹에서 카카오 콜백 확인
   if (kIsWeb) {
     await authService.handleKakaoWebCallback();
+  }
+
+  // 웹 결제 서비스 초기화 (토스페이먼츠 SDK)
+  if (kIsWeb) {
+    final paymentService = PaymentServiceUnified();
+    paymentService.initializeWebSDK();
+    debugPrint('✅ [MAIN] 토스페이먼츠 웹 SDK 초기화 완료');
   }
 
   // 🔥 자동 로그인을 백그라운드로 실행 (await 제거)
