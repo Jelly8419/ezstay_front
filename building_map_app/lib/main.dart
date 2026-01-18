@@ -63,7 +63,15 @@ Future<void> main() async {
           : '.env';
 
   debugPrint('🔧 [ENV] 환경: $environment, 로드할 파일: $envFile');
-  await dotenv.load(fileName: envFile);
+
+  // .env 파일 로드 시도 (실패해도 계속 진행)
+  // 프로덕션 빌드에서는 --dart-define으로 전달된 값 사용
+  try {
+    await dotenv.load(fileName: envFile);
+    debugPrint('✅ [ENV] $envFile 파일 로드 성공');
+  } catch (e) {
+    debugPrint('⚠️ [ENV] $envFile 파일 로드 실패 (--dart-define 값 사용): $e');
+  }
 
   // 🔥 Firebase 초기화를 백그라운드로 이동 (await 제거)
   final firebaseInitFuture = _initializeFirebase();
