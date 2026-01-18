@@ -39,6 +39,7 @@ import '../pages/support/inquiry_form_page.dart' deferred as inquiry_form;
 import '../pages/support/inquiry_detail_page.dart' deferred as inquiry_detail;
 import '../pages/host/room_management_page.dart' deferred as room_management;
 import '../pages/host/room_schedule_page.dart'; // 즉시 로딩으로 변경 (Focus 에러 방지)
+import '../pages/host/host_my_page.dart' deferred as host_my_page;
 import '../pages/payment/payment_callback_page.dart' deferred as payment_callback;
 
 
@@ -446,6 +447,15 @@ class AppRouter {
             final roomId = state.pathParameters['roomId'] ?? '';
             return RoomSchedulePage(roomId: roomId); // 즉시 로딩
           },
+        ),
+        // 호스트 마이페이지
+        GoRoute(
+          path: '/host/my-page',
+          name: 'host-my-page',
+          builder: (context, state) => _deferredWidget(
+            host_my_page.loadLibrary,
+            () => host_my_page.HostMyPage(),
+          ),
         ),
         GoRoute(
           path: '/map',
