@@ -107,8 +107,7 @@ class GNBMenuDropdown extends StatelessWidget {
 
       case 'profile':
         // 내 정보 관리 페이지로 이동
-        // 게스트: /guest/my-page, 호스트: 추후 구현
-        final route = isHostMode ? '/guest/my-page' : '/guest/my-page';
+        final route = isHostMode ? '/host/my-page' : '/guest/my-page';
         context.go(route);
         break;
 
