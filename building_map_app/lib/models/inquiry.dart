@@ -1,6 +1,46 @@
-import 'pagination.dart';
+/// 문의 상태 enum
+enum InquiryStatus {
+  pending,
+  answered,
+  closed;
 
-/// 문의 카테고리 타입
+  static InquiryStatus fromString(String value) {
+    switch (value.toLowerCase()) {
+      case 'pending':
+        return InquiryStatus.pending;
+      case 'answered':
+        return InquiryStatus.answered;
+      case 'closed':
+        return InquiryStatus.closed;
+      default:
+        return InquiryStatus.pending;
+    }
+  }
+
+  String get value {
+    switch (this) {
+      case InquiryStatus.pending:
+        return 'pending';
+      case InquiryStatus.answered:
+        return 'answered';
+      case InquiryStatus.closed:
+        return 'closed';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case InquiryStatus.pending:
+        return '답변 대기';
+      case InquiryStatus.answered:
+        return '답변 완료';
+      case InquiryStatus.closed:
+        return '처리 완료';
+    }
+  }
+}
+
+/// 문의 카테고리 타입 enum
 enum InquiryCategoryType {
   general,
   reservation,
@@ -9,53 +49,57 @@ enum InquiryCategoryType {
   account,
   other;
 
-  String get displayName {
+  static InquiryCategoryType fromString(String value) {
+    switch (value.toLowerCase()) {
+      case 'general':
+        return InquiryCategoryType.general;
+      case 'reservation':
+        return InquiryCategoryType.reservation;
+      case 'payment':
+        return InquiryCategoryType.payment;
+      case 'room':
+        return InquiryCategoryType.room;
+      case 'account':
+        return InquiryCategoryType.account;
+      case 'other':
+        return InquiryCategoryType.other;
+      default:
+        return InquiryCategoryType.general;
+    }
+  }
+
+  String get value {
     switch (this) {
       case InquiryCategoryType.general:
-        return '일반 문의';
+        return 'general';
       case InquiryCategoryType.reservation:
-        return '예약 문의';
+        return 'reservation';
       case InquiryCategoryType.payment:
-        return '결제 문의';
+        return 'payment';
       case InquiryCategoryType.room:
-        return '방 등록 문의';
+        return 'room';
       case InquiryCategoryType.account:
-        return '계정 문의';
+        return 'account';
       case InquiryCategoryType.other:
-        return '기타 문의';
+        return 'other';
     }
   }
 
-  static InquiryCategoryType fromString(String value) {
-    return InquiryCategoryType.values.firstWhere(
-      (e) => e.name == value,
-      orElse: () => InquiryCategoryType.other,
-    );
-  }
-}
-
-/// 문의 상태
-enum InquiryStatus {
-  pending,
-  answered,
-  closed;
-
-  String get displayName {
+  String get label {
     switch (this) {
-      case InquiryStatus.pending:
-        return '확인중';
-      case InquiryStatus.answered:
-        return '답변완료';
-      case InquiryStatus.closed:
-        return '종료';
+      case InquiryCategoryType.general:
+        return '일반';
+      case InquiryCategoryType.reservation:
+        return '계약/예약';
+      case InquiryCategoryType.payment:
+        return '결제';
+      case InquiryCategoryType.room:
+        return '방 정보';
+      case InquiryCategoryType.account:
+        return '계정';
+      case InquiryCategoryType.other:
+        return '기타';
     }
-  }
-
-  static InquiryStatus fromString(String value) {
-    return InquiryStatus.values.firstWhere(
-      (e) => e.name == value,
-      orElse: () => InquiryStatus.pending,
-    );
   }
 }
 
@@ -63,87 +107,119 @@ enum InquiryStatus {
 class Inquiry {
   final int id;
   final InquiryCategoryType categoryType;
+  final String userType; // 'host' or 'guest'
   final String title;
   final String content;
   final InquiryStatus status;
   final String? answer;
-  final DateTime createdAt;
   final DateTime? answeredAt;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
 
   Inquiry({
     required this.id,
     required this.categoryType,
+    required this.userType,
     required this.title,
     required this.content,
     required this.status,
     this.answer,
-    required this.createdAt,
     this.answeredAt,
+    required this.createdAt,
+    this.updatedAt,
   });
 
   factory Inquiry.fromJson(Map<String, dynamic> json) {
-    try {
-      return Inquiry(
-        id: _parseField<int>(json, 'id'),
-        categoryType: InquiryCategoryType.fromString(
-          _parseField<String>(json, 'categoryType'),
-        ),
-        title: _parseField<String>(json, 'title'),
-        content: json['content'] as String? ?? '',
-        status: InquiryStatus.fromString(_parseField<String>(json, 'status')),
-        answer: json['answer'] as String?,
-        createdAt: DateTime.parse(_parseField<String>(json, 'createdAt')),
-        answeredAt: json['answeredAt'] != null
-            ? DateTime.parse(_parseField<String>(json, 'answeredAt'))
-            : null,
-      );
-    } catch (e) {
-      throw FormatException('Inquiry.fromJson 파싱 실패: $e\n원본 JSON: $json');
-    }
-  }
-
-  static T _parseField<T>(Map<String, dynamic> json, String fieldName) {
-    try {
-      final value = json[fieldName];
-      if (value == null) {
-        throw FormatException('필드 "$fieldName"이 null입니다');
-      }
-      if (value is! T) {
-        throw FormatException(
-          '필드 "$fieldName" 타입 오류: 예상 $T, 실제 ${value.runtimeType}, 값: $value',
-        );
-      }
-      return value;
-    } catch (e) {
-      throw FormatException('필드 "$fieldName" 파싱 실패: $e');
-    }
+    return Inquiry(
+      id: json['id'] as int,
+      categoryType: InquiryCategoryType.fromString(json['categoryType'] as String),
+      userType: (json['userType'] as String?) ?? 'guest',
+      title: json['title'] as String,
+      content: json['content'] as String,
+      status: InquiryStatus.fromString(json['status'] as String),
+      answer: json['answer'] as String?,
+      answeredAt: json['answeredAt'] != null
+          ? DateTime.parse(json['answeredAt'] as String)
+          : null,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : null,
+    );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'categoryType': categoryType.name,
+      'id': id,
+      'categoryType': categoryType.value,
+      'userType': userType,
       'title': title,
       'content': content,
+      'status': status.value,
+      'answer': answer,
+      'answeredAt': answeredAt?.toIso8601String(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+    };
+  }
+
+  /// 날짜 포맷팅 (yyyy.MM.dd)
+  String get formattedDate {
+    return '${createdAt.year}.${createdAt.month.toString().padLeft(2, '0')}.${createdAt.day.toString().padLeft(2, '0')}';
+  }
+
+  /// 답변 날짜 포맷팅 (yyyy.MM.dd)
+  String? get formattedAnsweredDate {
+    if (answeredAt == null) return null;
+    return '${answeredAt!.year}.${answeredAt!.month.toString().padLeft(2, '0')}.${answeredAt!.day.toString().padLeft(2, '0')}';
+  }
+
+  /// 수정/삭제 가능 여부
+  bool get canEdit => status == InquiryStatus.pending;
+  bool get canDelete => status == InquiryStatus.pending;
+}
+
+/// 문의 생성 요청 DTO
+class CreateInquiryRequest {
+  final InquiryCategoryType categoryType;
+  final String title;
+  final String content;
+  final String userType; // 'host' or 'guest'
+
+  CreateInquiryRequest({
+    required this.categoryType,
+    required this.title,
+    required this.content,
+    required this.userType,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'categoryType': categoryType.value,
+      'title': title,
+      'content': content,
+      'userType': userType,
     };
   }
 }
 
-/// 문의 목록 응답
-class InquiryListResponse {
-  final List<Inquiry> inquiries;
-  final Pagination pagination;
+/// 문의 수정 요청 DTO
+class UpdateInquiryRequest {
+  final InquiryCategoryType? categoryType;
+  final String? title;
+  final String? content;
 
-  InquiryListResponse({required this.inquiries, required this.pagination});
+  UpdateInquiryRequest({
+    this.categoryType,
+    this.title,
+    this.content,
+  });
 
-  factory InquiryListResponse.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] as Map<String, dynamic>;
-    return InquiryListResponse(
-      inquiries: (data['inquiries'] as List)
-          .map((item) => Inquiry.fromJson(item as Map<String, dynamic>))
-          .toList(),
-      pagination: Pagination.fromJson(
-        data['pagination'] as Map<String, dynamic>,
-      ),
-    );
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{};
+    if (categoryType != null) map['categoryType'] = categoryType!.value;
+    if (title != null) map['title'] = title;
+    if (content != null) map['content'] = content;
+    return map;
   }
 }

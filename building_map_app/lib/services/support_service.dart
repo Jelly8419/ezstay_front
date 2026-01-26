@@ -1,324 +1,386 @@
-import 'dart:io';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import '../config/api_config.dart';
 import '../models/notice.dart';
 import '../models/faq.dart';
 import '../models/inquiry.dart';
-import '../services/token_service.dart';
+import '../models/pagination.dart';
+import 'api_client.dart';
+import 'token_service.dart';
 
-/// 고객센터 서비스
-class SupportService {
-  final String baseUrl = ApiConfig.baseUrl;
+/// 고객센터 관련 API 서비스
+class SupportService extends ChangeNotifier {
+  final ApiClient _apiClient = ApiClient();
 
-  // ========== 공지사항 API ==========
+  // ============================================================
+  // 공지사항 (Notice) API
+  // ============================================================
 
   /// 공지사항 목록 조회
-  Future<NoticeListResponse> getNotices({
+  /// [page] 페이지 번호 (기본값: 1)
+  /// [limit] 페이지당 개수 (기본값: 10)
+  /// [search] 제목/내용 검색어
+  Future<({List<Notice> items, Pagination pagination})?> getNotices({
     int page = 1,
     int limit = 10,
-    bool? isImportant,
+    String? search,
   }) async {
     try {
-      final queryParams = {
+      final queryParams = <String, String>{
         'page': page.toString(),
         'limit': limit.toString(),
-        if (isImportant != null) 'isImportant': isImportant.toString(),
       };
-
-      final uri = Uri.parse('$baseUrl/api/support/notices')
-          .replace(queryParameters: queryParams);
-
-      final response = await http.get(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(Duration(seconds: ApiConfig.timeoutSeconds));
-
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(utf8.decode(response.bodyBytes));
-        return NoticeListResponse.fromJson(jsonResponse);
-      } else {
-        throw HttpException(
-          'Failed to load notices: ${response.statusCode}',
-        );
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
       }
-    } on SocketException {
-      throw Exception('네트워크 연결을 확인해주세요.');
-    } on HttpException catch (e) {
-      throw Exception('공지사항 조회 실패: ${e.message}');
+
+      final uri = Uri.parse(ApiConfig.noticesUrl).replace(queryParameters: queryParams);
+      final response = await _apiClient.get(uri);
+
+      if (response == null) return null;
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (json['success'] != true) {
+        debugPrint('❌ [SupportService] getNotices 실패: ${json['message']}');
+        return null;
+      }
+
+      final data = json['data'] as Map<String, dynamic>?;
+      if (data == null) {
+        return (items: <Notice>[], pagination: Pagination.empty());
+      }
+
+      // API 응답: data.notices (백엔드 명세)
+      final itemsList = (data['notices'] ?? data['items']) as List?;
+      final items = itemsList != null
+          ? itemsList
+              .map((e) => Notice.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : <Notice>[];
+
+      final paginationData = data['pagination'] as Map<String, dynamic>?;
+      final pagination = paginationData != null
+          ? Pagination.fromJson(paginationData)
+          : Pagination.empty();
+
+      return (items: items, pagination: pagination);
     } catch (e) {
-      throw Exception('공지사항 조회 중 오류가 발생했습니다: $e');
+      debugPrint('❌ [SupportService] getNotices 에러: $e');
+      return null;
     }
   }
 
   /// 공지사항 상세 조회
-  Future<Notice> getNoticeDetail(int noticeId) async {
+  Future<Notice?> getNoticeDetail(int noticeId) async {
     try {
-      final uri = Uri.parse('$baseUrl/api/support/notices/$noticeId');
+      final uri = Uri.parse(ApiConfig.noticeDetailUrl(noticeId));
+      final response = await _apiClient.get(uri);
 
-      final response = await http.get(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(Duration(seconds: ApiConfig.timeoutSeconds));
+      if (response == null) return null;
 
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(utf8.decode(response.bodyBytes));
-        return Notice.fromJson(jsonResponse['data']);
-      } else if (response.statusCode == 404) {
-        throw Exception('공지사항을 찾을 수 없습니다.');
-      } else {
-        throw HttpException(
-          'Failed to load notice detail: ${response.statusCode}',
-        );
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (json['success'] != true) {
+        debugPrint('❌ [SupportService] getNoticeDetail 실패: ${json['message']}');
+        return null;
       }
-    } on SocketException {
-      throw Exception('네트워크 연결을 확인해주세요.');
-    } on HttpException catch (e) {
-      throw Exception('공지사항 상세 조회 실패: ${e.message}');
+
+      return Notice.fromJson(json['data'] as Map<String, dynamic>);
     } catch (e) {
-      throw Exception('공지사항 상세 조회 중 오류가 발생했습니다: $e');
+      debugPrint('❌ [SupportService] getNoticeDetail 에러: $e');
+      return null;
     }
   }
 
-  // ========== FAQ API ==========
+  // ============================================================
+  // FAQ API
+  // ============================================================
 
   /// FAQ 카테고리 목록 조회
-  Future<List<FAQCategory>> getFAQCategories({
-    String userType = 'all',
-  }) async {
+  /// [userType] 사용자 타입 필터 ('all', 'host', 'guest')
+  Future<List<FAQCategory>?> getFAQCategories({String? userType}) async {
     try {
-      final queryParams = {'userType': userType};
-
-      final uri = Uri.parse('$baseUrl/api/support/faq/categories')
-          .replace(queryParameters: queryParams);
-
-      final response = await http.get(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(Duration(seconds: ApiConfig.timeoutSeconds));
-
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(utf8.decode(response.bodyBytes));
-        final data = jsonResponse['data'] as List;
-        return data
-            .map((item) => FAQCategory.fromJson(item as Map<String, dynamic>))
-            .toList();
-      } else {
-        throw HttpException(
-          'Failed to load FAQ categories: ${response.statusCode}',
-        );
+      final queryParams = <String, String>{};
+      if (userType != null && userType.isNotEmpty) {
+        queryParams['userType'] = userType;
       }
-    } on SocketException {
-      throw Exception('네트워크 연결을 확인해주세요.');
-    } on HttpException catch (e) {
-      throw Exception('FAQ 카테고리 조회 실패: ${e.message}');
+
+      final uri = Uri.parse(ApiConfig.faqCategoriesUrl)
+          .replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+      final response = await _apiClient.get(uri);
+
+      if (response == null) return null;
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (json['success'] != true) {
+        debugPrint('❌ [SupportService] getFAQCategories 실패: ${json['message']}');
+        return null;
+      }
+
+      final data = json['data'] as List;
+      return data
+          .map((e) => FAQCategory.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
-      throw Exception('FAQ 카테고리 조회 중 오류가 발생했습니다: $e');
+      debugPrint('❌ [SupportService] getFAQCategories 에러: $e');
+      return null;
     }
   }
 
   /// FAQ 목록 조회
-  Future<FAQListResponse> getFAQs({
+  /// [categoryId] 카테고리 ID 필터
+  /// [search] 질문/답변 검색어
+  /// [userType] 사용자 타입 필터
+  Future<List<FAQ>?> getFAQs({
     int? categoryId,
-    String userType = 'all',
-    String? searchKeyword,
+    String? search,
+    String? userType,
   }) async {
     try {
-      final queryParams = {
-        'userType': userType,
-        if (categoryId != null) 'categoryId': categoryId.toString(),
-        if (searchKeyword != null && searchKeyword.isNotEmpty)
-          'searchKeyword': searchKeyword,
-      };
-
-      final uri = Uri.parse('$baseUrl/api/support/faqs')
-          .replace(queryParameters: queryParams);
-
-      final response = await http.get(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(Duration(seconds: ApiConfig.timeoutSeconds));
-
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(utf8.decode(response.bodyBytes));
-        return FAQListResponse.fromJson(jsonResponse);
-      } else {
-        throw HttpException('Failed to load FAQs: ${response.statusCode}');
+      final queryParams = <String, String>{};
+      if (categoryId != null) {
+        queryParams['categoryId'] = categoryId.toString();
       }
-    } on SocketException {
-      throw Exception('네트워크 연결을 확인해주세요.');
-    } on HttpException catch (e) {
-      throw Exception('FAQ 조회 실패: ${e.message}');
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
+      }
+      if (userType != null && userType.isNotEmpty) {
+        queryParams['userType'] = userType;
+      }
+
+      final uri = Uri.parse(ApiConfig.faqsUrl)
+          .replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+      final response = await _apiClient.get(uri);
+
+      if (response == null) return null;
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (json['success'] != true) {
+        debugPrint('❌ [SupportService] getFAQs 실패: ${json['message']}');
+        return null;
+      }
+
+      final data = json['data'] as List;
+      return data
+          .map((e) => FAQ.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
-      throw Exception('FAQ 조회 중 오류가 발생했습니다: $e');
+      debugPrint('❌ [SupportService] getFAQs 에러: $e');
+      return null;
     }
   }
 
-  /// FAQ 상세 조회
-  Future<FAQ> getFAQDetail(int faqId) async {
+  /// FAQ 상세 조회 (조회수 증가)
+  Future<FAQ?> getFAQDetail(int faqId) async {
     try {
-      final uri = Uri.parse('$baseUrl/api/support/faqs/$faqId');
+      final uri = Uri.parse(ApiConfig.faqDetailUrl(faqId));
+      final response = await _apiClient.get(uri);
 
-      final response = await http.get(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(Duration(seconds: ApiConfig.timeoutSeconds));
+      if (response == null) return null;
 
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(utf8.decode(response.bodyBytes));
-        return FAQ.fromJson(jsonResponse['data']);
-      } else if (response.statusCode == 404) {
-        throw Exception('FAQ를 찾을 수 없습니다.');
-      } else {
-        throw HttpException(
-          'Failed to load FAQ detail: ${response.statusCode}',
-        );
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (json['success'] != true) {
+        debugPrint('❌ [SupportService] getFAQDetail 실패: ${json['message']}');
+        return null;
       }
-    } on SocketException {
-      throw Exception('네트워크 연결을 확인해주세요.');
-    } on HttpException catch (e) {
-      throw Exception('FAQ 상세 조회 실패: ${e.message}');
+
+      return FAQ.fromJson(json['data'] as Map<String, dynamic>);
     } catch (e) {
-      throw Exception('FAQ 상세 조회 중 오류가 발생했습니다: $e');
+      debugPrint('❌ [SupportService] getFAQDetail 에러: $e');
+      return null;
     }
   }
 
-  // ========== 문의하기 API (인증 필요) ==========
+  // ============================================================
+  // 문의하기 (Inquiry) API - 인증 필요
+  // ============================================================
 
-  /// 문의 등록
-  Future<Inquiry> createInquiry({
-    required InquiryCategoryType categoryType,
-    required String title,
-    required String content,
-  }) async {
-    try {
-      final token = await TokenService.getAccessToken();
-      if (token == null) {
-        throw Exception('로그인이 필요합니다.');
-      }
-
-      final uri = Uri.parse('$baseUrl/api/support/inquiries');
-
-      final response = await http
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: json.encode({
-              'categoryType': categoryType.name,
-              'title': title,
-              'content': content,
-            }),
-          )
-          .timeout(Duration(seconds: ApiConfig.timeoutSeconds));
-
-      if (response.statusCode == 201) {
-        final jsonResponse = json.decode(utf8.decode(response.bodyBytes));
-        return Inquiry.fromJson(jsonResponse['data']);
-      } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다. 다시 로그인해주세요.');
-      } else {
-        throw HttpException(
-          'Failed to create inquiry: ${response.statusCode}',
-        );
-      }
-    } on SocketException {
-      throw Exception('네트워크 연결을 확인해주세요.');
-    } on HttpException catch (e) {
-      throw Exception('문의 등록 실패: ${e.message}');
-    } catch (e) {
-      throw Exception('문의 등록 중 오류가 발생했습니다: $e');
+  /// 인증 헤더 생성
+  Future<Map<String, String>?> _getAuthHeaders() async {
+    final token = await TokenService.getAccessToken();
+    if (token == null) {
+      debugPrint('❌ [SupportService] Access Token이 없습니다');
+      return null;
     }
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
   }
 
   /// 내 문의 목록 조회
-  Future<InquiryListResponse> getMyInquiries({
+  /// [page] 페이지 번호 (기본값: 1)
+  /// [limit] 페이지당 개수 (기본값: 10)
+  /// [status] 문의 상태 필터 ('pending', 'answered', 'closed')
+  /// [categoryType] 카테고리 타입 필터
+  /// [userType] 사용자 타입 필터 ('host', 'guest')
+  Future<({List<Inquiry> items, Pagination pagination})?> getMyInquiries({
     int page = 1,
     int limit = 10,
-    InquiryStatus? status,
+    String? status,
+    String? categoryType,
+    String? userType,
   }) async {
     try {
-      final token = await TokenService.getAccessToken();
-      if (token == null) {
-        throw Exception('로그인이 필요합니다.');
-      }
+      final headers = await _getAuthHeaders();
+      if (headers == null) return null;
 
-      final queryParams = {
+      final queryParams = <String, String>{
         'page': page.toString(),
         'limit': limit.toString(),
-        if (status != null) 'status': status.name,
       };
-
-      final uri = Uri.parse('$baseUrl/api/support/inquiries')
-          .replace(queryParameters: queryParams);
-
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(Duration(seconds: ApiConfig.timeoutSeconds));
-
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(utf8.decode(response.bodyBytes));
-        return InquiryListResponse.fromJson(jsonResponse);
-      } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다. 다시 로그인해주세요.');
-      } else {
-        throw HttpException(
-          'Failed to load inquiries: ${response.statusCode}',
-        );
+      if (status != null && status.isNotEmpty) {
+        queryParams['status'] = status;
       }
-    } on SocketException {
-      throw Exception('네트워크 연결을 확인해주세요.');
-    } on HttpException catch (e) {
-      throw Exception('문의 목록 조회 실패: ${e.message}');
+      if (categoryType != null && categoryType.isNotEmpty) {
+        queryParams['categoryType'] = categoryType;
+      }
+      if (userType != null && userType.isNotEmpty) {
+        queryParams['userType'] = userType;
+      }
+
+      final uri = Uri.parse(ApiConfig.inquiriesUrl).replace(queryParameters: queryParams);
+      final response = await _apiClient.get(uri, headers: headers);
+
+      if (response == null) return null;
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (json['success'] != true) {
+        debugPrint('❌ [SupportService] getMyInquiries 실패: ${json['message']}');
+        return null;
+      }
+
+      final data = json['data'] as Map<String, dynamic>?;
+      if (data == null) {
+        return (items: <Inquiry>[], pagination: Pagination.empty());
+      }
+
+      // API 응답: data.inquiries (백엔드 명세)
+      final itemsList = (data['inquiries'] ?? data['items']) as List?;
+      final items = itemsList != null
+          ? itemsList
+              .map((e) => Inquiry.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : <Inquiry>[];
+
+      final paginationData = data['pagination'] as Map<String, dynamic>?;
+      final pagination = paginationData != null
+          ? Pagination.fromJson(paginationData)
+          : Pagination.empty();
+
+      return (items: items, pagination: pagination);
     } catch (e) {
-      throw Exception('문의 목록 조회 중 오류가 발생했습니다: $e');
+      debugPrint('❌ [SupportService] getMyInquiries 에러: $e');
+      return null;
     }
   }
 
-  /// 문의 상세 조회
-  Future<Inquiry> getInquiryDetail(int inquiryId) async {
+  /// 내 문의 상세 조회
+  Future<Inquiry?> getInquiryDetail(int inquiryId) async {
     try {
-      final token = await TokenService.getAccessToken();
-      if (token == null) {
-        throw Exception('로그인이 필요합니다.');
+      final headers = await _getAuthHeaders();
+      if (headers == null) return null;
+
+      final uri = Uri.parse(ApiConfig.inquiryDetailUrl(inquiryId));
+      final response = await _apiClient.get(uri, headers: headers);
+
+      if (response == null) return null;
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (json['success'] != true) {
+        debugPrint('❌ [SupportService] getInquiryDetail 실패: ${json['message']}');
+        return null;
       }
 
-      final uri = Uri.parse('$baseUrl/api/support/inquiries/$inquiryId');
-
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(Duration(seconds: ApiConfig.timeoutSeconds));
-
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(utf8.decode(response.bodyBytes));
-        return Inquiry.fromJson(jsonResponse['data']);
-      } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다. 다시 로그인해주세요.');
-      } else if (response.statusCode == 403) {
-        throw Exception('본인의 문의만 조회할 수 있습니다.');
-      } else if (response.statusCode == 404) {
-        throw Exception('문의를 찾을 수 없습니다.');
-      } else {
-        throw HttpException(
-          'Failed to load inquiry detail: ${response.statusCode}',
-        );
-      }
-    } on SocketException {
-      throw Exception('네트워크 연결을 확인해주세요.');
-    } on HttpException catch (e) {
-      throw Exception('문의 상세 조회 실패: ${e.message}');
+      return Inquiry.fromJson(json['data'] as Map<String, dynamic>);
     } catch (e) {
-      throw Exception('문의 상세 조회 중 오류가 발생했습니다: $e');
+      debugPrint('❌ [SupportService] getInquiryDetail 에러: $e');
+      return null;
+    }
+  }
+
+  /// 문의 등록
+  Future<Inquiry?> createInquiry(CreateInquiryRequest request) async {
+    try {
+      final headers = await _getAuthHeaders();
+      if (headers == null) return null;
+
+      final uri = Uri.parse(ApiConfig.inquiriesUrl);
+      final response = await _apiClient.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      );
+
+      if (response == null) return null;
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (json['success'] != true) {
+        debugPrint('❌ [SupportService] createInquiry 실패: ${json['message']}');
+        return null;
+      }
+
+      return Inquiry.fromJson(json['data'] as Map<String, dynamic>);
+    } catch (e) {
+      debugPrint('❌ [SupportService] createInquiry 에러: $e');
+      return null;
+    }
+  }
+
+  /// 문의 수정
+  /// 답변 전(status = 'pending')에만 수정 가능
+  Future<Inquiry?> updateInquiry(int inquiryId, UpdateInquiryRequest request) async {
+    try {
+      final headers = await _getAuthHeaders();
+      if (headers == null) return null;
+
+      final uri = Uri.parse(ApiConfig.inquiryDetailUrl(inquiryId));
+      final response = await _apiClient.patch(
+        uri,
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      );
+
+      if (response == null) return null;
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (json['success'] != true) {
+        debugPrint('❌ [SupportService] updateInquiry 실패: ${json['message']}');
+        return null;
+      }
+
+      return Inquiry.fromJson(json['data'] as Map<String, dynamic>);
+    } catch (e) {
+      debugPrint('❌ [SupportService] updateInquiry 에러: $e');
+      return null;
+    }
+  }
+
+  /// 문의 삭제
+  /// 답변 전(status = 'pending')에만 삭제 가능
+  Future<bool> deleteInquiry(int inquiryId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      if (headers == null) return false;
+
+      final uri = Uri.parse(ApiConfig.inquiryDetailUrl(inquiryId));
+      final response = await _apiClient.delete(uri, headers: headers);
+
+      if (response == null) return false;
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return json['success'] == true;
+    } catch (e) {
+      debugPrint('❌ [SupportService] deleteInquiry 에러: $e');
+      return false;
     }
   }
 }

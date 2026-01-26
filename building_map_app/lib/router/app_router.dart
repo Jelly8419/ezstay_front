@@ -30,17 +30,16 @@ import '../pages/contract/host_contract_detail_page.dart'
 import '../pages/contract/contract_start_page.dart' deferred as contract_start;
 import '../pages/chat/chat_list_page.dart' deferred as chat_list;
 import '../pages/chat/chat_detail_page.dart' deferred as chat_detail;
-import '../pages/support/support_center_page.dart' deferred as support_center;
-import '../pages/support/notice_list_page.dart' deferred as notice_list;
-import '../pages/support/notice_detail_page.dart' deferred as notice_detail;
-import '../pages/support/faq_list_page.dart' deferred as faq_list;
-import '../pages/support/inquiry_list_page.dart' deferred as inquiry_list;
-import '../pages/support/inquiry_form_page.dart' deferred as inquiry_form;
-import '../pages/support/inquiry_detail_page.dart' deferred as inquiry_detail;
 import '../pages/host/room_management_page.dart' deferred as room_management;
 import '../pages/host/room_schedule_page.dart'; // 즉시 로딩으로 변경 (Focus 에러 방지)
 import '../pages/host/host_my_page.dart' deferred as host_my_page;
 import '../pages/payment/payment_callback_page.dart' deferred as payment_callback;
+import '../pages/support/customer_center_page.dart' deferred as customer_center;
+import '../pages/support/notices_page.dart' deferred as notices;
+import '../pages/support/notice_detail_page.dart' deferred as notice_detail;
+import '../pages/support/faqs_page.dart' deferred as faqs;
+import '../pages/support/inquiries_page.dart' deferred as inquiries;
+import '../pages/support/inquiry_form_page.dart' deferred as inquiry_form;
 
 
 class AppRouter {
@@ -591,102 +590,6 @@ class AppRouter {
             );
           },
         ),
-        // 고객센터 라우트
-        GoRoute(
-          path: '/support',
-          name: 'support-center',
-          builder: (context, state) {
-            return _deferredWidget(
-              support_center.loadLibrary,
-              () => support_center.SupportCenterPage(),
-            );
-          },
-          routes: [
-            // 공지사항 목록
-            GoRoute(
-              path: 'notices',
-              name: 'notice-list',
-              builder: (context, state) => _deferredWidget(
-                notice_list.loadLibrary,
-                () => notice_list.NoticeListPage(),
-              ),
-            ),
-            // 공지사항 상세
-            GoRoute(
-              path: 'notice/:noticeId',
-              name: 'notice-detail',
-              builder: (context, state) {
-                final noticeId = _parseIntParameter(
-                  state.pathParameters['noticeId'],
-                );
-
-                if (noticeId == null) {
-                  return _buildInvalidAccessPage(
-                    context,
-                    message: '잘못된 접근입니다.',
-                    buttonText: '고객센터로 돌아가기',
-                    redirectPath: '/support',
-                  );
-                }
-
-                return _deferredWidget(
-                  notice_detail.loadLibrary,
-                  () => notice_detail.NoticeDetailPage(noticeId: noticeId),
-                );
-              },
-            ),
-            // FAQ 목록
-            GoRoute(
-              path: 'faqs',
-              name: 'faq-list',
-              builder: (context, state) => _deferredWidget(
-                faq_list.loadLibrary,
-                () => faq_list.FAQListPage(),
-              ),
-            ),
-            // 문의 목록
-            GoRoute(
-              path: 'inquiries',
-              name: 'inquiry-list',
-              builder: (context, state) => _deferredWidget(
-                inquiry_list.loadLibrary,
-                () => inquiry_list.InquiryListPage(),
-              ),
-            ),
-            // 문의 작성
-            GoRoute(
-              path: 'inquiry/form',
-              name: 'inquiry-form',
-              builder: (context, state) => _deferredWidget(
-                inquiry_form.loadLibrary,
-                () => inquiry_form.InquiryFormPage(),
-              ),
-            ),
-            GoRoute(
-              path: 'inquiry/:inquiryId',
-              name: 'inquiry-detail',
-              builder: (context, state) {
-                final inquiryId = _parseIntParameter(
-                  state.pathParameters['inquiryId'],
-                );
-
-                if (inquiryId == null) {
-                  return _buildInvalidAccessPage(
-                    context,
-                    message: '잘못된 접근입니다.',
-                    buttonText: '문의 목록으로 돌아가기',
-                    redirectPath: '/support?tab=inquiry',
-                  );
-                }
-
-                return _deferredWidget(
-                  inquiry_detail.loadLibrary,
-                  () => inquiry_detail.InquiryDetailPage(inquiryId: inquiryId),
-                );
-              },
-            ),
-          ],
-        ),
         // 결제 성공 콜백
         GoRoute(
           path: '/payment/success',
@@ -756,6 +659,106 @@ class AppRouter {
               ),
             );
           },
+        ),
+
+        // 고객센터
+        GoRoute(
+          path: '/support',
+          name: 'support',
+          builder: (context, state) => _deferredWidget(
+            customer_center.loadLibrary,
+            () => customer_center.CustomerCenterPage(),
+          ),
+          routes: [
+            // 공지사항 목록
+            GoRoute(
+              path: 'notices',
+              name: 'notices',
+              builder: (context, state) => _deferredWidget(
+                notices.loadLibrary,
+                () => notices.NoticesPage(),
+              ),
+              routes: [
+                // 공지사항 상세
+                GoRoute(
+                  path: ':noticeId',
+                  name: 'notice-detail',
+                  builder: (context, state) {
+                    final noticeId = _parseIntParameter(
+                      state.pathParameters['noticeId'],
+                    );
+
+                    if (noticeId == null) {
+                      return _buildInvalidAccessPage(
+                        context,
+                        message: '잘못된 접근입니다.',
+                        buttonText: '공지사항 목록으로 돌아가기',
+                        redirectPath: '/support/notices',
+                      );
+                    }
+
+                    return _deferredWidget(
+                      notice_detail.loadLibrary,
+                      () => notice_detail.NoticeDetailPage(noticeId: noticeId),
+                    );
+                  },
+                ),
+              ],
+            ),
+            // 자주 묻는 질문
+            GoRoute(
+              path: 'faqs',
+              name: 'faqs',
+              builder: (context, state) => _deferredWidget(
+                faqs.loadLibrary,
+                () => faqs.FAQsPage(),
+              ),
+            ),
+            // 문의하기 목록
+            GoRoute(
+              path: 'inquiries',
+              name: 'inquiries',
+              builder: (context, state) => _deferredWidget(
+                inquiries.loadLibrary,
+                () => inquiries.InquiriesPage(),
+              ),
+              routes: [
+                // 문의 등록
+                GoRoute(
+                  path: 'new',
+                  name: 'inquiry-new',
+                  builder: (context, state) => _deferredWidget(
+                    inquiry_form.loadLibrary,
+                    () => inquiry_form.InquiryFormPage(),
+                  ),
+                ),
+                // 문의 수정
+                GoRoute(
+                  path: ':inquiryId/edit',
+                  name: 'inquiry-edit',
+                  builder: (context, state) {
+                    final inquiryId = _parseIntParameter(
+                      state.pathParameters['inquiryId'],
+                    );
+
+                    if (inquiryId == null) {
+                      return _buildInvalidAccessPage(
+                        context,
+                        message: '잘못된 접근입니다.',
+                        buttonText: '문의 목록으로 돌아가기',
+                        redirectPath: '/support/inquiries',
+                      );
+                    }
+
+                    return _deferredWidget(
+                      inquiry_form.loadLibrary,
+                      () => inquiry_form.InquiryFormPage(inquiryId: inquiryId),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
         ),
       ],
     );

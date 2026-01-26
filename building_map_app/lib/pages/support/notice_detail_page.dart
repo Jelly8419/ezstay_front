@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_html/flutter_html.dart';
-import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/theme/app_colors.dart';
 import '../../models/notice.dart';
 import '../../services/support_service.dart';
-import '../../widgets/common/responsive_page_layout.dart';
-import '../../constants/app_constants.dart';
+import '../../widgets/common/app_gnb.dart';
 
-/// 공지사항 상세 페이지
 class NoticeDetailPage extends StatefulWidget {
   final int noticeId;
 
@@ -23,239 +21,284 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
   final SupportService _supportService = SupportService();
 
   Notice? _notice;
-  bool _isLoading = true;
-  bool _hasError = false;
-  String _errorMessage = '';
+  bool _loading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadNoticeDetail();
+    _fetchNoticeDetail();
   }
 
-  /// 공지사항 상세 로드
-  Future<void> _loadNoticeDetail() async {
+  Future<void> _fetchNoticeDetail() async {
     setState(() {
-      _isLoading = true;
-      _hasError = false;
+      _loading = true;
+      _errorMessage = null;
     });
 
     try {
       final notice = await _supportService.getNoticeDetail(widget.noticeId);
 
-      setState(() {
-        _notice = notice;
-        _isLoading = false;
-      });
+      if (notice != null) {
+        setState(() {
+          _notice = notice;
+        });
+      } else {
+        setState(() {
+          _errorMessage = '공지사항을 찾을 수 없습니다';
+        });
+      }
     } catch (e) {
+      debugPrint('Failed to fetch notice detail: $e');
       setState(() {
-        _hasError = true;
-        _errorMessage = e.toString();
-        _isLoading = false;
+        _errorMessage = '공지사항을 불러오는데 실패했습니다';
+      });
+    } finally {
+      setState(() {
+        _loading = false;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveScaffold(
-      title: '공지사항',
-      useGNB: true,
-      useCardStyle: true,
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    if (_hasError) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.error,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '공지사항을 불러올 수 없습니다',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _errorMessage,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadNoticeDetail,
-              icon: const Icon(Icons.refresh),
-              label: const Text('다시 시도'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_notice == null) {
-      return const Center(
-        child: Text('공지사항을 찾을 수 없습니다'),
-      );
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      backgroundColor: AppColors.gray50,
+      appBar: const AppGNB(),
+      body: Column(
         children: [
-          // 중요 공지 뱃지
-          if (_notice!.isImportant)
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.error,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.priority_high,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    '중요 공지',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // 제목
-          Text(
-            _notice!.title,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // 메타 정보
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.grey50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.access_time,
-                  size: 16,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _formatDate(_notice!.publishedAt ?? _notice!.createdAt),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Icon(
-                  Icons.remove_red_eye_outlined,
-                  size: 16,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '조회 ${_notice!.viewCount}회',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // 구분선
-          const Divider(thickness: 1),
-          const SizedBox(height: 24),
-
-          // 내용 (HTML)
-          if (_notice!.content != null)
-            Html(
-              data: _notice!.content!,
-              style: {
-                "body": Style(
-                  fontSize: FontSize(16),
-                  lineHeight: const LineHeight(1.8),
-                  color: AppColors.textPrimary,
-                  margin: Margins.zero,
-                  padding: HtmlPaddings.zero,
-                ),
-              },
-            )
-          else
-            const Text(
-              '내용을 불러올 수 없습니다.',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          const SizedBox(height: 40),
-
-          // 목록으로 돌아가기 버튼
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.list),
-              label: const Text('목록으로'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
+          _buildHeader(),
+          Expanded(
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : _errorMessage != null || _notice == null
+                    ? _buildErrorView()
+                    : _buildContent(),
           ),
         ],
       ),
     );
   }
 
-  /// 날짜 포맷팅
-  String _formatDate(DateTime date) {
-    return DateFormat('yyyy년 MM월 dd일 HH:mm').format(date);
+  Widget _buildHeader() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.neutral0,
+        border: Border(
+          bottom: BorderSide(color: AppColors.border, width: 1),
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 896),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  InkWell(
+                    onTap: () {
+                      context.go('/support/notices');
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      child: const Icon(
+                        Icons.chevron_left,
+                        size: 24,
+                        color: AppColors.gray600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    '공지사항',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gray900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 48,
+            color: AppColors.neutral400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage ?? '공지사항을 찾을 수 없습니다',
+            style: const TextStyle(
+              color: AppColors.gray600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton(
+            onPressed: () {
+              context.go('/support/notices');
+            },
+            child: const Text('목록으로 돌아가기'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return SingleChildScrollView(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 896),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.neutral0,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 중요 배지
+                  if (_notice!.isImportant) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        '중요',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.neutral0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  // Title
+                  Text(
+                    _notice!.title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gray900,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Meta Info
+                  Container(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: AppColors.border),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          _notice!.formattedDate,
+                          style: const TextStyle(
+                            color: AppColors.gray600,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          '·',
+                          style: TextStyle(
+                            color: AppColors.gray600,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '조회 ${_notice!.formattedViewCount}',
+                          style: const TextStyle(
+                            color: AppColors.gray600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: (_notice!.content ?? '').split('\n').map((line) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            line,
+                            style: const TextStyle(
+                              color: AppColors.neutral700,
+                              height: 1.6,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+
+                  // Back Button
+                  Container(
+                    padding: const EdgeInsets.only(top: 24),
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: AppColors.border),
+                      ),
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          context.go('/support/notices');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.gray50,
+                          foregroundColor: AppColors.gray900,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text('목록으로'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

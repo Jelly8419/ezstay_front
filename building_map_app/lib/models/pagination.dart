@@ -52,4 +52,14 @@ class Pagination {
 
   bool get hasNextPage => currentPage < totalPages;
   bool get hasPreviousPage => currentPage > 1;
+
+  /// 빈 페이지네이션 (데이터가 없을 때 사용)
+  factory Pagination.empty() {
+    return Pagination(
+      currentPage: 1,
+      totalPages: 1,
+      totalItems: 0,
+      itemsPerPage: 10,
+    );
+  }
 }

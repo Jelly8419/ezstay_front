@@ -77,6 +77,20 @@ class ApiConfig {
   //게스트 방 조회 API 엔드포인트
   static String getRoomById(int roomId) => '$baseUrl/api/rooms/$roomId';
 
+  /// 고객센터 API 엔드포인트
+  // 공지사항
+  static String get noticesUrl => '$baseUrl/api/support/notices';
+  static String noticeDetailUrl(int noticeId) => '$noticesUrl/$noticeId';
+
+  // FAQ
+  static String get faqCategoriesUrl => '$baseUrl/api/support/faq/categories';
+  static String get faqsUrl => '$baseUrl/api/support/faqs';
+  static String faqDetailUrl(int faqId) => '$faqsUrl/$faqId';
+
+  // 문의하기
+  static String get inquiriesUrl => '$baseUrl/api/support/inquiries';
+  static String inquiryDetailUrl(int inquiryId) => '$inquiriesUrl/$inquiryId';
+
   /// API 설정 유효성 검사
   static bool isConfigValid() {
     return baseUrl.isNotEmpty && baseUrl != 'YOUR_API_BASE_URL_HERE';
