@@ -17,7 +17,6 @@ import 'services/error_handler_service.dart';
 import 'services/room_service.dart';
 import 'services/map_interaction_coordinator.dart';
 import 'services/payment_service_unified.dart';
-import 'providers/chat_provider.dart';
 import 'providers/gnb_provider.dart';
 import 'router/app_router.dart';
 import 'widgets/kakao_map_web.dart';
@@ -73,20 +72,20 @@ Future<void> main() async {
     debugPrint('⚠️ [ENV] $envFile 파일 로드 실패 (--dart-define 값 사용): $e');
   }
 
-  // 🔥 Firebase 초기화를 백그라운드로 이동 (await 제거)
-  final firebaseInitFuture = _initializeFirebase();
-
   // 한국어 날짜 포맷 초기화 (table_calendar를 위함)
   await initializeDateFormatting('ko_KR', null);
 
   // 웹에서 URL의 '#' 제거 (path 기반 라우팅 사용)
   usePathUrlStrategy();
 
-  // 카카오 SDK 초기화
+  // 카카오 SDK 초기화 (dotenv 로드 후 호출 - 안전성 보장)
   kakao.KakaoSdk.init(
     nativeAppKey: KakaoConfig.restApiKey,
     javaScriptAppKey: KakaoConfig.restApiKey,
   );
+
+  // 🔥 Firebase 초기화를 백그라운드로 이동 (await 제거)
+  final firebaseInitFuture = _initializeFirebase();
 
   // 카카오 맵 초기화
   AuthRepository.initialize(appKey: KakaoConfig.javascriptKey);
@@ -120,7 +119,6 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authService),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => GNBProvider()),
         // 지도 상호작용 조정자 (이벤트 충돌 방지)
         ChangeNotifierProvider(create: (_) => MapInteractionCoordinator()),
