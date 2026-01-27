@@ -6,8 +6,6 @@ import '../../models/chat_room.dart';
 import '../../services/chat_service.dart';
 import '../../services/firebase_auth_service.dart';
 import '../../services/auth_service.dart';
-import '../../providers/chat_provider.dart';
-import '../../utils/responsive_util.dart';
 import '../../constants/app_constants.dart';
 import '../../widgets/system_message_bubble.dart';
 
@@ -151,13 +149,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 사이드바에서 렌더링될 때는 body만 반환 (AppBar는 ChatSidebarWidget에서 처리)
-    final chatProvider = Provider.of<ChatProvider>(context);
-    if (chatProvider.isOpen && ResponsiveUtil.isDesktop(context)) {
-      return _buildBody();
-    }
-
-    // 전체 화면일 때는 Scaffold 사용
     return Scaffold(
       appBar: _buildAppBar(),
       body: _buildBody(),

@@ -11,8 +11,6 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/widgets/app_buttons.dart';
 import '../../features/web/web_layout.dart';
-import '../../providers/chat_provider.dart';
-import '../../widgets/chat_sidebar_widget.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../config/api_config.dart';
 
@@ -237,8 +235,6 @@ class _HostHomePageState extends State<HostHomePage> {
 
                 // 스크롤 탑 버튼
                 ScrollToTopButton(scrollController: _scrollController),
-                // 채팅 사이드바
-                ChatSidebarWidget(),
               ],
             ),
           ),

@@ -11,8 +11,6 @@ import '../../core/theme/app_spacing.dart';
 import '../../shared/widgets/app_buttons.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_gnb.dart';
-import '../../widgets/chat_sidebar_widget.dart';
-import '../../providers/chat_provider.dart';
 
 /// 게스트 홈 페이지 - 심플하고 모던한 랜딩 페이지
 class GuestHomePage extends StatefulWidget {
@@ -173,9 +171,6 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
                 // 스크롤 탑 버튼
                 ScrollToTopButton(scrollController: _scrollController),
-
-                // 채팅 사이드바 (오버레이)
-                const ChatSidebarWidget(),
               ],
             ),
           ),
@@ -739,7 +734,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
           builder: (context, constraints) {
             // 모바일: 2열, 데스크톱: 4열 (게스트) 또는 3열 (호스트)
             final crossAxisCount = isMobile ? 2 : steps.length;
-            final childAspectRatio = isMobile ? 0.8 : 0.85;
+            final childAspectRatio = isMobile ? 0.75 : 0.8;
 
             return GridView.builder(
               shrinkWrap: true,
