@@ -30,6 +30,8 @@ import '../pages/contract/host_contract_detail_page.dart'
 import '../pages/contract/contract_start_page.dart' deferred as contract_start;
 import '../pages/chat/chat_list_page.dart' deferred as chat_list;
 import '../pages/chat/chat_detail_page.dart' deferred as chat_detail;
+import '../pages/chat/auto_message_management_page.dart'
+    deferred as auto_message_management;
 import '../pages/host/room_management_page.dart' deferred as room_management;
 import '../pages/host/room_schedule_page.dart'; // 즉시 로딩으로 변경 (Focus 에러 방지)
 import '../pages/host/host_my_page.dart' deferred as host_my_page;
@@ -563,6 +565,20 @@ class AppRouter {
             chat_list.loadLibrary,
             () => chat_list.ChatListPage(),
           ),
+          routes: [
+            // 채팅방 선택 시 URL 파라미터 지원
+            GoRoute(
+              path: ':chatRoomId',
+              name: 'chat-list-detail',
+              builder: (context, state) {
+                final chatRoomId = state.pathParameters['chatRoomId'];
+                return _deferredWidget(
+                  chat_list.loadLibrary,
+                  () => chat_list.ChatListPage(initialChatRoomId: chatRoomId),
+                );
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/chat-detail',
@@ -589,6 +605,15 @@ class AppRouter {
               ),
             );
           },
+        ),
+        // 호스트 자동메시지 관리
+        GoRoute(
+          path: '/host/chat/auto-message',
+          name: 'auto-message-management',
+          builder: (context, state) => _deferredWidget(
+            auto_message_management.loadLibrary,
+            () => auto_message_management.AutoMessageManagementPage(),
+          ),
         ),
         // 결제 성공 콜백
         GoRoute(
