@@ -1,20 +1,31 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import '../../providers/chat_provider.dart';
-import '../../utils/responsive_util.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/chat_room.dart';
+import '../../models/chat_message.dart';
+import '../../models/user.dart';
+import '../../services/auth_service.dart';
 import '../../services/chat_service.dart';
 import '../../services/firebase_auth_service.dart';
-import '../../services/auth_service.dart';
-import '../../widgets/common/responsive_page_layout.dart';
-import '../../constants/app_constants.dart';
+import '../../widgets/chat/chat_list_item.dart';
+import '../../widgets/chat/chat_window.dart';
+import '../../widgets/common/app_gnb.dart';
 
-/// 채팅방 목록 페이지
+/// 채팅 목록 페이지
+/// React ChatListPage.tsx를 Flutter로 완전 복제
+/// - PC: 왼쪽 사이드바(384px) + 오른쪽 채팅창
+/// - Mobile: 채팅 선택 시 전체화면 전환
 class ChatListPage extends StatefulWidget {
-  const ChatListPage({super.key});
+  final String? initialChatRoomId;
+
+  const ChatListPage({
+    super.key,
+    this.initialChatRoomId,
+  });
 
   @override
   State<ChatListPage> createState() => _ChatListPageState();
@@ -24,13 +35,20 @@ class _ChatListPageState extends State<ChatListPage> {
   final ChatService _chatService = ChatService();
   final FirebaseAuthService _firebaseAuth = FirebaseAuthService();
 
+  String _statusFilter = 'all';
+  String? _selectedChatId;
+  bool _isContractInfoOpen = false;
   List<ChatRoom> _chatRooms = [];
   bool _isLoading = true;
   String? _error;
 
+  // 메시지 캐시 (채팅방 변경 시 깜빡임 방지)
+  final Map<String, List<ChatMessage>> _messageCache = {};
+
   @override
   void initState() {
     super.initState();
+    _selectedChatId = widget.initialChatRoomId;
     _initializeAndLoadChatRooms();
   }
 
@@ -61,24 +79,278 @@ class _ChatListPageState extends State<ChatListPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // 사이드바에서 렌더링될 때는 body만 반환
-    final chatProvider = Provider.of<ChatProvider>(context);
-    if (chatProvider.isOpen && ResponsiveUtil.isDesktop(context)) {
-      return _buildBody();
+  /// 현재 사용자 모드에 따른 채팅방 필터링
+  List<ChatRoom> get _filteredChatRooms {
+    // 상태 필터 적용
+    if (_statusFilter == 'all') {
+      return _chatRooms;
     }
 
-    // 전체 화면일 때는 Scaffold 사용
-    return ResponsiveScaffold(
-      scrollable: false,  // ListView가 자체 스크롤을 처리하므로 false
-      usePadding: false,  // ListView가 자체 패딩을 처리하므로 false
-      title: '채팅',
-      body: _buildBody(),
+    return _chatRooms.where((chat) {
+      return chat.contractStatus.value == _statusFilter;
+    }).toList();
+  }
+
+  int get _totalUnreadCount {
+    return _chatRooms.fold(0, (sum, chat) => sum + (chat.unreadCount ?? 0));
+  }
+
+  ChatRoom? get _selectedChat {
+    if (_selectedChatId == null) return null;
+    try {
+      return _chatRooms.firstWhere(
+        (chat) => chat.id.toString() == _selectedChatId,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  void _handleSelectChat(String id) {
+    setState(() {
+      _selectedChatId = id;
+    });
+    // URL 업데이트 (go 사용 - 페이지 재빌드 없이 URL만 변경)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.go('/chat-list/$id');
+      }
+    });
+  }
+
+  void _handleBack() {
+    setState(() {
+      _selectedChatId = null;
+    });
+    // URL 업데이트
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.go('/chat-list');
+      }
+    });
+  }
+
+  void _handleOpenContractInfo() {
+    setState(() {
+      _isContractInfoOpen = true;
+    });
+  }
+
+  void _handleCloseContractInfo() {
+    setState(() {
+      _isContractInfoOpen = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 1024; // lg breakpoint
+    final authService = Provider.of<AuthService>(context);
+    final isHostMode = authService.currentUser?.mode == UserMode.host;
+
+    // React: h-full flex flex-col lg:flex-row bg-white
+    return Scaffold(
+      appBar: const AppGNB(),
+      body: Container(
+        color: AppColors.neutral0, // bg-white
+        child: Row(
+          children: [
+            // 채팅 목록 사이드바
+            // React: 모바일에서 채팅 선택 시 숨김, 웹에서 항상 표시
+            // hidden lg:flex → ${selectedChatId ? 'hidden lg:flex' : 'flex'}
+            if (isDesktop || _selectedChatId == null)
+              SizedBox(
+                width: isDesktop ? 384 : double.infinity, // lg:w-96 (384px)
+                child: _buildChatListSidebar(isDesktop, isHostMode),
+              ),
+
+            // 구분선 (웹에서만)
+            if (isDesktop)
+              Container(
+                width: 1,
+                color: AppColors.gray200, // border-r border-gray-200
+              ),
+
+            // 채팅 창
+            // React: 웹에서만 표시 / 모바일에서는 선택 시 전체 화면
+            if (_selectedChat != null && (isDesktop || _selectedChatId != null))
+              Expanded(
+                child: _buildChatWindow(isDesktop),
+              ),
+
+            // 웹에서 채팅 미선택 시 안내 메시지
+            // React: hidden lg:flex flex-1 items-center justify-center bg-gray-50
+            if (_selectedChat == null && isDesktop)
+              Expanded(
+                child: Container(
+                  color: AppColors.gray50, // bg-gray-50
+                  child: Center(
+                    child: Text(
+                      '채팅방을 선택해주세요',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.neutral400, // text-gray-400
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildBody() {
+  /// 채팅 목록 사이드바
+  Widget _buildChatListSidebar(bool isDesktop, bool isHostMode) {
+    // React: flex flex-col w-full lg:w-96 border-r border-gray-200 h-full
+    return Column(
+      children: [
+        // Mobile Header (React: lg:hidden)
+        if (!isDesktop) _buildMobileHeader(),
+
+        // Filter Section (React: p-4 sm:p-6 lg:p-4 border-b border-gray-200)
+        _buildFilterSection(isHostMode),
+
+        // Chat List (React: flex-1 overflow-y-auto pb-16 lg:pb-0)
+        Expanded(
+          child: _buildChatList(),
+        ),
+      ],
+    );
+  }
+
+  /// 모바일 헤더 (React: lg:hidden bg-white border-b border-gray-200 px-4 py-4)
+  Widget _buildMobileHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16), // px-4 py-4
+      decoration: const BoxDecoration(
+        color: AppColors.neutral0, // bg-white
+        border: Border(
+          bottom: BorderSide(color: AppColors.gray200), // border-b border-gray-200
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '채팅',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.neutral900, // text-gray-900
+              fontWeight: FontWeight.bold, // font-bold
+              fontSize: 18, // text-[18px]
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 필터 섹션 (React: p-4 sm:p-6 lg:p-4 border-b border-gray-200)
+  Widget _buildFilterSection(bool isHostMode) {
+    return Container(
+      padding: const EdgeInsets.all(16), // p-4
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppColors.gray200),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Status Filter Dropdown (React: relative flex-1)
+          Expanded(
+            child: _buildStatusDropdown(),
+          ),
+          const SizedBox(width: 8), // gap-2
+
+          // 자동메시지 버튼 (호스트 모드에서만)
+          // React: userMode === 'host' && (...)
+          if (isHostMode) _buildAutoMessageButton(),
+        ],
+      ),
+    );
+  }
+
+  /// 상태 필터 드롭다운
+  /// React: w-full pl-4 pr-9 py-2 bg-gray-100 rounded-lg appearance-none cursor-pointer
+  Widget _buildStatusDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16), // pl-4 pr-9
+      decoration: BoxDecoration(
+        color: AppColors.neutral100, // bg-gray-100
+        borderRadius: BorderRadius.circular(8), // rounded-lg
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _statusFilter,
+          isExpanded: true,
+          icon: const Icon(
+            Icons.expand_more, // ChevronDown
+            size: 16, // w-4 h-4
+            color: AppColors.neutral400, // text-gray-400
+          ),
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.neutral900,
+          ),
+          items: const [
+            DropdownMenuItem(value: 'all', child: Text('계약 상태')),
+            DropdownMenuItem(value: 'payment_pending', child: Text('결제 대기')),
+            DropdownMenuItem(value: 'payment_completed', child: Text('결제 완료')),
+            DropdownMenuItem(value: 'ongoing', child: Text('임대 중')),
+            DropdownMenuItem(value: 'terminated', child: Text('계약 종료')),
+            DropdownMenuItem(value: 'cancelled', child: Text('계약 취소')),
+            DropdownMenuItem(value: 'rejected', child: Text('승인 거절')),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              setState(() => _statusFilter = value);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  /// 자동메시지 버튼
+  /// React: flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg
+  Widget _buildAutoMessageButton() {
+    return InkWell(
+      onTap: () {
+        context.push('/host/chat/auto-message');
+      },
+      borderRadius: BorderRadius.circular(8), // rounded-lg
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12, // px-3
+          vertical: 8, // py-2
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.blue600, // bg-blue-600
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.add, // Plus
+              size: 16, // w-4 h-4
+              color: AppColors.neutral0, // text-white
+            ),
+            const SizedBox(width: 8), // gap-2
+            Text(
+              '자동메시지',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.neutral0, // text-white
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 채팅 목록
+  /// React: flex-1 overflow-y-auto pb-16 lg:pb-0
+  Widget _buildChatList() {
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(),
@@ -93,7 +365,7 @@ class _ChatListPageState extends State<ChatListPage> {
             const Icon(
               Icons.error_outline,
               size: 64,
-              color: AppColors.error,
+              color: AppColors.error500,
             ),
             const SizedBox(height: 16),
             Text(
@@ -104,7 +376,7 @@ class _ChatListPageState extends State<ChatListPage> {
             Text(
               _error!,
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.neutral500,
               ),
               textAlign: TextAlign.center,
             ),
@@ -119,26 +391,21 @@ class _ChatListPageState extends State<ChatListPage> {
       );
     }
 
-    if (_chatRooms.isEmpty) {
+    if (_filteredChatRooms.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.chat_bubble_outline,
-              size: 80,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
+              size: 48,
+              color: AppColors.neutral300,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Text(
-              '채팅방이 없습니다',
-              style: AppTextStyles.heading3,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '계약이 승인되면 호스트와 채팅할 수 있습니다',
+              '채팅 내역이 없습니다',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.neutral500,
               ),
             ),
           ],
@@ -146,176 +413,80 @@ class _ChatListPageState extends State<ChatListPage> {
       );
     }
 
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUserId = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
+
     return RefreshIndicator(
       onRefresh: _initializeAndLoadChatRooms,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        itemCount: _chatRooms.length,
-        separatorBuilder: (context, index) => const Divider(height: 1),
+      child: ListView.builder(
+        itemCount: _filteredChatRooms.length,
         itemBuilder: (context, index) {
-          final chatRoom = _chatRooms[index];
-          final authService = Provider.of<AuthService>(context, listen: false);
-          final currentUserIdStr = authService.currentUser?.id;
-          final currentUserId = currentUserIdStr != null ? (int.tryParse(currentUserIdStr) ?? 0) : 0;
-          return _ChatRoomTile(
-            chatRoom: chatRoom,
+          final chat = _filteredChatRooms[index];
+          final isSelected = _selectedChatId == chat.id.toString();
+
+          return ChatListItem(
+            chatRoom: chat,
             currentUserId: currentUserId,
-            onTap: () => _navigateToChatDetail(chatRoom),
+            isSelected: isSelected,
+            onTap: () => _handleSelectChat(chat.id.toString()),
           );
         },
       ),
     );
   }
 
-  /// 채팅 상세 페이지로 이동
-  void _navigateToChatDetail(ChatRoom chatRoom) {
-    // 데스크톱에서는 사이드바에서 열기, 모바일에서는 전체 화면으로 이동
-    if (ResponsiveUtil.isDesktop(context)) {
-      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-      chatProvider.openChatDetail(chatRoom);
-    } else {
-      context.push(
-        '/chat-detail',
-        extra: {
-          'chatRoomId': chatRoom.firebaseChatRoomId,
-          'contractId': chatRoom.contractId,
-        },
-      );
-    }
-  }
-}
+  /// 채팅 창
+  Widget _buildChatWindow(bool isDesktop) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUserId = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
+    final firebaseChatRoomId = _selectedChat!.firebaseChatRoomId;
 
-/// 채팅방 타일 위젯
-class _ChatRoomTile extends StatelessWidget {
-  final ChatRoom chatRoom;
-  final int currentUserId;
-  final VoidCallback onTap;
+    // Firebase에서 실시간 메시지 로드
+    return StreamBuilder<List<ChatMessage>>(
+      stream: _chatService.getMessages(firebaseChatRoomId),
+      builder: (context, snapshot) {
+        // 새 데이터가 오면 캐시 업데이트
+        if (snapshot.hasData) {
+          _messageCache[firebaseChatRoomId] = snapshot.data!;
+        }
 
-  const _ChatRoomTile({
-    required this.chatRoom,
-    required this.currentUserId,
-    required this.onTap,
-  });
+        // 캐시된 메시지 사용 (깜빡임 방지)
+        final messages = _messageCache[firebaseChatRoomId] ?? snapshot.data ?? [];
 
-  @override
-  Widget build(BuildContext context) {
-    final otherUser = chatRoom.getOtherUser(currentUserId);
-    final roomName = chatRoom.getRoomDisplayName();
-    final hasUnread = (chatRoom.unreadCount ?? 0) > 0;
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
-      ),
-      leading: CircleAvatar(
-        radius: 28,
-        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-        backgroundImage: otherUser?.profileImageUrl != null
-            ? NetworkImage(otherUser!.profileImageUrl!)
-            : null,
-        child: otherUser?.profileImageUrl == null
-            ? Text(
-                otherUser?.name.substring(0, 1) ?? '?',
-                style: AppTextStyles.heading3.copyWith(
-                  color: AppColors.primary,
-                ),
-              )
-            : null,
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              otherUser?.name ?? '알 수 없음',
-              style: AppTextStyles.bodyLarge.copyWith(
-                fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ),
-          if (chatRoom.lastMessageAt != null)
-            Text(
-              _formatTime(chatRoom.lastMessageAt!),
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 4),
-          Text(
-            roomName,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (chatRoom.lastMessage != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              chatRoom.lastMessage!,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: hasUnread ? AppColors.textPrimary : AppColors.textSecondary,
-                fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ],
-      ),
-      trailing: hasUnread
-          ? Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                '${chatRoom.unreadCount}',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            )
-          : null,
-      onTap: onTap,
+        return ChatWindow(
+          chatRoom: _selectedChat!,
+          messages: messages,
+          currentUserId: currentUserId,
+          onOpenContractInfo: _handleOpenContractInfo,
+          onBack: isDesktop ? null : _handleBack,
+          onSendMessage: (text, images) => _handleSendMessage(text, images, currentUserId),
+        );
+      },
     );
   }
 
-  /// 시간 포맷팅 (오늘: HH:mm, 어제 이전: MM/dd)
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final messageDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+  /// 메시지 전송 핸들러
+  Future<void> _handleSendMessage(String text, List<File> images, int senderId) async {
+    if (_selectedChat == null) return;
 
-    if (messageDate == today) {
-      // 오늘: 시간만 표시
-      return DateFormat('HH:mm').format(dateTime);
-    } else if (messageDate == today.subtract(const Duration(days: 1))) {
-      // 어제
-      return '어제';
-    } else if (now.year == dateTime.year) {
-      // 올해: 월/일만 표시
-      return DateFormat('MM/dd').format(dateTime);
-    } else {
-      // 작년 이전: 년/월/일 표시
-      return DateFormat('yyyy/MM/dd').format(dateTime);
+    try {
+      // TODO: 이미지 업로드 로직 추가
+      // Firebase 채팅방 ID 사용
+      await _chatService.sendMessage(
+        chatRoomId: _selectedChat!.firebaseChatRoomId,
+        senderId: senderId,
+        text: text,
+      );
+    } catch (e) {
+      debugPrint('❌ [CHAT_LIST] 메시지 전송 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('메시지 전송 실패: $e'),
+            backgroundColor: AppColors.error500,
+          ),
+        );
+      }
     }
   }
 }

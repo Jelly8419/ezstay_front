@@ -1,3 +1,31 @@
+/// 사용자 역할 (호스트/게스트)
+enum SenderRole {
+  host,
+  guest;
+
+  String get displayName => this == SenderRole.host ? '호스트' : '게스트';
+}
+
+/// 계약 상태 (React UI 호환)
+enum ContractStatus {
+  pending('pending', '대기중'),
+  confirmed('confirmed', '확정'),
+  active('active', '이용중'),
+  completed('completed', '완료'),
+  cancelled('cancelled', '취소');
+
+  final String value;
+  final String displayName;
+  const ContractStatus(this.value, this.displayName);
+
+  static ContractStatus fromString(String value) {
+    return ContractStatus.values.firstWhere(
+      (e) => e.value == value.toLowerCase(),
+      orElse: () => ContractStatus.pending,
+    );
+  }
+}
+
 /// 채팅방 모델
 class ChatRoom {
   final int id;
@@ -101,6 +129,42 @@ class ChatRoom {
   /// 방 이름 또는 주소
   String getRoomDisplayName() {
     return room?.name ?? room?.roadAddress ?? '알 수 없음';
+  }
+
+  /// 현재 사용자의 역할 반환 (React UI 호환)
+  SenderRole getMyRole(int currentUserId) {
+    return currentUserId == hostId ? SenderRole.host : SenderRole.guest;
+  }
+
+  /// 계약 상태 enum으로 반환 (React UI 호환)
+  ContractStatus get contractStatus {
+    return ContractStatus.fromString(contract?.status ?? 'pending');
+  }
+
+  /// 상대방 프로필 이미지 URL
+  String? getOtherUserProfileImage(int currentUserId) {
+    return getOtherUser(currentUserId)?.profileImageUrl;
+  }
+
+  /// 마지막 메시지 시간 포맷팅 (React UI 호환)
+  String getFormattedLastMessageTime() {
+    if (lastMessageAt == null) return '';
+
+    final now = DateTime.now();
+    final diff = now.difference(lastMessageAt!);
+
+    if (diff.inDays == 0) {
+      // 오늘: HH:mm
+      return '${lastMessageAt!.hour.toString().padLeft(2, '0')}:${lastMessageAt!.minute.toString().padLeft(2, '0')}';
+    } else if (diff.inDays == 1) {
+      return '어제';
+    } else if (diff.inDays < 7) {
+      const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+      return '${weekdays[lastMessageAt!.weekday - 1]}요일';
+    } else {
+      // MM/DD
+      return '${lastMessageAt!.month}/${lastMessageAt!.day}';
+    }
   }
 }
 

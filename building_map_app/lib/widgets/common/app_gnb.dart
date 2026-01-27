@@ -7,7 +7,6 @@ import '../../core/theme/app_spacing.dart';
 import '../../services/auth_service.dart';
 import '../../models/user.dart';
 import '../../providers/gnb_provider.dart';
-import '../../providers/chat_provider.dart';
 import 'ezstay_logo.dart';
 import 'gnb_icon_button.dart';
 import 'gnb_menu_dropdown.dart';
@@ -291,8 +290,8 @@ class AppGNB extends StatelessWidget implements PreferredSizeWidget {
           showBadge: gnbProvider.hasUnreadChats,
           onPressed: () {
             gnbProvider.markChatsAsRead();
-            // 채팅 사이드바 위젯 열기
-            Provider.of<ChatProvider>(context, listen: false).openChatList();
+            // 채팅 목록 페이지로 이동
+            context.push('/chat-list');
           },
           tooltip: '채팅',
         ),

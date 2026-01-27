@@ -33,12 +33,27 @@ class ChatService {
   // ============================================
 
   /// 채팅방 목록 조회 (백엔드 API)
-  Future<List<ChatRoom>> getChatRooms() async {
+  /// [status] - 계약 상태 필터 (선택사항)
+  ///   - IN_PROGRESS: 진행중
+  ///   - PAYMENT_PENDING: 결제대기
+  ///   - PAYMENT_COMPLETED: 결제완료
+  ///   - ACTIVE: 임대중
+  ///   - COMPLETED: 계약종료
+  ///   - CANCELLED: 계약취소
+  ///   - REJECTED: 승인거절
+  Future<List<ChatRoom>> getChatRooms({String? status}) async {
     try {
-      debugPrint('📋 [CHAT] 채팅방 목록 조회 시작');
+      debugPrint('📋 [CHAT] 채팅방 목록 조회 시작 (status: $status)');
 
       final headers = await _getAuthHeaders();
-      final url = Uri.parse('${ApiConfig.baseUrl}/api/chats/rooms');
+
+      // 상태 필터가 있으면 쿼리 파라미터 추가
+      String urlString = '${ApiConfig.baseUrl}/api/chats/rooms';
+      if (status != null && status.isNotEmpty && status != 'all') {
+        urlString += '?status=$status';
+      }
+
+      final url = Uri.parse(urlString);
       final response = await _apiClient.get(url, headers: headers);
 
       if (response == null) {
@@ -171,42 +186,15 @@ class ChatService {
 
   /// 메시지 수신 (Firestore - 실시간 스트림)
   Stream<List<ChatMessage>> getMessages(String chatRoomId) {
-    try {
-      debugPrint('📩 [CHAT] 메시지 스트림 시작: $chatRoomId');
-
-      // 🔍 디버깅: 채팅방 문서 구조 확인
-      _firestore.collection('chatRooms').doc(chatRoomId).get().then((doc) {
-        if (doc.exists) {
-          debugPrint('🔍 [DEBUG] 채팅방 문서 전체 데이터: ${doc.data()}');
-        }
-      });
-
-      return _firestore
-          .collection('chatRooms')
-          .doc(chatRoomId)
-          .collection('messages')
-          .orderBy('timestamp', descending: false)
-          .snapshots()
-          .map((snapshot) {
-        debugPrint('📦 [CHAT] messages 서브컬렉션에서 받은 메시지 개수: ${snapshot.docs.length}');
-
-        final messages = snapshot.docs.map((doc) {
-          final data = doc.data();
-          debugPrint('📝 [CHAT] 메시지 원본 데이터: ${doc.id} => $data');
-
-          final message = ChatMessage.fromFirestore(doc);
-          debugPrint('✅ [CHAT] 파싱된 메시지: type=${message.type.value}, systemType=${message.systemMessageType}, text=${message.text}');
-
-          return message;
-        }).toList();
-
-        debugPrint('🎯 [CHAT] 총 ${messages.length}개 메시지 파싱 완료');
-        return messages;
-      });
-    } catch (e) {
-      debugPrint('❌ [CHAT] 메시지 스트림 에러: $e');
-      rethrow;
-    }
+    return _firestore
+        .collection('chatRooms')
+        .doc(chatRoomId)
+        .collection('messages')
+        .orderBy('timestamp', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => ChatMessage.fromFirestore(doc)).toList();
+    });
   }
 
   /// 읽음 처리 (Firestore)
