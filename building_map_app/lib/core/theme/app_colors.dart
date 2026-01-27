@@ -131,7 +131,7 @@ class AppColors {
   static const Color textOnPrimary = neutral0;
 
   // Border & Divider
-  static const Color border = neutral300;
+  static const Color border = gray200; // React border 기본값 (#E5E7EB)
   static const Color divider = neutral200;
 
   // Overlay

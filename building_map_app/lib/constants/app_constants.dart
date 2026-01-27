@@ -72,7 +72,9 @@ extension ColorExtension on Color {
   Color lighten([double amount = 0.1]) {
     assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(this);
-    final hslLight = hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));
+    final hslLight = hsl.withLightness(
+      (hsl.lightness + amount).clamp(0.0, 1.0),
+    );
     return hslLight.toColor();
   }
 }
@@ -136,10 +138,7 @@ class AppTextStyles {
     color: AppColors.primary,
   );
 
-  static const button = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-  );
+  static const button = TextStyle(fontSize: 16, fontWeight: FontWeight.w600);
 }
 
 /// 앱 테마
@@ -166,9 +165,7 @@ class AppTheme {
       // 카드 테마
       cardTheme: CardThemeData(
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         color: Colors.white,
       ),
 
@@ -228,7 +225,10 @@ class AppTheme {
         ),
         filled: true,
         fillColor: AppColors.grey50,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         hintStyle: TextStyle(color: AppColors.textHint),
       ),
 
@@ -246,16 +246,12 @@ class AppTheme {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
 
       // 다이얼로그 테마
       dialogTheme: DialogThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 8,
         backgroundColor: Colors.white,
       ),
@@ -276,9 +272,7 @@ class AppTheme {
         deleteIconColor: AppColors.textSecondary,
         labelStyle: AppTextStyles.bodyMedium,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
 
       // 디바이더 테마
@@ -289,10 +283,7 @@ class AppTheme {
       ),
 
       // 아이콘 테마
-      iconTheme: IconThemeData(
-        color: AppColors.primary,
-        size: 24,
-      ),
+      iconTheme: IconThemeData(color: AppColors.primary, size: 24),
 
       // 텍스트 테마
       textTheme: TextTheme(
@@ -325,10 +316,18 @@ class AppSpacing {
   static const EdgeInsets paddingXl = EdgeInsets.all(32.0);
 
   // 수평/수직 패딩
-  static const EdgeInsets paddingHorizontalMd = EdgeInsets.symmetric(horizontal: 16.0);
-  static const EdgeInsets paddingVerticalMd = EdgeInsets.symmetric(vertical: 16.0);
-  static const EdgeInsets paddingHorizontalLg = EdgeInsets.symmetric(horizontal: 24.0);
-  static const EdgeInsets paddingVerticalLg = EdgeInsets.symmetric(vertical: 24.0);
+  static const EdgeInsets paddingHorizontalMd = EdgeInsets.symmetric(
+    horizontal: 16.0,
+  );
+  static const EdgeInsets paddingVerticalMd = EdgeInsets.symmetric(
+    vertical: 16.0,
+  );
+  static const EdgeInsets paddingHorizontalLg = EdgeInsets.symmetric(
+    horizontal: 24.0,
+  );
+  static const EdgeInsets paddingVerticalLg = EdgeInsets.symmetric(
+    vertical: 24.0,
+  );
 
   // SizedBox용 간격
   static const double xs = 4.0;
