@@ -206,11 +206,20 @@ class _MyAppState extends State<MyApp> {
           debugShowCheckedModeBanner: false,
           routerConfig: _router!,
           theme: AppTheme.lightTheme(),
-          // Flutter Web Focus 에러 방지: 커스텀 Focus Traversal Policy 적용
+          // Flutter Web Focus 에러 방지 + 텍스트 선택 활성화
           builder: (context, child) {
             return FocusTraversalGroup(
               policy: SafeFocusTraversalPolicy(),
-              child: child ?? const SizedBox.shrink(),
+              // Overlay를 먼저 제공한 후 SelectionArea 적용
+              child: Overlay(
+                initialEntries: [
+                  OverlayEntry(
+                    builder: (context) => SelectionArea(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         );
