@@ -72,7 +72,7 @@ Future<void> main() async {
     debugPrint('⚠️ [ENV] $envFile 파일 로드 실패 (--dart-define 값 사용): $e');
   }
 
-  // 한국어 날짜 포맷 초기화 (table_calendar를 위함)
+  // 한국어 날짜 포맷 초기화 (intl 패키지)
   await initializeDateFormatting('ko_KR', null);
 
   // 웹에서 URL의 '#' 제거 (path 기반 라우팅 사용)

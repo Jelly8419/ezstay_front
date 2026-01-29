@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:table_calendar/table_calendar.dart';
 import '../../services/auth_service.dart';
 import '../../services/analytics_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -372,246 +371,32 @@ class _GuestHomePageState extends State<GuestHomePage> {
   }
 
   // ==================== 날짜 선택 다이얼로그 ====================
+  /// DateRangePicker 다이얼로그를 직접 호출하여 날짜 선택
   Future<void> _showDateSelectionDialog() async {
-    DateTime? rangeStart = _checkInDate;
-    DateTime? rangeEnd = _checkOutDate;
-    DateTime focusedDay = _checkInDate ?? DateTime.now();
-
-    await showDialog(
+    showDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              contentPadding: EdgeInsets.zero,
-              content: SizedBox(
-                width: 400,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 헤더
-                    Container(
-                      padding: EdgeInsets.all(AppSpacing.lg),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary500,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(AppRadius.md),
-                          topRight: Radius.circular(AppRadius.md),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '체크인/체크아웃 선택',
-                            style: AppTextStyles.headingMedium.copyWith(
-                              color: AppColors.neutral0,
-                            ),
-                          ),
-                          SizedBox(height: AppSpacing.xs),
-                          Text(
-                            rangeStart != null && rangeEnd != null
-                                ? '${DateFormat('MM.dd').format(rangeStart!)} - ${DateFormat('MM.dd').format(rangeEnd!)} (${rangeEnd!.difference(rangeStart!).inDays}일)'
-                                : '날짜를 선택하세요 (최소 7일)',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.neutral0.withValues(alpha: 0.9),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+      builder: (dialogContext) => _GuestDateRangePickerDialog(
+        initialCheckIn: _checkInDate,
+        initialCheckOut: _checkOutDate,
+        onDateRangeSelected: (checkIn, checkOut) {
+          setState(() {
+            _checkInDate = checkIn;
+            _checkOutDate = checkOut;
+          });
 
-                    // 달력
-                    Padding(
-                      padding: EdgeInsets.all(AppSpacing.md),
-                      child: TableCalendar(
-                        firstDay: DateTime.now(),
-                        lastDay: DateTime.now().add(Duration(days: 365)),
-                        focusedDay: focusedDay,
-                        locale: 'ko_KR',
-                        rangeSelectionMode: RangeSelectionMode.enforced,
-                        rangeStartDay: rangeStart,
-                        rangeEndDay: rangeEnd,
-                        calendarFormat: CalendarFormat.month,
-                        headerStyle: HeaderStyle(
-                          formatButtonVisible: false,
-                          titleCentered: true,
-                          titleTextStyle: AppTextStyles.headingSmall,
-                          leftChevronIcon: Icon(
-                            Icons.chevron_left,
-                            color: AppColors.textPrimary,
-                          ),
-                          rightChevronIcon: Icon(
-                            Icons.chevron_right,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        calendarStyle: CalendarStyle(
-                          selectedDecoration: BoxDecoration(
-                            color: AppColors.primary500,
-                            shape: BoxShape.circle,
-                          ),
-                          todayDecoration: BoxDecoration(
-                            color: AppColors.primary200,
-                            shape: BoxShape.circle,
-                          ),
-                          rangeStartDecoration: BoxDecoration(
-                            color: AppColors.primary500,
-                            shape: BoxShape.circle,
-                          ),
-                          rangeEndDecoration: BoxDecoration(
-                            color: AppColors.primary500,
-                            shape: BoxShape.circle,
-                          ),
-                          rangeHighlightColor: AppColors.primary100,
-                          withinRangeTextStyle: TextStyle(
-                            color: AppColors.textPrimary,
-                          ),
-                          outsideDaysVisible: false,
-                        ),
-                        onDaySelected: (selectedDay, focused) {
-                          setDialogState(() {
-                            focusedDay = focused;
-
-                            // 첫 번째 선택 (체크인)
-                            if (rangeStart == null ||
-                                (rangeStart != null && rangeEnd != null)) {
-                              rangeStart = selectedDay;
-                              rangeEnd = null;
-                            }
-                            // 두 번째 선택 (체크아웃)
-                            else if (rangeStart != null && rangeEnd == null) {
-                              // 체크아웃이 체크인보다 이전이면 체크인을 새로 선택한 날짜로
-                              if (selectedDay.isBefore(rangeStart!)) {
-                                rangeStart = selectedDay;
-                                rangeEnd = null;
-                              } else {
-                                rangeEnd = selectedDay;
-                              }
-                            }
-                          });
-                        },
-                        onRangeSelected: (start, end, focused) {
-                          setDialogState(() {
-                            focusedDay = focused;
-                            rangeStart = start;
-                            rangeEnd = end;
-                          });
-                        },
-                        onPageChanged: (focused) {
-                          focusedDay = focused;
-                        },
-                      ),
-                    ),
-
-                    // 안내 메시지
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm,
-                      ),
-                      child: rangeStart != null && rangeEnd != null
-                          ? Container(
-                              padding: EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color: AppColors.success50,
-                                borderRadius: AppRadius.radiusSm,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.check_circle,
-                                    size: 18,
-                                    color: AppColors.success600,
-                                  ),
-                                  SizedBox(width: AppSpacing.sm),
-                                  Expanded(
-                                    child: Text(
-                                      '총 ${rangeEnd!.difference(rangeStart!).inDays}일 (${(rangeEnd!.difference(rangeStart!).inDays / 7).ceil()}주) 선택됨',
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: AppColors.success700,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : Container(
-                              padding: EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary50,
-                                borderRadius: AppRadius.radiusSm,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.info_outline,
-                                    size: 18,
-                                    color: AppColors.primary600,
-                                  ),
-                                  SizedBox(width: AppSpacing.sm),
-                                  Expanded(
-                                    child: Text(
-                                      rangeStart == null
-                                          ? '체크인 날짜를 선택하세요'
-                                          : '체크아웃 날짜를 선택하세요 (최소 7일 후)',
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: AppColors.primary700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                    ),
-                    SizedBox(height: AppSpacing.sm),
-                  ],
-                ),
-              ),
-              actions: [
-                AppTextButton(
-                  text: '취소',
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                ),
-                AppPrimaryButton(
-                  text: '확인',
-                  onPressed: rangeStart == null || rangeEnd == null
-                      ? null
-                      : () {
-                          // 최소 7일 검증
-                          final days = rangeEnd!.difference(rangeStart!).inDays;
-                          if (days < 7) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('최소 계약 기간은 1주일(7일)입니다.'),
-                                backgroundColor: AppColors.error500,
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                            return;
-                          }
-
-                          setState(() {
-                            _checkInDate = rangeStart;
-                            _checkOutDate = rangeEnd;
-                          });
-
-                          // 🔥 날짜 선택 완료 이벤트 기록
-                          _analytics.logHomeSelectPeriod(
-                            checkInDate: rangeStart!,
-                            checkOutDate: rangeEnd!,
-                          );
-
-                          Navigator.of(dialogContext).pop();
-                        },
-                  fullWidth: false,
-                ),
-              ],
-            );
-          },
-        );
-      },
+          // 🔥 날짜 선택 완료 이벤트 기록
+          _analytics.logHomeSelectPeriod(
+            checkInDate: checkIn,
+            checkOutDate: checkOut,
+          );
+        },
+        onDateCleared: () {
+          setState(() {
+            _checkInDate = null;
+            _checkOutDate = null;
+          });
+        },
+      ),
     );
   }
 
@@ -1255,4 +1040,505 @@ class _StepInfo {
     required this.title,
     required this.description,
   });
+}
+
+// ==================== 게스트 날짜 선택 다이얼로그 ====================
+/// 게스트 홈 검색용 날짜 범위 선택 다이얼로그
+/// - minContractDays: 7일 (게스트 기본)
+/// - maxContractDays: 90일 (게스트 기본)
+class _GuestDateRangePickerDialog extends StatefulWidget {
+  final DateTime? initialCheckIn;
+  final DateTime? initialCheckOut;
+  final void Function(DateTime checkIn, DateTime checkOut) onDateRangeSelected;
+  final void Function()? onDateCleared;
+
+  const _GuestDateRangePickerDialog({
+    this.initialCheckIn,
+    this.initialCheckOut,
+    required this.onDateRangeSelected,
+    this.onDateCleared,
+  });
+
+  @override
+  State<_GuestDateRangePickerDialog> createState() =>
+      _GuestDateRangePickerDialogState();
+}
+
+class _GuestDateRangePickerDialogState
+    extends State<_GuestDateRangePickerDialog> {
+  // 게스트 기본 설정
+  static const int _minContractDays = 7;
+  static const int _maxContractDays = 90;
+
+  late DateTime _focusedMonth;
+  DateTime? _rangeStart;
+  DateTime? _rangeEnd;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusedMonth = widget.initialCheckIn ?? DateTime.now();
+    _rangeStart = widget.initialCheckIn;
+    _rangeEnd = widget.initialCheckOut;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusLg),
+      child: Container(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 제목
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('임대 기간 선택', style: AppTextStyles.headingMedium),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+            SizedBox(height: AppSpacing.md),
+
+            // 월 네비게이션
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _focusedMonth = DateTime(
+                        _focusedMonth.year,
+                        _focusedMonth.month - 1,
+                      );
+                    });
+                  },
+                  icon: const Icon(Icons.chevron_left, size: 20),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.neutral100,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                Text(
+                  '${_focusedMonth.year}년 ${_focusedMonth.month}월',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _focusedMonth = DateTime(
+                        _focusedMonth.year,
+                        _focusedMonth.month + 1,
+                      );
+                    });
+                  },
+                  icon: const Icon(Icons.chevron_right, size: 20),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.neutral100,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 요일 헤더
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children:
+                  ['일', '월', '화', '수', '목', '금', '토'].asMap().entries.map(
+                (entry) {
+                  final index = entry.key;
+                  final day = entry.value;
+                  return SizedBox(
+                    width: 36,
+                    child: Text(
+                      day,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.caption.copyWith(
+                        color: index == 0
+                            ? AppColors.error500
+                            : index == 6
+                                ? AppColors.primary600
+                                : AppColors.textSecondary,
+                      ),
+                    ),
+                  );
+                },
+              ).toList(),
+            ),
+            const SizedBox(height: 8),
+
+            // 날짜 그리드
+            _buildDateGrid(),
+
+            // 에러 메시지
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.error50,
+                  borderRadius: AppRadius.radiusSm,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 18,
+                      color: AppColors.error500,
+                    ),
+                    SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.error600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // 선택된 기간 표시
+            if (_rangeStart != null && _rangeEnd != null) ...[
+              const Divider(height: 32),
+              Column(
+                children: [
+                  Text(
+                    '임대 기간',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_rangeEnd!.difference(_rangeStart!).inDays}일',
+                    style: AppTextStyles.headingMedium.copyWith(
+                      color: AppColors.primary600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            // 안내 메시지 (시작일만 선택된 상태)
+            if (_rangeStart != null && _rangeEnd == null) ...[
+              const Divider(height: 32),
+              Container(
+                padding: EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.primary50,
+                  borderRadius: AppRadius.radiusSm,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: AppColors.primary600,
+                    ),
+                    SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        '최소 $_minContractDays일 ~ 최대 $_maxContractDays일 선택 가능',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.primary700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // 안내 메시지 (아무것도 선택 안됨)
+            if (_rangeStart == null) ...[
+              const Divider(height: 32),
+              Text(
+                '• 최소 $_minContractDays일부터 선택 가능합니다',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+
+            // 초기화 및 확인 버튼
+            if (_rangeStart != null && _rangeEnd != null) ...[
+              const Divider(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        setState(() {
+                          _rangeStart = null;
+                          _rangeEnd = null;
+                          _errorMessage = null;
+                        });
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        side: BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadius.radiusMd,
+                        ),
+                      ),
+                      child: Text(
+                        '초기화',
+                        style: AppTextStyles.buttonText.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        widget.onDateRangeSelected(_rangeStart!, _rangeEnd!);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary600,
+                        foregroundColor: AppColors.textOnPrimary,
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadius.radiusMd,
+                        ),
+                      ),
+                      child: Text('선택 완료', style: AppTextStyles.buttonText),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 날짜 그리드 생성
+  Widget _buildDateGrid() {
+    final firstDayOfMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month,
+      1,
+    );
+    final lastDayOfMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month + 1,
+      0,
+    );
+    final firstWeekday = firstDayOfMonth.weekday % 7;
+    final daysInMonth = lastDayOfMonth.day;
+
+    final List<DateTime?> dateList = [];
+
+    // 앞쪽 빈칸
+    for (int i = 0; i < firstWeekday; i++) {
+      dateList.add(null);
+    }
+
+    // 실제 날짜
+    for (int day = 1; day <= daysInMonth; day++) {
+      dateList.add(DateTime(_focusedMonth.year, _focusedMonth.month, day));
+    }
+
+    // 6주(42칸) 맞추기
+    while (dateList.length < 42) {
+      dateList.add(null);
+    }
+
+    return Column(
+      children: [
+        ...List.generate(6, (weekIndex) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(7, (dayIndex) {
+                final index = weekIndex * 7 + dayIndex;
+                final date = dateList[index];
+
+                if (date == null) {
+                  return const SizedBox(width: 36, height: 36);
+                }
+
+                return _buildDateCell(date);
+              }),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  /// 날짜 셀 생성
+  Widget _buildDateCell(DateTime date) {
+    final today = DateTime.now();
+    final isToday =
+        date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day;
+    final isPast = date.isBefore(DateTime(today.year, today.month, today.day));
+
+    final isStart = _rangeStart != null && _isSameDay(date, _rangeStart!);
+    final isEnd = _rangeEnd != null && _isSameDay(date, _rangeEnd!);
+    final isInRange =
+        _rangeStart != null &&
+        _rangeEnd != null &&
+        date.isAfter(_rangeStart!) &&
+        date.isBefore(_rangeEnd!);
+
+    // 최소 계약기간 범위 확인
+    final isInMinRange = _isInMinContractRange(date);
+
+    Color? backgroundColor;
+    Color? textColor;
+    FontWeight? fontWeight;
+
+    if (isStart || isEnd) {
+      backgroundColor = AppColors.primary600;
+      textColor = AppColors.textOnPrimary;
+      fontWeight = FontWeight.w600;
+    } else if (isInRange) {
+      backgroundColor = AppColors.primary50;
+      textColor = AppColors.primary600;
+      fontWeight = FontWeight.normal;
+    } else if (isInMinRange) {
+      // 최소 계약기간 범위: 회색 (선택 불가 표시)
+      backgroundColor = AppColors.neutral100;
+      textColor = AppColors.textDisabled;
+      fontWeight = FontWeight.normal;
+    } else if (isToday) {
+      backgroundColor = AppColors.primary50.withValues(alpha: 0.5);
+      textColor = AppColors.primary600;
+      fontWeight = FontWeight.w600;
+    } else if (isPast) {
+      textColor = AppColors.textDisabled;
+      fontWeight = FontWeight.normal;
+    } else {
+      textColor = AppColors.textPrimary;
+      fontWeight = FontWeight.normal;
+    }
+
+    return InkWell(
+      onTap: isPast ? null : () => _onDateSelected(date),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: 36,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          shape: BoxShape.circle,
+        ),
+        child: Text(
+          '${date.day}',
+          style: AppTextStyles.caption.copyWith(
+            fontWeight: fontWeight,
+            color: textColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 최소 계약기간 범위 내인지 확인
+  bool _isInMinContractRange(DateTime date) {
+    if (_rangeStart == null || _rangeEnd != null) return false;
+    if (_isSameDay(date, _rangeStart!)) return false;
+
+    final minEndDate = _rangeStart!.add(Duration(days: _minContractDays - 1));
+
+    return date.isAfter(_rangeStart!) &&
+        (date.isBefore(minEndDate) || _isSameDay(date, minEndDate));
+  }
+
+  /// 날짜 선택 핸들러
+  void _onDateSelected(DateTime selectedDate) {
+    setState(() {
+      _errorMessage = null;
+
+      // 1. 시작일만 선택된 상태에서 같은 날짜 클릭 → 선택 해제
+      if (_rangeStart != null &&
+          _rangeEnd == null &&
+          _isSameDay(selectedDate, _rangeStart!)) {
+        _rangeStart = null;
+        _rangeEnd = null;
+        widget.onDateCleared?.call();
+        return;
+      }
+
+      // 2. 시작일만 선택된 상태 → 종료일 선택
+      if (_rangeStart != null && _rangeEnd == null) {
+        final DateTime earlierDate;
+        final DateTime laterDate;
+
+        if (selectedDate.isBefore(_rangeStart!)) {
+          earlierDate = _normalizeDate(selectedDate);
+          laterDate = _normalizeDate(_rangeStart!);
+        } else {
+          earlierDate = _normalizeDate(_rangeStart!);
+          laterDate = _normalizeDate(selectedDate);
+        }
+
+        final duration = laterDate.difference(earlierDate).inDays;
+
+        if (duration < _minContractDays) {
+          _errorMessage = '최소 $_minContractDays일 이상 선택해주세요';
+          return;
+        }
+
+        if (duration > _maxContractDays) {
+          _errorMessage = '최대 $_maxContractDays일까지 선택 가능합니다';
+          return;
+        }
+
+        _rangeStart = earlierDate;
+        _rangeEnd = laterDate;
+      }
+      // 3. 범위가 이미 선택된 상태 → 초기화 후 새 시작일 설정
+      else if (_rangeStart != null && _rangeEnd != null) {
+        _rangeStart = _normalizeDate(selectedDate);
+        _rangeEnd = null;
+      }
+      // 4. 아무것도 선택되지 않은 상태 → 시작일 설정
+      else {
+        _rangeStart = _normalizeDate(selectedDate);
+        _rangeEnd = null;
+      }
+    });
+  }
+
+  DateTime _normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
 }

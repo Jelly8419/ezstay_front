@@ -4,21 +4,37 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 
 /// 날짜 범위 선택 위젯 (React UI 스타일 - 범위 선택)
-/// 체크인/체크아웃 날짜를 동시에 선택하고 최소 계약 일수를 검증합니다.
+/// 체크인/체크아웃 날짜를 동시에 선택하고 최소/최대 계약 일수를 검증합니다.
+///
+/// 기능:
+/// - 최소/최대 계약 기간 검증
+/// - 단일 날짜 토글 (같은 날짜 재클릭 시 선택 해제)
+/// - 최소 계약기간 시각화 (시작일 선택 시 최소 범위 표시)
+/// - 커스터마이징 가능한 placeholder, helper 텍스트
 class DateRangePicker extends StatefulWidget {
   final DateTime? checkInDate;
   final DateTime? checkOutDate;
   final int minContractDays; // 최소 계약 일수 (예: 7일)
+  final int? maxContractDays; // 최대 계약 일수 (예: 90일) - Optional
   final void Function(DateTime checkIn, DateTime checkOut) onDateSelected;
+  final void Function()? onDateCleared; // 날짜 선택 해제 콜백 - Optional
   final void Function(String)? onValidationError; // 검증 에러 콜백
+  final String placeholderText; // 기본값: '임대 기간 선택'
+  final bool showHelperText; // 헬퍼 텍스트 표시 여부 (기본값: true)
+  final String? customHelperText; // 커스텀 헬퍼 텍스트 (null이면 기본 메시지)
 
   const DateRangePicker({
     super.key,
     this.checkInDate,
     this.checkOutDate,
     required this.minContractDays,
+    this.maxContractDays,
     required this.onDateSelected,
+    this.onDateCleared,
     this.onValidationError,
+    this.placeholderText = '임대 기간 선택',
+    this.showHelperText = true,
+    this.customHelperText,
   });
 
   @override
@@ -28,7 +44,7 @@ class DateRangePicker extends StatefulWidget {
 class _DateRangePickerState extends State<DateRangePicker> {
   /// 날짜 범위 포맷팅 (React UI 스타일)
   String _formatDateRange() {
-    if (widget.checkInDate == null) return '임대 기간 선택';
+    if (widget.checkInDate == null) return widget.placeholderText;
 
     final startDate = widget.checkInDate!;
     if (widget.checkOutDate == null) {
@@ -37,6 +53,17 @@ class _DateRangePickerState extends State<DateRangePicker> {
 
     final endDate = widget.checkOutDate!;
     return '${startDate.year}.${startDate.month.toString().padLeft(2, '0')}.${startDate.day.toString().padLeft(2, '0')} - ${endDate.year}.${endDate.month.toString().padLeft(2, '0')}.${endDate.day.toString().padLeft(2, '0')}';
+  }
+
+  /// 헬퍼 텍스트 생성
+  String _getHelperText() {
+    if (widget.customHelperText != null) {
+      return widget.customHelperText!;
+    }
+    if (widget.maxContractDays != null) {
+      return '최소 ${widget.minContractDays}일 ~ 최대 ${widget.maxContractDays}일';
+    }
+    return '최소 ${widget.minContractDays}일 이상 선택해주세요';
   }
 
   @override
@@ -86,20 +113,18 @@ class _DateRangePickerState extends State<DateRangePicker> {
           ),
         ),
 
-        // 최소 계약 일수 안내
-        SizedBox(height: AppSpacing.sm),
-        Text(
-          '최소 ${widget.minContractDays}일 이상 선택해주세요',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
+        // 헬퍼 텍스트
+        if (widget.showHelperText) ...[
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            _getHelperText(),
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
-        ),
+        ],
       ],
     );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}년 ${date.month}월 ${date.day}일';
   }
 
   void _showRangePicker(BuildContext context) {
@@ -109,9 +134,10 @@ class _DateRangePickerState extends State<DateRangePicker> {
         initialCheckIn: widget.checkInDate,
         initialCheckOut: widget.checkOutDate,
         minContractDays: widget.minContractDays,
+        maxContractDays: widget.maxContractDays,
         onDateRangeSelected: widget.onDateSelected,
-        onValidationError:
-            widget.onValidationError ?? (_) {}, // 콜백 전달 (없으면 빈 함수)
+        onDateCleared: widget.onDateCleared,
+        onValidationError: widget.onValidationError ?? (_) {},
       ),
     );
   }
@@ -122,14 +148,18 @@ class _DateRangePickerDialog extends StatefulWidget {
   final DateTime? initialCheckIn;
   final DateTime? initialCheckOut;
   final int minContractDays;
+  final int? maxContractDays;
   final void Function(DateTime checkIn, DateTime checkOut) onDateRangeSelected;
+  final void Function()? onDateCleared;
   final void Function(String) onValidationError;
 
   const _DateRangePickerDialog({
     this.initialCheckIn,
     this.initialCheckOut,
     required this.minContractDays,
+    this.maxContractDays,
     required this.onDateRangeSelected,
+    this.onDateCleared,
     required this.onValidationError,
   });
 
@@ -277,8 +307,38 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
               ),
             ],
 
-            // 안내 메시지
-            if (_rangeStart == null || _rangeEnd == null) ...[
+            // 안내 메시지 (시작일만 선택된 상태)
+            if (_rangeStart != null && _rangeEnd == null) ...[
+              const Divider(height: 32),
+              Container(
+                padding: EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.primary50,
+                  borderRadius: AppRadius.radiusSm,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: AppColors.primary600,
+                    ),
+                    SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        '최소 ${widget.minContractDays}일${widget.maxContractDays != null ? ' ~ 최대 ${widget.maxContractDays}일' : ''} 선택 가능',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.primary700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // 안내 메시지 (아무것도 선택 안됨)
+            if (_rangeStart == null) ...[
               const Divider(height: 32),
               Text(
                 '• 최소 ${widget.minContractDays}일부터 선택 가능합니다',
@@ -421,27 +481,40 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
         date.isAfter(_rangeStart!) &&
         date.isBefore(_rangeEnd!);
 
+    // 최소 계약기간 범위 확인 (시작일만 선택된 상태)
+    final isInMinRange = _isInMinContractRange(date);
+
     // 색상 결정
     Color? backgroundColor;
     Color? textColor;
     FontWeight? fontWeight;
 
     if (isStart || isEnd) {
+      // 시작일/종료일: Primary 색상
       backgroundColor = AppColors.primary600;
       textColor = AppColors.textOnPrimary;
       fontWeight = FontWeight.w600;
     } else if (isInRange) {
+      // 선택된 범위 내: 연한 Primary
       backgroundColor = AppColors.primary50;
       textColor = AppColors.primary600;
       fontWeight = FontWeight.normal;
+    } else if (isInMinRange) {
+      // 최소 계약기간 범위: 회색 (선택 불가 표시)
+      backgroundColor = AppColors.neutral100;
+      textColor = AppColors.textDisabled;
+      fontWeight = FontWeight.normal;
     } else if (isToday) {
-      backgroundColor = AppColors.primary50.withOpacity(0.5);
+      // 오늘: 연한 Primary
+      backgroundColor = AppColors.primary50.withValues(alpha: 0.5);
       textColor = AppColors.primary600;
       fontWeight = FontWeight.w600;
     } else if (isPast) {
+      // 과거: 비활성화
       textColor = AppColors.textDisabled;
       fontWeight = FontWeight.normal;
     } else {
+      // 기본
       textColor = AppColors.textPrimary;
       fontWeight = FontWeight.normal;
     }
@@ -468,16 +541,35 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
     );
   }
 
-  /// 날짜 선택 핸들러 (React 로직)
+  /// 최소 계약기간 범위 내인지 확인 (시작일만 선택된 상태에서만 활성화)
+  bool _isInMinContractRange(DateTime date) {
+    // 시작일만 선택된 상태가 아니면 false
+    if (_rangeStart == null || _rangeEnd != null) return false;
+
+    // 시작일 자체는 범위에 포함하지 않음 (이미 isStart로 처리됨)
+    if (_isSameDay(date, _rangeStart!)) return false;
+
+    // 시작일 + 1 ~ 시작일 + (minContractDays - 1) 범위
+    final minEndDate = _rangeStart!.add(Duration(days: widget.minContractDays - 1));
+
+    return date.isAfter(_rangeStart!) &&
+           (date.isBefore(minEndDate) || _isSameDay(date, minEndDate));
+  }
+
+  /// 날짜 선택 핸들러
   void _onDateSelected(DateTime selectedDate) {
     setState(() {
-      // 1. 시작일만 선택된 상태 → 종료일 선택
-      if (_rangeStart != null && _rangeEnd == null) {
-        // 같은 날짜 선택 시 무시
-        if (_isSameDay(selectedDate, _rangeStart!)) {
-          return;
-        }
+      // 1. 시작일만 선택된 상태에서 같은 날짜 클릭 → 선택 해제 (토글)
+      if (_rangeStart != null && _rangeEnd == null && _isSameDay(selectedDate, _rangeStart!)) {
+        _rangeStart = null;
+        _rangeEnd = null;
+        // 선택 해제 콜백 호출
+        widget.onDateCleared?.call();
+        return;
+      }
 
+      // 2. 시작일만 선택된 상태 → 종료일 선택
+      if (_rangeStart != null && _rangeEnd == null) {
         // 날짜 순서 자동 정렬 (빠른 날짜를 체크인, 느린 날짜를 체크아웃으로)
         final DateTime earlierDate;
         final DateTime laterDate;
@@ -490,26 +582,35 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
           laterDate = _normalizeDate(selectedDate);
         }
 
-        // 최소 기간 체크
+        // 기간 계산
         final duration = laterDate.difference(earlierDate).inDays;
+
+        // 최소 기간 체크
         if (duration < widget.minContractDays) {
-          // 에러 메시지를 위젯에 전달 (버튼 아래 표시)
           widget.onValidationError(
             '이 방의 최소 계약기간은 ${widget.minContractDays}일 입니다.',
           );
           return; // 다이얼로그는 열린 상태 유지
         }
 
+        // 최대 기간 체크
+        if (widget.maxContractDays != null && duration > widget.maxContractDays!) {
+          widget.onValidationError(
+            '최대 ${widget.maxContractDays}일까지 선택할 수 있습니다.',
+          );
+          return;
+        }
+
         // 체크인/체크아웃 날짜 설정 (자동 정렬됨)
         _rangeStart = earlierDate;
         _rangeEnd = laterDate;
       }
-      // 2. 범위가 이미 선택된 상태 → 초기화 후 새 시작일 설정
+      // 3. 범위가 이미 선택된 상태 → 초기화 후 새 시작일 설정
       else if (_rangeStart != null && _rangeEnd != null) {
         _rangeStart = _normalizeDate(selectedDate);
         _rangeEnd = null;
       }
-      // 3. 아무것도 선택되지 않은 상태 → 시작일 설정
+      // 4. 아무것도 선택되지 않은 상태 → 시작일 설정
       else {
         _rangeStart = _normalizeDate(selectedDate);
         _rangeEnd = null;
