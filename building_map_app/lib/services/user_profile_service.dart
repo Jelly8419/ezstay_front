@@ -180,6 +180,89 @@ class UserProfileService {
     }
   }
 
+  /// 닉네임 변경
+  ///
+  /// PATCH /api/user/nickname
+  ///
+  /// 요청:
+  /// ```json
+  /// {
+  ///   "nickname": "새닉네임"
+  /// }
+  /// ```
+  ///
+  /// 응답:
+  /// ```json
+  /// {
+  ///   "success": true,
+  ///   "data": {
+  ///     "nickname": "새닉네임"
+  ///   },
+  ///   "message": "닉네임이 성공적으로 변경되었습니다."
+  /// }
+  /// ```
+  ///
+  /// 검증 규칙:
+  /// - 필수 입력
+  /// - 2~20자 길이 제한
+  /// - 앞뒤 공백 자동 제거
+  Future<String> changeNickname({required String nickname}) async {
+    final accessToken = await _authService.getAccessToken();
+
+    if (accessToken == null) {
+      throw Exception('로그인이 필요합니다.');
+    }
+
+    // 앞뒤 공백 자동 제거
+    final trimmedNickname = nickname.trim();
+
+    // 클라이언트 측 검증
+    if (trimmedNickname.isEmpty) {
+      throw Exception('닉네임을 입력해주세요.');
+    }
+    if (trimmedNickname.length < 2 || trimmedNickname.length > 20) {
+      throw Exception('닉네임은 2~20자로 입력해주세요.');
+    }
+
+    debugPrint('✏️ [UserProfileService] 닉네임 변경 시작: $trimmedNickname');
+
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/api/user/nickname'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'nickname': trimmedNickname,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      debugPrint('📥 [UserProfileService] 응답: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final newNickname = data['data']['nickname'] as String;
+        debugPrint('✅ [UserProfileService] 닉네임 변경 성공: $newNickname');
+        return newNickname;
+      } else if (response.statusCode == 401) {
+        throw Exception('인증이 만료되었습니다.');
+      } else if (response.statusCode == 400) {
+        final error = jsonDecode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '닉네임 형식이 올바르지 않습니다.');
+      } else {
+        final error = jsonDecode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '닉네임 변경 실패');
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버 오류가 발생했습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    }
+  }
+
   /// 회원 탈퇴
   ///
   /// DELETE /api/user/account
