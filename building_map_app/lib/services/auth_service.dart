@@ -111,6 +111,8 @@ class AuthService extends ChangeNotifier {
               ),
               provider: AuthProvider.email,
               profileImageUrl: userInfo['profileImageUrl'],
+              phoneVerified: userInfo['phoneVerified'] ?? true, // bypass 로그인은 기본 true
+              hasBank: userInfo['hasBank'] ?? false,
             );
 
             // 사용자 정보 저장
