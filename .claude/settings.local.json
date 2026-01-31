@@ -55,7 +55,21 @@
       "Bash(curl:*)",
       "Bash(python -m json.tool:*)",
       "Bash(git log:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "mcp__serena__search_for_pattern",
+      "mcp__serena__activate_project",
+      "mcp__serena__list_dir",
+      "mcp__serena__think_about_whether_you_are_done",
+      "mcp__serena__list_memories",
+      "mcp__serena__read_memory",
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__serena__get_symbols_overview",
+      "mcp__serena__find_symbol",
+      "Skill(sc:analyze)",
+      "Skill(sc:analyze:*)",
+      "mcp__chrome-devtools__list_pages",
+      "Bash(dir /s /b \"c:\\\\study\\\\ezstay_front\\\\building_map_app\\\\lib\\\\pages\")",
+      "Bash(xargs git branch -D)"
     ],
     "deny": [],
     "ask": []
