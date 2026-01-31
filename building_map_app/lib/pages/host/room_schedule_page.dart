@@ -29,13 +29,19 @@ class Contract {
   final DateTime startDate;
   final DateTime endDate;
   final String guestName;
+  final String? guestNickname;
 
   Contract({
     required this.id,
     required this.startDate,
     required this.endDate,
     required this.guestName,
+    this.guestNickname,
   });
+
+  /// 표시용 게스트 이름 (닉네임 우선, 없으면 이름)
+  String get guestDisplayName =>
+      (guestNickname?.isNotEmpty == true) ? guestNickname! : guestName;
 }
 
 /// 날짜 상태 열거형
@@ -126,6 +132,7 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
           startDate: DateTime.parse(data['startDate']),
           endDate: DateTime.parse(data['endDate']),
           guestName: data['guestName'] ?? '알 수 없음',
+          guestNickname: data['guestNickname'],
         );
       }).toList();
 
@@ -1109,7 +1116,7 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          contract.guestName,
+                          contract.guestDisplayName,
                           style: AppTextStyles.bodyMedium.copyWith(
                             fontWeight: FontWeight.w600,
                             color: Colors.blue[700],

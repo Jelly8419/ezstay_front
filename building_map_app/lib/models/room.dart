@@ -67,10 +67,15 @@ class Room {
   final bool? hostPhoneVerified;
   final bool? hostAccountVerified;
   final String? hostName;
+  final String? hostNickname;
   final int? hostId;
   final String status; // 방 상태 (draft, pending_review, approved, rejected)
   final bool isActive; // 게시 여부 (approved 상태에서만 의미 있음)
   final String? rejectionReason; // 반려 사유
+
+  /// 호스트 표시명 (닉네임 우선, 없으면 이름)
+  String get hostDisplayName =>
+      (hostNickname?.isNotEmpty == true) ? hostNickname! : (hostName ?? '호스트');
 
   const Room({
     required this.id,
@@ -124,6 +129,7 @@ class Room {
     this.hostPhoneVerified,
     this.hostAccountVerified,
     this.hostName,
+    this.hostNickname,
     this.hostId,
     this.status = 'draft',
     this.isActive = false,
@@ -213,6 +219,7 @@ class Room {
       hostPhoneVerified: json['host'] != null ? _parseBool(json['host']['phoneVerified']) : _parseBool(json['hostPhoneVerified']),
       hostAccountVerified: json['host'] != null ? _parseBool(json['host']['accountVerified']) : _parseBool(json['hostAccountVerified']),
       hostName: json['host'] != null ? json['host']['name'] as String? : json['hostName'] as String?,
+      hostNickname: json['host'] != null ? json['host']['nickname'] as String? : json['hostNickname'] as String?,
       hostId: json['host'] != null ? json['host']['id'] as int? : json['hostId'] as int?,
       status: _normalizeStatus(json['status'] as String?),
       isActive: json['isActive'] as bool? ?? false,
@@ -307,6 +314,7 @@ class Room {
       'hostPhoneVerified': hostPhoneVerified,
       'hostAccountVerified': hostAccountVerified,
       'hostName': hostName,
+      'hostNickname': hostNickname,
       'hostId': hostId,
       'status': status,
       'isActive': isActive,
@@ -407,6 +415,7 @@ class Room {
     bool? hostPhoneVerified,
     bool? hostAccountVerified,
     String? hostName,
+    String? hostNickname,
     int? hostId,
     String? status,
     bool? isActive,
@@ -464,6 +473,7 @@ class Room {
       hostPhoneVerified: hostPhoneVerified ?? this.hostPhoneVerified,
       hostAccountVerified: hostAccountVerified ?? this.hostAccountVerified,
       hostName: hostName ?? this.hostName,
+      hostNickname: hostNickname ?? this.hostNickname,
       hostId: hostId ?? this.hostId,
       status: status ?? this.status,
       isActive: isActive ?? this.isActive,

@@ -105,6 +105,7 @@ class AuthService extends ChangeNotifier {
               id: userInfo['id'].toString(),
               email: userInfo['email'] ?? 'dev@test.com',
               name: userInfo['name'] ?? 'Dev User',
+              nickname: userInfo['nickname'],
               mode: UserMode.values.firstWhere(
                 (m) => m.name == userMode,
                 orElse: () => UserMode.guest,
@@ -209,6 +210,7 @@ class AuthService extends ChangeNotifier {
               id: userInfo['id'].toString(),
               email: email,
               name: userInfo['name'] ?? email.split('@')[0],
+              nickname: userInfo['nickname'],
               mode: UserMode.values.firstWhere(
                 (m) => m.name == userMode,
                 orElse: () => mode ?? UserMode.guest,
@@ -379,10 +381,12 @@ class AuthService extends ChangeNotifier {
 
       if (success) {
         // 4. 로컬 사용자 정보 설정
+        // 카카오 로그인 시 카카오 닉네임을 nickname으로 사용
         _currentUser = User(
           id: kakaoUser.id.toString(),
           email: kakaoUser.kakaoAccount?.email ?? 'user@kakao.com',
           name: kakaoUser.kakaoAccount?.profile?.nickname ?? '카카오 사용자',
+          nickname: kakaoUser.kakaoAccount?.profile?.nickname,
           profileImageUrl: kakaoUser.kakaoAccount?.profile?.profileImageUrl,
           mode: mode ?? UserMode.guest,
           provider: AuthProvider.kakao,
@@ -617,6 +621,7 @@ class AuthService extends ChangeNotifier {
             id: user['id'].toString(),
             email: user['email'] ?? 'user@kakao.com',
             name: user['name'] ?? '카카오 사용자',
+            nickname: user['nickname'],
             profileImageUrl: user['profileImageUrl'],
             mode: UserMode.values.firstWhere(
               (m) => m.name == userMode,
@@ -631,7 +636,7 @@ class AuthService extends ChangeNotifier {
           await TokenService.saveTokens(token, data['refreshToken']);
 
           notifyListeners();
-          debugPrint('✅ 서버 검증 완료 - 사용자: ${user['name']}');
+          debugPrint('✅ 서버 검증 완료 - 사용자: ${user['name']} (닉네임: ${user['nickname']})');
           return true;
         } else {
           debugPrint('❌ 서버 응답 데이터 형식 오류');
@@ -865,6 +870,7 @@ class AuthService extends ChangeNotifier {
             id: data['data']['user']['id'].toString(),
             email: email,
             name: data['data']['user']['name'] ?? email.split('@')[0],
+            nickname: data['data']['user']['nickname'],
             mode: UserMode.values.firstWhere(
               (m) => m.name == data['data']['user']['userMode'],
               orElse: () => mode ?? UserMode.guest,
@@ -952,6 +958,7 @@ class AuthService extends ChangeNotifier {
         id: _currentUser!.id,
         email: _currentUser!.email,
         name: _currentUser!.name,
+        nickname: _currentUser!.nickname, // 유지
         profileImageUrl: _currentUser!.profileImageUrl,
         mode: newMode,
         provider: _currentUser!.provider,

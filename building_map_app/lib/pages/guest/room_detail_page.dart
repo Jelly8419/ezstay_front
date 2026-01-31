@@ -1290,7 +1290,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
   /// 호스트 정보 컨텐츠
   Widget _buildHostContent() {
-    final hostName = _room!.hostName ?? '호스트';
+    final hostName = _room!.hostDisplayName;
     final hostInitial = hostName.isNotEmpty ? hostName[0] : '?';
     final isVerified =
         _room!.hostPhoneVerified == true || _room!.hostAccountVerified == true;

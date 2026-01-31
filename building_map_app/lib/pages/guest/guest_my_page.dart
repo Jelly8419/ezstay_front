@@ -442,6 +442,11 @@ class _GuestMyPageState extends State<GuestMyPage> {
                 value: _userProfile!.name,
               ),
               _buildProfileField(
+                icon: Icons.badge_outlined, // 닉네임 아이콘
+                label: '닉네임',
+                value: _userProfile!.nickname ?? '미설정',
+              ),
+              _buildProfileField(
                 icon: Icons.email_outlined, // Mail 아이콘
                 label: '이메일',
                 value: _userProfile!.email,

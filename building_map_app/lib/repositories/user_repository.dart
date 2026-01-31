@@ -50,6 +50,12 @@ class UserRepository {
     await _writeSecure('user_mode', user.mode.name);
     await _writeSecure('user_provider', user.provider.name);
 
+    if (user.nickname != null) {
+      await _writeSecure('user_nickname', user.nickname!);
+    } else {
+      await _deleteSecure('user_nickname');
+    }
+
     if (user.profileImageUrl != null) {
       await _writeSecure('user_profile_image', user.profileImageUrl!);
     }
@@ -68,6 +74,7 @@ class UserRepository {
     final id = await _readSecure('user_id');
     final email = await _readSecure('user_email');
     final name = await _readSecure('user_name');
+    final nickname = await _readSecure('user_nickname');
     final modeStr = await _readSecure('user_mode');
     final providerStr = await _readSecure('user_provider');
     final profileImageUrl = await _readSecure('user_profile_image');
@@ -83,6 +90,7 @@ class UserRepository {
       id: id,
       email: email,
       name: name,
+      nickname: nickname,
       mode: UserMode.values.firstWhere(
         (m) => m.name == modeStr,
         orElse: () => UserMode.guest,
@@ -110,6 +118,7 @@ class UserRepository {
     await _deleteSecure('user_id');
     await _deleteSecure('user_email');
     await _deleteSecure('user_name');
+    await _deleteSecure('user_nickname');
     await _deleteSecure('user_mode');
     await _deleteSecure('user_provider');
     await _deleteSecure('user_profile_image');
@@ -147,6 +156,19 @@ class UserRepository {
 
     if (!ApiConfig.isProduction) {
       debugPrint('✅ [USER_REPO] 사용자 이름 업데이트: $name');
+    }
+  }
+
+  /// 사용자 닉네임 업데이트
+  static Future<void> updateUserNickname(String? nickname) async {
+    if (nickname != null) {
+      await _writeSecure('user_nickname', nickname);
+    } else {
+      await _deleteSecure('user_nickname');
+    }
+
+    if (!ApiConfig.isProduction) {
+      debugPrint('✅ [USER_REPO] 사용자 닉네임 업데이트: $nickname');
     }
   }
 

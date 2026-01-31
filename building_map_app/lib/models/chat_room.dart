@@ -120,10 +120,10 @@ class ChatRoom {
     return null;
   }
 
-  /// 상대방 이름 가져오기
+  /// 상대방 이름 가져오기 (닉네임 우선)
   String getOtherUserName(int currentUserId) {
     final otherUser = getOtherUser(currentUserId);
-    return otherUser?.name ?? '알 수 없음';
+    return otherUser?.displayName ?? '알 수 없음';
   }
 
   /// 방 이름 또는 주소
@@ -223,6 +223,7 @@ class Room {
 class User {
   final int id;
   final String name;
+  final String? nickname;
   final String email;
   final String? profileImageUrl;
   final String? phoneNumber;
@@ -230,15 +231,20 @@ class User {
   User({
     required this.id,
     required this.name,
+    this.nickname,
     required this.email,
     this.profileImageUrl,
     this.phoneNumber,
   });
 
+  /// 표시용 이름 (닉네임 우선, 없으면 이름)
+  String get displayName => (nickname?.isNotEmpty == true) ? nickname! : name;
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],
       name: json['name'] ?? '',
+      nickname: json['nickname'],
       email: json['email'] ?? '',
       profileImageUrl: json['profileImageUrl'] ?? json['profileImage'],
       phoneNumber: json['phoneNumber'] ?? json['phone'],

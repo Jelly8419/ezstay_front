@@ -694,7 +694,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                       '${_dateFormat.format(contract.checkInDate)} - ${_dateFormat.format(contract.checkOutDate)} (${contract.totalDays}일)',
                     ),
                     const SizedBox(height: 8),
-                    _buildInfoRow('게스트', contract.partnerName),
+                    _buildInfoRow('게스트', contract.partnerDisplayName),
                   ],
                 ),
               ),

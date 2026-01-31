@@ -43,11 +43,19 @@ class ContractDetail {
 
   // 당사자 정보
   final String hostName;
+  final String? hostNickname;
   final String? hostProfileImage;
   final String? hostPhoneNumber;
   final String guestName;
+  final String? guestNickname;
   final String guestPhone;
   final String? guestMessage; // 게스트 메시지
+
+  /// 호스트 표시명 (닉네임 우선, 없으면 이름)
+  String get hostDisplayName => (hostNickname?.isNotEmpty == true) ? hostNickname! : hostName;
+
+  /// 게스트 표시명 (닉네임 우선, 없으면 이름)
+  String get guestDisplayName => (guestNickname?.isNotEmpty == true) ? guestNickname! : guestName;
 
   // 기타
   final bool isEzCleaning;
@@ -79,9 +87,11 @@ class ContractDetail {
     required this.rentalItems,
     required this.paymentHistory,
     required this.hostName,
+    this.hostNickname,
     this.hostProfileImage,
     this.hostPhoneNumber,
     required this.guestName,
+    this.guestNickname,
     required this.guestPhone,
     this.guestMessage,
     required this.isEzCleaning,
@@ -194,6 +204,7 @@ class ContractDetail {
           [],
       // 호스트 정보 (nested 구조, 안전 파싱)
       hostName: parseStringField(host?['name'], ''),
+      hostNickname: host?['nickname'] as String?,
       hostProfileImage: host?['profileImage'] != null
           ? parseStringField(host?['profileImage'])
           : null,
@@ -202,6 +213,7 @@ class ContractDetail {
           : null,
       // 게스트 정보 (nested 구조, 안전 파싱)
       guestName: parseStringField(guest?['name'], ''),
+      guestNickname: guest?['nickname'] as String?,
       guestPhone: parseStringField(guest?['phoneNumber'], ''),
       guestMessage: json['guestMessage'] as String?,
       // 기타
@@ -236,9 +248,11 @@ class ContractDetail {
       'rentalItems': rentalItems.map((e) => e.toJson()).toList(),
       'paymentHistory': paymentHistory.map((e) => e.toJson()).toList(),
       'hostName': hostName,
+      if (hostNickname != null) 'hostNickname': hostNickname,
       if (hostProfileImage != null) 'hostProfileImage': hostProfileImage,
       if (hostPhoneNumber != null) 'hostPhoneNumber': hostPhoneNumber,
       'guestName': guestName,
+      if (guestNickname != null) 'guestNickname': guestNickname,
       'guestPhone': guestPhone,
       if (guestMessage != null) 'guestMessage': guestMessage,
       'isEzCleaning': isEzCleaning,
