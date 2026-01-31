@@ -72,23 +72,53 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 📝 Verify .env file exists
+      - name: 📝 Create .env files for build
         working-directory: ./building_map_app
         env:
           ENVIRONMENT: ${{ github.event.inputs.environment || 'test' }}
         run: |
-          ENV_FILE=".env.$ENVIRONMENT"
+          echo "📝 Creating .env files for Flutter build..."
 
-          if [ ! -f "$ENV_FILE" ]; then
-            echo "❌ $ENV_FILE 파일이 없습니다!"
-            echo "📋 현재 디렉토리의 .env 파일 목록:"
-            ls -la .env* || echo "No .env files found"
-            exit 1
+          # 환경별 설정
+          if [ "$ENVIRONMENT" == "production" ]; then
+            API_URL="https://api.ezstay.com"
+            KAKAO_REST="88df9fa560e1447eb0930e5bae9ff017"
+            KAKAO_JS="7b8e75100e5af72db70a46c3fef81128"
+            IS_PROD="true"
+          else
+            API_URL="https://ezstay-api.duckdns.org"
+            KAKAO_REST="32ea67da1f7c3d55fd573c285a5fc0f2"
+            KAKAO_JS="8fa88a5c7a3edac4ee6d8dd52af14f60"
+            IS_PROD="false"
           fi
 
-          echo "✅ $ENV_FILE 파일 확인 완료"
-          echo "📋 파일 내용 미리보기 (키 값은 숨김):"
-          cat $ENV_FILE | sed 's/=.*/=***/' | head -10
+          # 기본 .env 파일 생성 (pubspec.yaml에서 필수로 요구)
+          cat > .env << EOF
+          API_BASE_URL=$API_URL
+          KAKAO_REST_API_KEY=$KAKAO_REST
+          KAKAO_JAVASCRIPT_KEY=$KAKAO_JS
+          IS_PRODUCTION=$IS_PROD
+          EOF
+
+          # .env.test 파일 생성
+          cat > .env.test << EOF
+          API_BASE_URL=https://ezstay-api.duckdns.org
+          KAKAO_REST_API_KEY=32ea67da1f7c3d55fd573c285a5fc0f2
+          KAKAO_JAVASCRIPT_KEY=8fa88a5c7a3edac4ee6d8dd52af14f60
+          IS_PRODUCTION=false
+          EOF
+
+          # .env.production 파일 생성
+          cat > .env.production << EOF
+          API_BASE_URL=https://api.ezstay.com
+          KAKAO_REST_API_KEY=88df9fa560e1447eb0930e5bae9ff017
+          KAKAO_JAVASCRIPT_KEY=7b8e75100e5af72db70a46c3fef81128
+          IS_PRODUCTION=true
+          EOF
+
+          echo "✅ .env 파일 생성 완료"
+          echo "📋 생성된 파일 목록:"
+          ls -la .env*
 
       - name: 📦 Install dependencies
         working-directory: ./building_map_app
@@ -115,6 +145,7 @@ jobs:
           echo "🔑 Kakao JS Key: ${KAKAO_JS_KEY:0:10}..."
 
           flutter build web --release \
+            --no-wasm-dry-run \
             --base-href=/app/ \
             --dart-define=ENVIRONMENT=$ENVIRONMENT \
             --dart-define=API_BASE_URL=$API_URL \
