@@ -36,6 +36,10 @@ class _GuestMyPageState extends State<GuestMyPage> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+  // 닉네임 변경 상태
+  bool _isEditingNickname = false;
+  final TextEditingController _nicknameController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +51,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
+    _nicknameController.dispose();
     super.dispose();
   }
 
@@ -87,6 +92,45 @@ class _GuestMyPageState extends State<GuestMyPage> {
       _newPasswordController.clear();
       _confirmPasswordController.clear();
     });
+  }
+
+  /// 닉네임 변경 취소
+  void _cancelNicknameEdit() {
+    setState(() {
+      _isEditingNickname = false;
+      _nicknameController.clear();
+    });
+  }
+
+  /// 닉네임 변경 처리
+  Future<void> _handleNicknameChange() async {
+    final nickname = _nicknameController.text.trim();
+
+    // 길이 검증 (2~20자)
+    if (nickname.length < 2 || nickname.length > 20) {
+      _showErrorDialog('닉네임은 2~20자로 입력해주세요.');
+      return;
+    }
+
+    try {
+      final newNickname = await _userProfileService.changeNickname(
+        nickname: nickname,
+      );
+
+      if (mounted) {
+        // 프로필 정보 업데이트
+        setState(() {
+          _userProfile = _userProfile!.copyWith(nickname: newNickname);
+          _isEditingNickname = false;
+          _nicknameController.clear();
+        });
+        _showSuccessDialog('닉네임이 성공적으로 변경되었습니다.');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
+      }
+    }
   }
 
   /// 비밀번호 변경 처리
@@ -437,17 +481,11 @@ class _GuestMyPageState extends State<GuestMyPage> {
           Column(
             children: [
               _buildProfileField(
-                icon: Icons.person_outline, // User 아이콘
                 label: '이름',
                 value: _userProfile!.name,
               ),
+              _buildNicknameField(),
               _buildProfileField(
-                icon: Icons.badge_outlined, // 닉네임 아이콘
-                label: '닉네임',
-                value: _userProfile!.nickname ?? '미설정',
-              ),
-              _buildProfileField(
-                icon: Icons.email_outlined, // Mail 아이콘
                 label: '이메일',
                 value: _userProfile!.email,
               ),
@@ -460,10 +498,9 @@ class _GuestMyPageState extends State<GuestMyPage> {
     );
   }
 
-  /// 프로필 필드 (공통)
+  /// 프로필 필드 (공통) - 아이콘 제거됨
   /// React: <div className="flex items-center gap-3 py-3 border-b border-gray-100">
   Widget _buildProfileField({
-    required IconData icon,
     required String label,
     required String value,
     Widget? trailing,
@@ -477,15 +514,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
       ),
       child: Row(
         children: [
-          // 아이콘
-          // React: <User className="w-5 h-5 text-gray-400" />
-          Icon(
-            icon,
-            size: 20, // w-5 h-5
-            color: AppColors.neutral400, // text-gray-400
-          ),
-
-          SizedBox(width: AppSpacing.md), // gap-3
           // 레이블 & 값
           // React: <div className="flex-1">
           Expanded(
@@ -521,10 +549,166 @@ class _GuestMyPageState extends State<GuestMyPage> {
     );
   }
 
+  /// 닉네임 필드 (편집 기능 포함)
+  Widget _buildNicknameField() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.gray200)),
+      ),
+      child: _isEditingNickname
+          ? _buildNicknameEditForm()
+          : _buildNicknameDisplay(),
+    );
+  }
+
+  /// 닉네임 표시 (편집 모드 OFF)
+  Widget _buildNicknameDisplay() {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '닉네임',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _userProfile!.nickname ?? '미설정',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.gray900,
+                ),
+              ),
+            ],
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            setState(() {
+              _isEditingNickname = true;
+              _nicknameController.text = _userProfile!.nickname ?? '';
+            });
+          },
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.primary500,
+            padding: EdgeInsets.zero,
+          ),
+          child: Text(
+            '변경',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.primary500,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 닉네임 편집 폼 (편집 모드 ON)
+  Widget _buildNicknameEditForm() {
+    final canSubmit = _nicknameController.text.trim().length >= 2 &&
+        _nicknameController.text.trim().length <= 20;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '닉네임',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+
+        // 닉네임 입력
+        CustomTextField(
+          controller: _nicknameController,
+          hint: '닉네임을 입력해주세요',
+          onChanged: (_) => setState(() {}),
+        ),
+
+        const SizedBox(height: 4),
+
+        // 안내 문구
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            '2~20자 입력 가능',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+
+        SizedBox(height: AppSpacing.sm),
+
+        // 버튼 그룹
+        Row(
+          children: [
+            // 취소 버튼
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _cancelNicknameEdit,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textPrimary,
+                  side: BorderSide(
+                    color: AppColors.border,
+                    width: 2,
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                ),
+                child: Text(
+                  '취소',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+
+            SizedBox(width: AppSpacing.sm),
+
+            // 변경 버튼
+            Expanded(
+              child: ElevatedButton(
+                onPressed: canSubmit ? _handleNicknameChange : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary500,
+                  disabledBackgroundColor: AppColors.gray300,
+                  foregroundColor: AppColors.neutral0,
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                ),
+                child: Text(
+                  '변경',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.neutral0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   /// 연락처 필드 (변경 버튼 포함)
   Widget _buildPhoneField() {
     return _buildProfileField(
-      icon: Icons.phone_outlined, // Phone 아이콘
       label: '연락처',
       value: _userProfile!.phoneNumber,
       trailing: TextButton(
@@ -544,74 +728,54 @@ class _GuestMyPageState extends State<GuestMyPage> {
     );
   }
 
-  /// 비밀번호 필드 (토글)
-  /// React: <div className="flex items-start gap-3 py-3 border-b border-gray-100">
+  /// 비밀번호 필드 (토글) - 아이콘 제거됨
   Widget _buildPasswordField() {
     return Container(
       padding: EdgeInsets.symmetric(vertical: AppSpacing.md), // py-3
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.gray200)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 아이콘
-          Padding(
-            padding: const EdgeInsets.only(top: 4), // mt-1 (아이콘 정렬)
-            child: Icon(
-              Icons.lock_outline, // Lock 아이콘
-              size: 20,
-              color: AppColors.neutral400,
-            ),
-          ),
-
-          SizedBox(width: AppSpacing.md),
-
-          // 레이블 & 값/폼
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 레이블
-                Text(
-                  '비밀번호',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-
-                // 편집 모드 분기
-                _isEditingPassword
-                    ? _buildPasswordEditForm()
-                    : _buildPasswordDisplay(),
-              ],
-            ),
-          ),
+          // 편집 모드 분기
+          _isEditingPassword
+              ? _buildPasswordEditForm()
+              : _buildPasswordDisplay(),
         ],
       ),
     );
   }
 
-  /// 비밀번호 표시 (편집 모드 OFF)
-  /// React: {!isEditingPassword ? (...) : (...)}
+  /// 비밀번호 표시 (편집 모드 OFF) - 아이콘 제거됨
   Widget _buildPasswordDisplay() {
     return Row(
       children: [
-        // 마스킹된 비밀번호
-        // React: <div className="font-medium text-gray-900">••••••••</div>
         Expanded(
-          child: Text(
-            '••••••••',
-            style: AppTextStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.gray900,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 레이블
+              Text(
+                '비밀번호',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              // 마스킹된 비밀번호
+              Text(
+                '••••••••',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.gray900,
+                ),
+              ),
+            ],
           ),
         ),
 
         // 변경 버튼
-        // React: <button className="text-sm text-blue-600 hover:text-blue-700 font-bold">변경</button>
         TextButton(
           onPressed: () => setState(() => _isEditingPassword = true),
           style: TextButton.styleFrom(

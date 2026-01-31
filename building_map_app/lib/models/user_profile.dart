@@ -39,6 +39,23 @@ class UserProfile {
     };
   }
 
+  /// 부분 업데이트를 위한 copyWith 메서드
+  UserProfile copyWith({
+    String? name,
+    String? nickname,
+    String? email,
+    String? phoneNumber,
+    String? createdAt,
+  }) {
+    return UserProfile(
+      name: name ?? this.name,
+      nickname: nickname ?? this.nickname,
+      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   /// 가입일 포맷팅 (YYYY-MM-DD → YYYY년 MM월 DD일)
   String get formattedCreatedAt {
     try {
