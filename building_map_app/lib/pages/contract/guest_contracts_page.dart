@@ -959,7 +959,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildInfoRow('호스트', contract.partnerName),
+                          child: _buildInfoRow('호스트', contract.partnerDisplayName),
                         ),
                         if (showChatButton) ...[
                           const SizedBox(width: 8),

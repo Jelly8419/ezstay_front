@@ -1078,98 +1078,211 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     );
   }
 
-  /// 환불 규정 섹션
+  /// 환불 규정 섹션 (contract_start_page의 계약 해지조항과 동일)
   Widget _buildRefundPolicySection() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '환불 규정',
-            style: AppTextStyles.bodyMedium.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+          // 제목 + 정책 라벨 (contract_start_page와 동일)
+          Row(
+            children: [
+              Text(
+                '환불 정책',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              // 환불 정책 라벨
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getRefundPolicyColor().withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  _getRefundPolicyLabel(),
+                  style: AppTextStyles.caption.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: _getRefundPolicyColor(),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
 
           // API에서 로드된 상세 정책이 있으면 표시
           if (_refundPolicy != null) ...[
-            // 정책 설명
-            if (_refundPolicy!.description.isNotEmpty) ...[
-              Text(
-                _refundPolicy!.description,
-                style: AppTextStyles.bodySmall.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // 환불 규칙 목록
+            // 환불 규칙 목록 (contract_start_page와 동일 포맷)
             ..._refundPolicy!.rules.map(
-              (rule) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('• ', style: TextStyle(fontSize: 14)),
-                    Expanded(
-                      child: Text(
-                        '${rule.description} : 임대료의 ${rule.refundRate}% 환불',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              (rule) => _buildRefundBulletText(_calculateCancellationText(rule)),
             ),
+          ] else ...[
+            // API 로드 실패 시 기본 텍스트만 표시
+            _buildRefundBulletText('환불 정책을 불러오는데 실패했습니다.'),
+            _buildRefundBulletText('자세한 환불 규정은 호스트에게 문의해주세요.'),
+          ],
 
-            // 특별 규칙
-            if (_refundPolicy!.specialRules?.alwaysRefund != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.primary200),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 16),
+
+          // 안내사항 (contract_start_page와 동일)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF), // blue-50
+              border: Border.all(color: const Color(0xFFDBEAFE)), // blue-100
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
                     const Icon(
                       Icons.info_outline,
                       size: 18,
-                      color: AppColors.primary600,
+                      color: Color(0xFF2563EB), // blue-600
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _refundPolicy!.specialRules!.alwaysRefund!,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.primary700,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    Text(
+                      '안내사항',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1E40AF), // blue-800
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ] else ...[
-            // API 로드 실패 시 기본 텍스트만 표시
-            Text(
-              _room!.refundPolicy,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+                const SizedBox(height: 12),
+                _buildNoticeBulletText(
+                  '결제 당일 취소 시, 환불 규정과 관계 없이 임대료와 계약 수수료를 합계한 10%만 위약금으로 부과됩니다.',
+                ),
+                // API에서 로드한 특별 규칙 표시
+                if (_refundPolicy?.specialRules?.alwaysRefund != null)
+                  _buildNoticeBulletText(
+                    _refundPolicy!.specialRules!.alwaysRefund!,
+                  )
+                else
+                  _buildNoticeBulletText('관리비, 청소비, 보증금은 전액 환불됩니다.'),
+                _buildNoticeBulletText('환불 규정은 호스트의 설정에 따라 달라집니다.'),
+                _buildNoticeBulletText(
+                  '계약 승인 요청 후 호스트가 24시간 내에 응답하지 않으면 자동 취소됩니다.',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 환불 정책 라벨 텍스트
+  String _getRefundPolicyLabel() {
+    switch (_room!.refundPolicy.toLowerCase()) {
+      case 'flexible':
+        return '유연';
+      case 'moderate':
+        return '보통';
+      case 'strict':
+        return '엄격';
+      default:
+        return '기본';
+    }
+  }
+
+  /// 환불 정책 색상
+  Color _getRefundPolicyColor() {
+    switch (_room!.refundPolicy.toLowerCase()) {
+      case 'flexible':
+        return Colors.green;
+      case 'moderate':
+        return Colors.orange;
+      case 'strict':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// 환불 규칙을 텍스트로 변환 (contract_start_page와 동일)
+  String _calculateCancellationText(RefundRule rule) {
+    final description = rule.description;
+    final refundRate = rule.refundRate;
+
+    // 환불 불가인 경우
+    if (refundRate == 0) {
+      return '$description : 환불 불가';
+    }
+
+    // 일반적인 경우: 원본 텍스트 + 환불율
+    return '$description : 임대료의 $refundRate% 환불';
+  }
+
+  /// 환불 규칙 불릿 텍스트
+  Widget _buildRefundBulletText(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Container(
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.neutral500,
+                shape: BoxShape.circle,
               ),
             ),
-          ],
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.neutral700,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 안내사항 불릿 텍스트 (blue 스타일)
+  Widget _buildNoticeBulletText(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Container(
+              width: 4,
+              height: 4,
+              decoration: const BoxDecoration(
+                color: Color(0xFF2563EB), // blue-600
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: const Color(0xFF1E40AF), // blue-800
+                height: 1.4,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1177,7 +1290,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
   /// 호스트 정보 컨텐츠
   Widget _buildHostContent() {
-    final hostName = _room!.hostName ?? '호스트';
+    final hostName = _room!.hostDisplayName;
     final hostInitial = hostName.isNotEmpty ? hostName[0] : '?';
     final isVerified =
         _room!.hostPhoneVerified == true || _room!.hostAccountVerified == true;

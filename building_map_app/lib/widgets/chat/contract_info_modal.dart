@@ -443,7 +443,7 @@ class ContractInfoModal extends StatelessWidget {
         Expanded(
           child: _buildPartyCard(
             title: '호스트',
-            name: contract.hostName,
+            name: contract.hostDisplayName,
             phone: _isPaymentConfirmed() ? contract.hostPhoneNumber : null,
             profileImage: contract.hostProfileImage,
             iconColor: AppColors.blue600,
@@ -567,7 +567,7 @@ class ContractInfoModal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      contract.guestName,
+                      contract.guestDisplayName,
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.gray900,
                         fontWeight: FontWeight.w700,

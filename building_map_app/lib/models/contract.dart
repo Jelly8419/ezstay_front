@@ -113,10 +113,14 @@ class ContractListItem {
   // 상대방 정보
   final int partnerId; // 게스트용이면 hostId, 호스트용이면 guestId
   final String partnerName;
+  final String? partnerNickname;
   final String partnerPhone;
   final String? partnerEmail; // 호스트용에만 포함
 
   final DateTime createdAt;
+
+  /// 상대방 표시명 (닉네임 우선, 없으면 이름)
+  String get partnerDisplayName => (partnerNickname?.isNotEmpty == true) ? partnerNickname! : partnerName;
 
   ContractListItem({
     required this.id,
@@ -150,6 +154,7 @@ class ContractListItem {
     this.roomThumbnail,
     required this.partnerId,
     required this.partnerName,
+    this.partnerNickname,
     required this.partnerPhone,
     this.partnerEmail,
     required this.createdAt,
@@ -197,6 +202,7 @@ class ContractListItem {
       // 상대방 정보 - 백엔드 필드명: phoneNumber
       partnerId: partner['id'],
       partnerName: partner['name'],
+      partnerNickname: partner['nickname'],
       partnerPhone: partner['phoneNumber'] ?? partner['phone'],
       partnerEmail: partner['email'],
       createdAt: DateTime.parse(json['createdAt']),
@@ -398,20 +404,26 @@ class RoomInfo {
 class UserInfo {
   final int id;
   final String name;
+  final String? nickname;
   final String phone;
   final String? email;
 
   UserInfo({
     required this.id,
     required this.name,
+    this.nickname,
     required this.phone,
     this.email,
   });
+
+  /// 표시용 이름 (닉네임 우선, 없으면 이름)
+  String get displayName => (nickname?.isNotEmpty == true) ? nickname! : name;
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {
     return UserInfo(
       id: json['id'] as int,
       name: json['name'] ?? '',
+      nickname: json['nickname'],
       phone: json['phoneNumber'] ?? json['phone'] ?? '',
       email: json['email'],
     );

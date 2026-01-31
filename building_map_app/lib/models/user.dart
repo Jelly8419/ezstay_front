@@ -3,6 +3,7 @@ class User {
   final String id;
   final String email;
   final String name;
+  final String? nickname;
   final String? profileImageUrl;
   final UserMode mode;
   final AuthProvider provider;
@@ -13,6 +14,7 @@ class User {
     required this.id,
     required this.email,
     required this.name,
+    this.nickname,
     this.profileImageUrl,
     required this.mode,
     required this.provider,
@@ -20,11 +22,15 @@ class User {
     this.hasBank = false,
   });
 
+  /// 표시용 이름 (닉네임 우선, 없으면 이름)
+  String get displayName => (nickname?.isNotEmpty == true) ? nickname! : name;
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],
       email: json['email'],
       name: json['name'],
+      nickname: json['nickname'],
       profileImageUrl: json['profileImageUrl'],
       mode: UserMode.values.firstWhere(
         (mode) => mode.name == json['userMode'],
@@ -44,6 +50,7 @@ class User {
       'id': id,
       'email': email,
       'name': name,
+      'nickname': nickname,
       'profileImageUrl': profileImageUrl,
       'userMode': mode.name,
       'provider': provider.toString(),

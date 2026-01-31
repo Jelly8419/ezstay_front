@@ -992,7 +992,7 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
               ),
               const SizedBox(width: 8),
               Text(
-                user.name,
+                user.displayName,
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,

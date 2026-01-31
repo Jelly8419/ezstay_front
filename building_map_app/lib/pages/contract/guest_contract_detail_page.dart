@@ -563,7 +563,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
                   children: [
                     // React: font-bold text-gray-900
                     Text(
-                      contract.hostName,
+                      contract.hostDisplayName,
                       style: AppTextStyles.bodyMedium.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -664,7 +664,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
               Icon(Icons.person, size: 20, color: AppColors.gray600),
               const SizedBox(width: 8),
               Text(
-                contract.guestName,
+                contract.guestDisplayName,
                 style: AppTextStyles.bodyMedium.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

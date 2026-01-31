@@ -168,7 +168,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  otherUser?.name ?? '채팅',
+                  otherUser?.displayName ?? '채팅',
                   style: AppTextStyles.heading3.copyWith(
                     color: Colors.white,
                   ),

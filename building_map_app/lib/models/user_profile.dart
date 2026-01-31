@@ -1,21 +1,27 @@
 /// 사용자 프로필 모델
 class UserProfile {
   final String name;
+  final String? nickname;
   final String email;
   final String phoneNumber;
   final String createdAt;
 
   UserProfile({
     required this.name,
+    this.nickname,
     required this.email,
     required this.phoneNumber,
     required this.createdAt,
   });
 
+  /// 표시용 이름 (닉네임 우선, 없으면 이름)
+  String get displayName => (nickname?.isNotEmpty == true) ? nickname! : name;
+
   /// JSON → UserProfile
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
       name: json['name'] as String,
+      nickname: json['nickname'] as String?,
       email: json['email'] as String,
       phoneNumber: json['phoneNumber'] as String,
       createdAt: json['createdAt'] as String,
@@ -26,6 +32,7 @@ class UserProfile {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
+      'nickname': nickname,
       'email': email,
       'phoneNumber': phoneNumber,
       'createdAt': createdAt,

@@ -711,7 +711,7 @@ class _HostContractsPageState extends State<HostContractsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '게스트: ${contract.partnerName}',
+                          '게스트: ${contract.partnerDisplayName}',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -1263,7 +1263,7 @@ class _HostContractsPageState extends State<HostContractsPage> {
             const Text('이 계약 요청을 승인하시겠습니까?'),
             const SizedBox(height: 12),
             Text(
-              '게스트: ${contract.partnerName}',
+              '게스트: ${contract.partnerDisplayName}',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade700,
@@ -1507,7 +1507,7 @@ class _HostContractsPageState extends State<HostContractsPage> {
       context: context,
       builder: (context) => GuestPreparationModal(
         onClose: () => Navigator.of(context).pop(),
-        guestName: contract.partnerName,
+        guestName: contract.partnerDisplayName,
         checkInDate: contract.checkInDate,
         roomAddress: contract.roomAddress,
       ),

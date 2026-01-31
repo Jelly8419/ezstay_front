@@ -40,7 +40,7 @@ class ModeSelectionPage extends StatelessWidget {
                         children: [
                           const Icon(Icons.person, size: 18),
                           const SizedBox(width: 8),
-                          Text(authService.currentUser?.name ?? '사용자'),
+                          Text(authService.currentUser?.displayName ?? '사용자'),
                         ],
                       ),
                     ),
