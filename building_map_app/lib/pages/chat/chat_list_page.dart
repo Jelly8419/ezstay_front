@@ -21,10 +21,12 @@ import '../../widgets/common/app_gnb.dart';
 /// - Mobile: 채팅 선택 시 전체화면 전환
 class ChatListPage extends StatefulWidget {
   final String? initialChatRoomId;
+  final int? initialContractId; // 계약 ID로 채팅방 찾기
 
   const ChatListPage({
     super.key,
     this.initialChatRoomId,
+    this.initialContractId,
   });
 
   @override
@@ -70,6 +72,35 @@ class _ChatListPageState extends State<ChatListPage> {
         _chatRooms = chatRooms;
         _isLoading = false;
       });
+
+      // 3. 계약 ID로 채팅방 찾아서 선택 및 URL 업데이트
+      debugPrint('📱 [CHAT_LIST] initialContractId: ${widget.initialContractId}, _selectedChatId: $_selectedChatId');
+      debugPrint('📱 [CHAT_LIST] 로드된 채팅방 수: ${chatRooms.length}');
+      for (var room in chatRooms) {
+        debugPrint('📱 [CHAT_LIST] 채팅방 - contractId: ${room.contractId}, firebaseChatRoomId: ${room.firebaseChatRoomId}');
+      }
+
+      if (widget.initialContractId != null && _selectedChatId == null) {
+        final matchingRoom = chatRooms.where(
+          (room) => room.contractId == widget.initialContractId,
+        ).toList();
+        debugPrint('📱 [CHAT_LIST] 매칭된 채팅방 수: ${matchingRoom.length}');
+
+        if (matchingRoom.isNotEmpty) {
+          final chatRoomId = matchingRoom.first.firebaseChatRoomId;
+          setState(() {
+            _selectedChatId = chatRoomId;
+          });
+          debugPrint('📱 [CHAT_LIST] 계약 ID ${widget.initialContractId}에 해당하는 채팅방 선택: $chatRoomId');
+
+          // URL을 /chat-list/{chatRoomId} 형태로 업데이트 (replace로 히스토리 교체)
+          if (mounted) {
+            context.replace('/chat-list/$chatRoomId');
+          }
+        } else {
+          debugPrint('⚠️ [CHAT_LIST] 계약 ID ${widget.initialContractId}에 해당하는 채팅방을 찾을 수 없습니다.');
+        }
+      }
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -98,22 +129,23 @@ class _ChatListPageState extends State<ChatListPage> {
   ChatRoom? get _selectedChat {
     if (_selectedChatId == null) return null;
     try {
+      // firebaseChatRoomId로 비교 (URL에서 사용되는 ID)
       return _chatRooms.firstWhere(
-        (chat) => chat.id.toString() == _selectedChatId,
+        (chat) => chat.firebaseChatRoomId == _selectedChatId,
       );
     } catch (e) {
       return null;
     }
   }
 
-  void _handleSelectChat(String id) {
+  void _handleSelectChat(String firebaseChatRoomId) {
     setState(() {
-      _selectedChatId = id;
+      _selectedChatId = firebaseChatRoomId;
     });
     // URL 업데이트 (go 사용 - 페이지 재빌드 없이 URL만 변경)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.go('/chat-list/$id');
+        context.go('/chat-list/$firebaseChatRoomId');
       }
     });
   }
@@ -422,13 +454,14 @@ class _ChatListPageState extends State<ChatListPage> {
         itemCount: _filteredChatRooms.length,
         itemBuilder: (context, index) {
           final chat = _filteredChatRooms[index];
-          final isSelected = _selectedChatId == chat.id.toString();
+          // firebaseChatRoomId로 비교 및 선택
+          final isSelected = _selectedChatId == chat.firebaseChatRoomId;
 
           return ChatListItem(
             chatRoom: chat,
             currentUserId: currentUserId,
             isSelected: isSelected,
-            onTap: () => _handleSelectChat(chat.id.toString()),
+            onTap: () => _handleSelectChat(chat.firebaseChatRoomId),
           );
         },
       ),

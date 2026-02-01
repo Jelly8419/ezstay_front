@@ -1,5 +1,5 @@
 @JS()
-library payment_service_web;
+library;
 
 import 'dart:async';
 import 'package:js/js.dart';
@@ -33,9 +33,7 @@ class PaymentJS {
 class PaymentOptionsJS {
   external String get customerKey;
 
-  external factory PaymentOptionsJS({
-    required String customerKey,
-  });
+  external factory PaymentOptionsJS({required String customerKey});
 }
 
 /// 결제 요청 파라미터 (V2 API)
@@ -72,10 +70,7 @@ class AmountJS {
   external String get currency;
   external int get value;
 
-  external factory AmountJS({
-    required String currency,
-    required int value,
-  });
+  external factory AmountJS({required String currency, required int value});
 }
 
 /// 카드 결제 옵션
@@ -134,7 +129,9 @@ class PaymentServiceWeb {
   void _initializeSDK() {
     try {
       debugPrint('🔄 [PaymentServiceWeb] 토스페이먼츠 V2 SDK 초기화 중...');
-      debugPrint('🔄 [PaymentServiceWeb] Client Key: ${config.PaymentConfig.clientKey.substring(0, 10)}...');
+      debugPrint(
+        '🔄 [PaymentServiceWeb] Client Key: ${config.PaymentConfig.clientKey.substring(0, 10)}...',
+      );
 
       // V2 SDK는 동기 초기화
       TossPaymentsJS? tossPaymentsInstance;
@@ -152,7 +149,9 @@ class PaymentServiceWeb {
       // null 체크 (JavaScript SDK가 로드되지 않은 경우)
       if (_tossPayments == null) {
         debugPrint('⚠️ [PaymentServiceWeb] 토스페이먼츠 SDK가 로드되지 않았습니다.');
-        debugPrint('⚠️ [PaymentServiceWeb] index.html에 토스페이먼츠 SDK 스크립트가 있는지 확인하세요.');
+        debugPrint(
+          '⚠️ [PaymentServiceWeb] index.html에 토스페이먼츠 SDK 스크립트가 있는지 확인하세요.',
+        );
         _isInitialized = false;
         return;
       }
@@ -217,10 +216,7 @@ class PaymentServiceWeb {
     try {
       final request = PaymentRequest(
         method: 'CARD',
-        amount: AmountJS(
-          currency: 'KRW',
-          value: amount,
-        ),
+        amount: AmountJS(currency: 'KRW', value: amount),
         orderId: orderId,
         orderName: orderName,
         successUrl: config.PaymentConfig.successUrl,
@@ -287,10 +283,7 @@ class PaymentServiceWeb {
     try {
       final request = PaymentRequest(
         method: 'TRANSFER',
-        amount: AmountJS(
-          currency: 'KRW',
-          value: amount,
-        ),
+        amount: AmountJS(currency: 'KRW', value: amount),
         orderId: orderId,
         orderName: orderName,
         successUrl: config.PaymentConfig.successUrl,
@@ -324,10 +317,7 @@ class PaymentServiceWeb {
     try {
       final request = PaymentRequest(
         method: 'VIRTUAL_ACCOUNT',
-        amount: AmountJS(
-          currency: 'KRW',
-          value: amount,
-        ),
+        amount: AmountJS(currency: 'KRW', value: amount),
         orderId: orderId,
         orderName: orderName,
         successUrl: config.PaymentConfig.successUrl,
@@ -415,10 +405,7 @@ class PaymentServiceWeb {
 
       final request = PaymentRequest(
         method: 'CARD',
-        amount: AmountJS(
-          currency: 'KRW',
-          value: amount,
-        ),
+        amount: AmountJS(currency: 'KRW', value: amount),
         orderId: orderId,
         orderName: orderName,
         successUrl: successUrl,

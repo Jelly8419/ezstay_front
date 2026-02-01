@@ -611,10 +611,15 @@ class AppRouter {
         GoRoute(
           path: '/chat-list',
           name: 'chat-list',
-          builder: (context, state) => _deferredWidget(
-            chat_list.loadLibrary,
-            () => chat_list.ChatListPage(),
-          ),
+          builder: (context, state) {
+            // query parameter로 contractId 지원
+            final contractIdStr = state.uri.queryParameters['contractId'];
+            final contractId = contractIdStr != null ? int.tryParse(contractIdStr) : null;
+            return _deferredWidget(
+              chat_list.loadLibrary,
+              () => chat_list.ChatListPage(initialContractId: contractId),
+            );
+          },
           routes: [
             // 채팅방 선택 시 URL 파라미터 지원
             GoRoute(

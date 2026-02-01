@@ -6,12 +6,12 @@ import '../../constants/app_constants.dart' hide AppColors, AppTextStyles;
 import '../../models/contract.dart';
 import '../../services/contract_service.dart';
 import '../../services/payment_service_unified.dart';
+import '../../services/rental_order_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../widgets/payment_webview.dart';
 // import '../../widgets/modals/refund_calculation_modal.dart'; // TODO: API로 전체 Contract 가져오기 후 사용
-import '../../widgets/modals/option_refund_modal.dart';
 import '../../widgets/modals/cancel_request_modal.dart';
 
 /// 게스트용 계약 목록 페이지 (리액트 UI 기반 재설계)
@@ -24,6 +24,7 @@ class GuestContractsPage extends StatefulWidget {
 
 class _GuestContractsPageState extends State<GuestContractsPage> {
   final ContractService _contractService = ContractService();
+  final RentalOrderService _rentalOrderService = RentalOrderService();
   final NumberFormat _currencyFormat = NumberFormat('#,###', 'ko_KR');
   final DateFormat _dateFormat = DateFormat('yyyy.MM.dd');
 
@@ -235,32 +236,53 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
   // 옵션 관리 헬퍼 메서드
 
-  /// 입주일 N일 전 체크
+  /// 입주일 N일 전 체크 (날짜만 비교, 시간 제외)
+  /// days=5 → 6일 이상 남았을 때 true (5일 이하 남으면 false)
   bool _isDaysBeforeCheckIn(DateTime checkInDate, int days) {
     final now = DateTime.now();
-    final diff = checkInDate.difference(now).inDays;
-    return diff >= days;
+    // 시간을 제외하고 날짜만 비교
+    final checkInDateOnly = DateTime(checkInDate.year, checkInDate.month, checkInDate.day);
+    final todayOnly = DateTime(now.year, now.month, now.day);
+    final diff = checkInDateOnly.difference(todayOnly).inDays;
+    // 5일 전까지 수정 가능 = 6일 이상 남아야 함
+    // 예: 입주일 1/31, 오늘 1/25 → 6일 남음 → diff(6) > days(5) → true
+    //     입주일 1/31, 오늘 1/26 → 5일 남음 → diff(5) > days(5) → false
+    return diff > days;
   }
 
   /// 옵션 편집 버튼 표시 여부
+  /// - 취소/완료되지 않은 계약
+  /// - 입주일 5일 전까지만 (6일 이상 남았을 때만)
   bool _canShowEditButton(ContractListItem contract) {
-    return [
+    // 1. 상태 체크: 승인됨, 결제완료, 진행중, 승인대기 상태만 가능
+    final allowedStatuses = [
+      ContractStatus.pendingApproval,
       ContractStatus.approved,
       ContractStatus.paymentCompleted,
       ContractStatus.inProgress,
-    ].contains(contract.status);
+    ];
+    if (!allowedStatuses.contains(contract.status)) {
+      return false;
+    }
+
+    // 2. 날짜 체크: 입주일 5일 전까지만 (6일 이상 남아야)
+    if (!_isDaysBeforeCheckIn(contract.checkInDate, 5)) {
+      return false;
+    }
+
+    return true;
   }
 
-  /// 원본 수량 조회
-  int _getOriginalQuantity(int contractId, String itemId) {
+  /// 원본 수량 조회 (이름 기반 매칭)
+  int _getOriginalQuantity(int contractId, String itemName) {
     final savedItems = _savedRentalItems[contractId];
     if (savedItems == null) return 0;
 
     final item = savedItems.firstWhere(
-      (i) => i.id == itemId,
+      (i) => i.name == itemName,
       orElse: () => RentalItem(
-        id: itemId,
-        name: '',
+        id: '',
+        name: itemName,
         price: 0,
         quantity: 0,
         deliveryStatus: DeliveryStatus.pending,
@@ -277,35 +299,78 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     return contract.rentalItems ?? [];
   }
 
-  /// 옵션 편집 시작
-  void _handleEditButtonClick(ContractListItem contract) {
+  /// 옵션 편집 시작 (API에서 이용 가능한 렌탈 아이템 조회)
+  Future<void> _handleEditButtonClick(ContractListItem contract) async {
+    // 먼저 편집 모드 진입 (로딩 표시용)
     setState(() {
       _editingContractId = contract.id;
-
-      // 원본 저장 (처음 편집 시작할 때만)
-      if (!_savedRentalItems.containsKey(contract.id)) {
-        _savedRentalItems[contract.id] = contract.rentalItems ?? [];
-      }
-
-      // 모든 사용 가능한 옵션 초기화 (기존 수량 유지)
-      final currentItems = contract.rentalItems ?? [];
-      final allOptions = AvailableOption.defaultOptions.map((option) {
-        final existingItem = currentItems.firstWhere(
-          (item) => item.id == option.id,
-          orElse: () => RentalItem(
-            id: option.id,
-            name: option.name,
-            description: option.description,
-            price: option.price,
-            quantity: 0,
-            deliveryStatus: DeliveryStatus.pending,
-          ),
-        );
-        return existingItem;
-      }).toList();
-
-      _modifiedOptions[contract.id] = allOptions;
     });
+
+    try {
+      // API에서 이용 가능한 렌탈 아이템 목록 조회
+      final availableItems = await _rentalOrderService.getAvailableRentalItems(
+        contract.id,
+      );
+
+      debugPrint(
+        '📦 [AVAILABLE ITEMS] Contract ID: ${contract.id}, Items: ${availableItems.length}',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        // 원본 저장 (처음 편집 시작할 때만)
+        if (!_savedRentalItems.containsKey(contract.id)) {
+          _savedRentalItems[contract.id] = contract.rentalItems ?? [];
+        }
+
+        // API에서 받아온 이용 가능한 아이템으로 옵션 목록 생성
+        // 기존 계약의 rentalItems와 이름으로 매칭하여 수량 유지
+        final currentItems = contract.rentalItems ?? [];
+        final allOptions = availableItems.map((availableItem) {
+          // 기존 계약에서 같은 이름의 아이템 찾기
+          final existingItem = currentItems.firstWhere(
+            (item) => item.name == availableItem.name,
+            orElse: () => RentalItem(
+              id: availableItem.id.toString(),
+              name: availableItem.name,
+              description: availableItem.description,
+              price: availableItem.price,
+              quantity: 0,
+              deliveryStatus: DeliveryStatus.pending,
+            ),
+          );
+
+          // API의 id를 사용하고, 기존 수량은 유지
+          return RentalItem(
+            id: availableItem.id.toString(),
+            name: availableItem.name,
+            description: availableItem.description ?? existingItem.description,
+            price: availableItem.price,
+            quantity: existingItem.quantity,
+            deliveryStatus: existingItem.deliveryStatus,
+          );
+        }).toList();
+
+        _modifiedOptions[contract.id] = allOptions;
+      });
+    } catch (e) {
+      debugPrint('❌ [AVAILABLE ITEMS] Error: $e');
+
+      if (!mounted) return;
+
+      // 에러 발생 시 편집 모드 취소
+      setState(() {
+        _editingContractId = null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('옵션 목록을 불러오는데 실패했습니다: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
   }
 
   /// 옵션 수량 변경
@@ -329,28 +394,96 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     final modifiedItems = _modifiedOptions[contract.id];
     if (modifiedItems == null) return;
 
-    final savedItems = _savedRentalItems[contract.id] ?? [];
+    // 승인대기 상태인지 확인
+    final isPendingApproval = contract.status == ContractStatus.pendingApproval;
 
-    // 변경사항 계산
-    final changes = <OptionChange>[];
+    if (isPendingApproval) {
+      // 승인대기 상태: 장바구니처럼 렌탈 아이템만 업데이트 (결제 없음)
+      await _updatePendingRentalItems(contract, modifiedItems);
+    } else {
+      // 승인 후 상태: 결제 플로우 진행
+      await _createRentalOrderWithPayment(contract, modifiedItems);
+    }
+  }
+
+  /// 승인대기 상태: 렌탈 아이템 업데이트 (결제 없이 장바구니처럼)
+  Future<void> _updatePendingRentalItems(
+    ContractListItem contract,
+    List<RentalItem> modifiedItems,
+  ) async {
+    // 전체 아이템 목록 생성 (수량 0 제외)
+    final itemsToUpdate = <RentalOrderItem>[];
     for (final item in modifiedItems) {
-      if (item.quantity == 0) continue; // 수량 0인 항목은 제외
+      if (item.quantity == 0) continue;
+      final itemIdInt = int.tryParse(item.id);
+      if (itemIdInt == null) continue;
+      itemsToUpdate.add(RentalOrderItem(
+        itemId: itemIdInt,
+        quantity: item.quantity,
+      ));
+    }
 
-      final originalQty = _getOriginalQuantity(contract.id, item.id);
-      if (item.quantity != originalQty) {
-        changes.add(
-          OptionChange(
-            itemId: item.id,
-            itemName: item.name,
-            originalQuantity: originalQty,
-            newQuantity: item.quantity,
-            pricePerUnit: item.price,
-          ),
-        );
+    debugPrint(
+      '🛒 [UPDATE PENDING] Contract ID: ${contract.id}, Items: ${itemsToUpdate.length}',
+    );
+
+    try {
+      await _rentalOrderService.updatePendingRentalItems(
+        contractId: contract.id,
+        items: itemsToUpdate,
+      );
+
+      debugPrint('✅ [UPDATE PENDING] Success');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('옵션 상품이 저장되었습니다. 승인 후 결제가 진행됩니다.'),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+
+      setState(() {
+        _editingContractId = null;
+        _modifiedOptions.remove(contract.id);
+      });
+
+      await _loadContracts();
+    } catch (e) {
+      debugPrint('❌ [UPDATE PENDING] Error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('옵션 저장 중 오류가 발생했습니다: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
+  }
+
+  /// 승인 후 상태: 렌탈 주문 생성 및 결제 진행
+  Future<void> _createRentalOrderWithPayment(
+    ContractListItem contract,
+    List<RentalItem> modifiedItems,
+  ) async {
+    // 변경사항 계산: 추가된 아이템만 (기존 대비 수량 증가분)
+    final itemsToOrder = <RentalOrderItem>[];
+    for (final item in modifiedItems) {
+      if (item.quantity == 0) continue;
+
+      final originalQty = _getOriginalQuantity(contract.id, item.name);
+      final addedQty = item.quantity - originalQty;
+      if (addedQty > 0) {
+        final itemIdInt = int.tryParse(item.id);
+        if (itemIdInt == null) continue;
+        itemsToOrder.add(RentalOrderItem(
+          itemId: itemIdInt,
+          quantity: addedQty,
+        ));
       }
     }
 
-    if (changes.isEmpty) {
+    if (itemsToOrder.isEmpty) {
       // 변경사항 없으면 편집 모드 종료
       setState(() {
         _editingContractId = null;
@@ -359,60 +492,163 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       return;
     }
 
-    // TODO: API 호출하여 옵션 변경사항 저장
     debugPrint(
-      '💾 [SAVE OPTIONS] Contract ID: ${contract.id}, Changes: ${changes.length}',
+      '💾 [SAVE OPTIONS] Contract ID: ${contract.id}, Items: ${itemsToOrder.length}',
     );
-    for (final change in changes) {
-      debugPrint(
-        '  - ${change.itemName}: ${change.originalQuantity} → ${change.newQuantity} (${change.quantityDiff > 0 ? '+' : ''}${change.priceDiff})',
-      );
-    }
 
-    // 결제 완료 상태에서 수량 감소 시 환불 모달 표시
-    if (contract.status == ContractStatus.paymentCompleted) {
-      final totalDiff = changes.fold<int>(
-        0,
-        (sum, change) => sum + change.priceDiff,
+    try {
+      // 1단계: 렌탈 주문 생성 (PENDING 상태)
+      final orderResponse = await _rentalOrderService.createRentalOrder(
+        contractId: contract.id,
+        items: itemsToOrder,
       );
-      if (totalDiff < 0) {
-        // 옵션 환불 모달 표시
+
+      debugPrint(
+        '✅ [RENTAL ORDER] Created: ${orderResponse.orderId}, Amount: ${orderResponse.totalAmount}',
+      );
+
+      if (!orderResponse.requiresPayment || orderResponse.totalAmount == 0) {
+        // 결제 불필요 (무료 아이템 등)
         if (!mounted) return;
-        showDialog(
-          context: context,
-          builder: (context) => OptionRefundModal(
-            refundAmount: -totalDiff,
-            onConfirm: () {
-              Navigator.of(context).pop();
-              // 환불 확정 처리
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '옵션 수량이 변경되었습니다. ${_currencyFormat.format(-totalDiff)}원은 영업일 기준 3-5일 내 환불됩니다.',
-                  ),
-                  backgroundColor: const Color(0xFF10B981), // green-600
-                ),
-              );
-              setState(() {
-                _editingContractId = null;
-                _modifiedOptions.remove(contract.id);
-              });
-            },
-            onClose: () {
-              Navigator.of(context).pop();
-            },
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('옵션이 추가되었습니다.'),
+            backgroundColor: Color(0xFF10B981),
           ),
         );
+        setState(() {
+          _editingContractId = null;
+          _modifiedOptions.remove(contract.id);
+        });
+        await _loadContracts();
         return;
       }
-    }
 
-    // 저장 성공 후 상태 업데이트
-    setState(() {
-      _editingContractId = null;
-      _modifiedOptions.remove(contract.id);
-      // API 응답으로 contract.rentalItems 업데이트 완료
-    });
+      // 2단계: 결제 정보 조회
+      final paymentInfo = await _rentalOrderService.getPaymentInfo(
+        orderResponse.rentalOrderId,
+      );
+
+      final paymentUrl = paymentInfo['paymentUrl'] as String?;
+      final orderId = paymentInfo['orderId'] as String? ?? orderResponse.orderId;
+
+      debugPrint('💳 [PAYMENT INFO] Retrieved for order: $orderId');
+
+      if (paymentUrl == null || paymentUrl.isEmpty) {
+        throw Exception('결제 URL을 가져올 수 없습니다.');
+      }
+
+      // 3단계: 토스페이먼츠 SDK 호출
+      if (!mounted) return;
+      await _processPayment(
+        contract: contract,
+        rentalOrderId: orderResponse.rentalOrderId,
+        orderId: orderId,
+        amount: orderResponse.totalAmount,
+        paymentUrl: paymentUrl,
+      );
+    } catch (e) {
+      debugPrint('❌ [SAVE OPTIONS] Error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('옵션 저장 중 오류가 발생했습니다: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
+  }
+
+  /// 토스페이먼츠 결제 처리
+  Future<void> _processPayment({
+    required ContractListItem contract,
+    required int rentalOrderId,
+    required String orderId,
+    required int amount,
+    required String paymentUrl,
+  }) async {
+    try {
+      // PaymentWebView를 사용하여 결제 진행
+      final result = await Navigator.of(context).push<Map<String, dynamic>>(
+        MaterialPageRoute(
+          builder: (context) => PaymentWebView(
+            paymentUrl: paymentUrl,
+            contractId: contract.id,
+          ),
+        ),
+      );
+
+      if (result == null) {
+        // 사용자가 결제를 취소함
+        debugPrint('⚠️ [PAYMENT] User cancelled payment');
+        // 미결제 주문 취소
+        await _rentalOrderService.cancelPendingOrder(rentalOrderId);
+        return;
+      }
+
+      if (result['success'] == true) {
+        // 4단계: 결제 승인 API 호출
+        final paymentKey = result['paymentKey'] as String;
+
+        debugPrint('💳 [PAYMENT] Confirming payment: $paymentKey');
+
+        await _rentalOrderService.confirmPayment(
+          rentalOrderId: rentalOrderId,
+          paymentKey: paymentKey,
+          orderId: orderId,
+          amount: amount,
+        );
+
+        debugPrint('✅ [PAYMENT] Confirmed successfully');
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '옵션 상품이 추가되었습니다. 결제 금액: ${_currencyFormat.format(amount)}원',
+            ),
+            backgroundColor: const Color(0xFF10B981),
+          ),
+        );
+
+        setState(() {
+          _editingContractId = null;
+          _modifiedOptions.remove(contract.id);
+        });
+
+        // 계약 목록 새로고침
+        await _loadContracts();
+      } else {
+        // 결제 실패
+        final errorMessage = result['message'] as String? ?? '결제에 실패했습니다.';
+        debugPrint('❌ [PAYMENT] Failed: $errorMessage');
+
+        // 미결제 주문 취소
+        await _rentalOrderService.cancelPendingOrder(rentalOrderId);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ [PAYMENT] Error: $e');
+      // 미결제 주문 취소 시도
+      try {
+        await _rentalOrderService.cancelPendingOrder(rentalOrderId);
+      } catch (_) {}
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('결제 처리 중 오류가 발생했습니다: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
   }
 
   /// 옵션 변경사항 취소
@@ -421,6 +657,38 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       _editingContractId = null;
       _modifiedOptions.remove(contractId);
     });
+  }
+
+  /// 승인대기 상태 계약 요청 취소
+  /// PATCH /api/contracts/:contractId/cancel
+  Future<void> _cancelPendingContract(int contractId) async {
+    try {
+      debugPrint('🚫 [CANCEL] Cancelling pending contract: $contractId');
+
+      await _contractService.withdrawContract(contractId, '게스트 요청 취소');
+
+      debugPrint('✅ [CANCEL] Contract cancelled successfully');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('계약 요청이 취소되었습니다.'),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+
+      await _loadContracts();
+    } catch (e) {
+      debugPrint('❌ [CANCEL] Error: $e');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('계약 취소 중 오류가 발생했습니다: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
   }
 
   // 탭별 계약 개수
@@ -957,25 +1225,47 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
                     // 호스트 + 채팅 버튼
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: _buildInfoRow('호스트', contract.partnerDisplayName),
-                        ),
-                        if (showChatButton) ...[
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () {
-                              // 채팅 페이지로 이동
-                              context.push('/guest/chat/${contract.id}');
-                            },
-                            icon: const Icon(Icons.chat_bubble_outline),
-                            color: const Color(0xFF2563EB),
-                            iconSize: 16,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            tooltip: '호스트와 채팅하기',
+                        const SizedBox(
+                          width: 80,
+                          child: Text(
+                            '호스트',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF6B7280),
+                            ),
                           ),
-                        ],
+                        ),
+                        Flexible(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                contract.partnerDisplayName,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                              if (showChatButton) ...[
+                                const SizedBox(width: 6),
+                                GestureDetector(
+                                  onTap: () {
+                                    // go로 페이지 이동 (URL도 함께 변경)
+                                    context.go('/chat-list?contractId=${contract.id}');
+                                  },
+                                  child: const Icon(
+                                    Icons.chat_bubble_outline,
+                                    color: Color(0xFF2563EB),
+                                    size: 18,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -1003,16 +1293,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                           child: const Text('돌아가기'),
                         ),
                         ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             Navigator.of(context).pop();
                             // API 호출: 계약 요청 취소
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('계약 요청이 취소되었습니다.'),
-                                backgroundColor: Color(0xFF10B981),
-                              ),
-                            );
-                            _loadContracts();
+                            await _cancelPendingContract(contract.id);
                           },
                           child: const Text('취소하기'),
                         ),
@@ -1204,8 +1488,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     final changes = <OptionChange>[];
     if (isEditing) {
       for (final item in currentOptions) {
-        if (item.quantity == 0) continue;
-        final originalQty = _getOriginalQuantity(contract.id, item.id);
+        final originalQty = _getOriginalQuantity(contract.id, item.name);
+        // 수량이 변경된 경우 (0으로 변경도 포함)
         if (item.quantity != originalQty) {
           changes.add(
             OptionChange(
@@ -1414,7 +1698,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     RentalItem item,
     bool isEditing,
   ) {
-    final originalQty = _getOriginalQuantity(contract.id, item.id);
+    final originalQty = _getOriginalQuantity(contract.id, item.name);
     final qtyDiff = item.quantity - originalQty;
     final diffPrice = qtyDiff * item.price;
 

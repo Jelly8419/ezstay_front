@@ -469,14 +469,37 @@ class RentalItem {
   });
 
   factory RentalItem.fromJson(Map<String, dynamic> json) {
+    // API 응답에서 price 필드명이 다를 수 있음: price, pricePerItem, totalPrice
+    int price = 0;
+    if (json['price'] != null) {
+      price = _parsePrice(json['price']);
+    } else if (json['pricePerItem'] != null) {
+      price = _parsePrice(json['pricePerItem']);
+    }
+
     return RentalItem(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       description: json['description'],
-      price: json['price'] as int? ?? 0,
+      price: price,
       quantity: json['quantity'] as int? ?? 0,
       deliveryStatus: DeliveryStatus.fromString(json['deliveryStatus'] ?? 'pending'),
     );
+  }
+
+  /// 가격 파싱 헬퍼 (int, double, String 모두 처리)
+  static int _parsePrice(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return double.parse(value).toInt();
+      } catch (e) {
+        return 0;
+      }
+    }
+    return 0;
   }
 
   Map<String, dynamic> toJson() {
@@ -583,11 +606,23 @@ class OptionChange {
 }
 
 /// rentalItems JSON 파싱 헬퍼 (Map 또는 List 형식 모두 처리)
+///
+/// 백엔드 API 응답 형식:
+/// ```json
+/// "rentalItems": {
+///   "totalPaid": 0,
+///   "totalRefunded": 0,
+///   "netAmount": 0,
+///   "items": [
+///     { "name": "헤어드라이기 대여", "quantity": 1, "pricePerItem": 10000, "totalPrice": 10000, "imageUrl": null }
+///   ]
+/// }
+/// ```
 List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
   if (rentalItemsJson == null) return null;
 
   try {
-    // List 형식인 경우
+    // List 형식인 경우 (직접 아이템 배열)
     if (rentalItemsJson is List) {
       final items = <RentalItem>[];
       for (final item in rentalItemsJson) {
@@ -600,13 +635,30 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
       return items.isEmpty ? null : items;
     }
 
-    // Map 형식인 경우 (Map의 values를 List로 변환)
-    if (rentalItemsJson is Map) {
+    // Map 형식인 경우
+    if (rentalItemsJson is Map<String, dynamic>) {
       final items = <RentalItem>[];
+
+      // ✅ 새로운 API 형식: { items: [...], totalPaid, totalRefunded, netAmount }
+      if (rentalItemsJson.containsKey('items') && rentalItemsJson['items'] is List) {
+        final itemsList = rentalItemsJson['items'] as List;
+        debugPrint('✅ [PARSE_RENTAL_ITEMS] Found ${itemsList.length} items in new API format');
+
+        for (final item in itemsList) {
+          if (item is Map<String, dynamic>) {
+            items.add(RentalItem.fromJson(item));
+          } else {
+            debugPrint('⚠️ [PARSE_ERROR] Item in items array is not a Map: ${item.runtimeType}');
+          }
+        }
+        return items.isEmpty ? null : items;
+      }
+
+      // 이전 형식: Map의 values를 직접 순회
       final itemMap = <String, Map<String, dynamic>>{}; // 아이템별 데이터 임시 저장
 
       for (final entry in rentalItemsJson.entries) {
-        final key = entry.key as String;
+        final key = entry.key;
         final value = entry.value;
 
         // value가 Map인 경우 - 정상적인 RentalItem 객체
@@ -640,6 +692,10 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
               deliveryStatus: DeliveryStatus.pending,
             ));
           }
+        }
+        // totalPaid, totalRefunded, netAmount 등 메타데이터는 무시
+        else if (key == 'totalPaid' || key == 'totalRefunded' || key == 'netAmount') {
+          debugPrint('ℹ️ [PARSE_RENTAL_ITEMS] Skipping metadata field: $key = $value');
         }
         else {
           debugPrint('⚠️ [PARSE_ERROR] Map value is unexpected type: ${value.runtimeType} = $value');
