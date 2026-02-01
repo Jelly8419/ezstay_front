@@ -13,10 +13,18 @@ class PaymentServiceUnified {
   PaymentServiceWeb? _webService;
 
   /// 생성자 - 웹 환경에서 자동으로 SDK 초기화
+  ///
+  /// SDK 초기화 실패 시에도 앱이 계속 작동하도록 예외를 catch합니다.
   PaymentServiceUnified() {
     if (kIsWeb) {
-      _webService = PaymentServiceWeb();
-      debugPrint('✅ [PaymentServiceUnified] 웹 SDK 자동 초기화 완료');
+      try {
+        _webService = PaymentServiceWeb();
+        debugPrint('✅ [PaymentServiceUnified] 웹 SDK 자동 초기화 완료');
+      } catch (e) {
+        debugPrint('⚠️ [PaymentServiceUnified] 웹 SDK 초기화 실패: $e');
+        debugPrint('⚠️ [PaymentServiceUnified] 결제 기능이 비활성화됩니다. 앱은 계속 작동합니다.');
+        _webService = null;
+      }
     }
   }
 
@@ -24,7 +32,12 @@ class PaymentServiceUnified {
   @Deprecated('생성자에서 자동으로 초기화됩니다. 이 메서드는 호출할 필요가 없습니다.')
   void initializeWebSDK() {
     if (kIsWeb && _webService == null) {
-      _webService = PaymentServiceWeb();
+      try {
+        _webService = PaymentServiceWeb();
+      } catch (e) {
+        debugPrint('⚠️ [PaymentServiceUnified] initializeWebSDK 실패: $e');
+        _webService = null;
+      }
     }
   }
 
