@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'daum_postcode_web.dart';
+import '../core/theme/app_text_styles.dart';
 
 /// 다음 우편번호 검색 위젯
 class DaumPostcodeWidget extends StatefulWidget {
@@ -202,9 +203,9 @@ class _DaumPostcodeWidgetState extends State<DaumPostcodeWidget> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '웹 환경에서는 다음 우편번호 검색을 지원하지 않습니다.\n아래 버튼으로 샘플 주소를 선택하거나 직접 입력해주세요.',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -251,7 +252,7 @@ class _DaumPostcodeWidgetState extends State<DaumPostcodeWidget> {
           foregroundColor: Colors.black87,
           elevation: 1,
         ),
-        child: Text(address, style: const TextStyle(fontSize: 14)),
+        child: Text(address, style: AppTextStyles.bodySmall),
       ),
     );
   }

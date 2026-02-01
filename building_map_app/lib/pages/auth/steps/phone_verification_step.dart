@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../config/api_config.dart';
 import '../../../models/user.dart';
 import '../../../services/token_service.dart';
@@ -193,8 +194,9 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       return;
     }
 
-    if (!RegExp(r'^01[016789][-]?\d{3,4}[-]?\d{4}$')
-        .hasMatch(_phoneController.text)) {
+    if (!RegExp(
+      r'^01[016789][-]?\d{3,4}[-]?\d{4}$',
+    ).hasMatch(_phoneController.text)) {
       _showErrorDialog('올바른 휴대폰 번호 형식이 아닙니다');
       return;
     }
@@ -224,9 +226,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: backgroundWhite,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text(
           '오류',
           style: TextStyle(
@@ -265,9 +265,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: backgroundWhite,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           '성공',
           style: TextStyle(
@@ -367,22 +365,23 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         // 일반 회원가입: Step 1, 2 진행
         // Step 1: 회원가입 API 호출 (이메일, 비밀번호, user_mode만)
         debugPrint('📝 [REGISTER] Step 1: 회원가입 API 호출');
-        final registerResponse = await http.post(
-          Uri.parse(ApiConfig.authRegisterUrl),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: json.encode({
-            'email': widget.email,
-            'password': widget.password,
-            'user_mode': widget.mode == UserMode.guest ? 'guest' : 'host',
-          }),
-        ).timeout(ApiConfig.timeout);
+        final registerResponse = await http
+            .post(
+              Uri.parse(ApiConfig.authRegisterUrl),
+              headers: {'Content-Type': 'application/json'},
+              body: json.encode({
+                'email': widget.email,
+                'password': widget.password,
+                'user_mode': widget.mode == UserMode.guest ? 'guest' : 'host',
+              }),
+            )
+            .timeout(ApiConfig.timeout);
 
         debugPrint('📡 [REGISTER] 회원가입 응답 상태: ${registerResponse.statusCode}');
         debugPrint('📄 [REGISTER] 회원가입 응답 내용: ${registerResponse.body}');
 
-        if (registerResponse.statusCode != 200 && registerResponse.statusCode != 201) {
+        if (registerResponse.statusCode != 200 &&
+            registerResponse.statusCode != 201) {
           final data = json.decode(registerResponse.body);
           final message = data['message'] ?? '회원가입에 실패했습니다';
           throw Exception(message);
@@ -397,7 +396,8 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         // Step 2: JWT 토큰 추출 및 저장
         debugPrint('🔑 [REGISTER] Step 2: JWT 토큰 저장');
 
-        if (registerData['data'] != null && registerData['data']['accessToken'] != null) {
+        if (registerData['data'] != null &&
+            registerData['data']['accessToken'] != null) {
           accessToken = registerData['data']['accessToken'];
           refreshToken = registerData['data']['refreshToken'];
         } else if (registerData['accessToken'] != null) {
@@ -417,26 +417,32 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       if (widget.isPhoneVerificationOnly) {
         // 본인인증만 하는 단계 (호스트 소셜 로그인 첫 단계)
         debugPrint('📞 [REGISTER] 본인인증만 API 호출');
-        final verificationUrl = '${ApiConfig.baseUrl}/api/user/host/phone-verification';
+        final verificationUrl =
+            '${ApiConfig.baseUrl}/api/user/host/phone-verification';
 
         final verificationBody = {
           'name': _nameController.text,
           'phone_number': _phoneController.text,
         };
 
-        final verificationResponse = await http.post(
-          Uri.parse(verificationUrl),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $accessToken',
-          },
-          body: json.encode(verificationBody),
-        ).timeout(ApiConfig.timeout);
+        final verificationResponse = await http
+            .post(
+              Uri.parse(verificationUrl),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $accessToken',
+              },
+              body: json.encode(verificationBody),
+            )
+            .timeout(ApiConfig.timeout);
 
-        debugPrint('📡 [REGISTER] 본인인증 응답 상태: ${verificationResponse.statusCode}');
+        debugPrint(
+          '📡 [REGISTER] 본인인증 응답 상태: ${verificationResponse.statusCode}',
+        );
         debugPrint('📄 [REGISTER] 본인인증 응답 내용: ${verificationResponse.body}');
 
-        if (verificationResponse.statusCode != 200 && verificationResponse.statusCode != 201) {
+        if (verificationResponse.statusCode != 200 &&
+            verificationResponse.statusCode != 201) {
           final data = json.decode(verificationResponse.body);
           final message = data['message'] ?? '본인인증에 실패했습니다';
           throw Exception(message);
@@ -487,19 +493,24 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         debugPrint('예금주: ${verificationBody['account_holder_name']}');
       }
 
-      final verificationResponse = await http.post(
-        Uri.parse(verificationUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $accessToken',
-        },
-        body: json.encode(verificationBody),
-      ).timeout(ApiConfig.timeout);
+      final verificationResponse = await http
+          .post(
+            Uri.parse(verificationUrl),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $accessToken',
+            },
+            body: json.encode(verificationBody),
+          )
+          .timeout(ApiConfig.timeout);
 
-      debugPrint('📡 [REGISTER] 본인인증 응답 상태: ${verificationResponse.statusCode}');
+      debugPrint(
+        '📡 [REGISTER] 본인인증 응답 상태: ${verificationResponse.statusCode}',
+      );
       debugPrint('📄 [REGISTER] 본인인증 응답 내용: ${verificationResponse.body}');
 
-      if (verificationResponse.statusCode != 200 && verificationResponse.statusCode != 201) {
+      if (verificationResponse.statusCode != 200 &&
+          verificationResponse.statusCode != 201) {
         final data = json.decode(verificationResponse.body);
         final message = data['message'] ?? '본인인증에 실패했습니다';
         throw Exception(message);
@@ -572,12 +583,9 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             '안전한 서비스 이용을 위해 본인인증이 필요합니다',
-            style: TextStyle(
-              fontSize: 16,
-              color: textGray,
-            ),
+            style: AppTextStyles.bodyLarge.copyWith(color: textGray),
           ),
           const SizedBox(height: 40),
 
@@ -696,8 +704,9 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(backgroundWhite),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              backgroundWhite,
+                            ),
                           ),
                         )
                       : Text(
@@ -743,10 +752,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: borderGray,
-                      width: 1,
-                    ),
+                    borderSide: const BorderSide(color: borderGray, width: 1),
                   ),
                   disabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -762,7 +768,9 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
           ],
 
           // 호스트 계좌 정보 입력 (호스트 모드 + 본인인증 완료 후 + 전체 단계인 경우에만)
-          if (widget.mode == UserMode.host && _isVerified && !widget.isPhoneVerificationOnly) ...[
+          if (widget.mode == UserMode.host &&
+              _isVerified &&
+              !widget.isPhoneVerificationOnly) ...[
             const Text(
               '정산 계좌 정보',
               style: TextStyle(
@@ -826,10 +834,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: borderGray,
-                      width: 1,
-                    ),
+                    borderSide: const BorderSide(color: borderGray, width: 1),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -875,9 +880,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                 controller: _accountController,
                 enabled: !_accountVerified,
                 keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
@@ -900,10 +903,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: borderGray,
-                      width: 1,
-                    ),
+                    borderSide: const BorderSide(color: borderGray, width: 1),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -1033,7 +1033,8 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                  backgroundWhite),
+                                backgroundWhite,
+                              ),
                             ),
                           )
                         : Text(
@@ -1055,10 +1056,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
               decoration: BoxDecoration(
                 color: const Color(0xFFF8F9FA),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: const Color(0xFFE9ECEF),
-                  width: 1,
-                ),
+                border: Border.all(color: const Color(0xFFE9ECEF), width: 1),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1104,10 +1102,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
             decoration: BoxDecoration(
               color: const Color(0xFFF8F9FA),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: const Color(0xFFE9ECEF),
-                width: 1,
-              ),
+              border: Border.all(color: const Color(0xFFE9ECEF), width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1131,12 +1126,11 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '• 본인인증을 통해 실명이 자동으로 입력됩니다\n'
                   '• 입력하신 정보는 안전하게 보호됩니다\n'
                   '• 만 14세 이상만 가입 가능합니다',
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: AppTextStyles.bodySmall.copyWith(
                     color: textGray,
                     height: 1.5,
                   ),
@@ -1148,153 +1142,144 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
 
           // 약관 동의 섹션 (본인인증만 하는 단계가 아닌 경우에만 표시)
           if (!widget.isPhoneVerificationOnly) ...[
-          const Text(
-            '약관 동의',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: primaryBlack,
+            const Text(
+              '약관 동의',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: primaryBlack,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          // 전체 동의
-          InkWell(
-            onTap: () {
-              setState(() {
-                final allAgreed = _agreeTerms && _agreeMarketing;
-                _agreeTerms = !allAgreed;
-                _agreeMarketing = !allAgreed;
-              });
-            },
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: _agreeTerms && _agreeMarketing,
-                    onChanged: (value) {
-                      setState(() {
-                        _agreeTerms = value ?? false;
-                        _agreeMarketing = value ?? false;
-                      });
-                    },
-                    activeColor: AppColors.primary600,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
+            // 전체 동의
+            InkWell(
+              onTap: () {
+                setState(() {
+                  final allAgreed = _agreeTerms && _agreeMarketing;
+                  _agreeTerms = !allAgreed;
+                  _agreeMarketing = !allAgreed;
+                });
+              },
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: _agreeTerms && _agreeMarketing,
+                      onChanged: (value) {
+                        setState(() {
+                          _agreeTerms = value ?? false;
+                          _agreeMarketing = value ?? false;
+                        });
+                      },
+                      activeColor: AppColors.primary600,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  '전체 동의',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: primaryBlack,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Divider(color: borderGray, thickness: 1),
-          const SizedBox(height: 12),
-
-          // 필수 약관 동의
-          InkWell(
-            onTap: () {
-              setState(() {
-                _agreeTerms = !_agreeTerms;
-              });
-            },
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: _agreeTerms,
-                    onChanged: (value) {
-                      setState(() {
-                        _agreeTerms = value ?? false;
-                      });
-                    },
-                    activeColor: AppColors.primary600,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    '[필수] 이용약관 및 개인정보처리방침 동의',
+                  const SizedBox(width: 12),
+                  const Text(
+                    '전체 동의',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                       color: primaryBlack,
                     ),
                   ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: secondaryGray,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
+            const Divider(color: borderGray, thickness: 1),
+            const SizedBox(height: 12),
 
-          // 선택 약관 동의
-          InkWell(
-            onTap: () {
-              setState(() {
-                _agreeMarketing = !_agreeMarketing;
-              });
-            },
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: _agreeMarketing,
-                    onChanged: (value) {
-                      setState(() {
-                        _agreeMarketing = value ?? false;
-                      });
-                    },
-                    activeColor: AppColors.primary600,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
+            // 필수 약관 동의
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _agreeTerms = !_agreeTerms;
+                });
+              },
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: _agreeTerms,
+                      onChanged: (value) {
+                        setState(() {
+                          _agreeTerms = value ?? false;
+                        });
+                      },
+                      activeColor: AppColors.primary600,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    '[선택] 마케팅 정보 수신 동의',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: primaryBlack,
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      '[필수] 이용약관 및 개인정보처리방침 동의',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: primaryBlack,
+                      ),
                     ),
                   ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: secondaryGray,
-                ),
-              ],
+                  Icon(Icons.chevron_right, size: 20, color: secondaryGray),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 40),
+            const SizedBox(height: 12),
+
+            // 선택 약관 동의
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _agreeMarketing = !_agreeMarketing;
+                });
+              },
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: _agreeMarketing,
+                      onChanged: (value) {
+                        setState(() {
+                          _agreeMarketing = value ?? false;
+                        });
+                      },
+                      activeColor: AppColors.primary600,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      '[선택] 마케팅 정보 수신 동의',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: primaryBlack,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, size: 20, color: secondaryGray),
+                ],
+              ),
+            ),
+            const SizedBox(height: 40),
           ], // 약관 동의 섹션 종료
-
           // 회원가입 완료 버튼 (또는 다음 버튼)
           SizedBox(
             height: 56,
@@ -1316,7 +1301,9 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(backgroundWhite),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          backgroundWhite,
+                        ),
                       ),
                     )
                   : Text(
@@ -1351,16 +1338,12 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                   foregroundColor: secondaryGray,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
-                    side: const BorderSide(
-                      color: borderGray,
-                      width: 1,
-                    ),
+                    side: const BorderSide(color: borderGray, width: 1),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   '비회원으로 이용하기',
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: AppTextStyles.labelLarge.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                 ),

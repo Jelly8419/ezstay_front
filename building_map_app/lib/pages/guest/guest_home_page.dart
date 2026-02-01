@@ -589,7 +589,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
             ],
           ),
           child: Center(
-            child: Text(emoji, style: TextStyle(fontSize: isMobile ? 28 : 40)),
+            child: Text(emoji, style: AppTextStyles.displayLarge.copyWith(fontSize: isMobile ? 28 : 40)),
           ),
         ),
         SizedBox(height: AppSpacing.md),

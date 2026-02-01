@@ -1382,7 +1382,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           const SizedBox(height: 16),
           Text(
             _errorMessage ?? '오류가 발생했습니다.',
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
+            style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
           ),
           const SizedBox(height: 24),
           ElevatedButton(

@@ -665,7 +665,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
-              style: const TextStyle(fontSize: 16),
+              style: AppTextStyles.bodyLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -783,7 +783,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           const SizedBox(height: 16),
           Text(
             '계약 내역이 없습니다.',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            style: AppTextStyles.bodyLarge.copyWith(color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -862,7 +862,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     if (statusMessage.isNotEmpty)
                       Text(
                         statusMessage,
-                        style: TextStyle(fontSize: 13, color: statusColor),
+                        style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: statusColor),
                       ),
                   ],
                 ),
@@ -1046,9 +1046,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
               child: ElevatedButton.icon(
                 onPressed: () => _handlePayment(contract),
                 icon: const Icon(Icons.credit_card, size: 16),
-                label: const Text(
+                label: Text(
                   '결제하기',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  style: AppTextStyles.labelMedium,
                 ),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),

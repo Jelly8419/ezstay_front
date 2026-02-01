@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 호스트 계약 거절 모달
 /// React UI: HostContractManagement.tsx (lines 753-784)
@@ -95,7 +96,7 @@ class _HostContractRejectionModalState
                   decoration: InputDecoration(
                     hintText: '거절 사유를 입력해주세요',
                     hintStyle:
-                        const TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                        AppTextStyles.bodySmall.copyWith(color: const Color(0xFF9CA3AF)),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
@@ -111,7 +112,7 @@ class _HostContractRejectionModalState
                     ),
                     contentPadding: const EdgeInsets.all(12),
                   ),
-                  style: const TextStyle(fontSize: 14),
+                  style: AppTextStyles.bodySmall,
                 ),
                 const SizedBox(height: 16),
 

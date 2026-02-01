@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../../services/auth_service.dart';
 import '../../models/user.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../config/api_config.dart';
 
 /// 회원가입 페이지 - 미니멀 디자인
@@ -151,7 +152,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   // 부제목 (선택한 모드 표시)
                   Text(
                     widget.mode == UserMode.guest ? '게스트로 가입하기' : '호스트로 가입하기',
-                    style: const TextStyle(fontSize: 16, color: textGray),
+                    style: AppTextStyles.bodyMedium.copyWith(color: textGray),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
@@ -654,7 +655,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 8),
                     Text(
                       '수익 정산을 위한 계좌 정보를 입력해주세요',
-                      style: TextStyle(fontSize: 14, color: textGray),
+                      style: AppTextStyles.bodySmall.copyWith(color: textGray),
                     ),
                     const SizedBox(height: 20),
 

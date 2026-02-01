@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui_web' as ui_web;
+import '../core/theme/app_text_styles.dart';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:js' as js;
@@ -230,15 +231,15 @@ class _KakaoRoadviewWebState extends State<KakaoRoadviewWeb> {
     if (!_isRoadviewAvailable) {
       return Container(
         color: Colors.grey[200],
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.location_off, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
+              const Icon(Icons.location_off, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
               Text(
                 '이 위치에서는 거리뷰를 사용할 수 없습니다',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
               ),
             ],
           ),

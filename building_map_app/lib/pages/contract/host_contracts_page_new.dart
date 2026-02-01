@@ -7,6 +7,7 @@ import '../../services/contract_service.dart';
 import '../../widgets/modals/guest_preparation_modal.dart';
 import '../../widgets/modals/host_contract_rejection_modal.dart';
 import '../../widgets/common/app_gnb.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 호스트 계약 관리 페이지 (React UI 완전 복제)
 class HostContractsPageNew extends StatefulWidget {
@@ -552,7 +553,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
-              style: TextStyle(fontSize: 16, color: Colors.red.shade700),
+              style: AppTextStyles.bodyLarge.copyWith(color: Colors.red.shade700),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -587,7 +588,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
             const SizedBox(height: 16),
             Text(
               '계약 내역이 없습니다.',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
+              style: AppTextStyles.bodyLarge.copyWith(color: Colors.grey.shade500),
             ),
           ],
         ),
@@ -785,7 +786,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
     if (message.isEmpty) return const SizedBox.shrink();
 
-    return Text(message, style: TextStyle(fontSize: 14, color: color));
+    return Text(message, style: AppTextStyles.bodyMedium.copyWith(color: color));
   }
 
   Widget _buildDetailButton(ContractListItem contract) {
@@ -801,15 +802,13 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.description_outlined, size: 16, color: Color(0xFF2563EB)),
-            SizedBox(width: 6),
+          children: [
+            const Icon(Icons.description_outlined, size: 16, color: Color(0xFF2563EB)),
+            const SizedBox(width: 6),
             Text(
               '계약 상세',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2563EB),
+              style: AppTextStyles.labelMedium.copyWith(
+                color: const Color(0xFF2563EB),
               ),
             ),
           ],
@@ -826,9 +825,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
           width: 80,
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF6B7280),
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: const Color(0xFF6B7280),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -836,7 +834,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(fontSize: 16, color: Colors.black),
+            style: AppTextStyles.bodyLarge.copyWith(color: Colors.black),
           ),
         ),
       ],
@@ -854,18 +852,16 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '게스트 메시지',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+            style: AppTextStyles.labelLarge.copyWith(
               color: Colors.black,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             message,
-            style: const TextStyle(fontSize: 14, color: Colors.black),
+            style: AppTextStyles.bodyMedium.copyWith(color: Colors.black),
           ),
         ],
       ),
@@ -887,12 +883,10 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 이용 금액
-          const Text(
+          Text(
             '이용 금액',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF111827),
+            style: AppTextStyles.labelLarge.copyWith(
+              color: const Color(0xFF111827),
             ),
           ),
           const SizedBox(height: 8),
@@ -911,9 +905,9 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                   children: [
                     Row(
                       children: [
-                        const Text(
+                        Text(
                           '청소비',
-                          style: TextStyle(fontSize: 14, color: Colors.black),
+                          style: AppTextStyles.bodyMedium.copyWith(color: Colors.black),
                         ),
                         if (contract.isEzCleaning == true) ...[
                           const SizedBox(width: 6),
@@ -926,12 +920,10 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                               color: const Color(0xFF2563EB),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
+                            child: Text(
                               'EZ서비스',
-                              style: TextStyle(
+                              style: AppTextStyles.labelMedium.copyWith(
                                 color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
@@ -940,10 +932,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                     ),
                     Text(
                       '₩${_currencyFormat.format(contract.cleaningFee ?? 0)}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827),
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: const Color(0xFF111827),
                       ),
                     ),
                   ],
@@ -1049,10 +1039,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                 ),
                 Text(
                   '₩${_currencyFormat.format(settlementAmount)}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2563EB),
+                  style: AppTextStyles.headingSmall.copyWith(
+                    color: const Color(0xFF2563EB),
                   ),
                 ),
               ],
@@ -1067,13 +1055,11 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 14, color: Colors.black)),
+        Text(label, style: AppTextStyles.bodyMedium.copyWith(color: Colors.black)),
         Text(
           '₩${_currencyFormat.format(amount)}',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827),
+          style: AppTextStyles.labelMedium.copyWith(
+            color: const Color(0xFF111827),
           ),
         ),
       ],
@@ -1101,9 +1087,9 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         ElevatedButton.icon(
           onPressed: () => _handleApprove(contractId),
           icon: const Icon(Icons.check, size: 16),
-          label: const Text(
+          label: Text(
             '승인하기',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: AppTextStyles.labelLarge,
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF2563EB),
@@ -1119,9 +1105,9 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         OutlinedButton.icon(
           onPressed: () => _handleReject(contractId),
           icon: const Icon(Icons.close, size: 16),
-          label: const Text(
+          label: Text(
             '거절하기',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: AppTextStyles.labelLarge,
           ),
           style: OutlinedButton.styleFrom(
             backgroundColor: Colors.white,
