@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../constants/app_constants.dart' hide AppColors;
+import '../../constants/app_constants.dart' hide AppColors, AppTextStyles;
 import '../../models/contract.dart';
 import '../../services/contract_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../widgets/modals/host_contract_modals.dart';
 
@@ -511,7 +512,7 @@ class _HostContractsPageState extends State<HostContractsPage> {
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
-              style: const TextStyle(fontSize: 16),
+              style: AppTextStyles.bodyLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -916,9 +917,9 @@ class _HostContractsPageState extends State<HostContractsPage> {
                   children: [
                     Row(
                       children: [
-                        const Text(
+                        Text(
                           '청소비',
-                          style: TextStyle(fontSize: 14, color: Colors.black),
+                          style: AppTextStyles.bodyMedium.copyWith(color: Colors.black),
                         ),
                         if (contract.isEzCleaning == true) ...[
                           const SizedBox(width: 6),
@@ -928,12 +929,10 @@ class _HostContractsPageState extends State<HostContractsPage> {
                               color: const Color(0xFF2563EB),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
+                            child: Text(
                               'EZ서비스',
-                              style: TextStyle(
+                              style: AppTextStyles.labelMedium.copyWith(
                                 color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
@@ -1069,14 +1068,12 @@ class _HostContractsPageState extends State<HostContractsPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, color: Colors.black),
+          style: AppTextStyles.bodyMedium.copyWith(color: Colors.black),
         ),
         Text(
           '₩${_currencyFormat.format(amount)}',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827),
+          style: AppTextStyles.labelMedium.copyWith(
+            color: const Color(0xFF111827),
           ),
         ),
       ],
@@ -1284,9 +1281,9 @@ class _HostContractsPageState extends State<HostContractsPage> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.blue.shade200),
               ),
-              child: const Text(
+              child: Text(
                 '승인 후 게스트가 결제하면 계약이 확정됩니다.',
-                style: TextStyle(fontSize: 12),
+                style: AppTextStyles.bodySmall,
               ),
             ),
           ],
@@ -1403,19 +1400,18 @@ class _HostContractsPageState extends State<HostContractsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '⚠️ 주의사항',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                    style: AppTextStyles.labelSmall.copyWith(
                       fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     '• 호스트가 계약을 취소하는 경우 위약금이 발생합니다.\n'
                     '• 환불 정책에 따라 게스트에게 환불됩니다.\n'
                     '• 취소 후 해당 기간이 다시 임대 가능 상태가 됩니다.',
-                    style: TextStyle(fontSize: 12, height: 1.5),
+                    style: AppTextStyles.bodySmall.copyWith(height: 1.5),
                   ),
                 ],
               ),

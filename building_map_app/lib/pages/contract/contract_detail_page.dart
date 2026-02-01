@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../constants/app_constants.dart';
+import '../../constants/app_constants.dart' hide AppTextStyles;
 import '../../models/contract.dart';
 import '../../models/payment_method.dart';
 import '../../services/contract_service.dart';
 import '../../services/auth_service.dart';
 import '../../config/api_config.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 계약 상세 페이지 (호스트/게스트 공통)
 class ContractDetailPage extends StatefulWidget {
@@ -172,7 +173,7 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 _errorMessage!,
-                style: const TextStyle(fontSize: 16),
+                style: AppTextStyles.bodyMedium,
                 textAlign: TextAlign.center,
               ),
             ),
@@ -1867,9 +1868,9 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 '철회 후에는 다시 요청하셔야 합니다.',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
+                style: AppTextStyles.bodySmall.copyWith(color: Colors.grey),
               ),
             ],
           ),

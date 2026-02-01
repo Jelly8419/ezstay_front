@@ -128,26 +128,55 @@ class PaymentServiceWeb {
   }
 
   /// SDK 동기 초기화 (V2는 동기 API 사용)
+  ///
+  /// SDK 초기화 실패 시에도 앱이 계속 작동하도록 예외를 던지지 않습니다.
+  /// 결제 기능만 비활성화됩니다.
   void _initializeSDK() {
     try {
       debugPrint('🔄 [PaymentServiceWeb] 토스페이먼츠 V2 SDK 초기화 중...');
+      debugPrint('🔄 [PaymentServiceWeb] Client Key: ${config.PaymentConfig.clientKey.substring(0, 10)}...');
 
       // V2 SDK는 동기 초기화
-      _tossPayments = tossPaymentsInit(config.PaymentConfig.clientKey);
+      TossPaymentsJS? tossPaymentsInstance;
+      try {
+        tossPaymentsInstance = tossPaymentsInit(config.PaymentConfig.clientKey);
+      } catch (jsError) {
+        debugPrint('⚠️ [PaymentServiceWeb] TossPayments JS 함수 호출 실패: $jsError');
+        debugPrint('⚠️ [PaymentServiceWeb] SDK 스크립트가 로드되지 않았을 수 있습니다.');
+        _isInitialized = false;
+        return;
+      }
+
+      _tossPayments = tossPaymentsInstance;
+
+      // null 체크 (JavaScript SDK가 로드되지 않은 경우)
+      if (_tossPayments == null) {
+        debugPrint('⚠️ [PaymentServiceWeb] 토스페이먼츠 SDK가 로드되지 않았습니다.');
+        debugPrint('⚠️ [PaymentServiceWeb] index.html에 토스페이먼츠 SDK 스크립트가 있는지 확인하세요.');
+        _isInitialized = false;
+        return;
+      }
 
       // Payment 인스턴스 생성 (익명 사용자는 TossPayments.ANONYMOUS 사용)
       // 실제 고객 키가 있으면 해당 값 사용
-      _payment = _tossPayments!.payment(
-        PaymentOptionsJS(
-          customerKey: 'ANONYMOUS', // 익명 사용자
-        ),
-      );
-
+      try {
+        _payment = _tossPayments!.payment(
+          PaymentOptionsJS(
+            customerKey: 'ANONYMOUS', // 익명 사용자
+          ),
+        );
+      } catch (paymentError) {
+        debugPrint('⚠️ [PaymentServiceWeb] Payment 인스턴스 생성 실패: $paymentError');
+        _isInitialized = false;
+        return;
+      }
       _isInitialized = true;
       debugPrint('✅ [PaymentServiceWeb] 토스페이먼츠 V2 SDK 초기화 완료');
     } catch (e) {
-      debugPrint('❌ [PaymentServiceWeb] SDK 초기화 실패: $e');
-      rethrow;
+      debugPrint('⚠️ [PaymentServiceWeb] SDK 초기화 실패: $e');
+      debugPrint('⚠️ [PaymentServiceWeb] 결제 기능이 비활성화됩니다. 앱은 계속 작동합니다.');
+      _isInitialized = false;
+      // rethrow 하지 않음 - 앱이 계속 작동하도록 함
     }
   }
 

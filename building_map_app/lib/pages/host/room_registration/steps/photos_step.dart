@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../components/form_section.dart';
 import '../components/option_toggle.dart';
 import '../components/draggable_image_grid.dart';
@@ -335,15 +336,15 @@ class _PhotosStepState extends State<PhotosStep> {
                     onRemove: _removeImage,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     '* 첫 번째 사진이 대표 사진으로 설정되며, 드래그하여 사진 순서를 변경할 수 있습니다.',
-                    style: TextStyle(fontSize: 12, color: Colors.black),
+                    style: AppTextStyles.bodySmall.copyWith(color: Colors.black),
                   ),
                   if (_uploadedImages.length < 5) ...[
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       '⚠️ 최소 5장의 사진을 업로드해주세요',
-                      style: TextStyle(fontSize: 12, color: AppColors.error600),
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.error600),
                     ),
                   ],
                 ],

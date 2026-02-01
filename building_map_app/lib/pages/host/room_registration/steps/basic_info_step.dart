@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/daum_postcode_widget.dart';
 import '../components/form_section.dart';
 
@@ -335,9 +336,9 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'ⓘ 상세주소는 입주 당일 게스트에게 공개됩니다.',
-                  style: TextStyle(fontSize: 13, color: AppColors.primary600),
+                  style: AppTextStyles.caption.copyWith(color: AppColors.primary600),
                 ),
               ],
             ),

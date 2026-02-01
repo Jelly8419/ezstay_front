@@ -101,6 +101,40 @@ class AuthService extends ChangeNotifier {
 
           if (userInfo != null) {
             final userMode = userInfo['mode'] ?? userInfo['userMode'];
+
+            // 🔍 디버그: phoneVerified 값 추적
+            final rawPhoneVerified = userInfo['phoneVerified'];
+            final rawHasBank = userInfo['hasBank'];
+            debugPrint('🔍 [DEV_BYPASS] 백엔드 응답 phoneVerified: $rawPhoneVerified (타입: ${rawPhoneVerified.runtimeType})');
+            debugPrint('🔍 [DEV_BYPASS] 백엔드 응답 hasBank: $rawHasBank (타입: ${rawHasBank.runtimeType})');
+
+            // phoneVerified 값 안전하게 파싱 (bool, int, String 모두 처리)
+            bool phoneVerifiedValue = true; // bypass 기본값은 true
+            if (rawPhoneVerified != null) {
+              if (rawPhoneVerified is bool) {
+                phoneVerifiedValue = rawPhoneVerified;
+              } else if (rawPhoneVerified is int) {
+                phoneVerifiedValue = rawPhoneVerified == 1;
+              } else if (rawPhoneVerified is String) {
+                phoneVerifiedValue = rawPhoneVerified.toLowerCase() == 'true' || rawPhoneVerified == '1';
+              }
+            }
+
+            // hasBank 값 안전하게 파싱
+            bool hasBankValue = false;
+            if (rawHasBank != null) {
+              if (rawHasBank is bool) {
+                hasBankValue = rawHasBank;
+              } else if (rawHasBank is int) {
+                hasBankValue = rawHasBank == 1;
+              } else if (rawHasBank is String) {
+                hasBankValue = rawHasBank.toLowerCase() == 'true' || rawHasBank == '1';
+              }
+            }
+
+            debugPrint('✅ [DEV_BYPASS] 파싱된 phoneVerified: $phoneVerifiedValue');
+            debugPrint('✅ [DEV_BYPASS] 파싱된 hasBank: $hasBankValue');
+
             _currentUser = User(
               id: userInfo['id'].toString(),
               email: userInfo['email'] ?? 'dev@test.com',
@@ -112,14 +146,15 @@ class AuthService extends ChangeNotifier {
               ),
               provider: AuthProvider.email,
               profileImageUrl: userInfo['profileImageUrl'],
-              phoneVerified: userInfo['phoneVerified'] ?? true, // bypass 로그인은 기본 true
-              hasBank: userInfo['hasBank'] ?? false,
+              phoneVerified: phoneVerifiedValue,
+              hasBank: hasBankValue,
             );
 
             // 사용자 정보 저장
             await UserRepository.saveUser(_currentUser!);
             debugPrint('✅ [DEV_BYPASS] 사용자 정보 저장 완료');
             debugPrint('👤 [DEV_BYPASS] 사용자: ${_currentUser!.email} (${_currentUser!.mode.name})');
+            debugPrint('📊 [DEV_BYPASS] phoneVerified: ${_currentUser!.phoneVerified}, hasBank: ${_currentUser!.hasBank}');
           }
         }
 

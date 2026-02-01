@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../components/form_section.dart';
 
 /// Step 4: 이지스테이 관리 서비스 (리액트 ServicesStep 복제)
@@ -392,9 +393,9 @@ class _ServicesStepState extends State<ServicesStep> {
                 children: [
                   _buildServicePasswordSection(),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'ⓘ 호스트 방 관리 서비스를 위해 도어락 비밀번호를 입력해주세요.',
-                    style: TextStyle(fontSize: 12, color: AppColors.primary600),
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary600),
                   ),
                 ],
               ),

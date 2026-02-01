@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../config/api_config.dart';
 import '../../../services/token_service.dart';
 
@@ -450,7 +451,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
             widget.isStandaloneMode
                 ? '호스트로 활동하시려면 정산 계좌 정보를 등록해주세요.'
                 : '호스트로 활동하시려면 정산 계좌 정보가 필요합니다.',
-            style: const TextStyle(fontSize: 14, color: secondaryGray),
+            style: AppTextStyles.bodySmall.copyWith(color: secondaryGray),
           ),
           const SizedBox(height: 32),
 
@@ -634,9 +635,9 @@ class _HostAccountStepState extends State<HostAccountStep> {
                   _agreeTerms = value ?? false;
                 });
               },
-              title: const Text(
+              title: Text(
                 '이용약관 및 개인정보 처리방침 동의 (필수)',
-                style: TextStyle(fontSize: 14),
+                style: AppTextStyles.bodySmall,
               ),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
@@ -651,9 +652,9 @@ class _HostAccountStepState extends State<HostAccountStep> {
                   _agreeMarketing = value ?? false;
                 });
               },
-              title: const Text(
+              title: Text(
                 '마케팅 정보 수신 동의 (선택)',
-                style: TextStyle(fontSize: 14),
+                style: AppTextStyles.bodySmall,
               ),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,

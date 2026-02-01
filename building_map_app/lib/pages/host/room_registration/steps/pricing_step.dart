@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/refund_policy.dart';
 import '../../../../services/refund_policy_service.dart';
 import '../components/form_section.dart';
@@ -431,9 +432,9 @@ class _PricingStepState extends State<PricingStep> {
                   ),
                 ),
                 if (_hasError('dailyRent'))
-                  const Text(
+                  Text(
                     '임대료를 입력해주세요',
-                    style: TextStyle(fontSize: 12, color: AppColors.error600),
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.error600),
                   ),
               ],
             ),
@@ -535,9 +536,9 @@ class _PricingStepState extends State<PricingStep> {
                   ),
                 ),
                 if (_hasError('dailyMaintenanceFee'))
-                  const Text(
+                  Text(
                     '관리비를 입력해주세요',
-                    style: TextStyle(fontSize: 12, color: AppColors.error600),
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.error600),
                   ),
                 const SizedBox(height: 16),
 
@@ -959,11 +960,11 @@ class _PricingStepState extends State<PricingStep> {
                   ],
                 ],
                 if (_hasError('refundPolicy'))
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       '환불 규정을 선택해주세요',
-                      style: TextStyle(fontSize: 12, color: AppColors.error600),
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.error600),
                     ),
                   ),
               ],
@@ -1028,7 +1029,7 @@ class _PricingStepState extends State<PricingStep> {
                         }
                       },
                       underline: Container(),
-                      style: const TextStyle(fontSize: 14, color: Colors.black),
+                      style: AppTextStyles.bodySmall.copyWith(color: Colors.black),
                     ),
                     const Text('이상 계약 시'),
                     SizedBox(
@@ -1143,7 +1144,7 @@ class _PricingStepState extends State<PricingStep> {
                         }
                       },
                       underline: Container(),
-                      style: const TextStyle(fontSize: 14, color: Colors.black),
+                      style: AppTextStyles.bodySmall.copyWith(color: Colors.black),
                     ),
                     const Text('이내 입주 시'),
                     SizedBox(

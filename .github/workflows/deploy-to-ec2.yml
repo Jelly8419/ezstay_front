@@ -98,6 +98,9 @@ jobs:
           KAKAO_REST_API_KEY=$KAKAO_REST
           KAKAO_JAVASCRIPT_KEY=$KAKAO_JS
           IS_PRODUCTION=$IS_PROD
+          TOSS_CLIENT_KEY=test_ck_PBal2vxj81voBvwla6xG35RQgOAN
+          PAYMENT_MOCK_MODE=true
+          API_TIMEOUT_SECONDS=10
           EOF
 
           # .env.test 파일 생성
@@ -106,6 +109,9 @@ jobs:
           KAKAO_REST_API_KEY=32ea67da1f7c3d55fd573c285a5fc0f2
           KAKAO_JAVASCRIPT_KEY=8fa88a5c7a3edac4ee6d8dd52af14f60
           IS_PRODUCTION=false
+          TOSS_CLIENT_KEY=test_ck_PBal2vxj81voBvwla6xG35RQgOAN
+          PAYMENT_MOCK_MODE=true
+          API_TIMEOUT_SECONDS=10
           EOF
 
           # .env.production 파일 생성
@@ -114,6 +120,9 @@ jobs:
           KAKAO_REST_API_KEY=88df9fa560e1447eb0930e5bae9ff017
           KAKAO_JAVASCRIPT_KEY=7b8e75100e5af72db70a46c3fef81128
           IS_PRODUCTION=true
+          TOSS_CLIENT_KEY=live_ck_REPLACE_WITH_LIVE_KEY
+          PAYMENT_MOCK_MODE=false
+          API_TIMEOUT_SECONDS=10
           EOF
 
           echo "✅ .env 파일 생성 완료"
@@ -138,11 +147,13 @@ jobs:
           API_URL: ${{ github.event.inputs.environment == 'production' && 'https://api.ezstay.com' || 'https://ezstay-api.duckdns.org' }}
           KAKAO_REST_KEY: ${{ github.event.inputs.environment == 'production' && '88df9fa560e1447eb0930e5bae9ff017' || '32ea67da1f7c3d55fd573c285a5fc0f2' }}
           KAKAO_JS_KEY: ${{ github.event.inputs.environment == 'production' && '7b8e75100e5af72db70a46c3fef81128' || '8fa88a5c7a3edac4ee6d8dd52af14f60' }}
+          TOSS_CLIENT_KEY: ${{ github.event.inputs.environment == 'production' && secrets.TOSS_LIVE_CLIENT_KEY || 'test_ck_PBal2vxj81voBvwla6xG35RQgOAN' }}
         run: |
           echo "🔧 Environment: $ENVIRONMENT"
           echo "🌐 API URL: $API_URL"
           echo "🔑 Kakao REST Key: ${KAKAO_REST_KEY:0:10}..."
           echo "🔑 Kakao JS Key: ${KAKAO_JS_KEY:0:10}..."
+          echo "💳 Toss Client Key: ${TOSS_CLIENT_KEY:0:10}..."
 
           flutter build web --release \
             --no-wasm-dry-run \
@@ -150,7 +161,8 @@ jobs:
             --dart-define=ENVIRONMENT=$ENVIRONMENT \
             --dart-define=API_BASE_URL=$API_URL \
             --dart-define=KAKAO_REST_API_KEY=$KAKAO_REST_KEY \
-            --dart-define=KAKAO_JAVASCRIPT_KEY=$KAKAO_JS_KEY
+            --dart-define=KAKAO_JAVASCRIPT_KEY=$KAKAO_JS_KEY \
+            --dart-define=TOSS_CLIENT_KEY=$TOSS_CLIENT_KEY
 
       - name: 🔑 Inject Kakao Key into index.html
         working-directory: ./building_map_app/build/web

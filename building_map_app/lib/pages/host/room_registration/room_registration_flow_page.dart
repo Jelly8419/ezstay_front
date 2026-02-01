@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../config/api_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../services/room_service.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
 import '../../../widgets/common/app_gnb.dart';
@@ -960,9 +961,9 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     '확인',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),

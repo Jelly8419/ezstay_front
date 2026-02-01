@@ -4,6 +4,7 @@ import '../models/search_filters.dart';
 import '../utils/responsive_util.dart';
 import '../services/map_interaction_coordinator.dart';
 import 'kakao_map_web.dart';
+import '../core/theme/app_text_styles.dart';
 
 /// 검색 필터 바 위젯 (React MapSearch.tsx 기반)
 /// React 코드에 맞춰 3개 필터만 사용: 임대 기간, 건물 유형, 임대료
@@ -286,21 +287,19 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
             if (showOnlyValue)
               Text(
                 value,
-                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.black87),
               )
             else ...[
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.labelMedium.copyWith(
                   color: Colors.black87,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 value,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[600]),
               ),
             ],
             const SizedBox(width: 8),
@@ -887,15 +886,13 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
             children: [
               Text(
                 '임대 기간',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[600]),
               ),
               const SizedBox(height: 4),
               Text(
                 '${_rangeEnd!.difference(_rangeStart!).inDays}일',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF3B82F6),
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: const Color(0xFF3B82F6),
                 ),
               ),
             ],
@@ -907,7 +904,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
           const Divider(height: 32),
           Text(
             '• 최소 7일부터 선택 가능합니다\n• 최대 3개월(90일)까지 선택 가능합니다',
-            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+            style: AppTextStyles.caption.copyWith(color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -940,9 +937,9 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 '초기화',
-                style: TextStyle(fontSize: 13, color: Colors.black87),
+                style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.black87),
               ),
             ),
           ),
@@ -1172,14 +1169,12 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               children: [
                 Text(
                   '최소',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.grey[600]),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '${_rentMin.toInt()}만원',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                  style: AppTextStyles.labelMedium.copyWith(
                     color: Colors.black87,
                   ),
                 ),
@@ -1189,14 +1184,12 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               children: [
                 Text(
                   '최대',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.grey[600]),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _rentMax == 160 ? '전체' : '${_rentMax.toInt()}만원',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                  style: AppTextStyles.labelMedium.copyWith(
                     color: Colors.black87,
                   ),
                 ),
@@ -1246,9 +1239,9 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   '초기화',
-                  style: TextStyle(fontSize: 13, color: Colors.black87),
+                  style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.black87),
                 ),
               ),
             ),
@@ -1276,9 +1269,9 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   '적용',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  style: AppTextStyles.labelSmall.copyWith(fontSize: 13),
                 ),
               ),
             ),

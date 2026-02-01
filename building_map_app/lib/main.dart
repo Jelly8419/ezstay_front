@@ -106,10 +106,17 @@ Future<void> main() async {
   }
 
   // 웹 결제 서비스 초기화 (토스페이먼츠 SDK)
+  // SDK 초기화 실패 시에도 앱이 계속 작동하도록 try-catch
   if (kIsWeb) {
-    final paymentService = PaymentServiceUnified();
-    paymentService.initializeWebSDK();
-    debugPrint('✅ [MAIN] 토스페이먼츠 웹 SDK 초기화 완료');
+    try {
+      final paymentService = PaymentServiceUnified();
+      // ignore: deprecated_member_use_from_same_package
+      paymentService.initializeWebSDK();
+      debugPrint('✅ [MAIN] 토스페이먼츠 웹 SDK 초기화 완료');
+    } catch (e) {
+      debugPrint('⚠️ [MAIN] 토스페이먼츠 SDK 초기화 실패: $e');
+      debugPrint('⚠️ [MAIN] 결제 기능이 비활성화됩니다. 앱은 계속 작동합니다.');
+    }
   }
 
   // 🔥 자동 로그인을 백그라운드로 실행 (await 제거)

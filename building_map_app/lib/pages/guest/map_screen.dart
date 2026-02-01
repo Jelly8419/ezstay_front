@@ -1272,7 +1272,7 @@ class _MapScreenState extends State<MapScreen> {
                 _currentZoomLevel != null && _currentZoomLevel! >= 6
                     ? '지도를 확대해서 방을 찾아주세요.'
                     : '현재 위치에 조건이 일치하는 방이 없습니다.',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
               ),
             ),
           ),
@@ -1526,7 +1526,7 @@ class _MapScreenState extends State<MapScreen> {
       return Center(
         child: Text(
           '모바일 지도는 준비 중입니다.',
-          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+          style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[600]),
         ),
       );
     }

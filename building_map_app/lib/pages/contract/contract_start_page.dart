@@ -7,6 +7,7 @@ import '../../services/contract_service.dart';
 import '../../services/refund_policy_service.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 /// 계약 요청하기 페이지
@@ -240,18 +241,20 @@ class _ContractStartPageState extends State<ContractStartPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '날짜를 선택해주세요',
-                  style: TextStyle(
+                  style: AppTextStyles.labelMedium.copyWith(
                     fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF8B6914),
+                    color: const Color(0xFF8B6914),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '체크인/체크아웃 날짜를 선택해야 계약을 요청할 수 있습니다.',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontSize: 13,
+                    color: Colors.grey[700],
+                  ),
                 ),
               ],
             ),
@@ -284,9 +287,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '기본 정보',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: AppTextStyles.headingSmall,
           ),
           const SizedBox(height: 16),
           // 방 이미지 + 정보 (모바일: 세로, 데스크톱: 가로)
@@ -366,10 +369,8 @@ class _ContractStartPageState extends State<ContractStartPage> {
         // 방 이름 (React: text-[20px] font-bold)
         Text(
           widget.room.roomName,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827), // gray-900
+          style: AppTextStyles.headingMedium.copyWith(
+            color: const Color(0xFF111827), // gray-900
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -383,13 +384,13 @@ class _ContractStartPageState extends State<ContractStartPage> {
               width: 80,
               child: Text(
                 '주소',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[600]),
               ),
             ),
             Expanded(
               child: Text(
                 '${widget.room.address}, ${widget.room.floor}층',
-                style: const TextStyle(fontSize: 14, color: Color(0xFF111827)),
+                style: AppTextStyles.bodyMedium.copyWith(color: const Color(0xFF111827)),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -405,16 +406,15 @@ class _ContractStartPageState extends State<ContractStartPage> {
               width: 80,
               child: Text(
                 '계약 기간',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[600]),
               ),
             ),
             Expanded(
               child: _hasValidDates
                   ? RichText(
                       text: TextSpan(
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF111827),
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: const Color(0xFF111827),
                         ),
                         children: [
                           TextSpan(
@@ -423,9 +423,8 @@ class _ContractStartPageState extends State<ContractStartPage> {
                           ),
                           TextSpan(
                             text: '(${widget.calculatedPricing.totalDays}일)',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF2563EB),
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: const Color(0xFF2563EB),
                             ),
                           ),
                         ],
@@ -433,7 +432,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                     )
                   : Text(
                       '날짜가 선택되지 않았습니다',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
                     ),
             ),
           ],
@@ -462,9 +461,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // React: "호스트"
-          const Text(
+          Text(
             '호스트',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: AppTextStyles.headingSmall,
           ),
           const SizedBox(height: 16),
           Row(
@@ -492,10 +491,8 @@ class _ContractStartPageState extends State<ContractStartPage> {
                   children: [
                     Text(
                       widget.room.hostName ?? '호스트',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827), // gray-900
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: const Color(0xFF111827), // gray-900
                       ),
                     ),
                     // TODO: Room 모델에 hostIntroduction 추가 후 소개문 표시
@@ -522,12 +519,11 @@ class _ContractStartPageState extends State<ContractStartPage> {
                   color: Color(0xFF2563EB), // blue-600
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     '호스트의 연락처는 계약이 확정된 후 공개됩니다.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF1E40AF), // blue-800
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: const Color(0xFF1E40AF), // blue-800
                     ),
                   ),
                 ),
@@ -563,14 +559,14 @@ class _ContractStartPageState extends State<ContractStartPage> {
           // React: "옵션 상품" + "(X개 선택)" in gray
           Row(
             children: [
-              const Text(
+              Text(
                 '옵션 상품',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: AppTextStyles.headingSmall,
               ),
               const SizedBox(width: 8),
               Text(
                 '(${widget.selectedRentalItems.length}개 선택)',
-                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
               ),
             ],
           ),
@@ -585,12 +581,12 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 children: [
                   Text(
                     '선택한 옵션 상품이 없습니다.',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                    style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '방 상세페이지에서 옵션 상품을 선택해주세요.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                    style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[400]),
                   ),
                 ],
               ),
@@ -615,10 +611,8 @@ class _ContractStartPageState extends State<ContractStartPage> {
                         children: [
                           Text(
                             item.name,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF111827),
+                            style: AppTextStyles.labelMedium.copyWith(
+                              color: const Color(0xFF111827),
                             ),
                           ),
                           if (item.description != null &&
@@ -627,7 +621,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                               padding: const EdgeInsets.only(top: 2),
                               child: Text(
                                 item.description!,
-                                style: TextStyle(
+                                style: AppTextStyles.bodySmall.copyWith(
                                   fontSize: 13,
                                   color: Colors.grey[500],
                                 ),
@@ -637,9 +631,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               '${_currencyFormat.format(item.price)}원 x ${item.quantity}개',
-                              style: const TextStyle(
+                              style: AppTextStyles.bodySmall.copyWith(
                                 fontSize: 13,
-                                color: Color(0xFF2563EB), // blue-600
+                                color: const Color(0xFF2563EB), // blue-600
                               ),
                             ),
                           ),
@@ -648,10 +642,8 @@ class _ContractStartPageState extends State<ContractStartPage> {
                     ),
                     Text(
                       '${_currencyFormat.format(item.totalPrice)}원',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827),
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: const Color(0xFF111827),
                       ),
                     ),
                   ],
@@ -677,12 +669,12 @@ class _ContractStartPageState extends State<ContractStartPage> {
                   color: Color(0xFF2563EB), // blue-600
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     '옵션 상품은 계약 승인 후에도 입주 5일 전까지 추가로 구매할 수 있습니다.(각 최대 4개)',
-                    style: TextStyle(
+                    style: AppTextStyles.bodySmall.copyWith(
                       fontSize: 13,
-                      color: Color(0xFF1E40AF), // blue-800
+                      color: const Color(0xFF1E40AF), // blue-800
                     ),
                   ),
                 ),
@@ -713,9 +705,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '임대 목적 (선택사항)',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: AppTextStyles.headingSmall,
           ),
           const SizedBox(height: 16),
           // React: textarea with multi-line placeholder
@@ -729,8 +721,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 decoration: InputDecoration(
                   hintText:
                       '예) 오후 3시쯤 입주 예정입니다. 짐이 많아 차량으로 이동할 예정입니다.\n예) 출장 목적으로 1개월간 머물 예정입니다.\n예) 가족 2명이 함께 이용할 예정입니다.',
-                  hintStyle: TextStyle(
-                    fontSize: 14,
+                  hintStyle: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.grey[400],
                     height: 1.5,
                   ),
@@ -752,7 +743,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                   contentPadding: const EdgeInsets.all(16),
                   counterText: '',
                 ),
-                style: const TextStyle(fontSize: 14),
+                style: AppTextStyles.bodyMedium,
               ),
               // Character count (React: bottom-right inside textarea)
               Positioned(
@@ -760,7 +751,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 right: 12,
                 child: Text(
                   '${_messageController.text.length}/500',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                  style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[400]),
                 ),
               ),
             ],
@@ -769,7 +760,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           // React: helper text with asterisk
           Text(
             '임대 목적을 호스트에게 미리 전달해주세요.',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
           ),
         ],
       ),
@@ -802,9 +793,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '결제 금액',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: AppTextStyles.headingSmall,
                 ),
               ],
             ),
@@ -868,9 +859,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 const Divider(height: 32),
                 Text(
                   '* 보증금은 3자 예치기관에 보관되며, 퇴실 완료 후 2일 내 자동 환급됩니다.',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.normal,
+                  style: AppTextStyles.caption.copyWith(
                     color: Colors.grey[600],
                   ),
                 ),
@@ -919,12 +908,10 @@ class _ContractStartPageState extends State<ContractStartPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '방 입주 매너',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111827), // gray-900
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: const Color(0xFF111827), // gray-900
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -965,8 +952,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                fontSize: 12,
+              style: AppTextStyles.bodySmall.copyWith(
                 color: Colors.grey[600],
                 height: 1.4,
               ),
@@ -998,9 +984,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '예상 금액',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: AppTextStyles.headingSmall,
           ),
           const SizedBox(height: 16),
 
@@ -1050,9 +1036,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           const Divider(height: 32),
           Text(
             '* 보증금은 3자 예치기관에 보관되며, 퇴실 완료 후 2일 내 자동 환급\n됩니다.',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.normal,
+            style: AppTextStyles.caption.copyWith(
               color: Colors.grey[600],
             ),
           ),
@@ -1094,9 +1078,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 '계약 해지 조항',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: AppTextStyles.headingSmall,
               ),
               const SizedBox(width: 8),
               // 환불 정책 라벨
@@ -1108,9 +1092,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 ),
                 child: Text(
                   _getRefundPolicyLabel(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                  style: AppTextStyles.labelSmall.copyWith(
                     color: _getRefundPolicyColor(),
                   ),
                 ),
@@ -1161,12 +1143,10 @@ class _ContractStartPageState extends State<ContractStartPage> {
                       color: Color(0xFF2563EB), // blue-600
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       '안내사항',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E40AF), // blue-800
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: const Color(0xFF1E40AF), // blue-800
                       ),
                     ),
                   ],
@@ -1218,9 +1198,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: AppTextStyles.bodySmall.copyWith(
                 fontSize: 13,
-                color: Color(0xFF1E40AF), // blue-800
+                color: const Color(0xFF1E40AF), // blue-800
                 height: 1.4,
               ),
             ),
@@ -1245,7 +1225,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: AppTextStyles.bodyMedium.copyWith(
             fontSize: fontSize,
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
             color: isGrey ? Colors.grey[600] : Colors.black87,
@@ -1253,7 +1233,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
         ),
         Text(
           '${isDiscount ? '-' : ''}${_currencyFormat.format(price.abs())}원',
-          style: TextStyle(
+          style: AppTextStyles.bodyMedium.copyWith(
             fontSize: fontSize,
             fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
             color:
@@ -1331,7 +1311,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
+              style: AppTextStyles.bodySmall.copyWith(
                 fontSize: 13,
                 color: Colors.grey[700],
                 height: 1.5,
@@ -1375,12 +1355,106 @@ class _ContractStartPageState extends State<ContractStartPage> {
               )
             : Text(
                 buttonText,
-                style: TextStyle(
+                style: AppTextStyles.labelLarge.copyWith(
                   fontSize: 15,
-                  fontWeight: FontWeight.bold,
                   color: _canSubmit ? Colors.white : Colors.grey[500],
                 ),
               ),
+      ),
+    );
+  }
+
+  /// 계약 요청 성공 안내 표시 (중앙 모달)
+  Future<void> _showContractSuccessMessage() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text('요청 완료'),
+          ],
+        ),
+        content: const Text(
+          '계약 요청이 완료되었습니다.\n호스트가 승인하면 결제를 진행할 수 있습니다.',
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.go('/guest');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('확인', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 계약 요청 실패 안내 표시 (중앙 모달)
+  Future<void> _showContractErrorMessage(String errorMessage) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text('요청 실패'),
+          ],
+        ),
+        content: Text(errorMessage),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('확인', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
@@ -1409,14 +1483,12 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 children: [
                   Text(
                     '최종 결제 금액',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${_currencyFormat.format(widget.calculatedPricing.finalTotalAmount)}원',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    style: AppTextStyles.headingSmall.copyWith(
                       color: AppColors.primary600,
                     ),
                   ),
@@ -1426,7 +1498,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
             const SizedBox(height: 12),
             Text(
               '호스트가 승인하면 결제가 진행됩니다.',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -1506,28 +1578,20 @@ class _ContractStartPageState extends State<ContractStartPage> {
           _isLoading = false;
         });
 
-        // SnackBar 표시
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('계약 승인 요청이 완료되었습니다.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // 게스트 홈으로 이동
-        context.go('/guest');
+        // 환경별 성공 안내 표시
+        await _showContractSuccessMessage();
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('계약 요청 실패: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // 에러 메시지 파싱 (백엔드 에러 메시지 추출)
+        String errorMessage = e.toString();
+        if (errorMessage.contains('Exception:')) {
+          errorMessage = errorMessage.replaceFirst('Exception:', '').trim();
+        }
+        await _showContractErrorMessage(errorMessage);
       }
     }
   }
