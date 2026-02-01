@@ -178,6 +178,22 @@ jobs:
           echo "📋 Check injection result:"
           grep "dapi.kakao.com/v2/maps/sdk.js" index.html || echo "❌ Kakao script tag not found!"
 
+      - name: 🗑️ Add cache busting for deferred libraries
+        working-directory: ./building_map_app/build/web
+        run: |
+          echo "🗑️ Adding cache busting version..."
+          BUILD_VERSION=$(date +%Y%m%d%H%M%S)
+
+          # flutter_bootstrap.js에 버전 추가
+          sed -i "s/flutter_bootstrap.js/flutter_bootstrap.js?v=${BUILD_VERSION}/g" index.html
+
+          # main.dart.js에 버전 추가 (flutter_bootstrap.js 내부에서 로드)
+          if [ -f "flutter_bootstrap.js" ]; then
+            sed -i "s/main.dart.js/main.dart.js?v=${BUILD_VERSION}/g" flutter_bootstrap.js
+          fi
+
+          echo "✅ Cache busting version: $BUILD_VERSION"
+
           echo "✅ Kakao key injection completed"
 
       # ==========================================

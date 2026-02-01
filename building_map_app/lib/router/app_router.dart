@@ -46,6 +46,9 @@ import '../pages/support/inquiry_form_page.dart' deferred as inquiry_form;
 
 class AppRouter {
   /// Deferred 라이브러리 로딩 위젯
+  ///
+  /// 지연 로딩 실패 시 에러 화면을 표시하고 새로고침 옵션을 제공합니다.
+  /// 브라우저 캐시 불일치, 네트워크 문제 등으로 인한 로딩 실패를 처리합니다.
   static Widget _deferredWidget(
     Future<void> Function() loadLibrary,
     Widget Function() builder,
@@ -53,9 +56,56 @@ class AppRouter {
     return FutureBuilder(
       future: loadLibrary(),
       builder: (context, snapshot) {
+        // 에러 발생 시 에러 화면 표시
+        if (snapshot.hasError) {
+          debugPrint('❌ [Deferred] 라이브러리 로딩 실패: ${snapshot.error}');
+          return Scaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '페이지를 불러올 수 없습니다',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '브라우저 캐시를 지우고 다시 시도해주세요.\n(Ctrl+Shift+R 또는 Cmd+Shift+R)',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        // 현재 라우트로 다시 이동 (강제 새로고침 효과)
+                        context.go('/');
+                      },
+                      icon: const Icon(Icons.home),
+                      label: const Text('홈으로 이동'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        // 로딩 완료
         if (snapshot.connectionState == ConnectionState.done) {
           return builder();
         }
+
         // 로딩 중 표시
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
