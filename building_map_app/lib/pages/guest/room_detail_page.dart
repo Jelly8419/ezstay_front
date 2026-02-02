@@ -2017,9 +2017,18 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   }
 
   /// 렌탈 아이템 섹션 (데스크톱 버전 - 리액트 UI 스타일)
+  /// 6일 정책: 입주일 6일 전까지만 옵션 상품 선택 가능
   Widget _buildDesktopRentalItemsSection() {
     final availableItems = _room!.availableRentalItems!;
     final allItems = availableItems.allItems; // 카테고리 구분 없이 평탄화
+
+    // 6일 정책 체크: 입주일 6일 전까지만 선택 가능
+    final canSelectRental = PriceCalculator.canSelectRentalItems(
+      checkInDate: _bookingState.checkInDate,
+    );
+    final disabledReason = PriceCalculator.getRentalItemsDisabledReason(
+      checkInDate: _bookingState.checkInDate,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2043,21 +2052,58 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         ),
         SizedBox(height: AppSpacing.md),
 
-        // 단일 컨테이너에 모든 아이템 표시
-        Container(
-          padding: EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: AppRadius.radiusXl,
-            border: Border.all(color: AppColors.border),
+        // 6일 정책 비활성화 안내 메시지
+        if (!canSelectRental && disabledReason != null) ...[
+          Container(
+            padding: EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.warning50,
+              borderRadius: AppRadius.radiusMd,
+              border: Border.all(color: AppColors.warning500),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 18,
+                  color: AppColors.warning700,
+                ),
+                SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    disabledReason,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.warning700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Column(
-            children: allItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final isLast = index == allItems.length - 1;
-              return _buildDesktopRentalItemCard(item, isLast);
-            }).toList(),
+          SizedBox(height: AppSpacing.md),
+        ],
+
+        // 단일 컨테이너에 모든 아이템 표시
+        Opacity(
+          opacity: canSelectRental ? 1.0 : 0.5,
+          child: IgnorePointer(
+            ignoring: !canSelectRental,
+            child: Container(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: AppRadius.radiusXl,
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: allItems.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  final isLast = index == allItems.length - 1;
+                  return _buildDesktopRentalItemCard(item, isLast);
+                }).toList(),
+              ),
+            ),
           ),
         ),
       ],

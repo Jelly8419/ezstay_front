@@ -211,6 +211,55 @@ class PriceCalculator {
     return null; // 유효함
   }
 
+  /// 옵션 상품(렌탈 아이템) 선택 가능 여부 판단
+  ///
+  /// 정책: 계약 시작일(체크인)로부터 현재 시점까지 6일 미만이면 옵션 상품 선택 불가
+  /// - 예: 입주일 1/31 14:00, 현재 1/25 15:00 → 5일 23시간 → 6일 미만 → 비활성화
+  ///
+  /// [checkInDate] - 체크인(입주) 날짜
+  /// [currentTime] - 현재 시간 (테스트용으로 주입 가능, 기본값 DateTime.now())
+  ///
+  /// 반환값: true면 옵션 상품 선택 가능, false면 불가능
+  static bool canSelectRentalItems({
+    required DateTime? checkInDate,
+    DateTime? currentTime,
+  }) {
+    // 체크인 날짜가 없으면 선택 불가
+    if (checkInDate == null) return false;
+
+    final now = currentTime ?? DateTime.now();
+    final daysUntilCheckIn = checkInDate.difference(now).inDays;
+
+    // 6일 이상 남았으면 선택 가능
+    // inDays는 정수로 내림하므로, 5일 23시간은 5로 계산됨
+    // 따라서 >= 6 조건으로 체크
+    return daysUntilCheckIn >= 6;
+  }
+
+  /// 옵션 상품 비활성화 사유 메시지
+  ///
+  /// [checkInDate] - 체크인(입주) 날짜
+  /// [currentTime] - 현재 시간 (테스트용으로 주입 가능)
+  ///
+  /// 반환값: 비활성화 시 사유 메시지, 선택 가능하면 null
+  static String? getRentalItemsDisabledReason({
+    required DateTime? checkInDate,
+    DateTime? currentTime,
+  }) {
+    if (checkInDate == null) {
+      return '입주일을 먼저 선택해주세요.';
+    }
+
+    final now = currentTime ?? DateTime.now();
+    final daysUntilCheckIn = checkInDate.difference(now).inDays;
+
+    if (daysUntilCheckIn < 6) {
+      return '옵션 상품은 입주일 6일 전까지만 선택 가능합니다.';
+    }
+
+    return null; // 선택 가능
+  }
+
   /// EZ서비스 청소비 계산
   /// - 기본금: 5만원
   /// - 10평 초과시: 10평당 2만원 추가 (올림)

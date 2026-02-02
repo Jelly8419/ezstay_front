@@ -469,6 +469,11 @@ class RentalItem {
   });
 
   factory RentalItem.fromJson(Map<String, dynamic> json) {
+    // API 응답에서 id 필드명이 다를 수 있음: id, itemId
+    // /api/contracts/guest 응답: { "itemId": 3, "quantity": 1 }
+    // /api/rental-items 응답: { "id": 3, "name": "...", "price": "..." }
+    final id = json['id']?.toString() ?? json['itemId']?.toString() ?? '';
+
     // API 응답에서 price 필드명이 다를 수 있음: price, pricePerItem, totalPrice
     int price = 0;
     if (json['price'] != null) {
@@ -478,7 +483,7 @@ class RentalItem {
     }
 
     return RentalItem(
-      id: json['id']?.toString() ?? '',
+      id: id,
       name: json['name'] ?? '',
       description: json['description'],
       price: price,
