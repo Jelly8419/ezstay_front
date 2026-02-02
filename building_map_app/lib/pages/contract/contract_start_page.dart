@@ -5,6 +5,7 @@ import '../../models/refund_policy.dart';
 import '../../models/calculated_pricing.dart';
 import '../../services/contract_service.dart';
 import '../../services/refund_policy_service.dart';
+import '../../utils/price_calculator.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -537,8 +538,20 @@ class _ContractStartPageState extends State<ContractStartPage> {
 
   /// 옵션 상품 섹션 (빈 상태 UI 포함)
   /// React: title "옵션 상품 (X개 선택)" format, 빈 상태 메시지 표시
+  /// 6일 정책: 입주일 6일 전까지만 옵션 상품 선택 가능
   Widget _buildRentalItemsSection() {
     final hasItems = widget.selectedRentalItems.isNotEmpty;
+
+    // 6일 정책 체크: 입주일 6일 전까지만 선택 가능
+    final canSelectRental = PriceCalculator.canSelectRentalItems(
+      checkInDate: widget.checkInDate,
+    );
+    final disabledReason = PriceCalculator.getRentalItemsDisabledReason(
+      checkInDate: widget.checkInDate,
+    );
+
+    // 정책 위반 시 옵션 상품 포함 불가
+    final isRentalDisabled = !canSelectRental && hasItems;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -572,6 +585,53 @@ class _ContractStartPageState extends State<ContractStartPage> {
           ),
           const SizedBox(height: 16),
 
+          // 6일 정책 위반 경고 메시지 (옵션 상품이 있는데 정책 위반인 경우)
+          if (isRentalDisabled) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.error50,
+                border: Border.all(color: AppColors.error500),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 20,
+                    color: AppColors.error500,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          disabledReason ?? '옵션 상품을 선택할 수 없습니다.',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.error700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '선택하신 옵션 상품은 계약에 포함되지 않습니다.',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontSize: 12,
+                            color: AppColors.error600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // React: 빈 상태 UI (옵션 없을 때)
           if (!hasItems)
             Container(
@@ -592,62 +652,67 @@ class _ContractStartPageState extends State<ContractStartPage> {
               ),
             )
           else
-            // 옵션 상품 목록
-            ...widget.selectedRentalItems.map(
-              (item) => Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey[100]!, width: 1),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.name,
-                            style: AppTextStyles.labelMedium.copyWith(
-                              color: const Color(0xFF111827),
-                            ),
-                          ),
-                          if (item.description != null &&
-                              item.description!.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Text(
-                                item.description!,
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  fontSize: 13,
-                                  color: Colors.grey[500],
+            // 옵션 상품 목록 (정책 위반 시 반투명 처리)
+            Opacity(
+              opacity: isRentalDisabled ? 0.5 : 1.0,
+              child: Column(
+                children: widget.selectedRentalItems.map(
+                  (item) => Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey[100]!, width: 1),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.name,
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: const Color(0xFF111827),
                                 ),
                               ),
-                            ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              '${_currencyFormat.format(item.price)}원 x ${item.quantity}개',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                fontSize: 13,
-                                color: const Color(0xFF2563EB), // blue-600
+                              if (item.description != null &&
+                                  item.description!.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    item.description!,
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      fontSize: 13,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  '${_currencyFormat.format(item.price)}원 x ${item.quantity}개',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    fontSize: 13,
+                                    color: const Color(0xFF2563EB), // blue-600
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        Text(
+                          '${_currencyFormat.format(item.totalPrice)}원',
+                          style: AppTextStyles.labelMedium.copyWith(
+                            color: const Color(0xFF111827),
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      '${_currencyFormat.format(item.totalPrice)}원',
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: const Color(0xFF111827),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ).toList(),
               ),
             ),
 
@@ -768,9 +833,20 @@ class _ContractStartPageState extends State<ContractStartPage> {
   }
 
   /// 결제 금액 카드 (오른쪽 고정)
+  /// 6일 정책: 입주일 6일 전까지만 옵션 상품 포함 가능
   Widget _buildPaymentSummaryCard() {
     final pricing = widget.calculatedPricing;
     final hasDiscount = pricing.discount > 0;
+
+    // 6일 정책 체크
+    final canIncludeRentalItems = PriceCalculator.canSelectRentalItems(
+      checkInDate: widget.checkInDate,
+    );
+
+    // 6일 정책 위반 시 렌탈 아이템 비용 제외
+    final actualRentalItemsFee = canIncludeRentalItems ? pricing.rentalItemsFee : 0;
+    final adjustedTotalUsageFee = pricing.totalUsageFee - (pricing.rentalItemsFee - actualRentalItemsFee);
+    final adjustedFinalTotalAmount = pricing.finalTotalAmount - (pricing.rentalItemsFee - actualRentalItemsFee);
 
     return Container(
       decoration: BoxDecoration(
@@ -830,9 +906,10 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 ),
                 const SizedBox(height: 10),
                 _buildPriceRow('청소비', pricing.cleaningFee),
-                if (pricing.rentalItemsFee > 0) ...[
+                // 옵션 상품 (6일 정책 적용)
+                if (actualRentalItemsFee > 0) ...[
                   const SizedBox(height: 10),
-                  _buildPriceRow('옵션 상품', pricing.rentalItemsFee),
+                  _buildPriceRow('옵션 상품', actualRentalItemsFee),
                 ],
                 const SizedBox(height: 10),
                 // React: "계약 수수료" (not "플랫폼 수수료")
@@ -843,7 +920,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 // React: "실이용 금액" with blue value (text-blue-600)
                 _buildPriceRow(
                   '실이용 금액',
-                  pricing.totalUsageFee,
+                  adjustedTotalUsageFee,
                   isBold: true,
                   fontSize: 15,
                   valueColor: const Color(0xFF2563EB), // blue-600
@@ -866,7 +943,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 const SizedBox(height: 10),
                 _buildPriceRow(
                   '최종 예상 금액',
-                  pricing.finalTotalAmount,
+                  adjustedFinalTotalAmount,
                   isBold: true,
                   fontSize: 18,
                   valueColor: const Color(0xFFDC2626), // red-600
@@ -964,9 +1041,20 @@ class _ContractStartPageState extends State<ContractStartPage> {
   }
 
   /// 모바일용 결제 금액 카드 (React와 동일한 위치 - 컨텐츠 중간)
+  /// 6일 정책: 입주일 6일 전까지만 옵션 상품 포함 가능
   Widget _buildMobilePaymentSummaryCard() {
     final pricing = widget.calculatedPricing;
     final hasDiscount = pricing.discount > 0;
+
+    // 6일 정책 체크
+    final canIncludeRentalItems = PriceCalculator.canSelectRentalItems(
+      checkInDate: widget.checkInDate,
+    );
+
+    // 6일 정책 위반 시 렌탈 아이템 비용 제외
+    final actualRentalItemsFee = canIncludeRentalItems ? pricing.rentalItemsFee : 0;
+    final adjustedTotalUsageFee = pricing.totalUsageFee - (pricing.rentalItemsFee - actualRentalItemsFee);
+    final adjustedFinalTotalAmount = pricing.finalTotalAmount - (pricing.rentalItemsFee - actualRentalItemsFee);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1009,9 +1097,10 @@ class _ContractStartPageState extends State<ContractStartPage> {
           _buildPriceRow('관리비 (${pricing.totalDays}일)', pricing.maintenanceFee),
           const SizedBox(height: 10),
           _buildPriceRow('청소비', pricing.cleaningFee),
-          if (pricing.rentalItemsFee > 0) ...[
+          // 옵션 상품 (6일 정책 적용)
+          if (actualRentalItemsFee > 0) ...[
             const SizedBox(height: 10),
-            _buildPriceRow('옵션 상품', pricing.rentalItemsFee),
+            _buildPriceRow('옵션 상품', actualRentalItemsFee),
           ],
           const SizedBox(height: 10),
           _buildPriceRow('계약 수수료', pricing.platformFee),
@@ -1021,7 +1110,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           // 실이용 금액 (React: text-blue-600)
           _buildPriceRow(
             '실이용 금액',
-            pricing.totalUsageFee,
+            adjustedTotalUsageFee,
             isBold: true,
             fontSize: 15,
             valueColor: const Color(0xFF2563EB), // blue-600
@@ -1043,7 +1132,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           const SizedBox(height: 10),
           _buildPriceRow(
             '최종 예상 금액',
-            pricing.finalTotalAmount,
+            adjustedFinalTotalAmount,
             isBold: true,
             fontSize: 18,
             valueColor: const Color(0xFFDC2626), // red-600
@@ -1527,6 +1616,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
 
   /// 계약 승인 요청 API 호출
   /// PRD: calculatedPricing에서 전달받은 값 그대로 사용 (재계산 금지)
+  /// 6일 정책: 입주일 6일 전까지만 옵션 상품 포함 가능
   Future<void> _requestContract() async {
     if (_isLoading || !_canSubmit) return;
 
@@ -1537,10 +1627,20 @@ class _ContractStartPageState extends State<ContractStartPage> {
     try {
       final pricing = widget.calculatedPricing;
 
-      // 렌탈 아이템 API 형식으로 변환
-      final rentalItemsPayload = widget.selectedRentalItems
-          .map((item) => item.toApiJson())
-          .toList();
+      // 6일 정책 체크: 입주일 6일 전까지만 옵션 상품 포함 가능
+      final canIncludeRentalItems = PriceCalculator.canSelectRentalItems(
+        checkInDate: widget.checkInDate,
+      );
+
+      // 렌탈 아이템 API 형식으로 변환 (6일 정책 위반 시 빈 리스트)
+      final rentalItemsPayload = canIncludeRentalItems
+          ? widget.selectedRentalItems.map((item) => item.toApiJson()).toList()
+          : <Map<String, dynamic>>[];
+
+      // 6일 정책 위반 시 렌탈 아이템 비용 제외하여 금액 재계산
+      final actualRentalItemsFee = canIncludeRentalItems ? pricing.rentalItemsFee : 0;
+      final adjustedTotalUsageFee = pricing.totalUsageFee - (pricing.rentalItemsFee - actualRentalItemsFee);
+      final adjustedFinalTotalAmount = pricing.finalTotalAmount - (pricing.rentalItemsFee - actualRentalItemsFee);
 
       await _contractService.requestContract(
         roomId: widget.room.id,
@@ -1555,10 +1655,10 @@ class _ContractStartPageState extends State<ContractStartPage> {
         discountAmount: pricing.discount,
         discountType: pricing.discountType,
         subtotal: pricing.subtotal,
-        totalUsageFee: pricing.totalUsageFee,
+        totalUsageFee: adjustedTotalUsageFee,
         deposit: pricing.deposit,
-        finalTotalAmount: pricing.finalTotalAmount,
-        rentalItemsFee: pricing.rentalItemsFee,
+        finalTotalAmount: adjustedFinalTotalAmount,
+        rentalItemsFee: actualRentalItemsFee,
         rentalItems: rentalItemsPayload.isNotEmpty ? rentalItemsPayload : null,
         guestMessage: _messageController.text.trim().isNotEmpty
             ? _messageController.text.trim()
