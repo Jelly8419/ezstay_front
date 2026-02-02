@@ -394,19 +394,24 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     final modifiedItems = _modifiedOptions[contract.id];
     if (modifiedItems == null) return;
 
-    // 승인대기 상태인지 확인
-    final isPendingApproval = contract.status == ContractStatus.pendingApproval;
+    // 결제 전 상태인지 확인 (승인대기 또는 승인됨)
+    // - PENDING_APPROVAL: 호스트 승인 대기 중
+    // - APPROVED: 호스트 승인됨, 게스트 결제 대기 중
+    final isBeforePayment = contract.status == ContractStatus.pendingApproval ||
+        contract.status == ContractStatus.approved;
 
-    if (isPendingApproval) {
-      // 승인대기 상태: 장바구니처럼 렌탈 아이템만 업데이트 (결제 없음)
+    if (isBeforePayment) {
+      // 결제 전 상태: 장바구니처럼 렌탈 아이템만 업데이트 (결제 없음)
       await _updatePendingRentalItems(contract, modifiedItems);
     } else {
-      // 승인 후 상태: 결제 플로우 진행
+      // 결제 후 상태 (PAYMENT_COMPLETED, IN_PROGRESS): 추가 결제 플로우 진행
       await _createRentalOrderWithPayment(contract, modifiedItems);
     }
   }
 
-  /// 승인대기 상태: 렌탈 아이템 업데이트 (결제 없이 장바구니처럼)
+  /// 결제 전 상태: 렌탈 아이템 업데이트 (결제 없이 장바구니처럼)
+  /// - PENDING_APPROVAL: 승인대기 상태
+  /// - APPROVED: 승인됨 상태 (결제 대기 중)
   Future<void> _updatePendingRentalItems(
     ContractListItem contract,
     List<RentalItem> modifiedItems,
@@ -424,7 +429,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     }
 
     debugPrint(
-      '🛒 [UPDATE PENDING] Contract ID: ${contract.id}, Items: ${itemsToUpdate.length}',
+      '🛒 [UPDATE BEFORE_PAYMENT] Contract ID: ${contract.id}, Status: ${contract.status}, Items: ${itemsToUpdate.length}',
     );
 
     try {
@@ -433,13 +438,19 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         items: itemsToUpdate,
       );
 
-      debugPrint('✅ [UPDATE PENDING] Success');
+      debugPrint('✅ [UPDATE BEFORE_PAYMENT] Success');
 
       if (!mounted) return;
+
+      // 상태에 따라 다른 안내 메시지 표시
+      final message = contract.status == ContractStatus.pendingApproval
+          ? '옵션 상품이 저장되었습니다. 승인 후 결제 시 반영됩니다.'
+          : '옵션 상품이 저장되었습니다. 결제 시 반영됩니다.';
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('옵션 상품이 저장되었습니다. 승인 후 결제가 진행됩니다.'),
-          backgroundColor: Color(0xFF10B981),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: const Color(0xFF10B981),
         ),
       );
 
@@ -450,7 +461,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
       await _loadContracts();
     } catch (e) {
-      debugPrint('❌ [UPDATE PENDING] Error: $e');
+      debugPrint('❌ [UPDATE BEFORE_PAYMENT] Error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1674,8 +1685,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                       ), // gray-500
                     ),
                     child: Text(
-                      contract.status == ContractStatus.paymentCompleted
-                          ? '결제 및 환불'
+                      // 결제 후 상태에서만 '추가 결제' 버튼 표시
+                      (contract.status == ContractStatus.paymentCompleted ||
+                              contract.status == ContractStatus.inProgress)
+                          ? '추가 결제'
                           : '저장',
                       style: const TextStyle(
                         fontSize: 14,
