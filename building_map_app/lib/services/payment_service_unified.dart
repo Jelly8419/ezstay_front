@@ -152,4 +152,51 @@ class PaymentServiceUnified {
       simulateFailure: simulateFailure,
     );
   }
+
+  /// 렌탈 추가 결제 요청 (웹 전용)
+  ///
+  /// 토스페이먼츠 SDK를 호출하여 렌탈 아이템 추가 결제를 진행합니다.
+  /// successUrl/failUrl에 rentalOrderId를 포함하여 콜백에서 사용할 수 있도록 합니다.
+  ///
+  /// [rentalOrderId]: 렌탈 주문 ID
+  /// [orderId]: 주문 ID (백엔드에서 생성)
+  /// [amount]: 결제 금액
+  /// [orderName]: 주문명
+  /// [customerName]: 구매자 이름 (선택)
+  /// [customerEmail]: 구매자 이메일 (선택)
+  Future<void> requestRentalPayment({
+    required int rentalOrderId,
+    required String orderId,
+    required int amount,
+    required String orderName,
+    String? customerName,
+    String? customerEmail,
+  }) async {
+    if (!kIsWeb) {
+      throw Exception('렌탈 추가 결제는 현재 웹에서만 지원됩니다.');
+    }
+
+    if (_webService == null) {
+      throw Exception('웹 결제 서비스가 초기화되지 않았습니다.');
+    }
+
+    debugPrint('💳 [PaymentServiceUnified] 렌탈 추가 결제 요청');
+    debugPrint('  - rentalOrderId: $rentalOrderId');
+    debugPrint('  - orderId: $orderId');
+    debugPrint('  - amount: $amount');
+
+    try {
+      await _webService!.requestRentalPayment(
+        rentalOrderId: rentalOrderId,
+        orderId: orderId,
+        amount: amount,
+        orderName: orderName,
+        customerName: customerName,
+        customerEmail: customerEmail,
+      );
+    } catch (e) {
+      debugPrint('❌ [PaymentServiceUnified] 렌탈 결제 요청 실패: $e');
+      rethrow;
+    }
+  }
 }

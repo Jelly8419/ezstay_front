@@ -334,11 +334,28 @@ class RentalOrderSummaryResponse {
   });
 
   factory RentalOrderSummaryResponse.fromJson(Map<String, dynamic> json) {
+    // 1. summary.activeItems에서 description 맵 추출 (orderItemId -> description)
+    final Map<int, String> descriptionMap = {};
+    final summaryData = json['summary'];
+    if (summaryData != null && summaryData['activeItems'] != null) {
+      final activeItems = summaryData['activeItems'] as List<dynamic>;
+      for (final item in activeItems) {
+        final orderItemId = item['orderItemId'];
+        final description = item['description'];
+        if (orderItemId != null && description != null) {
+          descriptionMap[orderItemId] = description;
+        }
+      }
+    }
+
+    // 2. orders 파싱 (description 맵 전달)
+    final orders = (json['orders'] as List<dynamic>)
+        .map((e) => RentalOrder.fromJson(e, descriptionMap: descriptionMap))
+        .toList();
+
     return RentalOrderSummaryResponse(
-      summary: RentalOrderSummary.fromJson(json['summary']),
-      orders: (json['orders'] as List<dynamic>)
-          .map((e) => RentalOrder.fromJson(e))
-          .toList(),
+      summary: RentalOrderSummary.fromJson(summaryData),
+      orders: orders,
     );
   }
 }
@@ -387,7 +404,10 @@ class RentalOrder {
     this.createdAt,
   });
 
-  factory RentalOrder.fromJson(Map<String, dynamic> json) {
+  factory RentalOrder.fromJson(
+    Map<String, dynamic> json, {
+    Map<int, String>? descriptionMap,
+  }) {
     return RentalOrder(
       id: json['id'],
       orderId: json['orderId'] ?? '',
@@ -395,7 +415,10 @@ class RentalOrder {
       status: json['status'] ?? 'PENDING',
       totalAmount: json['totalAmount'] ?? 0,
       items: (json['items'] as List<dynamic>?)
-              ?.map((e) => RentalOrderItemDetail.fromJson(e))
+              ?.map((e) => RentalOrderItemDetail.fromJson(
+                    e,
+                    descriptionMap: descriptionMap,
+                  ))
               .toList() ??
           [],
       createdAt: json['createdAt'] != null
@@ -410,6 +433,8 @@ class RentalOrderItemDetail {
   final int id;
   final int itemId;
   final String name;
+  final String? description;
+  final String? itemType;
   final int quantity;
   final int price;
   final int subtotal;
@@ -420,6 +445,8 @@ class RentalOrderItemDetail {
     required this.id,
     required this.itemId,
     required this.name,
+    this.description,
+    this.itemType,
     required this.quantity,
     required this.price,
     required this.subtotal,
@@ -427,14 +454,29 @@ class RentalOrderItemDetail {
     this.deliveryStatus,
   });
 
-  factory RentalOrderItemDetail.fromJson(Map<String, dynamic> json) {
+  factory RentalOrderItemDetail.fromJson(
+    Map<String, dynamic> json, {
+    Map<int, String>? descriptionMap,
+  }) {
+    final int itemId = json['id'] ?? 0;
+    // description: 1) json에서 직접 가져오기 2) descriptionMap에서 orderItemId로 매핑
+    String? description = json['description'];
+    if (description == null && descriptionMap != null) {
+      description = descriptionMap[itemId];
+    }
+
     return RentalOrderItemDetail(
-      id: json['id'],
-      itemId: json['itemId'] ?? 0,
+      id: itemId,
+      // API 응답: rentalItemId 또는 itemId
+      itemId: json['rentalItemId'] ?? json['itemId'] ?? 0,
       name: json['name'] ?? '',
+      description: description,
+      itemType: json['itemType'],
       quantity: json['quantity'] ?? 0,
-      price: _parsePrice(json['price']),
-      subtotal: json['subtotal'] ?? 0,
+      // API 응답: pricePerItem 또는 price
+      price: _parsePrice(json['pricePerItem'] ?? json['price']),
+      // API 응답: totalPrice 또는 subtotal
+      subtotal: _parsePrice(json['totalPrice'] ?? json['subtotal']),
       status: json['status'] ?? 'ACTIVE',
       deliveryStatus: json['deliveryStatus'],
     );

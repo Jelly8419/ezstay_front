@@ -430,6 +430,67 @@ class PaymentServiceWeb {
     }
   }
 
+  /// 렌탈 추가 결제 요청
+  ///
+  /// 렌탈 아이템 추가 주문에 대한 결제를 요청합니다.
+  /// successUrl/failUrl에 rentalOrderId를 포함하여 콜백에서 사용할 수 있도록 합니다.
+  ///
+  /// [rentalOrderId]: 렌탈 주문 ID
+  /// [orderId]: 주문 ID (백엔드에서 생성)
+  /// [amount]: 결제 금액
+  /// [orderName]: 주문명
+  /// [customerName]: 구매자 이름 (선택)
+  /// [customerEmail]: 구매자 이메일 (선택)
+  Future<void> requestRentalPayment({
+    required int rentalOrderId,
+    required String orderId,
+    required int amount,
+    required String orderName,
+    String? customerName,
+    String? customerEmail,
+  }) async {
+    _ensureInitialized();
+
+    debugPrint('💳 [PaymentServiceWeb] 렌탈 추가 결제 요청');
+    debugPrint('  - rentalOrderId: $rentalOrderId');
+    debugPrint('  - orderId: $orderId');
+    debugPrint('  - amount: $amount');
+
+    try {
+      // 렌탈 결제 전용 successUrl/failUrl 생성
+      final baseSuccessUrl = '${Uri.base.origin}/rental-payment/success';
+      final baseFailUrl = '${Uri.base.origin}/rental-payment/fail';
+
+      final successUrl = '$baseSuccessUrl?rentalOrderId=$rentalOrderId';
+      final failUrl = '$baseFailUrl?rentalOrderId=$rentalOrderId';
+
+      final request = PaymentRequest(
+        method: 'CARD',
+        amount: AmountJS(currency: 'KRW', value: amount),
+        orderId: orderId,
+        orderName: orderName,
+        successUrl: successUrl,
+        failUrl: failUrl,
+        customerName: customerName,
+        customerEmail: customerEmail,
+        card: CardOptionsJS(
+          useEscrow: false,
+          flowMode: 'DEFAULT',
+          useCardPoint: false,
+          useAppCardOnly: false,
+        ),
+      );
+
+      final promise = _payment!.requestPayment(request);
+      await _promiseToFuture(promise);
+
+      debugPrint('✅ [PaymentServiceWeb] 렌탈 결제 요청 성공 (리다이렉트 중...)');
+    } catch (e) {
+      debugPrint('❌ [PaymentServiceWeb] 렌탈 결제 요청 실패: $e');
+      rethrow;
+    }
+  }
+
   /// Promise를 Future로 변환
   Future<T> _promiseToFuture<T>(Promise promise) {
     final completer = Completer<T>();
