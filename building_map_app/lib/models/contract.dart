@@ -458,6 +458,7 @@ class RentalItem {
   final int price;
   final int quantity;
   final DeliveryStatus deliveryStatus;
+  final int? rentalOrderId; // 렌탈 주문 ID (결제 후 취소 시 필요)
 
   RentalItem({
     required this.id,
@@ -466,6 +467,7 @@ class RentalItem {
     required this.price,
     required this.quantity,
     required this.deliveryStatus,
+    this.rentalOrderId,
   });
 
   factory RentalItem.fromJson(Map<String, dynamic> json) {
@@ -489,6 +491,7 @@ class RentalItem {
       price: price,
       quantity: json['quantity'] as int? ?? 0,
       deliveryStatus: DeliveryStatus.fromString(json['deliveryStatus'] ?? 'pending'),
+      rentalOrderId: json['rentalOrderId'] as int?,
     );
   }
 
@@ -515,6 +518,7 @@ class RentalItem {
       'price': price,
       'quantity': quantity,
       'deliveryStatus': deliveryStatus.value,
+      'rentalOrderId': rentalOrderId,
     };
   }
 
@@ -526,6 +530,7 @@ class RentalItem {
     int? price,
     int? quantity,
     DeliveryStatus? deliveryStatus,
+    int? rentalOrderId,
   }) {
     return RentalItem(
       id: id ?? this.id,
@@ -534,6 +539,7 @@ class RentalItem {
       price: price ?? this.price,
       quantity: quantity ?? this.quantity,
       deliveryStatus: deliveryStatus ?? this.deliveryStatus,
+      rentalOrderId: rentalOrderId ?? this.rentalOrderId,
     );
   }
 }

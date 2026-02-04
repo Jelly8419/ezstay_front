@@ -36,6 +36,8 @@ import '../pages/host/room_management_page.dart' deferred as room_management;
 import '../pages/host/room_schedule_page.dart'; // 즉시 로딩으로 변경 (Focus 에러 방지)
 import '../pages/host/host_my_page.dart' deferred as host_my_page;
 import '../pages/payment/payment_callback_page.dart' deferred as payment_callback;
+import '../pages/payment/rental_payment_callback_page.dart'
+    deferred as rental_payment_callback;
 import '../pages/support/customer_center_page.dart' deferred as customer_center;
 import '../pages/support/notices_page.dart' deferred as notices;
 import '../pages/support/notice_detail_page.dart' deferred as notice_detail;
@@ -707,6 +709,52 @@ class AppRouter {
               () => payment_callback.PaymentCallbackPage(
                 isSuccess: false,
                 contractId: contractId != null ? int.tryParse(contractId) : null,
+                errorCode: errorCode,
+                errorMessage: errorMessage,
+              ),
+            );
+          },
+        ),
+
+        // 렌탈 결제 성공 콜백
+        GoRoute(
+          path: '/rental-payment/success',
+          name: 'rental-payment-success',
+          builder: (context, state) {
+            final rentalOrderId = state.uri.queryParameters['rentalOrderId'];
+            final paymentKey = state.uri.queryParameters['paymentKey'];
+            final orderId = state.uri.queryParameters['orderId'];
+            final amount = state.uri.queryParameters['amount'];
+
+            return _deferredWidget(
+              rental_payment_callback.loadLibrary,
+              () => rental_payment_callback.RentalPaymentCallbackPage(
+                isSuccess: true,
+                rentalOrderId:
+                    rentalOrderId != null ? int.tryParse(rentalOrderId) : null,
+                paymentKey: paymentKey,
+                orderId: orderId,
+                amount: amount,
+              ),
+            );
+          },
+        ),
+
+        // 렌탈 결제 실패 콜백
+        GoRoute(
+          path: '/rental-payment/fail',
+          name: 'rental-payment-fail',
+          builder: (context, state) {
+            final rentalOrderId = state.uri.queryParameters['rentalOrderId'];
+            final errorCode = state.uri.queryParameters['code'];
+            final errorMessage = state.uri.queryParameters['message'];
+
+            return _deferredWidget(
+              rental_payment_callback.loadLibrary,
+              () => rental_payment_callback.RentalPaymentCallbackPage(
+                isSuccess: false,
+                rentalOrderId:
+                    rentalOrderId != null ? int.tryParse(rentalOrderId) : null,
                 errorCode: errorCode,
                 errorMessage: errorMessage,
               ),
