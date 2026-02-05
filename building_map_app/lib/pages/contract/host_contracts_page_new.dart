@@ -135,9 +135,20 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
     // 2단계: 상태 필터 적용 (선택된 경우에만)
     if (_selectedStatus != null && _selectedStatus != 'all') {
-      final statusFiltered = tabFiltered
-          .where((c) => c.status.toString().split('.').last == _selectedStatus)
-          .toList();
+      // '계약 취소' 선택 시 취소 계열 전체 포함
+      final cancelledStatuses = [
+        'CANCELLED_BY_GUEST',
+        'CANCELLED_BY_HOST',
+        'REFUNDED',
+        'APPROVAL_EXPIRED',
+        'PAYMENT_EXPIRED',
+      ];
+      final statusFiltered = tabFiltered.where((c) {
+        if (cancelledStatuses.contains(_selectedStatus)) {
+          return cancelledStatuses.contains(c.status.value);
+        }
+        return c.status.value == _selectedStatus;
+      }).toList();
       debugPrint('🔍 [FILTER] After status filter: ${statusFiltered.length}');
       return statusFiltered;
     }
@@ -346,41 +357,31 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
     );
   }
 
-  /// 상태 필터 드롭다운
+  /// 상태 필터 드롭다운 (리액트 동일: 전체 상태 표시, 선택 시 탭 자동 전환)
   Widget _buildStatusDropdown() {
-    // 탭별 표시할 상태 옵션
-    List<String?> getAvailableStatuses() {
-      if (_selectedTab == 'in_progress') {
-        return [
-          null, // 전체
-          'PENDING_APPROVAL',
-          'APPROVED',
-          'PAYMENT_COMPLETED',
-          'IN_PROGRESS',
-        ];
-      } else if (_selectedTab == 'past') {
-        return [null, 'COMPLETED'];
-      } else if (_selectedTab == 'cancelled') {
-        return [
-          null,
-          'REJECTED',
-          'CANCELLED_BY_GUEST',
-          'CANCELLED_BY_HOST',
-          'REFUNDED',
-          'APPROVAL_EXPIRED',
-          'PAYMENT_EXPIRED',
-        ];
-      }
-      return [null];
-    }
-
     return PopupMenuButton<String?>(
       initialValue: _selectedStatus,
       onSelected: (String? newStatus) {
         setState(() {
           _selectedStatus = newStatus;
+
+          // 상태에 따라 자동으로 탭 전환 (리액트 동일)
+          if (newStatus == null) {
+            // 전체 선택 시 탭 유지
+          } else if ([
+            'PENDING_APPROVAL',
+            'APPROVED',
+            'PAYMENT_COMPLETED',
+            'IN_PROGRESS',
+          ].contains(newStatus)) {
+            _selectedTab = 'in_progress';
+          } else if (newStatus == 'COMPLETED') {
+            _selectedTab = 'past';
+          } else {
+            _selectedTab = 'cancelled';
+          }
         });
-        _loadContracts(); // 필터 변경 시 계약 목록 새로고침
+        _loadContracts();
       },
       offset: const Offset(0, 48), // 버튼 아래에 메뉴 표시
       shape: RoundedRectangleBorder(
@@ -425,7 +426,19 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         ),
       ),
       itemBuilder: (BuildContext context) {
-        return getAvailableStatuses().map((String? status) {
+        // 전체 상태 옵션 (리액트 코드와 동일)
+        // 취소 계열 5개는 '계약 취소' 1개로 대표 표시
+        final allStatuses = <String?>[
+          null, // 계약 상태 (전체)
+          'PENDING_APPROVAL',
+          'APPROVED',
+          'PAYMENT_COMPLETED',
+          'IN_PROGRESS',
+          'COMPLETED',
+          'REJECTED',
+          'CANCELLED_BY_GUEST', // 취소 계열 대표 (게스트/호스트/환불/만료 모두 포함)
+        ];
+        return allStatuses.map((String? status) {
           return PopupMenuItem<String?>(
             value: status,
             child: Text(
@@ -454,9 +467,12 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       'COMPLETED': '계약 종료',
       'CANCELLED_BY_GUEST': '계약 취소',
       'CANCELLED_BY_HOST': '계약 취소',
+      'REFUNDED': '계약 취소',
+      'APPROVAL_EXPIRED': '계약 취소',
+      'PAYMENT_EXPIRED': '계약 취소',
     };
 
-    return statusMap[status] ?? '승인 대기';
+    return statusMap[status] ?? '알 수 없음';
   }
 
   /// 안내 메시지 박스
@@ -695,7 +711,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                       '${_dateFormat.format(contract.checkInDate)} - ${_dateFormat.format(contract.checkOutDate)} (${contract.totalDays}일)',
                     ),
                     const SizedBox(height: 8),
-                    _buildInfoRow('게스트', contract.partnerDisplayName),
+                    _buildGuestRow(contract),
                   ],
                 ),
               ),
@@ -742,9 +758,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
   }
 
   Map<String, dynamic> _getStatusConfig(ContractStatus status) {
-    final statusString = status.toString().split('.').last.toUpperCase();
     final configs = {
-      'PENDINGAPPROVAL': {
+      'PENDING_APPROVAL': {
         'text': '승인 대기',
         'bgColor': const Color(0xFFFEF3C7),
         'textColor': const Color(0xFFA16207),
@@ -754,18 +769,58 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         'bgColor': const Color(0xFFDBEAFE),
         'textColor': const Color(0xFF1D4ED8),
       },
-      'PAYMENTCOMPLETED': {
+      'PAYMENT_COMPLETED': {
         'text': '결제 완료',
         'bgColor': const Color(0xFFD1FAE5),
         'textColor': const Color(0xFF065F46),
       },
+      'IN_PROGRESS': {
+        'text': '임대 중',
+        'bgColor': const Color(0xFFDBEAFE),
+        'textColor': const Color(0xFF1D4ED8),
+      },
+      'COMPLETED': {
+        'text': '계약 종료',
+        'bgColor': const Color(0xFFF3F4F6),
+        'textColor': const Color(0xFF6B7280),
+      },
+      'REJECTED': {
+        'text': '승인 거절',
+        'bgColor': const Color(0xFFFEE2E2),
+        'textColor': const Color(0xFFDC2626),
+      },
+      'CANCELLED_BY_GUEST': {
+        'text': '계약 취소',
+        'bgColor': const Color(0xFFFEE2E2),
+        'textColor': const Color(0xFFDC2626),
+      },
+      'CANCELLED_BY_HOST': {
+        'text': '계약 취소',
+        'bgColor': const Color(0xFFFEE2E2),
+        'textColor': const Color(0xFFDC2626),
+      },
+      'REFUNDED': {
+        'text': '계약 취소',
+        'bgColor': const Color(0xFFFEE2E2),
+        'textColor': const Color(0xFFDC2626),
+      },
+      'APPROVAL_EXPIRED': {
+        'text': '계약 취소',
+        'bgColor': const Color(0xFFFEE2E2),
+        'textColor': const Color(0xFFDC2626),
+      },
+      'PAYMENT_EXPIRED': {
+        'text': '계약 취소',
+        'bgColor': const Color(0xFFFEE2E2),
+        'textColor': const Color(0xFFDC2626),
+      },
     };
 
-    return configs[statusString] ??
+    return configs[status.value] ??
         {
-          'text': '승인 대기',
-          'bgColor': const Color(0xFFFEF3C7),
-          'textColor': const Color(0xFFA16207),
+          'text': status.label,
+          'bgColor': const Color(0xFFF3F4F6),
+          'textColor': const Color(0xFF6B7280),
         };
   }
 
@@ -814,6 +869,49 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildGuestRow(ContractListItem contract) {
+    final showChat = [
+      ContractStatus.approved,
+      ContractStatus.paymentCompleted,
+      ContractStatus.inProgress,
+      ContractStatus.completed,
+    ].contains(contract.status);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            '게스트',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: const Color(0xFF6B7280),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Text(
+          contract.partnerDisplayName,
+          style: AppTextStyles.bodyLarge.copyWith(color: Colors.black),
+        ),
+        if (showChat) ...[
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: () {
+              debugPrint('💬 [HOST_CONTRACTS] 채팅방으로 이동: contractId=${contract.id}');
+              context.go('/chat-list?contractId=${contract.id}');
+            },
+            borderRadius: BorderRadius.circular(4),
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(Icons.chat_bubble_outline, size: 16, color: Color(0xFF2563EB)),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

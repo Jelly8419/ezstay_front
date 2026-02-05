@@ -299,7 +299,9 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               const SizedBox(width: 8),
               Text(
                 value,
-                style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[600]),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: Colors.grey[600],
+                ),
               ),
             ],
             const SizedBox(width: 8),
@@ -886,7 +888,9 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
             children: [
               Text(
                 '임대 기간',
-                style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[600]),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Colors.grey[600],
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -939,7 +943,10 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               ),
               child: Text(
                 '초기화',
-                style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.black87),
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontSize: 13,
+                  color: Colors.black87,
+                ),
               ),
             ),
           ),
@@ -1169,7 +1176,10 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               children: [
                 Text(
                   '최소',
-                  style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.grey[600]),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -1184,7 +1194,10 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               children: [
                 Text(
                   '최대',
-                  style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.grey[600]),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -1241,7 +1254,10 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                 ),
                 child: Text(
                   '초기화',
-                  style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.black87),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontSize: 13,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
             ),

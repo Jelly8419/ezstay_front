@@ -474,13 +474,22 @@ class _ChatListPageState extends State<ChatListPage> {
     final currentUserId = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
     final firebaseChatRoomId = _selectedChat!.firebaseChatRoomId;
 
+    debugPrint('💬 [CHAT_WINDOW] firebaseChatRoomId: $firebaseChatRoomId, currentUserId: $currentUserId');
+
     // Firebase에서 실시간 메시지 로드
     return StreamBuilder<List<ChatMessage>>(
       stream: _chatService.getMessages(firebaseChatRoomId),
       builder: (context, snapshot) {
+        debugPrint('💬 [CHAT_WINDOW] StreamBuilder - connectionState: ${snapshot.connectionState}, hasData: ${snapshot.hasData}, hasError: ${snapshot.hasError}');
+
+        if (snapshot.hasError) {
+          debugPrint('❌ [CHAT_WINDOW] 메시지 스트림 에러: ${snapshot.error}');
+        }
+
         // 새 데이터가 오면 캐시 업데이트
         if (snapshot.hasData) {
           _messageCache[firebaseChatRoomId] = snapshot.data!;
+          debugPrint('💬 [CHAT_WINDOW] 메시지 ${snapshot.data!.length}개 수신');
         }
 
         // 캐시된 메시지 사용 (깜빡임 방지)
