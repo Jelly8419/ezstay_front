@@ -26,12 +26,19 @@ class ChatMessage {
 
   factory ChatMessage.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    // timestamp가 null이거나 Timestamp가 아닌 경우 방어 처리
+    DateTime parsedTimestamp;
+    if (data['timestamp'] is Timestamp) {
+      parsedTimestamp = (data['timestamp'] as Timestamp).toDate();
+    } else {
+      parsedTimestamp = DateTime.now();
+    }
     return ChatMessage(
       id: doc.id,
       senderId: data['senderId'] ?? 0,
       senderName: data['senderName'],
       text: data['text'] ?? '',
-      timestamp: (data['timestamp'] as Timestamp).toDate(),
+      timestamp: parsedTimestamp,
       isRead: data['isRead'] ?? false,
       type: MessageType.fromString(data['type'] ?? 'text'),
       systemMessageType: data['systemMessageType'],

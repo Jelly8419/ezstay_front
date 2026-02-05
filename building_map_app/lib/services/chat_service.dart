@@ -186,6 +186,7 @@ class ChatService {
 
   /// 메시지 수신 (Firestore - 실시간 스트림)
   Stream<List<ChatMessage>> getMessages(String chatRoomId) {
+    debugPrint('📨 [CHAT] getMessages 스트림 시작: chatRoomId=$chatRoomId');
     return _firestore
         .collection('chatRooms')
         .doc(chatRoomId)
@@ -193,7 +194,16 @@ class ChatService {
         .orderBy('timestamp', descending: false)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => ChatMessage.fromFirestore(doc)).toList();
+      debugPrint('📨 [CHAT] 메시지 스냅샷 수신: ${snapshot.docs.length}개 문서');
+      final messages = <ChatMessage>[];
+      for (final doc in snapshot.docs) {
+        try {
+          messages.add(ChatMessage.fromFirestore(doc));
+        } catch (e) {
+          debugPrint('⚠️ [CHAT] 메시지 파싱 실패 (docId: ${doc.id}): $e');
+        }
+      }
+      return messages;
     });
   }
 
