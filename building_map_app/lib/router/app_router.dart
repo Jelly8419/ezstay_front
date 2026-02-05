@@ -793,10 +793,13 @@ class AppRouter {
         GoRoute(
           path: '/support',
           name: 'support',
-          builder: (context, state) => _deferredWidget(
-            customer_center.loadLibrary,
-            () => customer_center.CustomerCenterPage(),
-          ),
+          builder: (context, state) {
+            final tab = state.uri.queryParameters['tab'];
+            return _deferredWidget(
+              customer_center.loadLibrary,
+              () => customer_center.CustomerCenterPage(initialTab: tab),
+            );
+          },
           routes: [
             // 공지사항 목록
             GoRoute(
@@ -821,7 +824,7 @@ class AppRouter {
                         context,
                         message: '잘못된 접근입니다.',
                         buttonText: '공지사항 목록으로 돌아가기',
-                        redirectPath: '/support/notices',
+                        redirectPath: '/support?tab=notices',
                       );
                     }
 
@@ -874,7 +877,7 @@ class AppRouter {
                         context,
                         message: '잘못된 접근입니다.',
                         buttonText: '문의 목록으로 돌아가기',
-                        redirectPath: '/support/inquiries',
+                        redirectPath: '/support?tab=inquiries',
                       );
                     }
 

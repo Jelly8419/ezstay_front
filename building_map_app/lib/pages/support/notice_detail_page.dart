@@ -101,7 +101,7 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
                 children: [
                   InkWell(
                     onTap: () {
-                      context.go('/support/notices');
+                      context.go('/support');
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
@@ -151,7 +151,7 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
           const SizedBox(height: 16),
           OutlinedButton(
             onPressed: () {
-              context.go('/support/notices');
+              context.go('/support?tab=notices');
             },
             child: const Text('목록으로 돌아가기'),
           ),
@@ -217,29 +217,11 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
                         bottom: BorderSide(color: AppColors.border),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Text(
-                          _notice!.formattedDate,
-                          style: const TextStyle(
-                            color: AppColors.gray600,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          '·',
-                          style: TextStyle(
-                            color: AppColors.gray600,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          '조회 ${_notice!.formattedViewCount}',
-                          style: const TextStyle(
-                            color: AppColors.gray600,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      _notice!.formattedDate,
+                      style: const TextStyle(
+                        color: AppColors.gray600,
+                      ),
                     ),
                   ),
 
@@ -275,7 +257,7 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          context.go('/support/notices');
+                          context.go('/support?tab=notices');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.gray50,
