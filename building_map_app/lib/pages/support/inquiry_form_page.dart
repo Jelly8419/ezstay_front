@@ -64,7 +64,7 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
         if (!inquiry.canEdit) {
           _showSnackBar('답변이 완료된 문의는 수정할 수 없습니다');
           if (mounted) {
-            context.go('/support/inquiries');
+            context.go('/support?tab=inquiries');
           }
           return;
         }
@@ -137,9 +137,24 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
         );
 
         if (result != null) {
-          _showSnackBar('문의가 수정되었습니다');
           if (mounted) {
-            context.go('/support/inquiries');
+            await showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => AlertDialog(
+                title: const Text('수정 완료'),
+                content: const Text('문의가 수정되었습니다.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('확인'),
+                  ),
+                ],
+              ),
+            );
+            if (mounted) {
+              context.go('/support?tab=inquiries');
+            }
           }
         } else {
           _showSnackBar('문의 수정에 실패했습니다. 다시 시도해주세요.');
@@ -159,9 +174,24 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
         final result = await _supportService.createInquiry(request);
 
         if (result != null) {
-          _showSnackBar('문의가 등록되었습니다. 최대한 빠른 시일 내에 답변드리겠습니다.');
           if (mounted) {
-            context.go('/support/inquiries');
+            await showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => AlertDialog(
+                title: const Text('등록 완료'),
+                content: const Text('문의가 등록되었습니다.\n최대한 빠른 시일 내에 답변드리겠습니다.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('확인'),
+                  ),
+                ],
+              ),
+            );
+            if (mounted) {
+              context.go('/support?tab=inquiries');
+            }
           }
         } else {
           _showSnackBar('문의 등록에 실패했습니다. 다시 시도해주세요.');
@@ -222,7 +252,7 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
                 children: [
                   InkWell(
                     onTap: () {
-                      context.go('/support/inquiries');
+                      context.go('/support?tab=inquiries');
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
@@ -272,7 +302,7 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
           const SizedBox(height: 16),
           OutlinedButton(
             onPressed: () {
-              context.go('/support/inquiries');
+              context.go('/support?tab=inquiries');
             },
             child: const Text('목록으로 돌아가기'),
           ),
@@ -591,7 +621,7 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
             height: 48,
             child: OutlinedButton(
               onPressed: () {
-                context.go('/support/inquiries');
+                context.go('/support?tab=inquiries');
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.neutral700,

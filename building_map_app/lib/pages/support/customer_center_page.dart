@@ -10,7 +10,10 @@ import '../../services/support_service.dart';
 import '../../widgets/common/app_gnb.dart';
 
 class CustomerCenterPage extends StatefulWidget {
-  const CustomerCenterPage({super.key});
+  /// 초기 탭: 'notices', 'faqs', 'inquiries'
+  final String? initialTab;
+
+  const CustomerCenterPage({super.key, this.initialTab});
 
   @override
   State<CustomerCenterPage> createState() => _CustomerCenterPageState();
@@ -49,6 +52,11 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
   @override
   void initState() {
     super.initState();
+    // 초기 탭 설정
+    if (widget.initialTab != null &&
+        ['notices', 'faqs', 'inquiries'].contains(widget.initialTab)) {
+      _activeTab = widget.initialTab!;
+    }
     // initState에서는 context 사용 불가, didChangeDependencies에서 데이터 로드
   }
 
@@ -256,34 +264,39 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
       child: Row(
         children: tabs.map((tab) {
           final isActive = _activeTab == tab['id'];
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _activeTab = tab['id']!;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16, // px-4
-                vertical: 12, // py-3
-              ),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: isActive
-                        ? const Color(0xFF3B82F6) // border-[#3B82F6]
-                        : Colors.transparent, // border-transparent
-                    width: 2, // border-b-2
+          return MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _activeTab = tab['id']!;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16, // px-4
+                  vertical: 12, // py-3
+                ),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isActive
+                          ? const Color(0xFF3B82F6) // border-[#3B82F6]
+                          : Colors.transparent, // border-transparent
+                      width: 2, // border-b-2
+                    ),
                   ),
                 ),
-              ),
-              child: Text(
-                tab['label']!,
-                style: TextStyle(
-                  fontWeight: FontWeight.w700, // font-bold
-                  color: isActive
-                      ? const Color(0xFF3B82F6) // text-[#3B82F6]
-                      : AppColors.gray600, // text-gray-600
+                child: SelectionContainer.disabled(
+                  child: Text(
+                    tab['label']!,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700, // font-bold
+                      color: isActive
+                          ? const Color(0xFF3B82F6) // text-[#3B82F6]
+                          : AppColors.gray600, // text-gray-600
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -426,14 +439,6 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
                           ),
                         ),
                         const SizedBox(height: 4), // mb-1
-                        // 조회수
-                        Text(
-                          '조회 ${notice.formattedViewCount}',
-                          style: const TextStyle(
-                            fontSize: 14, // text-sm
-                            color: AppColors.neutral500, // text-gray-500
-                          ),
-                        ),
                       ],
                     ),
                   ),

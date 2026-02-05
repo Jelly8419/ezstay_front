@@ -373,10 +373,60 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     }
   }
 
+  // formData 키 → 에러 메시지 키워드 매핑
+  static const _fieldToErrorKeywords = <String, List<String>>{
+    'roomName': ['방 이름'],
+    'address': ['주소'],
+    'detailAddress': ['상세 주소'],
+    'floor': ['층 수'],
+    'buildingType': ['건물 종류', '건물 유형'],
+    'area': ['면적', '전용 면적'],
+    'roomCount': ['방 개수'],
+    'bathroomCount': ['화장실 개수'],
+    'parkingAvailable': ['주차 여부'],
+    'elevatorAvailable': ['엘리베이터'],
+    'entrancePassword': ['공동현관 비밀번호'],
+    'uploadedImages': ['사진'],
+    'basicOptions': ['기본 옵션'],
+    'bedSelections': ['침대'],
+    'dailyRent': ['임대료'],
+    'cleaningFee': ['청소비'],
+    'minContractPeriod': ['최소 계약 기간'],
+    'refundPolicy': ['환불 정책'],
+    'longTermDiscountWeeks': ['장기 할인 주'],
+    'longTermDiscountPercent': ['장기 할인 퍼센트'],
+    'earlyCheckinDiscountDays': ['조기 체크인 할인 일'],
+    'earlyCheckinDiscountAmount': ['조기 체크인 할인 금액'],
+    'servicePassword': ['비밀번호'],
+    'maxGuests': ['최대 인원'],
+    'propertyDescription': ['방 소개'],
+  };
+
   /// 폼 데이터 업데이트 핸들러
   void _handleFormDataChange(Map<String, dynamic> newData) {
     setState(() {
+      // 실제로 값이 변경된 키만 추출 (newData는 전체 formData 복사본이므로 비교 필요)
+      final changedKeys = <String>{};
+      for (final key in newData.keys) {
+        final oldValue = _formData[key];
+        final newValue = newData[key];
+        if (oldValue != newValue) {
+          changedKeys.add(key);
+        }
+      }
+
       _formData.addAll(newData);
+
+      // 변경된 필드에 해당하는 에러만 제거
+      if (_currentStepErrors.isNotEmpty && changedKeys.isNotEmpty) {
+        _currentStepErrors = _currentStepErrors.where((error) {
+          return !changedKeys.any((key) {
+            final keywords = _fieldToErrorKeywords[key];
+            if (keywords == null) return false;
+            return keywords.any((kw) => error.contains(kw));
+          });
+        }).toList();
+      }
     });
   }
 
@@ -580,8 +630,10 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         }
 
         // 2. 사진 업로드 API 호출 (새로 추가된 이미지만)
-        final uploadedXFiles =
-            _formData['uploadedXFiles'] as List<XFile>? ?? [];
+        final rawXFiles = _formData['uploadedXFiles'];
+        final uploadedXFiles = rawXFiles is List
+            ? rawXFiles.whereType<XFile>().toList()
+            : <XFile>[];
         final uploadedImages =
             _formData['uploadedImages'] as List<dynamic>? ?? [];
 
@@ -1061,10 +1113,10 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
           // 스크롤 가능한 컨텐츠 영역
           Expanded(
-            child: MaxWidthContainer(
-              maxWidth: 1000,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 24),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: MaxWidthContainer(
+                maxWidth: 1000,
                 child: Column(
                   children: [
                     // 현재 Step 컨텐츠

@@ -224,86 +224,61 @@ class _NoticesPageState extends State<NoticesPage> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 핀 아이콘 (중요 공지)
-                          if (notice.isImportant)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 12, top: 2),
-                              child: Icon(
-                                Icons.push_pin,
-                                size: 20,
-                                color: const Color(0xFF3B82F6),
-                              ),
-                            ),
                           // 컨텐츠
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // 배지
-                                if (notice.isImportant)
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: [
+                                // 배지 및 날짜 (customer_center_page.dart와 동일)
+                                Row(
+                                  children: [
+                                    if (notice.isImportant)
                                       Container(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
+                                          horizontal: 8, // px-2
+                                          vertical: 2, // py-0.5
                                         ),
+                                        margin: const EdgeInsets.only(right: 8),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF3B82F6),
-                                          borderRadius: BorderRadius.circular(4),
+                                          color: AppColors.blue100, // bg-blue-100
+                                          borderRadius:
+                                              BorderRadius.circular(4), // rounded
                                         ),
                                         child: const Text(
-                                          '중요',
+                                          '공지',
                                           style: TextStyle(
-                                            fontSize: 14,
-                                            color: AppColors.neutral0,
+                                            fontSize: 12, // text-xs
+                                            fontWeight: FontWeight.w700, // font-bold
+                                            color: Color(
+                                                0xFF1D4ED8), // text-blue-700 (#1D4ED8)
                                           ),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                if (notice.isImportant)
-                                  const SizedBox(height: 8),
-                                // 제목
-                                Text(
-                                  notice.title,
-                                  style: const TextStyle(
-                                    color: AppColors.gray900,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                // 날짜 및 조회수
-                                Row(
-                                  children: [
                                     Text(
                                       notice.formattedDate,
                                       style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.neutral500,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    const Text(
-                                      '·',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.neutral500,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      '조회 ${notice.formattedViewCount}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.neutral500,
+                                        fontSize: 14, // text-sm
+                                        color: AppColors.neutral500, // text-gray-500
                                       ),
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 8), // mb-2
+                                // 제목
+                                Text(
+                                  notice.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700, // font-bold
+                                    color: AppColors.gray900, // text-gray-900
+                                  ),
+                                ),
                               ],
                             ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            size: 20, // w-5 h-5
+                            color: AppColors.neutral400, // text-gray-400
                           ),
                         ],
                       ),
