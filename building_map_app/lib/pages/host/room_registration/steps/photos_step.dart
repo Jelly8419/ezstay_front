@@ -35,6 +35,21 @@ class PhotosStep extends StatefulWidget {
 
 class _PhotosStepState extends State<PhotosStep> {
   final ImagePicker _picker = ImagePicker();
+  late final TextEditingController _wifiPasswordController;
+
+  @override
+  void initState() {
+    super.initState();
+    _wifiPasswordController = TextEditingController(
+      text: (widget.formData['wifiPassword'] as String?) ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _wifiPasswordController.dispose();
+    super.dispose();
+  }
 
   // 기본 옵션 리스트
   static const List<String> _basicOptionsList = [
@@ -102,9 +117,6 @@ class _PhotosStepState extends State<PhotosStep> {
         .toList();
   }
 
-  String get _wifiPassword =>
-      (widget.formData['wifiPassword'] as String?) ?? '';
-
   void _updateFormData(String key, dynamic value) {
     final updated = Map<String, dynamic>.from(widget.formData);
     updated[key] = value;
@@ -119,8 +131,10 @@ class _PhotosStepState extends State<PhotosStep> {
         final updatedImages = [..._uploadedImages, ...newImages];
 
         // XFile 객체도 함께 저장 (API 업로드용)
-        final existingXFiles =
-            (widget.formData['uploadedXFiles'] as List<XFile>?) ?? [];
+        final rawXFiles = widget.formData['uploadedXFiles'];
+        final existingXFiles = rawXFiles is List
+            ? rawXFiles.whereType<XFile>().toList()
+            : <XFile>[];
         final updatedXFiles = [...existingXFiles, ...images];
 
         // 최대 20장 제한
@@ -149,7 +163,10 @@ class _PhotosStepState extends State<PhotosStep> {
     _updateFormData('uploadedImages', updated);
 
     // XFile 목록에서도 제거
-    final xFiles = (widget.formData['uploadedXFiles'] as List<XFile>?) ?? [];
+    final rawXFiles = widget.formData['uploadedXFiles'];
+    final xFiles = rawXFiles is List
+        ? rawXFiles.whereType<XFile>().toList()
+        : <XFile>[];
     if (index < xFiles.length) {
       final updatedXFiles = List<XFile>.from(xFiles);
       updatedXFiles.removeAt(index);
@@ -191,6 +208,7 @@ class _PhotosStepState extends State<PhotosStep> {
       }
       // Wi-Fi 옵션 해제 시 비밀번호 초기화
       if (option == '인터넷(wi-fi)') {
+        _wifiPasswordController.clear();
         _updateFormData('wifiPassword', '');
       }
     } else {
@@ -534,7 +552,7 @@ class _PhotosStepState extends State<PhotosStep> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TextField(
-                    controller: TextEditingController(text: _wifiPassword),
+                    controller: _wifiPasswordController,
                     onChanged: (value) =>
                         _updateFormData('wifiPassword', value),
                     decoration: InputDecoration(

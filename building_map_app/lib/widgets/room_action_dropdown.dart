@@ -56,18 +56,35 @@ class _RoomActionDropdownState extends State<RoomActionDropdown> {
     setState(() => _isOpen = true);
   }
 
+  /// 오버레이 닫고 다음 프레임에서 콜백 실행
+  void _closeAndRun(VoidCallback? callback) {
+    _removeOverlay();
+    if (callback != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) callback();
+      });
+    }
+  }
+
   void _removeOverlay() {
-    _overlayEntry?.remove();
+    final entry = _overlayEntry;
     _overlayEntry = null;
+    entry?.remove();
+    entry?.dispose();
     if (mounted) {
       setState(() => _isOpen = false);
     }
   }
 
   OverlayEntry _createOverlayEntry() {
-    final isMobile = MediaQuery.of(context).size.width < 1024;
     final renderBox = context.findRenderObject() as RenderBox;
     final size = renderBox.size;
+    final buttonPosition = renderBox.localToGlobal(Offset.zero);
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // 버튼 하단에서 화면 끝까지 남은 공간 (드롭다운 높이 ~200px 예상)
+    final spaceBelow = screenHeight - buttonPosition.dy - size.height;
+    final openUpward = spaceBelow < 220;
 
     return OverlayEntry(
       builder: (context) => Stack(
@@ -87,9 +104,9 @@ class _RoomActionDropdownState extends State<RoomActionDropdown> {
             child: CompositedTransformFollower(
               link: _layerLink,
               showWhenUnlinked: false,
-              offset: isMobile
-                ? Offset(size.width - 160, -8) // 모바일: 위로 (bottom-full mb-2)
-                : Offset(size.width - 160, size.height + 8), // PC: 아래로 (top-full mt-2)
+              targetAnchor: openUpward ? Alignment.topRight : Alignment.bottomRight,
+              followerAnchor: openUpward ? Alignment.bottomRight : Alignment.topRight,
+              offset: openUpward ? const Offset(0, -8) : const Offset(0, 8),
               child: Material(
                 elevation: 8,
                 borderRadius: BorderRadius.circular(8), // rounded-lg
@@ -119,10 +136,7 @@ class _RoomActionDropdownState extends State<RoomActionDropdown> {
     if (widget.room.canEdit) {
       items.add(_buildMenuItem(
         label: '수정하기',
-        onTap: () {
-          _removeOverlay();
-          widget.onEdit?.call();
-        },
+        onTap: () => _closeAndRun(widget.onEdit),
       ));
     }
 
@@ -130,10 +144,7 @@ class _RoomActionDropdownState extends State<RoomActionDropdown> {
     if (widget.room.canSchedule) {
       items.add(_buildMenuItem(
         label: '일정관리',
-        onTap: () {
-          _removeOverlay();
-          widget.onSchedule?.call();
-        },
+        onTap: () => _closeAndRun(widget.onSchedule),
       ));
     }
 
@@ -141,10 +152,7 @@ class _RoomActionDropdownState extends State<RoomActionDropdown> {
     if (widget.room.canTogglePublish) {
       items.add(_buildMenuItem(
         label: widget.room.isActive ? '비공개 하기' : '게시하기',
-        onTap: () {
-          _removeOverlay();
-          widget.onTogglePublish?.call();
-        },
+        onTap: () => _closeAndRun(widget.onTogglePublish),
       ));
     }
 
@@ -152,10 +160,7 @@ class _RoomActionDropdownState extends State<RoomActionDropdown> {
     if (widget.room.canDuplicate) {
       items.add(_buildMenuItem(
         label: '복제하기',
-        onTap: () {
-          _removeOverlay();
-          widget.onDuplicate?.call();
-        },
+        onTap: () => _closeAndRun(widget.onDuplicate),
       ));
     }
 
@@ -164,10 +169,7 @@ class _RoomActionDropdownState extends State<RoomActionDropdown> {
       items.add(_buildMenuItem(
         label: '삭제하기',
         isDestructive: true,
-        onTap: () {
-          _removeOverlay();
-          widget.onDelete?.call();
-        },
+        onTap: () => _closeAndRun(widget.onDelete),
       ));
     }
 

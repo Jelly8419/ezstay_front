@@ -87,6 +87,13 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
   // 로딩 상태
   bool _isLoading = false;
 
+  // 점진적 렌더링: 표시할 월 수
+  int _visibleMonths = 0;
+
+  // 날짜별 상태 캐시 (key: 'yyyy-M-dd')
+  final Map<String, DateStatus> _dateStatusCache = {};
+  final Map<String, Contract?> _dateContractCache = {};
+
   // 선택 모드
   SelectionMode? selectionMode;
 
@@ -147,7 +154,14 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
         );
       }).toList();
 
-      setState(() => _isLoading = false);
+      _buildDateCache();
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _visibleMonths = 0;
+        });
+        _showMonthsProgressively();
+      }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -157,6 +171,72 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
             backgroundColor: AppColors.error500,
           ),
         );
+      }
+    }
+  }
+
+  /// 캘린더 월을 점진적으로 표시 (프레임 분산)
+  void _showMonthsProgressively() {
+    if (!mounted || _visibleMonths >= 12) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _visibleMonths = _visibleMonths + 4);
+      if (_visibleMonths < 12) {
+        _showMonthsProgressively();
+      }
+    });
+  }
+
+  /// 날짜 캐시 키 생성
+  String _dateKey(DateTime date) => '${date.year}-${date.month}-${date.day}';
+
+  /// 날짜별 상태/계약 캐시 구축 (데이터 로드 후 1회 호출)
+  void _buildDateCache() {
+    _dateStatusCache.clear();
+    _dateContractCache.clear();
+
+    for (int i = 0; i < 12; i++) {
+      final monthDate = DateTime(today.year, today.month + i, 1);
+      final daysInMonth = DateTime(monthDate.year, monthDate.month + 1, 0).day;
+
+      for (int day = 1; day <= daysInMonth; day++) {
+        final date = DateTime(monthDate.year, monthDate.month, day);
+        final key = _dateKey(date);
+
+        // 과거 날짜
+        if (date.isBefore(today)) {
+          _dateStatusCache[key] = DateStatus.past;
+          continue;
+        }
+
+        // 계약된 날짜
+        Contract? matchedContract;
+        for (final contract in contracts) {
+          if (_isDateInRange(date, contract.startDate, contract.endDate)) {
+            matchedContract = contract;
+            break;
+          }
+        }
+        if (matchedContract != null) {
+          _dateStatusCache[key] = DateStatus.contracted;
+          _dateContractCache[key] = matchedContract;
+          continue;
+        }
+
+        // 차단된 날짜
+        bool isBlocked = false;
+        for (final blocked in blockedPeriods) {
+          if (_isDateInRange(date, blocked.startDate, blocked.endDate)) {
+            isBlocked = true;
+            break;
+          }
+        }
+        if (isBlocked) {
+          _dateStatusCache[key] = DateStatus.blocked;
+          continue;
+        }
+
+        _dateStatusCache[key] = DateStatus.available;
       }
     }
   }
@@ -200,17 +280,12 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
     return d.compareTo(s) >= 0 && d.compareTo(e) <= 0;
   }
 
-  /// 해당 날짜의 계약 정보 가져오기
+  /// 해당 날짜의 계약 정보 가져오기 (캐시 조회)
   Contract? _getContractForDate(DateTime date) {
-    for (final contract in contracts) {
-      if (_isDateInRange(date, contract.startDate, contract.endDate)) {
-        return contract;
-      }
-    }
-    return null;
+    return _dateContractCache[_dateKey(date)];
   }
 
-  /// 계약 위치 정보 (시작일/종료일 여부)
+  /// 계약 위치 정보 (시작일/종료일 여부, 캐시 조회)
   Map<String, bool>? _getContractPosition(DateTime date) {
     final contract = _getContractForDate(date);
     if (contract == null) return null;
@@ -226,31 +301,9 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
     };
   }
 
-  /// 날짜 상태 확인
+  /// 날짜 상태 확인 (캐시 조회)
   DateStatus _getDateStatus(DateTime date) {
-    final compareDate = DateTime(date.year, date.month, date.day);
-    final todayCompare = DateTime(today.year, today.month, today.day);
-
-    // 과거 날짜
-    if (compareDate.isBefore(todayCompare)) {
-      return DateStatus.past;
-    }
-
-    // 계약된 날짜
-    for (final contract in contracts) {
-      if (_isDateInRange(date, contract.startDate, contract.endDate)) {
-        return DateStatus.contracted;
-      }
-    }
-
-    // 계약 불가 날짜
-    for (final blocked in blockedPeriods) {
-      if (_isDateInRange(date, blocked.startDate, blocked.endDate)) {
-        return DateStatus.blocked;
-      }
-    }
-
-    return DateStatus.available;
+    return _dateStatusCache[_dateKey(date)] ?? DateStatus.available;
   }
 
   /// 날짜 클릭 처리
@@ -349,8 +402,9 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
         reason: result['reason'],
       );
 
+      blockedPeriods.add(newBlocked);
+      _buildDateCache();
       setState(() {
-        blockedPeriods.add(newBlocked);
         selectedStartDate = null;
         selectedEndDate = null;
         selectionMode = null;
@@ -455,11 +509,12 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
           .map((data) => data['id'].toString())
           .toSet();
 
+      // 삭제된 기간 제거
+      blockedPeriods.removeWhere((period) => deletedIds.contains(period.id));
+      // 새로 생성된 기간 추가
+      blockedPeriods.addAll(createdPeriods);
+      _buildDateCache();
       setState(() {
-        // 삭제된 기간 제거
-        blockedPeriods.removeWhere((period) => deletedIds.contains(period.id));
-        // 새로 생성된 기간 추가
-        blockedPeriods.addAll(createdPeriods);
         selectedStartDate = null;
         selectedEndDate = null;
         selectionMode = null;
@@ -787,7 +842,7 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
                           crossAxisSpacing: AppSpacing.lg, // ✅ 24px (React gap-6)
                           mainAxisSpacing: AppSpacing.lg, // ✅ 24px (React gap-6)
                         ),
-                        itemCount: months.length,
+                        itemCount: _visibleMonths.clamp(0, months.length),
                         itemBuilder: (context, index) {
                           final monthData = months[index];
                           final year = monthData['year'] as int;

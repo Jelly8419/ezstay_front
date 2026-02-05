@@ -185,9 +185,9 @@ class RoomManagementService {
   /// [copyDescription] - 방 소개 복사 여부 (기본 true)
   ///
   /// 반환값:
-  /// - 새로 생성된 방 정보 (Room 객체)
+  /// - 복제된 방 이름 (String)
   /// - null: 실패
-  Future<Room?> duplicateRoom(
+  Future<String?> duplicateRoom(
     int roomId, {
     bool copyPhotos = true,
     bool copyAmenities = true,
@@ -211,13 +211,20 @@ class RoomManagementService {
         return null;
       }
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final responseData = jsonDecode(utf8.decode(response.bodyBytes));
 
-      if (!ApiConfig.isProduction) {
-        debugPrint('✅ [RoomManagementService] 방 복제 성공: 원본=$roomId, 복제=${data['room']['id']}');
+      if (responseData['success'] != true) {
+        return null;
       }
 
-      return Room.fromJson(data['room']);
+      final data = responseData['data'] as Map<String, dynamic>?;
+      final roomName = data?['roomName'] as String? ?? '복제된 방';
+
+      if (!ApiConfig.isProduction) {
+        debugPrint('✅ [RoomManagementService] 방 복제 성공: 원본=$roomId, 복제=${data?['roomId']}');
+      }
+
+      return roomName;
     } catch (e) {
       debugPrint('❌ [RoomManagementService] 방 복제 실패: $e');
       return null;

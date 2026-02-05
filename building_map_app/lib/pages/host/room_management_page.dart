@@ -557,21 +557,21 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
   Widget _buildRoomList() {
     final isMobile = MediaQuery.of(context).size.width < 1024;
 
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(
-          maxWidth: 1024, // ✅ React: max-w-5xl = 1024px (화면의 약 70%)
-        ),
-        child: ListView.separated(
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 16 : 32, // ✅ React: px-4 lg:px-8
-            vertical: isMobile ? 16 : 24,   // ✅ React: py-4 lg:py-6
-          ),
-          itemCount: _filteredRooms.length,
-          separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
-          itemBuilder: (context, index) {
-            final room = _filteredRooms[index];
-            return RoomManagementCard(
+    return ListView.separated(
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16 : 32, // ✅ React: px-4 lg:px-8
+        vertical: isMobile ? 16 : 24,   // ✅ React: py-4 lg:py-6
+      ),
+      itemCount: _filteredRooms.length,
+      separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
+      itemBuilder: (context, index) {
+        final room = _filteredRooms[index];
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 1024, // ✅ React: max-w-5xl = 1024px
+            ),
+            child: RoomManagementCard(
               room: room,
               onTap: () => _onRoomTap(room),
               onEdit: () => _onEditRoom(room),
@@ -579,10 +579,10 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
               onTogglePublish: () => _onTogglePublish(room),
               onDuplicate: () => _onDuplicateRoom(room),
               onDelete: () => _onDeleteRoom(room),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -676,14 +676,39 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
     // API 호출
     final success = await _roomService.togglePublishStatus(room.id, newStatus);
 
-    if (success && mounted) {
-      // 성공 시 목록 새로고침
-      _loadRooms();
+    if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${room.roomName}을(를) $statusText로 전환했습니다.'),
-          backgroundColor: AppColors.success500,
+    if (success) {
+      // 성공 시 목록 새로고침
+      await _loadRooms();
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('$statusText 전환 완료'),
+            content: Text('${room.roomName}을(를) $statusText로 전환했습니다.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('확인'),
+              ),
+            ],
+          ),
+        );
+      }
+    } else {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('$statusText 전환 실패'),
+          content: Text('${room.roomName} $statusText 전환에 실패했습니다.\n다시 시도해주세요.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('확인'),
+            ),
+          ],
         ),
       );
     }
@@ -712,17 +737,42 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
     if (confirmed != true) return;
 
     // API 호출
-    final newRoom = await _roomService.duplicateRoom(room.id);
+    final newRoomName = await _roomService.duplicateRoom(room.id);
 
-    if (newRoom != null && mounted) {
+    if (!mounted) return;
+
+    if (newRoomName != null) {
       // 성공 시 목록 새로고침
-      _loadRooms();
+      await _loadRooms();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${room.roomName}을(를) 복제했습니다. (ID: ${newRoom.id})'),
-          backgroundColor: AppColors.success500,
-          duration: const Duration(seconds: 3),
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('복제 완료'),
+            content: Text('\'$newRoomName\'이(가) 생성되었습니다.\n수정 후 등록해주세요.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('확인'),
+              ),
+            ],
+          ),
+        );
+      }
+    } else {
+      // 실패 시 에러 알림
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('복제 실패'),
+          content: Text('${room.roomName} 복제에 실패했습니다.\n다시 시도해주세요.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('확인'),
+            ),
+          ],
         ),
       );
     }
