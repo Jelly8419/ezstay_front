@@ -13,11 +13,18 @@ import 'gnb_menu_dropdown.dart';
 
 /// GNB (Global Navigation Bar)
 /// 로그인 상태와 호스트/게스트 모드에 따라 다른 UI를 표시합니다.
-class AppGNB extends StatelessWidget implements PreferredSizeWidget {
+class AppGNB extends StatefulWidget implements PreferredSizeWidget {
   const AppGNB({super.key});
 
   @override
-  Size get preferredSize => Size.fromHeight(64);
+  Size get preferredSize => const Size.fromHeight(64);
+
+  @override
+  State<AppGNB> createState() => _AppGNBState();
+}
+
+class _AppGNBState extends State<AppGNB> {
+  bool _hasCheckedUnread = false;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +32,21 @@ class AppGNB extends StatelessWidget implements PreferredSizeWidget {
       builder: (context, authService, gnbProvider, child) {
         final isLoggedIn = authService.isLoggedIn;
         final isHostMode = authService.currentUser?.mode == UserMode.host;
+
+        // 로그인 상태이고 아직 미확인 알림을 체크하지 않았으면 체크
+        if (isLoggedIn && !_hasCheckedUnread) {
+          _hasCheckedUnread = true;
+          final userMode = isHostMode ? 'host' : 'guest';
+          // 비동기로 미확인 알림 체크 (UI 블로킹 없음)
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            gnbProvider.checkUnreadNotifications(userMode);
+          });
+        }
+
+        // 로그아웃 시 상태 리셋
+        if (!isLoggedIn && _hasCheckedUnread) {
+          _hasCheckedUnread = false;
+        }
 
         // 🐛 디버깅: 사용자 상태 로그
         debugPrint('🔍 [GNB] isLoggedIn: $isLoggedIn, isHostMode: $isHostMode');
@@ -272,14 +294,8 @@ class AppGNB extends StatelessWidget implements PreferredSizeWidget {
           icon: Icons.notifications_outlined,
           showBadge: gnbProvider.hasUnreadNotifications,
           onPressed: () {
-            // TODO: 알림 페이지 라우트 추가 필요
-            gnbProvider.markNotificationsAsRead();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('알림 페이지 준비 중입니다.'),
-                backgroundColor: AppColors.primary500,
-              ),
-            );
+            // 알림 페이지로 이동 (읽음 처리는 알림 페이지에서 수행)
+            context.push('/notifications');
           },
           tooltip: '알림',
         ),
@@ -353,7 +369,9 @@ class AppGNB extends StatelessWidget implements PreferredSizeWidget {
                   if (currentUser.phoneVerified && currentUser.hasBank) {
                     debugPrint('✅ [GNB] 본인인증+계좌 모두 완료 → 호스트 모드 전환');
                     await authService.switchUserMode(newMode);
+                    // 모드 전환 후 미읽은 알림 재체크
                     if (context.mounted) {
+                      context.read<GNBProvider>().checkUnreadNotifications('host');
                       context.go('/host');
                     }
                     return;
@@ -381,6 +399,9 @@ class AppGNB extends StatelessWidget implements PreferredSizeWidget {
               await authService.switchUserMode(newMode);
 
               if (context.mounted) {
+                // 모드 전환 후 미읽은 알림 재체크
+                final newUserMode = isCurrentlyHostMode ? 'guest' : 'host';
+                context.read<GNBProvider>().checkUnreadNotifications(newUserMode);
                 final route = isCurrentlyHostMode ? '/' : '/host';
                 context.go(route);
               }

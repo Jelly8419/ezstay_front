@@ -1,11 +1,15 @@
 import 'package:flutter/foundation.dart';
+import '../services/notification_service.dart';
 
 /// GNB(Global Navigation Bar) 상태 관리
 /// 알림 및 채팅의 미확인 상태를 관리합니다.
 class GNBProvider extends ChangeNotifier {
+  final NotificationService _notificationService = NotificationService();
+
   // ==================== 상태 ====================
   bool _hasUnreadNotifications = false;
   bool _hasUnreadChats = false;
+  bool _isCheckingUnread = false;
 
   // ==================== Getters ====================
   /// 미확인 알림이 있는지 여부
@@ -45,6 +49,24 @@ class GNBProvider extends ChangeNotifier {
     if (_hasUnreadChats) {
       _hasUnreadChats = false;
       notifyListeners();
+    }
+  }
+
+  // ==================== API 연동 ====================
+  /// 미확인 알림 개수 조회 및 상태 업데이트
+  /// GNB가 마운트되거나 로그인 후 호출해야 합니다.
+  Future<void> checkUnreadNotifications(String userMode) async {
+    if (_isCheckingUnread) return;
+    _isCheckingUnread = true;
+
+    try {
+      final response = await _notificationService.getUnreadCount(userMode: userMode);
+      final count = response.getCount(userMode: userMode);
+      setUnreadNotifications(count > 0);
+    } catch (e) {
+      // 에러 시 상태 변경하지 않음
+    } finally {
+      _isCheckingUnread = false;
     }
   }
 

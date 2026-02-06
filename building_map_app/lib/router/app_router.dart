@@ -44,6 +44,8 @@ import '../pages/support/notice_detail_page.dart' deferred as notice_detail;
 import '../pages/support/faqs_page.dart' deferred as faqs;
 import '../pages/support/inquiries_page.dart' deferred as inquiries;
 import '../pages/support/inquiry_form_page.dart' deferred as inquiry_form;
+import '../pages/notification/notification_page.dart'
+    deferred as notification_page;
 
 
 class AppRouter {
@@ -609,6 +611,15 @@ class AppRouter {
               },
             ),
           ],
+        ),
+        // 알림 페이지
+        GoRoute(
+          path: '/notifications',
+          name: 'notifications',
+          builder: (context, state) => _deferredWidget(
+            notification_page.loadLibrary,
+            () => notification_page.NotificationPage(),
+          ),
         ),
         GoRoute(
           path: '/chat-list',
