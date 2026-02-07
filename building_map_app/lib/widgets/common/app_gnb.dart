@@ -138,15 +138,7 @@ class _AppGNBState extends State<AppGNB> {
         _buildTextButton(
           context,
           label: '정산',
-          onPressed: () {
-            // TODO: 정산 페이지 라우트 추가 필요
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('정산 페이지 준비 중입니다.'),
-                backgroundColor: AppColors.primary500,
-              ),
-            );
-          },
+          onPressed: () => context.go('/host/settlement'),
         ),
       ],
     );
