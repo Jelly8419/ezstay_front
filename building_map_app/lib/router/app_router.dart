@@ -46,6 +46,9 @@ import '../pages/support/inquiries_page.dart' deferred as inquiries;
 import '../pages/support/inquiry_form_page.dart' deferred as inquiry_form;
 import '../pages/notification/notification_page.dart'
     deferred as notification_page;
+import '../pages/host/host_settlement_page.dart' deferred as host_settlement;
+import '../pages/host/host_settlement_detail_page.dart'
+    deferred as host_settlement_detail;
 
 
 class AppRouter {
@@ -511,6 +514,29 @@ class AppRouter {
             host_my_page.loadLibrary,
             () => host_my_page.HostMyPage(),
           ),
+        ),
+        // 호스트 정산 페이지
+        GoRoute(
+          path: '/host/settlement',
+          name: 'host-settlement',
+          builder: (context, state) => _deferredWidget(
+            host_settlement.loadLibrary,
+            () => host_settlement.HostSettlementPage(),
+          ),
+        ),
+        // 호스트 정산 상세 페이지
+        GoRoute(
+          path: '/host/settlement/:contractId',
+          name: 'host-settlement-detail',
+          builder: (context, state) {
+            final contractId = int.tryParse(state.pathParameters['contractId'] ?? '') ?? 0;
+            return _deferredWidget(
+              host_settlement_detail.loadLibrary,
+              () => host_settlement_detail.HostSettlementDetailPage(
+                contractId: contractId,
+              ),
+            );
+          },
         ),
         GoRoute(
           path: '/map',
