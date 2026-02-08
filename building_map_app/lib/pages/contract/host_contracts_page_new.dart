@@ -7,6 +7,7 @@ import '../../services/contract_service.dart';
 import '../../widgets/modals/guest_preparation_modal.dart';
 import '../../widgets/modals/host_contract_rejection_modal.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../widgets/common/app_footer.dart';
 
 /// 호스트 계약 관리 페이지 (React UI 완전 복제)
 class HostContractsPageNew extends StatefulWidget {
@@ -189,6 +190,10 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
                       // 계약 목록
                       _buildContractList(),
+
+                      // 푸터
+                      const SizedBox(height: 48),
+                      const AppFooter(),
                     ],
                   ),
                 ),
