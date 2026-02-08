@@ -6,7 +6,6 @@ import '../../core/theme/app_spacing.dart';
 import '../../services/auth_service.dart';
 import '../../services/schedule_service.dart';
 import '../../utils/responsive_util.dart';
-import '../../widgets/common/app_gnb.dart';
 
 /// 계약 불가 기간 모델
 class BlockedPeriod {
@@ -674,20 +673,16 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
 
     // 권한 체크 (비즈니스 로직 유지)
     if (user == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('권한 없음')),
-        body: const Center(child: Text('로그인이 필요합니다')),
-      );
+      return const Center(child: Text('로그인이 필요합니다'));
     }
 
     final months = _generateMonths();
     final isMobile = ResponsiveUtil.isMobile(context);
     final isTablet = ResponsiveUtil.isTablet(context);
 
-    return Scaffold(
-      appBar: const AppGNB(),
-      backgroundColor: AppColors.background,
-      body: _isLoading
+    return ColoredBox(
+      color: AppColors.background,
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Stack(
         children: [

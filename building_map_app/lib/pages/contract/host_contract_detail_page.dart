@@ -6,7 +6,7 @@ import '../../config/api_config.dart';
 import '../../constants/app_constants.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/responsive_page_layout.dart';
-import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/app_footer.dart';
 
 /// 카드 그림자 (기본)
 const List<BoxShadow> _cardShadow = [
@@ -98,18 +98,17 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB), // bg-gray-50
-      appBar: const AppGNB(),
-      body: ResponsivePageLayout(
+    return ColoredBox(
+      color: const Color(0xFFF9FAFB), // bg-gray-50
+      child: ResponsivePageLayout(
         useCardStyle: false, // 배경색 유지 (각 섹션이 이미 카드)
         maxWidth: 896, // max-w-4xl (React 기준)
-        child: _buildBody(),
+        child: _buildBodyWithFooter(),
       ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBodyWithFooter() {
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(),
@@ -168,10 +167,12 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
           const SizedBox(height: 24), // mb-6
           _buildNoticeSection(),
           const SizedBox(height: 32),
+          const AppFooter(),
         ],
       ),
     );
   }
+
 
   /// 기본 정보 섹션
   Widget _buildBasicInfoSection() {

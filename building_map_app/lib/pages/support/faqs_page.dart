@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/faq.dart';
 import '../../services/support_service.dart';
-import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/app_footer.dart';
 
 class FAQsPage extends StatefulWidget {
   const FAQsPage({super.key});
@@ -113,10 +113,9 @@ class _FAQsPageState extends State<FAQsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.gray50,
-      appBar: const AppGNB(),
-      body: Column(
+    return ColoredBox(
+      color: AppColors.gray50,
+      child: Column(
         children: [
           _buildHeader(),
           Expanded(
@@ -192,25 +191,30 @@ class _FAQsPageState extends State<FAQsPage> {
 
   Widget _buildContent() {
     return SingleChildScrollView(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 896),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildSearchInput(),
-                const SizedBox(height: 24),
-                _buildCategoryTabs(),
-                const SizedBox(height: 24),
-                _buildFAQList(),
-                const SizedBox(height: 32),
-                _buildHelpText(),
-              ],
+      child: Column(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 896),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildSearchInput(),
+                    const SizedBox(height: 24),
+                    _buildCategoryTabs(),
+                    const SizedBox(height: 24),
+                    _buildFAQList(),
+                    const SizedBox(height: 32),
+                    _buildHelpText(),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          const AppFooter(),
+        ],
       ),
     );
   }

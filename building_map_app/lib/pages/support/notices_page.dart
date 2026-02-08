@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/notice.dart';
 import '../../services/support_service.dart';
-import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/app_footer.dart';
 
 class NoticesPage extends StatefulWidget {
   const NoticesPage({super.key});
@@ -63,10 +63,9 @@ class _NoticesPageState extends State<NoticesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.gray50,
-      appBar: const AppGNB(),
-      body: Column(
+    return ColoredBox(
+      color: AppColors.gray50,
+      child: Column(
         children: [
           _buildHeader(),
           Expanded(
@@ -161,22 +160,27 @@ class _NoticesPageState extends State<NoticesPage> {
 
   Widget _buildContent() {
     return SingleChildScrollView(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 896),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                _buildNoticeList(),
-                if (_totalPages > 1) ...[
-                  const SizedBox(height: 24),
-                  _buildPagination(),
-                ],
-              ],
+      child: Column(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 896),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    _buildNoticeList(),
+                    if (_totalPages > 1) ...[
+                      const SizedBox(height: 24),
+                      _buildPagination(),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          const AppFooter(),
+        ],
       ),
     );
   }

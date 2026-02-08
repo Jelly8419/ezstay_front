@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/inquiry.dart';
 import '../../services/support_service.dart';
-import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/app_footer.dart';
 
 class InquiriesPage extends StatefulWidget {
   const InquiriesPage({super.key});
@@ -145,10 +145,9 @@ class _InquiriesPageState extends State<InquiriesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.gray50,
-      appBar: const AppGNB(),
-      body: Column(
+    return ColoredBox(
+      color: AppColors.gray50,
+      child: Column(
         children: [
           _buildHeader(),
           Expanded(
@@ -227,24 +226,29 @@ class _InquiriesPageState extends State<InquiriesPage> {
 
   Widget _buildContent() {
     return SingleChildScrollView(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 896),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                _buildStatusFilter(),
-                const SizedBox(height: 24),
-                _buildInquiryList(),
-                if (_totalPages > 1) ...[
-                  const SizedBox(height: 24),
-                  _buildPagination(),
-                ],
-              ],
+      child: Column(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 896),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    _buildStatusFilter(),
+                    const SizedBox(height: 24),
+                    _buildInquiryList(),
+                    if (_totalPages > 1) ...[
+                      const SizedBox(height: 24),
+                      _buildPagination(),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          const AppFooter(),
+        ],
       ),
     );
   }

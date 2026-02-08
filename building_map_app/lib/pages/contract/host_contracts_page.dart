@@ -6,9 +6,9 @@ import '../../models/contract.dart';
 import '../../services/contract_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../widgets/common/app_gnb.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/modals/host_contract_modals.dart';
+import '../../widgets/common/app_footer.dart';
 
 /// 호스트용 계약 목록 페이지
 class HostContractsPage extends StatefulWidget {
@@ -243,27 +243,30 @@ class _HostContractsPageState extends State<HostContractsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB), // bg-gray-50
-      appBar: const AppGNB(),
-      body: Column(
-        children: [
-          const SizedBox(height: 24), // py-6
+    return ColoredBox(
+      color: const Color(0xFFF9FAFB), // bg-gray-50
+      child: RefreshIndicator(
+        onRefresh: _loadContracts,
+        child: ListView(
+          children: [
+            const SizedBox(height: 24), // py-6
 
-          // 탭 메뉴
-          _buildTabMenu(),
+            // 탭 메뉴
+            _buildTabMenu(),
 
-          // 드롭다운 필터
-          _buildDropdownFilter(),
+            // 드롭다운 필터
+            _buildDropdownFilter(),
 
-          // 안내 메시지
-          _buildInfoBox(),
+            // 안내 메시지
+            _buildInfoBox(),
 
-          // 계약 목록
-          Expanded(
-            child: _buildContractsList(),
-          ),
-        ],
+            // 계약 목록
+            _buildContractsList(),
+
+            // 푸터
+            const AppFooter(),
+          ],
+        ),
       ),
     );
   }
@@ -594,77 +597,83 @@ class _HostContractsPageState extends State<HostContractsPage> {
 
   Widget _buildContractsList() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 80),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red.shade300,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _errorMessage!,
-              style: AppTextStyles.bodyLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadContracts,
-              icon: const Icon(Icons.refresh),
-              label: const Text('다시 시도'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary600,
-                foregroundColor: Colors.white,
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 80),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red.shade300,
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                style: AppTextStyles.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _loadContracts,
+                icon: const Icon(Icons.refresh),
+                label: const Text('다시 시도'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary600,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     if (_filteredContracts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.description_outlined,
-              size: 64,
-              color: Colors.grey.shade300,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '계약 요청이 없습니다',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 80),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.description_outlined,
+                size: 64,
+                color: Colors.grey.shade300,
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                '계약 요청이 없습니다',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadContracts,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: AppConstants.maxContentWidth),
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _filteredContracts.length,
-            itemBuilder: (context, index) {
-              final contract = _filteredContracts[index];
-              return _buildContractCard(contract);
-            },
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppConstants.maxContentWidth),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              ..._filteredContracts.map(
+                (contract) => _buildContractCard(contract),
+              ),
+            ],
           ),
         ),
       ),

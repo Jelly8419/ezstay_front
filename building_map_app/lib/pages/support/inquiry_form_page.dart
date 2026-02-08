@@ -5,7 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/inquiry.dart';
 import '../../services/auth_service.dart';
 import '../../services/support_service.dart';
-import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/app_footer.dart';
 
 class InquiryFormPage extends StatefulWidget {
   final int? inquiryId;
@@ -215,10 +215,9 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.gray50,
-      appBar: const AppGNB(),
-      body: Column(
+    return ColoredBox(
+      color: AppColors.gray50,
+      child: Column(
         children: [
           _buildHeader(),
           Expanded(
@@ -313,35 +312,40 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
 
   Widget _buildContent() {
     return SingleChildScrollView(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 896),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.neutral0,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildCategoryField(),
-                  const SizedBox(height: 24),
-                  _buildTitleField(),
-                  const SizedBox(height: 24),
-                  _buildContentField(),
-                  const SizedBox(height: 24),
-                  _buildNotice(),
-                  const SizedBox(height: 32),
-                  _buildActions(),
-                ],
+      child: Column(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 896),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.neutral0,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildCategoryField(),
+                      const SizedBox(height: 24),
+                      _buildTitleField(),
+                      const SizedBox(height: 24),
+                      _buildContentField(),
+                      const SizedBox(height: 24),
+                      _buildNotice(),
+                      const SizedBox(height: 32),
+                      _buildActions(),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+          const AppFooter(),
+        ],
       ),
     );
   }

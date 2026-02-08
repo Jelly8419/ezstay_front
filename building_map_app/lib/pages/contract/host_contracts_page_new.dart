@@ -6,7 +6,6 @@ import '../../models/contract.dart';
 import '../../services/contract_service.dart';
 import '../../widgets/modals/guest_preparation_modal.dart';
 import '../../widgets/modals/host_contract_rejection_modal.dart';
-import '../../widgets/common/app_gnb.dart';
 import '../../core/theme/app_text_styles.dart';
 
 /// 호스트 계약 관리 페이지 (React UI 완전 복제)
@@ -159,10 +158,9 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB), // bg-gray-50
-      appBar: const AppGNB(),
-      body: Stack(
+    return ColoredBox(
+      color: const Color(0xFFF9FAFB), // bg-gray-50
+      child: Stack(
         children: [
           SafeArea(
             child: Center(

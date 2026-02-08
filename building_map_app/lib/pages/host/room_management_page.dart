@@ -7,10 +7,10 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/custom_button.dart';
-import '../../widgets/common/app_gnb.dart';
 import '../../widgets/room_management_card.dart';
 import '../../utils/responsive_util.dart';
 import '../../services/room_management_service.dart';
+import '../../widgets/common/app_footer.dart';
 
 /// 방 관리 페이지
 ///
@@ -142,10 +142,9 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
   Widget build(BuildContext context) {
     final isMobile = ResponsiveUtil.isMobile(context);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,  // bg-gray-50
-      appBar: const AppGNB(),
-      body: Column(
+    return ColoredBox(
+      color: AppColors.background,  // bg-gray-50
+      child: Column(
         children: [
           // Header Section (sticky top-0)
           _buildStickyHeader(context, isMobile),
@@ -557,73 +556,88 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
   Widget _buildRoomList() {
     final isMobile = MediaQuery.of(context).size.width < 1024;
 
-    return ListView.separated(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16 : 32, // ✅ React: px-4 lg:px-8
-        vertical: isMobile ? 16 : 24,   // ✅ React: py-4 lg:py-6
-      ),
-      itemCount: _filteredRooms.length,
-      separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) {
-        final room = _filteredRooms[index];
-        return Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 1024, // ✅ React: max-w-5xl = 1024px
-            ),
-            child: RoomManagementCard(
-              room: room,
-              onTap: () => _onRoomTap(room),
-              onEdit: () => _onEditRoom(room),
-              onSchedule: () => _onScheduleRoom(room),
-              onTogglePublish: () => _onTogglePublish(room),
-              onDuplicate: () => _onDuplicateRoom(room),
-              onDelete: () => _onDeleteRoom(room),
-            ),
+    return ListView(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 16 : 32, // ✅ React: px-4 lg:px-8
+            vertical: isMobile ? 16 : 24,   // ✅ React: py-4 lg:py-6
           ),
-        );
-      },
+          child: Column(
+            children: [
+              for (int i = 0; i < _filteredRooms.length; i++) ...[
+                if (i > 0) const SizedBox(height: AppSpacing.md),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 1024, // ✅ React: max-w-5xl = 1024px
+                    ),
+                    child: RoomManagementCard(
+                      room: _filteredRooms[i],
+                      onTap: () => _onRoomTap(_filteredRooms[i]),
+                      onEdit: () => _onEditRoom(_filteredRooms[i]),
+                      onSchedule: () => _onScheduleRoom(_filteredRooms[i]),
+                      onTogglePublish: () => _onTogglePublish(_filteredRooms[i]),
+                      onDuplicate: () => _onDuplicateRoom(_filteredRooms[i]),
+                      onDelete: () => _onDeleteRoom(_filteredRooms[i]),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const AppFooter(),
+      ],
     );
   }
 
   /// Empty State (등록된 방이 없을 때)
   Widget _buildEmptyState() {
-    return Center(
+    return SingleChildScrollView(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.description,  // ✅ React: <FileText size={64} /> → description icon
-            size: 64,
-            color: AppColors.neutral400,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            _searchQuery.isNotEmpty || _selectedStatus != 'all'
-                ? '검색 결과가 없습니다'
-                : '등록된 방이 없습니다',
-            style: AppTextStyles.headingMedium.copyWith(
-              color: AppColors.textSecondary,
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 80),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.description,  // ✅ React: <FileText size={64} /> → description icon
+                  size: 64,
+                  color: AppColors.neutral400,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  _searchQuery.isNotEmpty || _selectedStatus != 'all'
+                      ? '검색 결과가 없습니다'
+                      : '등록된 방이 없습니다',
+                  style: AppTextStyles.headingMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  _searchQuery.isNotEmpty || _selectedStatus != 'all'
+                      ? '다른 검색어나 필터를 시도해보세요'
+                      : '새로운 방을 등록하고 게스트를 맞이해보세요',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                if (_searchQuery.isEmpty && _selectedStatus == 'all')
+                  CustomButton(
+                    text: '첫 번째 방 등록하기',  // ✅ React: "첫 번째 방 등록하기" (no + prefix)
+                    onPressed: _onRegisterRoom,
+                    backgroundColor: AppColors.primary500,
+                    foregroundColor: AppColors.textOnPrimary,
+                  ),
+              ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            _searchQuery.isNotEmpty || _selectedStatus != 'all'
-                ? '다른 검색어나 필터를 시도해보세요'
-                : '새로운 방을 등록하고 게스트를 맞이해보세요',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          if (_searchQuery.isEmpty && _selectedStatus == 'all')
-            CustomButton(
-              text: '첫 번째 방 등록하기',  // ✅ React: "첫 번째 방 등록하기" (no + prefix)
-              onPressed: _onRegisterRoom,
-              backgroundColor: AppColors.primary500,
-              foregroundColor: AppColors.textOnPrimary,
-            ),
+          const AppFooter(),
         ],
       ),
     );

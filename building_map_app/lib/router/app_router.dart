@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
+import '../widgets/common/app_shell_scaffold.dart';
 
 // 즉시 로딩 (자주 사용하는 페이지)
 import '../pages/auth/login_page.dart';
@@ -119,12 +120,62 @@ class AppRouter {
     );
   }
 
+  /// ShellRoute용 Deferred 라이브러리 로딩 위젯 (Scaffold 미포함)
+  ///
+  /// ShellRoute 내부에서 사용하며, Shell이 이미 Scaffold를 제공하므로
+  /// 로딩/에러 상태에서 Scaffold를 생성하지 않습니다.
+  static Widget _deferredShellWidget(
+    Future<void> Function() loadLibrary,
+    Widget Function() builder,
+  ) {
+    return FutureBuilder(
+      future: loadLibrary(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          debugPrint('❌ [Deferred] 라이브러리 로딩 실패: ${snapshot.error}');
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '페이지를 불러올 수 없습니다',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '브라우저 캐시를 지우고 다시 시도해주세요.\n(Ctrl+Shift+R 또는 Cmd+Shift+R)',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => context.go('/'),
+                    icon: const Icon(Icons.home),
+                    label: const Text('홈으로 이동'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        if (snapshot.connectionState == ConnectionState.done) {
+          return builder();
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+
   /// Path 파라미터를 int로 파싱하는 헬퍼 함수
   static int? _parseIntParameter(String? value) {
     return value != null ? int.tryParse(value) : null;
   }
 
-  /// 잘못된 접근 에러 페이지 빌더
+  /// 잘못된 접근 에러 페이지 빌더 (독립 라우트용, Scaffold 포함)
   static Widget _buildInvalidAccessPage(
     BuildContext context, {
     required String message,
@@ -144,6 +195,28 @@ class AppRouter {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 잘못된 접근 에러 위젯 (ShellRoute 내부용, Scaffold 미포함)
+  static Widget _buildShellInvalidAccessWidget(
+    BuildContext context, {
+    required String message,
+    required String buttonText,
+    required String redirectPath,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(message),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => context.go(redirectPath),
+            child: Text(buttonText),
+          ),
+        ],
       ),
     );
   }
@@ -222,11 +295,311 @@ class AppRouter {
         return null;
       },
       routes: [
-        GoRoute(
-          path: '/login',
-          name: 'login',
-          builder: (context, state) => const LoginPage(),
+        // ============================================
+        // ShellRoute: AppGNB를 공통으로 제공하는 라우트
+        // 내부 페이지는 Scaffold/AppGNB를 포함하지 않음
+        // ============================================
+        ShellRoute(
+          builder: (context, state, child) => AppShellScaffold(child: child),
+          routes: [
+            GoRoute(
+              path: '/login',
+              name: 'login',
+              builder: (context, state) => const LoginPage(),
+            ),
+            GoRoute(
+              path: '/guest',
+              name: 'guest',
+              builder: (context, state) => const GuestHomePage(),
+            ),
+            GoRoute(
+              path: '/guest/room/detail/:roomId',
+              name: 'room-detail',
+              builder: (context, state) {
+                final roomId = _parseIntParameter(state.pathParameters['roomId']);
+                if (roomId == null) {
+                  return _buildShellInvalidAccessWidget(
+                    context,
+                    message: '잘못된 접근입니다.',
+                    buttonText: '지도로 돌아가기',
+                    redirectPath: '/map',
+                  );
+                }
+                return _deferredShellWidget(
+                  room_detail.loadLibrary,
+                  () => room_detail.RoomDetailPage(roomId: roomId),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/host',
+              name: 'host',
+              builder: (context, state) => _deferredShellWidget(
+                host_home.loadLibrary,
+                () => host_home.HostHomePage(),
+              ),
+            ),
+            // 신규 방 등록 (roomId 없음)
+            GoRoute(
+              path: '/host/room-registration',
+              name: 'room-registration',
+              builder: (context, state) {
+                return _deferredShellWidget(
+                  room_registration.loadLibrary,
+                  () => room_registration.RoomRegistrationFlowPage(roomId: null),
+                );
+              },
+            ),
+            // 기존 방 수정 (roomId 있음)
+            GoRoute(
+              path: '/host/room-registration/:roomId',
+              name: 'room-registration-edit',
+              builder: (context, state) {
+                final roomId = _parseIntParameter(state.pathParameters['roomId']);
+                return _deferredShellWidget(
+                  room_registration.loadLibrary,
+                  () => room_registration.RoomRegistrationFlowPage(roomId: roomId),
+                );
+              },
+            ),
+            // 방 관리 페이지
+            GoRoute(
+              path: '/host/room-management',
+              name: 'room-management',
+              builder: (context, state) => _deferredShellWidget(
+                room_management.loadLibrary,
+                () => room_management.RoomManagementPage(),
+              ),
+            ),
+            // 방 일정 관리 페이지
+            GoRoute(
+              path: '/host/room-schedule/:roomId',
+              name: 'room-schedule',
+              builder: (context, state) {
+                final roomId = state.pathParameters['roomId'] ?? '';
+                return RoomSchedulePage(roomId: roomId); // 즉시 로딩
+              },
+            ),
+            // 게스트 계약
+            GoRoute(
+              path: '/guest/contracts',
+              name: 'guest-contracts',
+              builder: (context, state) => _deferredShellWidget(
+                guest_contracts.loadLibrary,
+                () => guest_contracts.GuestContractsPage(),
+              ),
+              routes: [
+                GoRoute(
+                  path: ':contractId',
+                  name: 'guest-contract-detail',
+                  builder: (context, state) {
+                    final contractId = _parseIntParameter(
+                      state.pathParameters['contractId'],
+                    );
+                    if (contractId == null) {
+                      return _buildShellInvalidAccessWidget(
+                        context,
+                        message: '잘못된 접근입니다.',
+                        buttonText: '계약 목록으로 돌아가기',
+                        redirectPath: '/guest/contracts',
+                      );
+                    }
+                    return _deferredShellWidget(
+                      guest_contract_detail.loadLibrary,
+                      () => guest_contract_detail.GuestContractDetailPage(
+                        contractId: contractId,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            // 호스트 계약
+            GoRoute(
+              path: '/host/contracts',
+              name: 'host-contracts',
+              builder: (context, state) => _deferredShellWidget(
+                host_contracts.loadLibrary,
+                () => host_contracts.HostContractsPageNew(),
+              ),
+              routes: [
+                GoRoute(
+                  path: ':contractId',
+                  name: 'host-contract-detail',
+                  builder: (context, state) {
+                    final contractId = state.pathParameters['contractId'] ?? '';
+                    return _deferredShellWidget(
+                      host_contract_detail.loadLibrary,
+                      () => host_contract_detail.HostContractDetailPage(
+                        contractId: int.parse(contractId),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            // 채팅 목록
+            GoRoute(
+              path: '/chat-list',
+              name: 'chat-list',
+              builder: (context, state) {
+                final contractIdStr = state.uri.queryParameters['contractId'];
+                final contractId = contractIdStr != null ? int.tryParse(contractIdStr) : null;
+                return _deferredShellWidget(
+                  chat_list.loadLibrary,
+                  () => chat_list.ChatListPage(initialContractId: contractId),
+                );
+              },
+              routes: [
+                GoRoute(
+                  path: ':chatRoomId',
+                  name: 'chat-list-detail',
+                  builder: (context, state) {
+                    final chatRoomId = state.pathParameters['chatRoomId'];
+                    return _deferredShellWidget(
+                      chat_list.loadLibrary,
+                      () => chat_list.ChatListPage(initialChatRoomId: chatRoomId),
+                    );
+                  },
+                ),
+              ],
+            ),
+            // 고객센터
+            GoRoute(
+              path: '/support',
+              name: 'support',
+              builder: (context, state) {
+                final tab = state.uri.queryParameters['tab'];
+                return _deferredShellWidget(
+                  customer_center.loadLibrary,
+                  () => customer_center.CustomerCenterPage(initialTab: tab),
+                );
+              },
+              routes: [
+                GoRoute(
+                  path: 'notices',
+                  name: 'notices',
+                  builder: (context, state) => _deferredShellWidget(
+                    notices.loadLibrary,
+                    () => notices.NoticesPage(),
+                  ),
+                  routes: [
+                    GoRoute(
+                      path: ':noticeId',
+                      name: 'notice-detail',
+                      builder: (context, state) {
+                        final noticeId = _parseIntParameter(
+                          state.pathParameters['noticeId'],
+                        );
+                        if (noticeId == null) {
+                          return _buildShellInvalidAccessWidget(
+                            context,
+                            message: '잘못된 접근입니다.',
+                            buttonText: '공지사항 목록으로 돌아가기',
+                            redirectPath: '/support?tab=notices',
+                          );
+                        }
+                        return _deferredShellWidget(
+                          notice_detail.loadLibrary,
+                          () => notice_detail.NoticeDetailPage(noticeId: noticeId),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                GoRoute(
+                  path: 'faqs',
+                  name: 'faqs',
+                  builder: (context, state) => _deferredShellWidget(
+                    faqs.loadLibrary,
+                    () => faqs.FAQsPage(),
+                  ),
+                ),
+                GoRoute(
+                  path: 'inquiries',
+                  name: 'inquiries',
+                  builder: (context, state) => _deferredShellWidget(
+                    inquiries.loadLibrary,
+                    () => inquiries.InquiriesPage(),
+                  ),
+                  routes: [
+                    GoRoute(
+                      path: 'new',
+                      name: 'inquiry-new',
+                      builder: (context, state) => _deferredShellWidget(
+                        inquiry_form.loadLibrary,
+                        () => inquiry_form.InquiryFormPage(),
+                      ),
+                    ),
+                    GoRoute(
+                      path: ':inquiryId/edit',
+                      name: 'inquiry-edit',
+                      builder: (context, state) {
+                        final inquiryId = _parseIntParameter(
+                          state.pathParameters['inquiryId'],
+                        );
+                        if (inquiryId == null) {
+                          return _buildShellInvalidAccessWidget(
+                            context,
+                            message: '잘못된 접근입니다.',
+                            buttonText: '문의 목록으로 돌아가기',
+                            redirectPath: '/support?tab=inquiries',
+                          );
+                        }
+                        return _deferredShellWidget(
+                          inquiry_form.loadLibrary,
+                          () => inquiry_form.InquiryFormPage(inquiryId: inquiryId),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            // 계약 요청 (ShellRoute: AppGNB 제공)
+            GoRoute(
+              path: '/contract/request/:roomId',
+              name: 'contract-request',
+              builder: (context, state) {
+                final roomId = _parseIntParameter(state.pathParameters['roomId']);
+
+                if (roomId == null) {
+                  return _buildShellInvalidAccessWidget(
+                    context,
+                    message: '잘못된 접근입니다.',
+                    buttonText: '홈으로 돌아가기',
+                    redirectPath: '/guest',
+                  );
+                }
+
+                final extra = state.extra as Map<String, dynamic>?;
+                if (extra == null) {
+                  return _buildShellInvalidAccessWidget(
+                    context,
+                    message: '예약 정보가 필요합니다.',
+                    buttonText: '방 상세로 돌아가기',
+                    redirectPath: '/guest/room/detail/$roomId',
+                  );
+                }
+
+                return _deferredShellWidget(
+                  contract_start.loadLibrary,
+                  () => contract_start.ContractStartPage(
+                    room: extra['room'],
+                    checkInDate: extra['checkInDate'],
+                    checkOutDate: extra['checkOutDate'],
+                    calculatedPricing: extra['calculatedPricing'],
+                    selectedRentalItems: extra['selectedRentalItems'],
+                  ),
+                );
+              },
+            ),
+          ],
         ),
+
+        // ============================================
+        // 독립 라우트: 자체 Scaffold/AppBar를 관리하는 페이지
+        // ============================================
         GoRoute(
           path: '/auth/callback',
           name: 'auth-callback',
@@ -412,11 +785,7 @@ class AppRouter {
             }
           },
         ),
-        GoRoute(
-          path: '/guest',
-          name: 'guest',
-          builder: (context, state) => const GuestHomePage(),
-        ),
+        // 게스트 마이페이지 (모바일: 커스텀 AppBar, 데스크톱: AppGNB)
         GoRoute(
           path: '/guest/my-page',
           name: 'guest-my-page',
@@ -425,36 +794,16 @@ class AppRouter {
             () => guest_my_page.GuestMyPage(),
           ),
         ),
+        // 호스트 마이페이지 (모바일: 커스텀 AppBar, 데스크톱: AppGNB)
         GoRoute(
-          path: '/guest/room/detail/:roomId',
-          name: 'room-detail',
-          builder: (context, state) {
-            final roomId = _parseIntParameter(state.pathParameters['roomId']);
-
-            if (roomId == null) {
-              return _buildInvalidAccessPage(
-                context,
-                message: '잘못된 접근입니다.',
-                buttonText: '지도로 돌아가기',
-                redirectPath: '/map',
-              );
-            }
-
-            return _deferredWidget(
-              room_detail.loadLibrary,
-              () => room_detail.RoomDetailPage(roomId: roomId),
-            );
-          },
-        ),
-        GoRoute(
-          path: '/host',
-          name: 'host',
+          path: '/host/my-page',
+          name: 'host-my-page',
           builder: (context, state) => _deferredWidget(
-            host_home.loadLibrary,
-            () => host_home.HostHomePage(),
+            host_my_page.loadLibrary,
+            () => host_my_page.HostMyPage(),
           ),
         ),
-        // 게스트→호스트 전환 - 계좌 설정 페이지 (Standalone)
+        // 게스트→호스트 전환 - 계좌 설정 페이지
         GoRoute(
           path: '/host/account-setup-standalone',
           name: 'host-account-setup-standalone',
@@ -462,57 +811,6 @@ class AppRouter {
             host_account_setup_standalone.loadLibrary,
             () =>
                 host_account_setup_standalone.HostAccountSetupStandalonePage(),
-          ),
-        ),
-        // 신규 방 등록 (roomId 없음)
-        GoRoute(
-          path: '/host/room-registration',
-          name: 'room-registration',
-          builder: (context, state) {
-            return _deferredWidget(
-              room_registration.loadLibrary,
-              () => room_registration.RoomRegistrationFlowPage(roomId: null),
-            );
-          },
-        ),
-        // 기존 방 수정 (roomId 있음)
-        GoRoute(
-          path: '/host/room-registration/:roomId',
-          name: 'room-registration-edit',
-          builder: (context, state) {
-            final roomId = _parseIntParameter(state.pathParameters['roomId']);
-
-            return _deferredWidget(
-              room_registration.loadLibrary,
-              () => room_registration.RoomRegistrationFlowPage(roomId: roomId),
-            );
-          },
-        ),
-        // 방 관리 페이지
-        GoRoute(
-          path: '/host/room-management',
-          name: 'room-management',
-          builder: (context, state) => _deferredWidget(
-            room_management.loadLibrary,
-            () => room_management.RoomManagementPage(),
-          ),
-        ),
-        // 방 일정 관리 페이지
-        GoRoute(
-          path: '/host/room-schedule/:roomId',
-          name: 'room-schedule',
-          builder: (context, state) {
-            final roomId = state.pathParameters['roomId'] ?? '';
-            return RoomSchedulePage(roomId: roomId); // 즉시 로딩
-          },
-        ),
-        // 호스트 마이페이지
-        GoRoute(
-          path: '/host/my-page',
-          name: 'host-my-page',
-          builder: (context, state) => _deferredWidget(
-            host_my_page.loadLibrary,
-            () => host_my_page.HostMyPage(),
           ),
         ),
         // 호스트 정산 페이지
@@ -538,107 +836,13 @@ class AppRouter {
             );
           },
         ),
+        // 지도 (body에 조건부 AppGNB 배치)
         GoRoute(
           path: '/map',
           name: 'map',
           builder: (context, state) => const MapScreen(),
         ),
-        GoRoute(
-          path: '/contract/request/:roomId',
-          name: 'contract-request',
-          builder: (context, state) {
-            final roomId = _parseIntParameter(state.pathParameters['roomId']);
-
-            if (roomId == null) {
-              return _buildInvalidAccessPage(
-                context,
-                message: '잘못된 접근입니다.',
-                buttonText: '홈으로 돌아가기',
-                redirectPath: '/guest',
-              );
-            }
-
-            final extra = state.extra as Map<String, dynamic>?;
-            if (extra == null) {
-              return _buildInvalidAccessPage(
-                context,
-                message: '예약 정보가 필요합니다.',
-                buttonText: '방 상세로 돌아가기',
-                redirectPath: '/guest/room/detail/$roomId',
-              );
-            }
-
-            return _deferredWidget(
-              contract_start.loadLibrary,
-              () => contract_start.ContractStartPage(
-                room: extra['room'],
-                checkInDate: extra['checkInDate'],
-                checkOutDate: extra['checkOutDate'],
-                calculatedPricing: extra['calculatedPricing'],
-                selectedRentalItems: extra['selectedRentalItems'],
-              ),
-            );
-          },
-        ),
-        GoRoute(
-          path: '/guest/contracts',
-          name: 'guest-contracts',
-          builder: (context, state) => _deferredWidget(
-            guest_contracts.loadLibrary,
-            () => guest_contracts.GuestContractsPage(),
-          ),
-          routes: [
-            GoRoute(
-              path: ':contractId',
-              name: 'guest-contract-detail',
-              builder: (context, state) {
-                final contractId = _parseIntParameter(
-                  state.pathParameters['contractId'],
-                );
-
-                if (contractId == null) {
-                  return _buildInvalidAccessPage(
-                    context,
-                    message: '잘못된 접근입니다.',
-                    buttonText: '계약 목록으로 돌아가기',
-                    redirectPath: '/guest/contracts',
-                  );
-                }
-
-                return _deferredWidget(
-                  guest_contract_detail.loadLibrary,
-                  () => guest_contract_detail.GuestContractDetailPage(
-                    contractId: contractId,
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-        GoRoute(
-          path: '/host/contracts',
-          name: 'host-contracts',
-          builder: (context, state) => _deferredWidget(
-            host_contracts.loadLibrary,
-            () => host_contracts.HostContractsPageNew(),
-          ),
-          routes: [
-            GoRoute(
-              path: ':contractId',
-              name: 'host-contract-detail',
-              builder: (context, state) {
-                final contractId = state.pathParameters['contractId'] ?? '';
-                return _deferredWidget(
-                  host_contract_detail.loadLibrary,
-                  () => host_contract_detail.HostContractDetailPage(
-                    contractId: int.parse(contractId),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-        // 알림 페이지
+        // 알림 페이지 (커스텀 AppBar)
         GoRoute(
           path: '/notifications',
           name: 'notifications',
@@ -647,33 +851,7 @@ class AppRouter {
             () => notification_page.NotificationPage(),
           ),
         ),
-        GoRoute(
-          path: '/chat-list',
-          name: 'chat-list',
-          builder: (context, state) {
-            // query parameter로 contractId 지원
-            final contractIdStr = state.uri.queryParameters['contractId'];
-            final contractId = contractIdStr != null ? int.tryParse(contractIdStr) : null;
-            return _deferredWidget(
-              chat_list.loadLibrary,
-              () => chat_list.ChatListPage(initialContractId: contractId),
-            );
-          },
-          routes: [
-            // 채팅방 선택 시 URL 파라미터 지원
-            GoRoute(
-              path: ':chatRoomId',
-              name: 'chat-list-detail',
-              builder: (context, state) {
-                final chatRoomId = state.pathParameters['chatRoomId'];
-                return _deferredWidget(
-                  chat_list.loadLibrary,
-                  () => chat_list.ChatListPage(initialChatRoomId: chatRoomId),
-                );
-              },
-            ),
-          ],
-        ),
+        // 채팅 상세 (커스텀 AppBar)
         GoRoute(
           path: '/chat-detail',
           name: 'chat-detail',
@@ -826,108 +1004,6 @@ class AppRouter {
           },
         ),
 
-        // 고객센터
-        GoRoute(
-          path: '/support',
-          name: 'support',
-          builder: (context, state) {
-            final tab = state.uri.queryParameters['tab'];
-            return _deferredWidget(
-              customer_center.loadLibrary,
-              () => customer_center.CustomerCenterPage(initialTab: tab),
-            );
-          },
-          routes: [
-            // 공지사항 목록
-            GoRoute(
-              path: 'notices',
-              name: 'notices',
-              builder: (context, state) => _deferredWidget(
-                notices.loadLibrary,
-                () => notices.NoticesPage(),
-              ),
-              routes: [
-                // 공지사항 상세
-                GoRoute(
-                  path: ':noticeId',
-                  name: 'notice-detail',
-                  builder: (context, state) {
-                    final noticeId = _parseIntParameter(
-                      state.pathParameters['noticeId'],
-                    );
-
-                    if (noticeId == null) {
-                      return _buildInvalidAccessPage(
-                        context,
-                        message: '잘못된 접근입니다.',
-                        buttonText: '공지사항 목록으로 돌아가기',
-                        redirectPath: '/support?tab=notices',
-                      );
-                    }
-
-                    return _deferredWidget(
-                      notice_detail.loadLibrary,
-                      () => notice_detail.NoticeDetailPage(noticeId: noticeId),
-                    );
-                  },
-                ),
-              ],
-            ),
-            // 자주 묻는 질문
-            GoRoute(
-              path: 'faqs',
-              name: 'faqs',
-              builder: (context, state) => _deferredWidget(
-                faqs.loadLibrary,
-                () => faqs.FAQsPage(),
-              ),
-            ),
-            // 문의하기 목록
-            GoRoute(
-              path: 'inquiries',
-              name: 'inquiries',
-              builder: (context, state) => _deferredWidget(
-                inquiries.loadLibrary,
-                () => inquiries.InquiriesPage(),
-              ),
-              routes: [
-                // 문의 등록
-                GoRoute(
-                  path: 'new',
-                  name: 'inquiry-new',
-                  builder: (context, state) => _deferredWidget(
-                    inquiry_form.loadLibrary,
-                    () => inquiry_form.InquiryFormPage(),
-                  ),
-                ),
-                // 문의 수정
-                GoRoute(
-                  path: ':inquiryId/edit',
-                  name: 'inquiry-edit',
-                  builder: (context, state) {
-                    final inquiryId = _parseIntParameter(
-                      state.pathParameters['inquiryId'],
-                    );
-
-                    if (inquiryId == null) {
-                      return _buildInvalidAccessPage(
-                        context,
-                        message: '잘못된 접근입니다.',
-                        buttonText: '문의 목록으로 돌아가기',
-                        redirectPath: '/support?tab=inquiries',
-                      );
-                    }
-
-                    return _deferredWidget(
-                      inquiry_form.loadLibrary,
-                      () => inquiry_form.InquiryFormPage(inquiryId: inquiryId),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
       ],
     );
   }

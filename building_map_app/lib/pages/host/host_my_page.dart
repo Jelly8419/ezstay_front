@@ -10,6 +10,7 @@ import '../../services/bank_account_service.dart';
 import '../../services/auth_service.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/app_footer.dart';
 import '../../widgets/common/custom_text_field.dart';
 
 /// 호스트 마이페이지 (내 정보 관리)
@@ -437,37 +438,40 @@ class _HostMyPageState extends State<HostMyPage> {
   // React: <div className="max-w-4xl mx-auto px-4 py-6">
   Widget _buildContent() {
     return SingleChildScrollView(
-      child: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 1024), // max-w-4xl
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg, // px-4
-            vertical: AppSpacing.xl, // py-6
+      child: Column(
+        children: [
+          Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 1024),
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.xl,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPageTitle(),
+
+                  SizedBox(height: AppSpacing.xl),
+
+                  // 프로필 정보 카드
+                  _buildProfileCard(),
+
+                  SizedBox(height: AppSpacing.xl),
+
+                  // 계좌 정보 카드
+                  _buildBankAccountCard(),
+
+                  SizedBox(height: AppSpacing.xl),
+
+                  // 회원 탈퇴 버튼
+                  _buildWithdrawalButton(),
+                ],
+              ),
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 페이지 타이틀
-              // React: <h1 className="font-bold text-2xl mb-6 text-gray-900">내 정보</h1>
-              _buildPageTitle(),
-
-              SizedBox(height: AppSpacing.xl), // mb-6
-
-              // 프로필 정보 카드
-              _buildProfileCard(),
-
-              SizedBox(height: AppSpacing.xl), // mb-6
-
-              // 계좌 정보 카드
-              _buildBankAccountCard(),
-
-              SizedBox(height: AppSpacing.xl),
-
-              // 회원 탈퇴 버튼
-              _buildWithdrawalButton(),
-            ],
-          ),
-        ),
+          const AppFooter(),
+        ],
       ),
     );
   }

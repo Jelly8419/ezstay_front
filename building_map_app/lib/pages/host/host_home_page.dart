@@ -11,7 +11,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/widgets/app_buttons.dart';
 import '../../features/web/web_layout.dart';
-import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/app_footer.dart';
 import '../../config/api_config.dart';
 
 /// 호스트 모드 홈 화면 - 새 디자인 시스템 적용
@@ -122,10 +122,9 @@ class _HostHomePageState extends State<HostHomePage> {
 
   // ==================== 모바일 레이아웃 ====================
   Widget _buildMobileLayout(AuthService authService) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const AppGNB(),
-      body: SingleChildScrollView(
+    return ColoredBox(
+      color: AppColors.background,
+      child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -139,7 +138,7 @@ class _HostHomePageState extends State<HostHomePage> {
                 children: [
                   SizedBox(height: AppSpacing.lg),
 
-                  // 🔥 등록 중인 방 배너 (여러개 표시)
+                  // 등록 중인 방 배너 (여러개 표시)
                   ...[
                     _buildInProgressRoomsSection(),
                     SizedBox(height: AppSpacing.xl),
@@ -151,6 +150,7 @@ class _HostHomePageState extends State<HostHomePage> {
                 ],
               ),
             ),
+            const AppFooter(),
           ],
         ),
       ),
@@ -159,10 +159,9 @@ class _HostHomePageState extends State<HostHomePage> {
 
   // ==================== 태블릿 레이아웃 ====================
   Widget _buildTabletLayout(AuthService authService) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const AppGNB(),
-      body: SingleChildScrollView(
+    return ColoredBox(
+      color: AppColors.background,
+      child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -187,6 +186,7 @@ class _HostHomePageState extends State<HostHomePage> {
                 ],
               ),
             ),
+            const AppFooter(),
           ],
         ),
       ),
@@ -195,10 +195,9 @@ class _HostHomePageState extends State<HostHomePage> {
 
   // ==================== 데스크톱 레이아웃 ====================
   Widget _buildDesktopLayout(AuthService authService) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const AppGNB(),
-      body: Column(
+    return ColoredBox(
+      color: AppColors.background,
+      child: Column(
         children: [
           Expanded(
             child: Stack(
@@ -229,6 +228,7 @@ class _HostHomePageState extends State<HostHomePage> {
                           ),
                         ),
                       ),
+                      const AppFooter(),
                     ],
                   ),
                 ),

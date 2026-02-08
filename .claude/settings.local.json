@@ -69,7 +69,10 @@
       "Skill(sc:analyze:*)",
       "mcp__chrome-devtools__list_pages",
       "Bash(dir /s /b \"c:\\\\study\\\\ezstay_front\\\\building_map_app\\\\lib\\\\pages\")",
-      "Bash(xargs git branch -D)"
+      "Bash(xargs git branch -D)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(git stash pop:*)"
     ],
     "deny": [],
     "ask": []

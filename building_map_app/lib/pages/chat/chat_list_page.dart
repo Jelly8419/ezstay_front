@@ -13,7 +13,6 @@ import '../../services/chat_service.dart';
 import '../../services/firebase_auth_service.dart';
 import '../../widgets/chat/chat_list_item.dart';
 import '../../widgets/chat/chat_window.dart';
-import '../../widgets/common/app_gnb.dart';
 
 /// 채팅 목록 페이지
 /// React ChatListPage.tsx를 Flutter로 완전 복제
@@ -181,9 +180,7 @@ class _ChatListPageState extends State<ChatListPage> {
     final isHostMode = authService.currentUser?.mode == UserMode.host;
 
     // React: h-full flex flex-col lg:flex-row bg-white
-    return Scaffold(
-      appBar: const AppGNB(),
-      body: Container(
+    return Container(
         color: AppColors.neutral0, // bg-white
         child: Row(
           children: [
@@ -228,7 +225,6 @@ class _ChatListPageState extends State<ChatListPage> {
               ),
           ],
         ),
-      ),
     );
   }
 

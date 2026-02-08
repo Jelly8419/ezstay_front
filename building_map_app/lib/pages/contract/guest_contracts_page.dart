@@ -10,10 +10,10 @@ import '../../services/rental_order_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
-import '../../widgets/common/app_gnb.dart';
 import '../../widgets/payment_webview.dart';
 // import '../../widgets/modals/refund_calculation_modal.dart'; // TODO: API로 전체 Contract 가져오기 후 사용
 import '../../widgets/modals/cancel_request_modal.dart';
+import '../../widgets/common/app_footer.dart';
 
 /// 게스트용 계약 목록 페이지 (리액트 UI 기반 재설계)
 class GuestContractsPage extends StatefulWidget {
@@ -906,10 +906,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const AppGNB(),
-      backgroundColor: const Color(0xFFF9FAFB), // gray-50
-      body: Column(
+    return ColoredBox(
+      color: const Color(0xFFF9FAFB), // gray-50
+      child: Column(
         children: [
           // 페이지 타이틀 + 탭 메뉴
           Container(
@@ -1051,31 +1050,38 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
     return RefreshIndicator(
       onRefresh: _loadContracts,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: AppConstants.maxContentWidth,
-          ),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // 안내 메시지 박스
-              _buildInfoBox(),
-              const SizedBox(height: 16),
+      child: ListView(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: AppConstants.maxContentWidth,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // 안내 메시지 박스
+                    _buildInfoBox(),
+                    const SizedBox(height: 16),
 
-              // 계약 카드 목록
-              if (_filteredContracts.isEmpty)
-                _buildEmptyState()
-              else
-                ..._filteredContracts.map(
-                  (contract) => Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _buildContractCard(contract),
-                  ),
+                    // 계약 카드 목록
+                    if (_filteredContracts.isEmpty)
+                      _buildEmptyState()
+                    else
+                      ..._filteredContracts.map(
+                        (contract) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _buildContractCard(contract),
+                        ),
+                      ),
+                  ],
                 ),
-            ],
+              ),
+            ),
           ),
-        ),
+          const AppFooter(),
+        ],
       ),
     );
   }

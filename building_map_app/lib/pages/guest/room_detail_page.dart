@@ -11,7 +11,6 @@ import '../../services/analytics_service.dart';
 import '../../services/refund_policy_service.dart';
 import '../../widgets/simple_kakao_map.dart';
 import '../../widgets/room_detail/booking_bottom_sheet.dart';
-import '../../widgets/common/app_gnb.dart';
 import '../../widgets/common/date_range_picker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -20,6 +19,7 @@ import '../../utils/price_calculator.dart';
 import '../host/room_registration/components/form_section.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/kakao_roadview_web.dart';
+import '../../widgets/common/app_footer.dart';
 
 /// 방 상세 정보 페이지
 class RoomDetailPage extends StatefulWidget {
@@ -246,10 +246,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const AppGNB(),
-      body: _isLoading
+    return ColoredBox(
+      color: AppColors.background,
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
           ? _buildErrorWidget()
@@ -258,16 +257,21 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               children: [
                 // 리액트 UI 스타일: 2컬럼 그리드 레이아웃
                 SingleChildScrollView(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1280),
-                      child: Padding(
-                        padding: EdgeInsets.all(isMobile ? 16 : 32),
-                        child: isMobile
-                            ? _buildMobileLayout()
-                            : _buildDesktopLeftContent(),
+                  child: Column(
+                    children: [
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1280),
+                          child: Padding(
+                            padding: EdgeInsets.all(isMobile ? 16 : 32),
+                            child: isMobile
+                                ? _buildMobileLayout()
+                                : _buildDesktopLeftContent(),
+                          ),
+                        ),
                       ),
-                    ),
+                      const AppFooter(),
+                    ],
                   ),
                 ),
 

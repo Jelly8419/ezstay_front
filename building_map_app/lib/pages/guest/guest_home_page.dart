@@ -9,7 +9,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/widgets/app_buttons.dart';
 import '../../features/web/web_layout.dart';
-import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/app_footer.dart';
 
 /// 게스트 홈 페이지 - 심플하고 모던한 랜딩 페이지
 class GuestHomePage extends StatefulWidget {
@@ -59,10 +59,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
   // ==================== 모바일 레이아웃 ====================
   Widget _buildMobileLayout(AuthService authService) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const AppGNB(),
-      body: SingleChildScrollView(
+    return ColoredBox(
+      color: AppColors.background,
+      child: SingleChildScrollView(
         controller: _scrollController,
         child: Column(
           children: [
@@ -78,13 +77,13 @@ class _GuestHomePageState extends State<GuestHomePage> {
             // 배송 서비스 섹션
             _buildDeliverySection(isMobile: true),
 
-            // 🔥 안전한 이유 섹션
+            // 안전한 이유 섹션
             _buildSafetySection(isMobile: true),
 
             // CTA 섹션
             _buildCTASection(isMobile: true),
 
-            SizedBox(height: AppSpacing.xl),
+            const AppFooter(),
           ],
         ),
       ),
@@ -93,10 +92,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
   // ==================== 태블릿 레이아웃 ====================
   Widget _buildTabletLayout(AuthService authService) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const AppGNB(),
-      body: SingleChildScrollView(
+    return ColoredBox(
+      color: AppColors.background,
+      child: SingleChildScrollView(
         controller: _scrollController,
         child: Column(
           children: [
@@ -112,13 +110,13 @@ class _GuestHomePageState extends State<GuestHomePage> {
             // 배송 서비스 섹션
             _buildDeliverySection(isMobile: false),
 
-            // 🔥 안전한 이유 섹션
+            // 안전한 이유 섹션
             _buildSafetySection(isMobile: false),
 
             // CTA 섹션
             _buildCTASection(isMobile: false),
 
-            SizedBox(height: AppSpacing.xl),
+            const AppFooter(),
           ],
         ),
       ),
@@ -127,10 +125,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
   // ==================== 데스크톱 레이아웃 ====================
   Widget _buildDesktopLayout(AuthService authService) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const AppGNB(),
-      body: Column(
+    return ColoredBox(
+      color: AppColors.background,
+      child: Column(
         children: [
           // 메인 컨텐츠
           Expanded(
@@ -160,10 +157,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                       // CTA 섹션
                       _buildCTASection(isMobile: false),
 
-                      SizedBox(height: AppSpacing.xl * 2),
-
-                      // 푸터
-                      _buildFooter(),
+                      const AppFooter(),
                     ],
                   ),
                 ),
@@ -945,58 +939,6 @@ class _GuestHomePageState extends State<GuestHomePage> {
             textAlign: TextAlign.center,
           ),
         ],
-      ),
-    );
-  }
-
-  // ==================== 푸터 ====================
-  Widget _buildFooter() {
-    return WebFooter(
-      backgroundColor: AppColors.neutral100,
-      children: [
-        // 회사 정보
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('EZStay', style: AppTextStyles.headingMedium),
-            SizedBox(height: AppSpacing.sm),
-            Text('단기임대 숙소의 모든 것', style: AppTextStyles.bodySmallSecondary),
-          ],
-        ),
-
-        // 링크
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('서비스', style: AppTextStyles.labelMedium),
-            SizedBox(height: AppSpacing.sm),
-            _buildFooterLink('숙소 찾기'),
-            _buildFooterLink('호스트 되기'),
-            _buildFooterLink('계약 관리'),
-          ],
-        ),
-
-        // 고객 지원
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('고객 지원', style: AppTextStyles.labelMedium),
-            SizedBox(height: AppSpacing.sm),
-            _buildFooterLink('자주 묻는 질문'),
-            _buildFooterLink('이용약관'),
-            _buildFooterLink('개인정보처리방침'),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFooterLink(String text) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: AppSpacing.xs),
-      child: InkWell(
-        onTap: () {},
-        child: Text(text, style: AppTextStyles.bodySmallSecondary),
       ),
     );
   }

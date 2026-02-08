@@ -7,7 +7,6 @@ import '../../models/user.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/mode_selection_dialog.dart';
 import '../../widgets/common/ezstay_logo.dart';
-import '../../widgets/common/app_gnb.dart';
 
 /// 로그인 페이지 - 미니멀 디자인
 class LoginPage extends StatefulWidget {
@@ -42,10 +41,9 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const AppGNB(),
-      backgroundColor: backgroundWhite,
-      body: Center(
+    return ColoredBox(
+      color: backgroundWhite,
+      child: Center(
         child: SingleChildScrollView(
           child: Container(
             constraints: const BoxConstraints(maxWidth: 400),

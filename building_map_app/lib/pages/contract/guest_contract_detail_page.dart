@@ -13,7 +13,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/payment_webview.dart';
-import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/app_footer.dart';
 
 /// 게스트 계약 상세 페이지 (React UI 기반)
 class GuestContractDetailPage extends StatefulWidget {
@@ -167,18 +167,22 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // React: bg-gray-50
-      backgroundColor: AppColors.gray50,
-      appBar: const AppGNB(),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-          ? _buildErrorView()
-          : _contractDetail != null
-          ? _buildDetailView()
-          : const Center(child: Text('데이터를 불러올 수 없습니다.')),
-      bottomNavigationBar: _buildBottomBar(),
+    return ColoredBox(
+      color: AppColors.gray50,
+      child: Column(
+        children: [
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _errorMessage != null
+                ? _buildErrorView()
+                : _contractDetail != null
+                ? _buildDetailView()
+                : const Center(child: Text('데이터를 불러올 수 없습니다.')),
+          ),
+          _buildBottomBar(),
+        ],
+      ),
     );
   }
 
@@ -209,15 +213,17 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
   /// 상세 정보 뷰 (React: max-w-4xl mx-auto px-4 py-6)
   Widget _buildDetailView() {
     return SingleChildScrollView(
-      child: Center(
-        child: Container(
-          constraints: const BoxConstraints(
-            maxWidth: 896,
-          ), // max-w-4xl = 56rem = 896px
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: Column(
+        children: [
+          Center(
+            child: Container(
+              constraints: const BoxConstraints(
+                maxWidth: 896,
+              ), // max-w-4xl = 56rem = 896px
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               // React: h2 className="font-bold text-xl text-gray-900 mb-6"
               Text(
                 '계약 상세 정보',
@@ -256,6 +262,9 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
             ],
           ),
         ),
+      ),
+          const AppFooter(),
+        ],
       ),
     );
   }

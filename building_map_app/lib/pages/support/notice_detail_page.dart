@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/notice.dart';
 import '../../services/support_service.dart';
-import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/app_footer.dart';
 
 class NoticeDetailPage extends StatefulWidget {
   final int noticeId;
@@ -62,10 +62,9 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.gray50,
-      appBar: const AppGNB(),
-      body: Column(
+    return ColoredBox(
+      color: AppColors.gray50,
+      child: Column(
         children: [
           _buildHeader(),
           Expanded(
@@ -162,12 +161,14 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
 
   Widget _buildContent() {
     return SingleChildScrollView(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 896),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Container(
+      child: Column(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 896),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: AppColors.neutral0,
@@ -280,6 +281,9 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
             ),
           ),
         ),
+          ),
+          const AppFooter(),
+        ],
       ),
     );
   }

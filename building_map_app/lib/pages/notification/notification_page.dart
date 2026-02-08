@@ -7,6 +7,7 @@ import '../../models/user.dart';
 import '../../providers/gnb_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
+import '../../widgets/common/app_footer.dart';
 
 /// 알림 페이지
 /// React: NotificationPage.tsx 1:1 복제
@@ -319,65 +320,64 @@ class _NotificationPageState extends State<NotificationPage> {
     // React: max-w-4xl mx-auto px-4 py-6 pb-24 lg:py-8 lg:pb-8
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
 
-    return Center(
-      child: ConstrainedBox(
-        // React: max-w-4xl = 896px
-        constraints: const BoxConstraints(maxWidth: 896),
-        child: _notifications.isEmpty
-            ? _buildEmptyState(isDesktop)
-            : _buildNotificationList(isDesktop),
-      ),
-    );
+    return _notifications.isEmpty
+        ? _buildEmptyState(isDesktop)
+        : _buildNotificationList(isDesktop);
   }
 
   /// 빈 상태 UI
   /// React: 빈 상태 div 1:1 복제
   Widget _buildEmptyState(bool isDesktop) {
     return SingleChildScrollView(
-      child: Padding(
-        // React: px-4 py-6 pb-24 lg:py-8 lg:pb-8
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: isDesktop ? 32 : 24,
-          bottom: isDesktop ? 32 : 96,
-        ),
-        child: Padding(
-          // React: py-20 = 80px
-          padding: const EdgeInsets.symmetric(vertical: 80),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // React: w-16 h-16 text-gray-300
-              Icon(
-                Icons.notifications_outlined,
-                size: 64,
-                color: AppColors.neutral300,
+      child: Column(
+        children: [
+          Padding(
+            // React: px-4 py-6 pb-24 lg:py-8 lg:pb-8
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: isDesktop ? 32 : 24,
+              bottom: isDesktop ? 32 : 96,
+            ),
+            child: Padding(
+              // React: py-20 = 80px
+              padding: const EdgeInsets.symmetric(vertical: 80),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // React: w-16 h-16 text-gray-300
+                  Icon(
+                    Icons.notifications_outlined,
+                    size: 64,
+                    color: AppColors.neutral300,
+                  ),
+                  // React: mb-4 = 16px
+                  const SizedBox(height: 16),
+                  // React: text-gray-500 text-lg
+                  const Text(
+                    '아직 도착한 알림이 없습니다',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: AppColors.neutral500,
+                    ),
+                  ),
+                  // React: mb-2 = 8px
+                  const SizedBox(height: 8),
+                  // React: text-gray-400 text-sm
+                  const Text(
+                    '계약 요청, 메시지, 결제 등의 알림이 여기에 표시됩니다',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.neutral400,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              // React: mb-4 = 16px
-              const SizedBox(height: 16),
-              // React: text-gray-500 text-lg
-              const Text(
-                '아직 도착한 알림이 없습니다',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: AppColors.neutral500,
-                ),
-              ),
-              // React: mb-2 = 8px
-              const SizedBox(height: 8),
-              // React: text-gray-400 text-sm
-              const Text(
-                '계약 요청, 메시지, 결제 등의 알림이 여기에 표시됩니다',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.neutral400,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+            ),
           ),
-        ),
+          const AppFooter(),
+        ],
       ),
     );
   }
@@ -385,28 +385,36 @@ class _NotificationPageState extends State<NotificationPage> {
   /// 알림 리스트
   /// React: space-y-2 = 8px gap
   Widget _buildNotificationList(bool isDesktop) {
+    // +1 for footer, +1 for loading indicator if loading more
+    final itemCount = _notifications.length + 1 + (_isLoadingMore ? 1 : 0);
+
     return ListView.builder(
       controller: _scrollController,
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: isDesktop ? 32 : 24,
-        bottom: isDesktop ? 32 : 96,
-      ),
-      itemCount: _notifications.length + (_isLoadingMore ? 1 : 0),
+      padding: EdgeInsets.zero,
+      itemCount: itemCount,
       itemBuilder: (context, index) {
-        if (index == _notifications.length) {
-          // 로딩 인디케이터
+        // 로딩 인디케이터 (footer 전에 표시)
+        if (_isLoadingMore && index == _notifications.length) {
           return const Padding(
             padding: EdgeInsets.all(16),
             child: Center(child: CircularProgressIndicator()),
           );
         }
 
+        // Footer (마지막 아이템)
+        if (index == itemCount - 1) {
+          return const AppFooter();
+        }
+
         final notification = _notifications[index];
         return Padding(
-          // React: space-y-2 = 8px gap
-          padding: EdgeInsets.only(bottom: index < _notifications.length - 1 ? 8 : 0),
+          // React: space-y-2 = 8px gap + px-4 py-6 pb-24 lg:py-8 lg:pb-8
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: index == 0 ? (isDesktop ? 32 : 24) : 0,
+            bottom: index < _notifications.length - 1 ? 8 : (isDesktop ? 32 : 96),
+          ),
           child: _buildNotificationCard(notification),
         );
       },

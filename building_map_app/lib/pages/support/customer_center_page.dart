@@ -7,7 +7,7 @@ import '../../models/faq.dart';
 import '../../models/inquiry.dart';
 import '../../services/auth_service.dart';
 import '../../services/support_service.dart';
-import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/app_footer.dart';
 
 class CustomerCenterPage extends StatefulWidget {
   /// 초기 탭: 'notices', 'faqs', 'inquiries'
@@ -197,10 +197,9 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.gray50, // bg-gray-50
-      appBar: const AppGNB(),
-      body: Column(
+    return ColoredBox(
+      color: AppColors.gray50, // bg-gray-50
+      child: Column(
         children: [
           // Header
           _buildHeader(),
@@ -308,14 +307,19 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
 
   Widget _buildContent() {
     return SingleChildScrollView(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1280), // max-w-7xl
-          child: Padding(
-            padding: const EdgeInsets.all(32), // py-8, px-4
-            child: _buildActiveTabContent(),
+      child: Column(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1280),
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: _buildActiveTabContent(),
+              ),
+            ),
           ),
-        ),
+          const AppFooter(),
+        ],
       ),
     );
   }

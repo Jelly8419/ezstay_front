@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/common/app_footer.dart';
 
 /// 계약 요청하기 페이지
 /// PRD: 반드시 상세페이지에서 전달받은 calculatedPricing 값을 그대로 사용하고 재계산 금지
@@ -104,105 +105,98 @@ class _ContractStartPageState extends State<ContractStartPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWideScreen = screenWidth > 1024;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB), // bg-gray-50
-      appBar: AppBar(
-        title: const Text('계약 요청하기'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        // 모바일 환경에서 뒤로가기 버튼 표시
-        leading: !isWideScreen
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios),
-                onPressed: () {
-                  // 방 상세 페이지로 돌아가기
-                  context.go('/guest/room/detail/${widget.room.id}');
-                },
-              )
-            : null,
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          // 컨텐츠 최대 너비 1400px 기준으로 여백 계산
-          const maxContentWidth = 1400.0;
-          final contentWidth = constraints.maxWidth < maxContentWidth
-              ? constraints.maxWidth
-              : maxContentWidth;
-          final horizontalMargin = (constraints.maxWidth - contentWidth) / 2;
+    return ColoredBox(
+      color: const Color(0xFFF9FAFB), // bg-gray-50
+      child: Column(
+        children: [
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // 컨텐츠 최대 너비 1400px 기준으로 여백 계산
+                const maxContentWidth = 1400.0;
+                final contentWidth = constraints.maxWidth < maxContentWidth
+                    ? constraints.maxWidth
+                    : maxContentWidth;
+                final horizontalMargin = (constraints.maxWidth - contentWidth) / 2;
 
-          return Stack(
-            children: [
-              // 전체 영역 스크롤 가능 (좌우 여백 포함)
-              SingleChildScrollView(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1400),
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: 24,
-                        right: isWideScreen ? 424 : 24, // 데스크톱: 오른쪽 카드 공간 확보
-                        top: 24,
-                        bottom: isWideScreen ? 24 : 100,
-                      ),
+                return Stack(
+                  children: [
+                    // 전체 영역 스크롤 가능 (좌우 여백 포함)
+                    SingleChildScrollView(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 날짜 미선택 경고
-                          if (!_hasValidDates) _buildDateWarning(),
+                          Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 1400),
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  left: 24,
+                                  right: isWideScreen ? 424 : 24, // 데스크톱: 오른쪽 카드 공간 확보
+                                  top: 24,
+                                  bottom: isWideScreen ? 24 : 100,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // 날짜 미선택 경고
+                                    if (!_hasValidDates) _buildDateWarning(),
 
-                          // 방 정보 섹션 (이미지 포함)
-                          _buildRoomInfoSection(isWideScreen),
-                          const SizedBox(height: 24),
+                                    // 방 정보 섹션 (이미지 포함)
+                                    _buildRoomInfoSection(isWideScreen),
+                                    const SizedBox(height: 24),
 
-                          // 호스트 정보 섹션 (아바타 포함)
-                          _buildHostInfoSection(),
-                          const SizedBox(height: 24),
+                                    // 호스트 정보 섹션 (아바타 포함)
+                                    _buildHostInfoSection(),
+                                    const SizedBox(height: 24),
 
-                          // 옵션 상품 섹션 (항상 표시, 빈 상태 UI 포함)
-                          _buildRentalItemsSection(),
-                          const SizedBox(height: 24),
+                                    // 옵션 상품 섹션 (항상 표시, 빈 상태 UI 포함)
+                                    _buildRentalItemsSection(),
+                                    const SizedBox(height: 24),
 
-                          // 호스트에게 전할 메시지
-                          _buildHostMessageSection(),
-                          const SizedBox(height: 24),
+                                    // 호스트에게 전할 메시지
+                                    _buildHostMessageSection(),
+                                    const SizedBox(height: 24),
 
-                          // 모바일: 예상 금액 카드 (React와 동일한 위치)
-                          if (!isWideScreen) ...[
-                            _buildMobilePaymentSummaryCard(),
-                            const SizedBox(height: 24),
-                          ],
+                                    // 모바일: 예상 금액 카드 (React와 동일한 위치)
+                                    if (!isWideScreen) ...[
+                                      _buildMobilePaymentSummaryCard(),
+                                      const SizedBox(height: 24),
+                                    ],
 
-                          // 계약 해지 조항 (안내사항 포함)
-                          _buildCancellationPolicyWithNotice(),
+                                    // 계약 해지 조항 (안내사항 포함)
+                                    _buildCancellationPolicyWithNotice(),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const AppFooter(),
                         ],
                       ),
                     ),
-                  ),
-                ),
-              ),
 
-              // 오른쪽: 결제 금액 카드 고정 (데스크톱에서만 표시)
-              if (isWideScreen)
-                Positioned(
-                  top: 0,
-                  right: horizontalMargin, // 화면 중앙 기준으로 위치 계산
-                  bottom: 0,
-                  child: SizedBox(
-                    width: 400,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: _buildPaymentSummaryCard(),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-      // 모바일/태블릿용 하단 고정 버튼 (버튼만, 금액은 위에 표시)
-      bottomNavigationBar: !isWideScreen
-          ? Container(
+                    // 오른쪽: 결제 금액 카드 고정 (데스크톱에서만 표시)
+                    if (isWideScreen)
+                      Positioned(
+                        top: 0,
+                        right: horizontalMargin, // 화면 중앙 기준으로 위치 계산
+                        bottom: 0,
+                        child: SizedBox(
+                          width: 400,
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(24),
+                            child: _buildPaymentSummaryCard(),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+          // 모바일/태블릿용 하단 고정 버튼 (버튼만, 금액은 위에 표시)
+          if (!isWideScreen)
+            Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -215,8 +209,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 ],
               ),
               child: SafeArea(top: false, child: _buildSubmitButton()),
-            )
-          : null,
+            ),
+        ],
+      ),
     );
   }
 

@@ -8,7 +8,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../services/room_service.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
-import '../../../widgets/common/app_gnb.dart';
 import '../../../widgets/common/custom_toast.dart';
 import 'steps/basic_info_step.dart';
 import 'steps/photos_step.dart';
@@ -1074,13 +1073,12 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const AppGNB(),
-      body: Column(
+    return ColoredBox(
+      color: AppColors.background,
+      child: Column(
         children: [
           // 진행 상태 표시 (전체 너비, 컨텐츠는 중앙)
           Container(
