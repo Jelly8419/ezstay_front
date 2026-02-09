@@ -391,6 +391,7 @@ class RentalOrder {
   final String orderType; // INITIAL, ADDITIONAL
   final String status; // PENDING, PAID, CANCELLED, REFUNDED
   final int totalAmount;
+  final String? deliveryStatus; // PENDING, IN_TRANSIT, DELIVERED
   final List<RentalOrderItemDetail> items;
   final DateTime? createdAt;
 
@@ -400,6 +401,7 @@ class RentalOrder {
     required this.orderType,
     required this.status,
     required this.totalAmount,
+    this.deliveryStatus,
     required this.items,
     this.createdAt,
   });
@@ -414,6 +416,7 @@ class RentalOrder {
       orderType: json['orderType'] ?? 'INITIAL',
       status: json['status'] ?? 'PENDING',
       totalAmount: json['totalAmount'] ?? 0,
+      deliveryStatus: json['deliveryStatus'],
       items: (json['items'] as List<dynamic>?)
               ?.map((e) => RentalOrderItemDetail.fromJson(
                     e,
@@ -439,7 +442,7 @@ class RentalOrderItemDetail {
   final int price;
   final int subtotal;
   final String status; // ACTIVE, CANCELLED, REFUNDED
-  final String? deliveryStatus; // PENDING, SHIPPING, DELIVERED
+  final String? deliveryStatus; // (item 레벨 - 현재 미사용, order 레벨에서 관리)
 
   RentalOrderItemDetail({
     required this.id,

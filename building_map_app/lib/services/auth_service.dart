@@ -25,6 +25,12 @@ class AuthService extends ChangeNotifier {
   /// 본인인증이 필요한 상태인지 확인
   bool get needsPhoneVerification => _currentUser != null && !(_currentUser!.phoneVerified);
 
+  /// 계정이 정지 상태인지 확인
+  bool get isAccountSuspended => _currentUser != null && _currentUser!.isSuspended;
+
+  /// 정지 사유
+  String? get suspensionReason => _currentUser?.suspensionReason;
+
   /// 로그인 상태 변경
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -999,6 +1005,8 @@ class AuthService extends ChangeNotifier {
         provider: _currentUser!.provider,
         phoneVerified: _currentUser!.phoneVerified, // 유지
         hasBank: _currentUser!.hasBank, // 유지
+        accountStatus: _currentUser!.accountStatus, // 유지
+        suspensionReason: _currentUser!.suspensionReason, // 유지
       );
       await UserRepository.updateUserMode(newMode);
       notifyListeners();

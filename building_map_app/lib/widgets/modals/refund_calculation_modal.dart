@@ -131,10 +131,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
     if (items.any((item) => item.deliveryStatus == DeliveryStatus.inTransit)) {
       return DeliveryStatus.inTransit;
     }
-    // 하나라도 배송 준비면 전체 배송 준비
-    if (items.any((item) => item.deliveryStatus == DeliveryStatus.preparing)) {
-      return DeliveryStatus.preparing;
-    }
+    // preparing 값은 DB에 없으므로 제거
 
     return DeliveryStatus.pending;
   }
@@ -653,11 +650,6 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
         'text': '배송 전',
         'color': Colors.grey[100]!,
         'textColor': Colors.grey[700]!,
-      },
-      DeliveryStatus.preparing: {
-        'text': '배송 준비',
-        'color': Colors.blue[100]!,
-        'textColor': Colors.blue[700]!,
       },
       DeliveryStatus.inTransit: {
         'text': '배송 중',

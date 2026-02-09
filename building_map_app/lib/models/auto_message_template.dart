@@ -3,8 +3,10 @@
 /// 발송 트리거 타입
 enum TriggerType {
   contractConfirmed('contract_confirmed', '계약 확정(결제 완료) 즉시'),
+  paymentCompleted('payment_completed', '결제 완료 즉시'),
   checkin('checkin', '입주일 기준'),
-  checkout('checkout', '퇴실일 기준');
+  checkout('checkout', '퇴실일 기준'),
+  checkoutConfirmed('checkout_confirmed', '퇴실 확인 완료 즉시');
 
   final String value;
   final String displayName;
@@ -62,6 +64,12 @@ class MessageTrigger {
   String get displayText {
     if (type == TriggerType.contractConfirmed) {
       return '계약 확정(결제 완료) 즉시';
+    }
+    if (type == TriggerType.paymentCompleted) {
+      return '결제 완료 즉시';
+    }
+    if (type == TriggerType.checkoutConfirmed) {
+      return '퇴실 확인 완료 즉시';
     }
 
     final baseText = type == TriggerType.checkin ? '입주일' : '퇴실일';

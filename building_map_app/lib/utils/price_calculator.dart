@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../constants/fee_constants.dart';
 import '../models/room.dart';
 import '../models/booking_state.dart';
 
@@ -133,7 +134,7 @@ class PriceCalculator {
     final feeBase = isEzCleaningService
         ? baseRent + maintenanceFee - totalDiscount  // EZ청소 사용시 청소비 제외
         : baseRent + maintenanceFee + cleaningFee - totalDiscount;
-    final contractFee = (feeBase * 0.099).floor();
+    final contractFee = FeeConstants.calculateGuestFee(feeBase);
 
     return PriceBreakdown(
       baseRent: baseRent,

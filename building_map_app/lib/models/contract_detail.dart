@@ -57,6 +57,20 @@ class ContractDetail {
   /// 게스트 표시명 (닉네임 우선, 없으면 이름)
   String get guestDisplayName => (guestNickname?.isNotEmpty == true) ? guestNickname! : guestName;
 
+  // 시간 정보 (계약 생명주기)
+  final String? requestedAt;
+  final String? approvedAt;
+  final String createdAt;
+
+  // 퇴실 확인 정보
+  final String? guestCheckoutConfirmedAt;
+  final String? hostCheckoutConfirmedAt;
+  final String? depositStatus;
+
+  // 채팅 읽기 전용 정보
+  final bool isReadOnly;
+  final String? readOnlyReason;
+
   // 기타
   final bool isEzCleaning;
 
@@ -94,6 +108,14 @@ class ContractDetail {
     this.guestNickname,
     required this.guestPhone,
     this.guestMessage,
+    this.requestedAt,
+    this.approvedAt,
+    required this.createdAt,
+    this.guestCheckoutConfirmedAt,
+    this.hostCheckoutConfirmedAt,
+    this.depositStatus,
+    this.isReadOnly = false,
+    this.readOnlyReason,
     required this.isEzCleaning,
   });
 
@@ -216,6 +238,21 @@ class ContractDetail {
       guestNickname: guest?['nickname'] as String?,
       guestPhone: parseStringField(guest?['phoneNumber'], ''),
       guestMessage: json['guestMessage'] as String?,
+      // 시간 정보
+      requestedAt: json['requestedAt'] != null ? parseDateField(json['requestedAt']) : null,
+      approvedAt: json['approvedAt'] != null ? parseDateField(json['approvedAt']) : null,
+      createdAt: parseDateField(json['createdAt'] ?? json['requestedAt'] ?? ''),
+      // 퇴실 확인 정보
+      guestCheckoutConfirmedAt: json['guestCheckoutConfirmedAt'] != null
+          ? parseDateField(json['guestCheckoutConfirmedAt'])
+          : null,
+      hostCheckoutConfirmedAt: json['hostCheckoutConfirmedAt'] != null
+          ? parseDateField(json['hostCheckoutConfirmedAt'])
+          : null,
+      depositStatus: json['depositStatus'] as String?,
+      // 채팅 읽기 전용
+      isReadOnly: json['isReadOnly'] as bool? ?? false,
+      readOnlyReason: json['readOnlyReason'] as String?,
       // 기타
       isEzCleaning: json['isEzCleaning'] as bool? ?? false,
     );
@@ -255,6 +292,14 @@ class ContractDetail {
       if (guestNickname != null) 'guestNickname': guestNickname,
       'guestPhone': guestPhone,
       if (guestMessage != null) 'guestMessage': guestMessage,
+      if (requestedAt != null) 'requestedAt': requestedAt,
+      if (approvedAt != null) 'approvedAt': approvedAt,
+      'createdAt': createdAt,
+      if (guestCheckoutConfirmedAt != null) 'guestCheckoutConfirmedAt': guestCheckoutConfirmedAt,
+      if (hostCheckoutConfirmedAt != null) 'hostCheckoutConfirmedAt': hostCheckoutConfirmedAt,
+      if (depositStatus != null) 'depositStatus': depositStatus,
+      'isReadOnly': isReadOnly,
+      if (readOnlyReason != null) 'readOnlyReason': readOnlyReason,
       'isEzCleaning': isEzCleaning,
     };
   }

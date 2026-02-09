@@ -14,6 +14,8 @@ import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/payment_webview.dart';
 import '../../widgets/common/app_footer.dart';
+import '../../widgets/contract/contract_status_banner.dart';
+import '../../widgets/contract/checkout_confirmation_widget.dart';
 
 /// 게스트 계약 상세 페이지 (React UI 기반)
 class GuestContractDetailPage extends StatefulWidget {
@@ -123,11 +125,21 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
               rentalItems: enrichedRentalItems, // 완전한 정보로 교체
               paymentHistory: detail.paymentHistory,
               hostName: detail.hostName,
+              hostNickname: detail.hostNickname,
               hostProfileImage: detail.hostProfileImage,
               hostPhoneNumber: detail.hostPhoneNumber,
               guestName: detail.guestName,
+              guestNickname: detail.guestNickname,
               guestPhone: detail.guestPhone,
               guestMessage: detail.guestMessage,
+              requestedAt: detail.requestedAt,
+              approvedAt: detail.approvedAt,
+              createdAt: detail.createdAt,
+              guestCheckoutConfirmedAt: detail.guestCheckoutConfirmedAt,
+              hostCheckoutConfirmedAt: detail.hostCheckoutConfirmedAt,
+              depositStatus: detail.depositStatus,
+              isReadOnly: detail.isReadOnly,
+              readOnlyReason: detail.readOnlyReason,
               isEzCleaning: detail.isEzCleaning,
             );
 
@@ -210,6 +222,42 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     );
   }
 
+  /// 퇴실 확인 위젯 표시 여부 (IN_PROGRESS + 퇴실일 도래)
+  bool _shouldShowCheckoutConfirmation() {
+    final contract = _contractDetail;
+    if (contract == null) return false;
+    if (contract.status != 'IN_PROGRESS') return false;
+    final checkOutDate = DateTime.tryParse(contract.checkOutDate);
+    if (checkOutDate == null) return false;
+    return DateTime.now().isAfter(checkOutDate) ||
+        DateTime.now().day == checkOutDate.day &&
+            DateTime.now().month == checkOutDate.month &&
+            DateTime.now().year == checkOutDate.year;
+  }
+
+  /// 게스트 퇴실 확인 처리
+  Future<void> _handleGuestCheckoutConfirm() async {
+    try {
+      await _contractService.confirmGuestCheckout(widget.contractId);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('퇴실 확인이 완료되었습니다.')));
+        _loadContractDetail(); // 상태 갱신
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '퇴실 확인 실패: ${e.toString().replaceAll('Exception: ', '')}',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   /// 상세 정보 뷰 (React: max-w-4xl mx-auto px-4 py-6)
   Widget _buildDetailView() {
     return SingleChildScrollView(
@@ -224,45 +272,62 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-              // React: h2 className="font-bold text-xl text-gray-900 mb-6"
-              Text(
-                '계약 상세 정보',
-                style: AppTextStyles.headingLarge.copyWith(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.gray900, // text-gray-900
-                ),
+                  // React: h2 className="font-bold text-xl text-gray-900 mb-6"
+                  Text(
+                    '계약 상세 정보',
+                    style: AppTextStyles.headingLarge.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.gray900, // text-gray-900
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 계약 상태 배너
+                  ContractStatusBanner(
+                    contract: _contractDetail!,
+                    isHost: false,
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildBasicInfoSection(),
+                  const SizedBox(height: 24),
+
+                  _buildPartyInfoSection(),
+                  const SizedBox(height: 24),
+
+                  _buildRentalAmountSection(),
+
+                  // 옵션 상품 섹션 (React: 항상 표시, 없으면 "선택한 옵션이 없습니다")
+                  const SizedBox(height: 24),
+                  _buildOptionProductsSection(),
+
+                  // 퇴실 확인 위젯 (IN_PROGRESS + 퇴실일 도래 시)
+                  if (_shouldShowCheckoutConfirmation()) ...[
+                    const SizedBox(height: 24),
+                    CheckoutConfirmationWidget(
+                      contract: _contractDetail!,
+                      isHost: false,
+                      onGuestConfirm: _handleGuestCheckoutConfirm,
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+                  _buildCancellationPolicySection(),
+
+                  const SizedBox(height: 24),
+                  _buildNoticeSection(),
+
+                  if (_contractDetail!.paymentHistory.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildPaymentHistorySection(),
+                  ],
+
+                  const SizedBox(height: 40),
+                ],
               ),
-              const SizedBox(height: 24),
-
-              _buildBasicInfoSection(),
-              const SizedBox(height: 24),
-
-              _buildPartyInfoSection(),
-              const SizedBox(height: 24),
-
-              _buildRentalAmountSection(),
-
-              // 옵션 상품 섹션 (React: 항상 표시, 없으면 "선택한 옵션이 없습니다")
-              const SizedBox(height: 24),
-              _buildOptionProductsSection(),
-
-              const SizedBox(height: 24),
-              _buildCancellationPolicySection(),
-
-              const SizedBox(height: 24),
-              _buildNoticeSection(),
-
-              if (_contractDetail!.paymentHistory.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                _buildPaymentHistorySection(),
-              ],
-
-              const SizedBox(height: 40),
-            ],
+            ),
           ),
-        ),
-      ),
           const AppFooter(),
         ],
       ),
@@ -409,12 +474,28 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
                           ),
                         ),
                         Expanded(
-                          child: Text(
-                            _getAddressDisplay(contract),
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              fontSize: 16,
-                              color: AppColors.gray900, // text-gray-900
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _getAddressDisplay(contract),
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  fontSize: 16,
+                                  color: AppColors.gray900, // text-gray-900
+                                ),
+                              ),
+                              if (_shouldShowAddressNotice(contract))
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    '결제 완료 후 상세주소가 공개됩니다',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      fontSize: 12,
+                                      color: AppColors.gray600,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],
@@ -470,7 +551,8 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontSize: 16,
                               color: AppColors.gray900,
-                              fontWeight: FontWeight.normal, // React: font-normal
+                              fontWeight:
+                                  FontWeight.normal, // React: font-normal
                             ),
                           ),
                         ),
@@ -774,11 +856,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
           ),
 
           // React: 보증금 (퇴실 후 반환 예정) - 괄호 안에 작은 글씨
-          _buildAmountRowWithSubtext(
-            '보증금',
-            '(퇴실 후 반환 예정)',
-            contract.deposit,
-          ),
+          _buildAmountRowWithSubtext('보증금', '(퇴실 후 반환 예정)', contract.deposit),
 
           Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
@@ -796,11 +874,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
   }
 
   /// 금액 행 (React: text-sm = 14px, text-gray-700)
-  Widget _buildAmountRow(
-    String label,
-    int amount, {
-    bool isTotal = false,
-  }) {
+  Widget _buildAmountRow(String label, int amount, {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -809,7 +883,9 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
           Text(
             label,
             style: TextStyle(
-              fontSize: isTotal ? 16 : 14, // React: text-sm = 14px, total은 text-[16px]
+              fontSize: isTotal
+                  ? 16
+                  : 14, // React: text-sm = 14px, total은 text-[16px]
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
               color: isTotal
                   ? const Color(0xFF111827) // text-gray-900
@@ -819,7 +895,9 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
           Text(
             '${_formatCurrency(amount)}원',
             style: TextStyle(
-              fontSize: isTotal ? 16 : 14, // React: text-sm, total은 text-lg text-[16px]
+              fontSize: isTotal
+                  ? 16
+                  : 14, // React: text-sm, total은 text-lg text-[16px]
               fontWeight: FontWeight.bold, // font-bold
               color: const Color(0xFF111827), // text-gray-900
             ),
@@ -854,7 +932,10 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
               if (showEzBadge) ...[
                 const SizedBox(width: 6), // gap-1.5
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2563EB), // bg-blue-600
                     borderRadius: BorderRadius.circular(4), // rounded
@@ -885,11 +966,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
   }
 
   /// 금액 행 (부제목 포함) - React: 보증금 (퇴실 후 반환 예정)
-  Widget _buildAmountRowWithSubtext(
-    String label,
-    String subtext,
-    int amount,
-  ) {
+  Widget _buildAmountRowWithSubtext(String label, String subtext, int amount) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -960,7 +1037,6 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
                 color: Color(0xFF374151), // text-gray-700
               ),
               const SizedBox(width: 8), // gap-2
-
               // 제목
               const Text(
                 '옵션 상품 (EZstay에서 제공)',
@@ -980,7 +1056,6 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
           ),
 
           const SizedBox(height: 16), // mb-4
-
           // 옵션 상품이 없으면 "선택한 옵션이 없습니다" 표시
           if (contract.rentalItems.isEmpty)
             const Center(
@@ -1050,7 +1125,9 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     // hasShipping: 배송 중인 아이템이 하나라도 있는지
     final hasShipping = items.any((item) => item.deliveryStatus == 'SHIPPING');
     // allDelivered: 모든 아이템이 배송 완료인지
-    final allDelivered = items.every((item) => item.deliveryStatus == 'DELIVERED');
+    final allDelivered = items.every(
+      (item) => item.deliveryStatus == 'DELIVERED',
+    );
 
     final String status;
     if (hasShipping) {
@@ -1081,7 +1158,10 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     }[status]!;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // px-2 py-0.5
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 2,
+      ), // px-2 py-0.5
       decoration: BoxDecoration(
         color: config['bgColor'],
         borderRadius: BorderRadius.circular(4), // rounded
@@ -1128,7 +1208,6 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
                 ),
 
                 const SizedBox(height: 4), // mb-1
-
                 // 설명 (text-sm text-gray-600)
                 if (item.description != null && item.description!.isNotEmpty)
                   Text(
@@ -1140,7 +1219,6 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
                   ),
 
                 const SizedBox(height: 4), // mt-1
-
                 // 수량 (text-sm text-gray-600 mt-1)
                 Text(
                   '수량: ${item.quantity}개',
@@ -1247,11 +1325,14 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
         children: [
           // React: text-xs text-yellow-800 space-y-1 leading-relaxed
           _buildNoticeBulletText(
-              '옵션 상품(침구류, 어메니티 키트, 헤어드라이기 등)은 호스트 계약 정보에 표시되지 않습니다.'),
+            '옵션 상품(침구류, 어메니티 키트, 헤어드라이기 등)은 호스트 계약 정보에 표시되지 않습니다.',
+          ),
           _buildNoticeBulletText(
-              '옵션 상품, 계약 변경사항에 대한 문의는 EZStay 고객센터로 연락 바랍니다.'),
+            '옵션 상품, 계약 변경사항에 대한 문의는 EZStay 고객센터로 연락 바랍니다.',
+          ),
           _buildNoticeBulletText(
-              '입주일 기준 7일 이내 계약 변경은 불가하며, 이후 변경 시 추가 수수료가 발생할 수 있습니다.'),
+            '입주일 기준 7일 이내 계약 변경은 불가하며, 이후 변경 시 추가 수수료가 발생할 수 있습니다.',
+          ),
         ],
       ),
     );
@@ -1517,16 +1598,23 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     return '${ApiConfig.baseUrl}$imageUrl';
   }
 
-  /// 주소 표시 로직 (React와 일치)
+  /// 주소 표시 로직 (정책: 결제 완료 후에만 상세주소 공개)
+  ///
+  /// - PENDING_APPROVAL, APPROVED: 기본주소 + 층만 표시
+  /// - PAYMENT_COMPLETED, IN_PROGRESS, COMPLETED: 상세주소 포함
   String _getAddressDisplay(ContractDetail contract) {
-    // React: PENDING_APPROVAL 또는 APPROVED 상태에서는 floor 표시
-    if (contract.status == 'PENDING_APPROVAL' ||
-        contract.status == 'APPROVED') {
-      return '${contract.address} ${contract.floor}';
-    } else {
-      // 그 외 상태에서는 detailAddress 표시
+    const paidStatuses = ['PAYMENT_COMPLETED', 'IN_PROGRESS', 'COMPLETED'];
+    if (paidStatuses.contains(contract.status)) {
       return '${contract.address} ${contract.detailAddress}';
     }
+    // 결제 전 상태 — 상세주소 비공개
+    return '${contract.address} ${contract.floor}';
+  }
+
+  /// 상세주소 비공개 안내 메시지 표시 여부
+  bool _shouldShowAddressNotice(ContractDetail contract) {
+    return contract.status == 'PENDING_APPROVAL' ||
+        contract.status == 'APPROVED';
   }
 
   /// 호스트 전화번호 표시 여부 (React와 일치)
@@ -1708,7 +1796,9 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
       }
 
       // 1. 백엔드에서 결제 정보 조회
-      final paymentInfo = await _paymentService.getPaymentInfo(widget.contractId);
+      final paymentInfo = await _paymentService.getPaymentInfo(
+        widget.contractId,
+      );
 
       // 2. 토스 결제창 URL 생성
       final paymentUrl = _buildTossPaymentUrl(
@@ -1825,7 +1915,8 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
         );
       } else {
         // 결제 실패 또는 취소
-        final errorMessage = result?['errorMessage'] as String? ?? '결제가 취소되었습니다.';
+        final errorMessage =
+            result?['errorMessage'] as String? ?? '결제가 취소되었습니다.';
         _showErrorDialog(errorMessage);
       }
     } catch (e) {
@@ -1838,7 +1929,9 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
   /// Mock 결제 처리
   Future<void> _processPaymentWithMock() async {
     try {
-      final paymentInfo = await _paymentService.getPaymentInfo(widget.contractId);
+      final paymentInfo = await _paymentService.getPaymentInfo(
+        widget.contractId,
+      );
 
       // Mock 결제 승인
       await _paymentService.confirmPaymentMock(
@@ -1885,9 +1978,13 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
       if (customerName != null) 'customerName': customerName,
     };
 
-    final queryString = params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+    final queryString = params.entries
+        .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+        .join('&');
 
-    debugPrint('🔗 [TossPayment] URL 생성: https://pay.toss.im/web/v2?$queryString');
+    debugPrint(
+      '🔗 [TossPayment] URL 생성: https://pay.toss.im/web/v2?$queryString',
+    );
 
     // 토스 결제창 URL (웹용 결제 위젯 v2)
     return 'https://pay.toss.im/web/v2?$queryString';

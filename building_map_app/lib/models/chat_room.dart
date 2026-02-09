@@ -46,6 +46,8 @@ class ChatRoom {
   final User? guest;
   final String? lastMessage;
   final int? unreadCount;
+  final bool isReadOnly;
+  final String? readOnlyReason;
 
   ChatRoom({
     required this.id,
@@ -64,6 +66,8 @@ class ChatRoom {
     this.guest,
     this.lastMessage,
     this.unreadCount,
+    this.isReadOnly = false,
+    this.readOnlyReason,
   });
 
   factory ChatRoom.fromJson(Map<String, dynamic> json) {
@@ -92,6 +96,8 @@ class ChatRoom {
           ? json['lastMessage']
           : (json['lastMessage'] is Map ? json['lastMessage']['text'] : null),
       unreadCount: json['unreadCount'],
+      isReadOnly: json['isReadOnly'] ?? false,
+      readOnlyReason: json['readOnlyReason'],
     );
   }
 

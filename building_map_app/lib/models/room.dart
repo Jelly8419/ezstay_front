@@ -77,6 +77,36 @@ class Room {
   String get hostDisplayName =>
       (hostNickname?.isNotEmpty == true) ? hostNickname! : (hostName ?? '호스트');
 
+  /// 승인된 방인지 확인
+  bool get isApproved => status == 'approved';
+
+  /// 심사 중인 방인지 확인
+  bool get isPendingReview => status == 'pending_review';
+
+  /// 승인된 방에서 수정 가능한 필드 그룹인지 확인
+  ///
+  /// 정책: approved 상태에서는 가격/할인/소개/하우스룰만 수정 가능
+  /// 주소, 구조, 편의시설 등 핵심 정보 변경 시 재심사 필요
+  bool canEditFieldGroup(String fieldGroup) {
+    // draft/rejected 상태에서는 모든 필드 수정 가능
+    if (status == 'draft' || status == 'rejected') return true;
+
+    // approved/pending_review 상태에서는 제한된 필드만 수정 가능
+    const editableGroups = {
+      'pricing',       // 일 임대료, 관리비, 청소비, 보증금
+      'discount',      // 장기계약/빠른입주 할인
+      'description',   // 방 소개, 교통정보
+      'houseRules',    // 하우스 룰
+      'checkInOut',    // 체크인/체크아웃 시간
+      'photos',        // 사진 추가/삭제
+      'ezService',     // EZ서비스 설정
+    };
+    return editableGroups.contains(fieldGroup);
+  }
+
+  /// 수정 시 재심사가 필요한지 확인
+  bool get needsReReviewOnEdit => isApproved;
+
   const Room({
     required this.id,
     required this.roomName,

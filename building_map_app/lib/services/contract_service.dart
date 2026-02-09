@@ -653,6 +653,116 @@ class ContractService {
     }
   }
 
+  /// 게스트 퇴실 확인
+  Future<Map<String, dynamic>> confirmGuestCheckout(int contractId) async {
+    try {
+      var token = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (token == null && !ApiConfig.isProduction) {
+        token = await TokenService.getAccessToken(skipExpiryCheck: true);
+      }
+
+      if (token == null) {
+        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      final url = Uri.parse(
+        '${ApiConfig.baseUrl}/api/contracts/$contractId/checkout/guest',
+      );
+
+      final response = await http
+          .patch(
+            url,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(Duration(seconds: ApiConfig.timeoutSeconds));
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(utf8.decode(response.bodyBytes));
+        if (!ApiConfig.isProduction) {
+          debugPrint('✅ [CHECKOUT] 게스트 퇴실 확인 성공: $contractId');
+        }
+        return responseData['data'] ?? responseData;
+      } else if (response.statusCode == 400) {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '퇴실 확인을 할 수 없습니다.');
+      } else if (response.statusCode == 401) {
+        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+      } else if (response.statusCode == 403) {
+        throw Exception('퇴실 확인 권한이 없습니다.');
+      } else {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '퇴실 확인에 실패했습니다.');
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버와 통신할 수 없습니다.');
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception('요청 시간이 초과되었습니다.');
+      }
+      rethrow;
+    }
+  }
+
+  /// 호스트 퇴실 확인
+  Future<Map<String, dynamic>> confirmHostCheckout(int contractId) async {
+    try {
+      var token = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (token == null && !ApiConfig.isProduction) {
+        token = await TokenService.getAccessToken(skipExpiryCheck: true);
+      }
+
+      if (token == null) {
+        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      final url = Uri.parse(
+        '${ApiConfig.baseUrl}/api/contracts/$contractId/checkout/host',
+      );
+
+      final response = await http
+          .patch(
+            url,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(Duration(seconds: ApiConfig.timeoutSeconds));
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(utf8.decode(response.bodyBytes));
+        if (!ApiConfig.isProduction) {
+          debugPrint('✅ [CHECKOUT] 호스트 퇴실 확인 성공: $contractId');
+        }
+        return responseData['data'] ?? responseData;
+      } else if (response.statusCode == 400) {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '퇴실 확인을 할 수 없습니다.');
+      } else if (response.statusCode == 401) {
+        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+      } else if (response.statusCode == 403) {
+        throw Exception('퇴실 확인 권한이 없습니다.');
+      } else {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '퇴실 확인에 실패했습니다.');
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버와 통신할 수 없습니다.');
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception('요청 시간이 초과되었습니다.');
+      }
+      rethrow;
+    }
+  }
+
   /// 계약 상태 필터 옵션 (게스트용)
   static List<ContractStatusFilter> getGuestStatusFilters() {
     return [
@@ -846,6 +956,196 @@ class ContractService {
       } else {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '계약 상세를 불러오는데 실패했습니다.');
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버와 통신할 수 없습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception('요청 시간이 초과되었습니다.');
+      }
+      rethrow;
+    }
+  }
+
+  /// 게스트 퇴실 완료
+  Future<Map<String, dynamic>> guestCheckout(int contractId) async {
+    try {
+      var token = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (token == null && !ApiConfig.isProduction) {
+        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        token = await TokenService.getAccessToken(skipExpiryCheck: true);
+      }
+
+      if (token == null) {
+        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      final url = Uri.parse(
+        '${ApiConfig.baseUrl}/api/contracts/$contractId/guest-checkout',
+      );
+
+      final response = await http
+          .patch(
+            url,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(
+            Duration(seconds: ApiConfig.timeoutSeconds),
+            onTimeout: () {
+              throw Exception('요청 시간이 초과되었습니다.');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(utf8.decode(response.bodyBytes));
+        return responseData['data'] ?? responseData;
+      } else if (response.statusCode == 400) {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '퇴실 처리를 할 수 없습니다.');
+      } else if (response.statusCode == 401) {
+        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+      } else if (response.statusCode == 403) {
+        throw Exception('퇴실 처리 권한이 없습니다.');
+      } else if (response.statusCode == 404) {
+        throw Exception('계약을 찾을 수 없습니다.');
+      } else {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '퇴실 처리에 실패했습니다.');
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버와 통신할 수 없습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception('요청 시간이 초과되었습니다.');
+      }
+      rethrow;
+    }
+  }
+
+  /// 호스트 퇴실 확인
+  Future<Map<String, dynamic>> hostCheckoutConfirm(int contractId) async {
+    try {
+      var token = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (token == null && !ApiConfig.isProduction) {
+        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        token = await TokenService.getAccessToken(skipExpiryCheck: true);
+      }
+
+      if (token == null) {
+        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      final url = Uri.parse(
+        '${ApiConfig.baseUrl}/api/contracts/$contractId/host-checkout-confirm',
+      );
+
+      final response = await http
+          .patch(
+            url,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(
+            Duration(seconds: ApiConfig.timeoutSeconds),
+            onTimeout: () {
+              throw Exception('요청 시간이 초과되었습니다.');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(utf8.decode(response.bodyBytes));
+        return responseData['data'] ?? responseData;
+      } else if (response.statusCode == 400) {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '퇴실 확인을 할 수 없습니다.');
+      } else if (response.statusCode == 401) {
+        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+      } else if (response.statusCode == 403) {
+        throw Exception('퇴실 확인 권한이 없습니다.');
+      } else if (response.statusCode == 404) {
+        throw Exception('계약을 찾을 수 없습니다.');
+      } else {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '퇴실 확인에 실패했습니다.');
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버와 통신할 수 없습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception('요청 시간이 초과되었습니다.');
+      }
+      rethrow;
+    }
+  }
+
+  /// 호스트 퇴실 확인 보류
+  Future<Map<String, dynamic>> hostCheckoutPending(
+    int contractId,
+    String reason,
+  ) async {
+    try {
+      var token = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (token == null && !ApiConfig.isProduction) {
+        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        token = await TokenService.getAccessToken(skipExpiryCheck: true);
+      }
+
+      if (token == null) {
+        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      final url = Uri.parse(
+        '${ApiConfig.baseUrl}/api/contracts/$contractId/host-checkout-pending',
+      );
+
+      final response = await http
+          .patch(
+            url,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({'reason': reason}),
+          )
+          .timeout(
+            Duration(seconds: ApiConfig.timeoutSeconds),
+            onTimeout: () {
+              throw Exception('요청 시간이 초과되었습니다.');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(utf8.decode(response.bodyBytes));
+        return responseData['data'] ?? responseData;
+      } else if (response.statusCode == 400) {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '퇴실 보류 처리를 할 수 없습니다.');
+      } else if (response.statusCode == 401) {
+        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+      } else if (response.statusCode == 403) {
+        throw Exception('퇴실 보류 권한이 없습니다.');
+      } else if (response.statusCode == 404) {
+        throw Exception('계약을 찾을 수 없습니다.');
+      } else {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '퇴실 보류 처리에 실패했습니다.');
       }
     } on SocketException {
       throw Exception('네트워크 연결을 확인해주세요.');

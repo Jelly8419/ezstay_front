@@ -22,6 +22,11 @@ enum NotificationType {
   additionalOptionPayment,
   checkinConfirmed,
   checkoutRequest,
+  // 정산/보증금 알림
+  settlementCompleted,
+  depositReturned,
+  // 입주 리마인더 (D-1)
+  checkinReminder,
 }
 
 /// 딥링크 타입
@@ -172,6 +177,13 @@ class NotificationItem {
         return NotificationType.checkinConfirmed;
       case 'CHECKOUT_REQUEST':
         return NotificationType.checkoutRequest;
+      // 정산/보증금/리마인더
+      case 'SETTLEMENT_COMPLETED':
+        return NotificationType.settlementCompleted;
+      case 'DEPOSIT_RETURNED':
+        return NotificationType.depositReturned;
+      case 'CHECKIN_REMINDER':
+        return NotificationType.checkinReminder;
       default:
         return NotificationType.notice;
     }
@@ -219,6 +231,13 @@ class NotificationItem {
         return 'CHECKIN_CONFIRMED';
       case NotificationType.checkoutRequest:
         return 'CHECKOUT_REQUEST';
+      // 정산/보증금/리마인더
+      case NotificationType.settlementCompleted:
+        return 'SETTLEMENT_COMPLETED';
+      case NotificationType.depositReturned:
+        return 'DEPOSIT_RETURNED';
+      case NotificationType.checkinReminder:
+        return 'CHECKIN_REMINDER';
     }
   }
 

@@ -4,9 +4,12 @@ import '../../models/contract_detail.dart';
 import '../../services/contract_service.dart';
 import '../../config/api_config.dart';
 import '../../constants/app_constants.dart';
+import '../../constants/fee_constants.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/responsive_page_layout.dart';
 import '../../widgets/common/app_footer.dart';
+import '../../widgets/contract/contract_status_banner.dart';
+import '../../widgets/contract/checkout_confirmation_widget.dart';
 
 /// 카드 그림자 (기본)
 const List<BoxShadow> _cardShadow = [
@@ -82,7 +85,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         : _contract!.rentalFee +
             _contract!.maintenanceFee +
             _contract!.cleaningFee;
-    return (baseAmount * 0.033).floor();
+    return FeeConstants.calculateHostFee(baseAmount);
   }
 
   /// 실 정산 금액 계산
@@ -94,6 +97,39 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
             _contract!.maintenanceFee +
             _contract!.cleaningFee;
     return baseAmount - _getHostCommissionFee();
+  }
+
+  /// 퇴실 확인 위젯 표시 여부 (IN_PROGRESS + 퇴실일 도래)
+  bool _shouldShowCheckoutConfirmation() {
+    final contract = _contract;
+    if (contract == null) return false;
+    if (contract.status != 'IN_PROGRESS') return false;
+    final checkOutDate = DateTime.tryParse(contract.checkOutDate);
+    if (checkOutDate == null) return false;
+    final now = DateTime.now();
+    return now.isAfter(checkOutDate) ||
+        (now.year == checkOutDate.year &&
+            now.month == checkOutDate.month &&
+            now.day == checkOutDate.day);
+  }
+
+  /// 호스트 퇴실 확인 처리
+  Future<void> _handleHostCheckoutConfirm() async {
+    try {
+      await _contractService.confirmHostCheckout(widget.contractId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('퇴실 확인이 완료되었습니다.')),
+        );
+        _loadContractDetail(); // 상태 갱신
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('퇴실 확인 실패: ${e.toString().replaceAll('Exception: ', '')}')),
+        );
+      }
+    }
   }
 
   @override
@@ -149,7 +185,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         children: [
           // 페이지 제목
           Padding(
-            padding: const EdgeInsets.only(bottom: 24), // mb-6
+            padding: const EdgeInsets.only(bottom: 16), // mb-4
             child: Text(
               '계약 상세 정보',
               style: const TextStyle(
@@ -159,11 +195,30 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
               ),
             ),
           ),
+
+          // 계약 상태 배너
+          ContractStatusBanner(
+            contract: _contract!,
+            isHost: true,
+          ),
+          const SizedBox(height: 24),
+
           _buildBasicInfoSection(),
           const SizedBox(height: 24), // mb-6
           _buildPartyInfoSection(),
           const SizedBox(height: 24), // mb-6
           _buildContractAmountSection(),
+
+          // 퇴실 확인 위젯 (IN_PROGRESS + 퇴실일 도래 시)
+          if (_shouldShowCheckoutConfirmation()) ...[
+            const SizedBox(height: 24),
+            CheckoutConfirmationWidget(
+              contract: _contract!,
+              isHost: true,
+              onHostConfirm: _handleHostCheckoutConfirm,
+            ),
+          ],
+
           const SizedBox(height: 24), // mb-6
           _buildNoticeSection(),
           const SizedBox(height: 32),

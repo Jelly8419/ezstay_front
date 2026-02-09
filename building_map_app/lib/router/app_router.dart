@@ -50,6 +50,7 @@ import '../pages/notification/notification_page.dart'
 import '../pages/host/host_settlement_page.dart' deferred as host_settlement;
 import '../pages/host/host_settlement_detail_page.dart'
     deferred as host_settlement_detail;
+import '../pages/auth/account_suspended_page.dart' deferred as account_suspended;
 
 
 class AppRouter {
@@ -254,6 +255,17 @@ class AppRouter {
         // 바이패스 로그인 경로는 리다이렉트 안 함
         if (isGoingToBypass) {
           return null;
+        }
+
+        // 계정 정지 상태인 경우 정지 안내 페이지로 리다이렉트
+        final isAccountSuspended = authService.isAccountSuspended;
+        final isGoingToSuspended = state.matchedLocation == '/account-suspended';
+        if (isLoggedIn && isAccountSuspended && !isGoingToSuspended && !isGoingToLogin) {
+          return '/account-suspended';
+        }
+        // 정지 상태가 아닌데 정지 페이지로 접근하면 홈으로 리다이렉트
+        if (isGoingToSuspended && (!isLoggedIn || !isAccountSuspended)) {
+          return '/guest';
         }
 
         // 로그인은 되어 있지만 본인인증이 안 된 경우 회원가입 Step 2로 리다이렉트
@@ -972,6 +984,24 @@ class AppRouter {
                     rentalOrderId != null ? int.tryParse(rentalOrderId) : null,
                 errorCode: errorCode,
                 errorMessage: errorMessage,
+              ),
+            );
+          },
+        ),
+
+        // 계정 정지 안내 페이지
+        GoRoute(
+          path: '/account-suspended',
+          name: 'account-suspended',
+          builder: (context, state) {
+            final authService = Provider.of<AuthService>(
+              context,
+              listen: false,
+            );
+            return _deferredWidget(
+              account_suspended.loadLibrary,
+              () => account_suspended.AccountSuspendedPage(
+                reason: authService.suspensionReason,
               ),
             );
           },

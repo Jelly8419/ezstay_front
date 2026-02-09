@@ -30,6 +30,30 @@ enum ContractStatus {
   }
 }
 
+/// 퇴실 상태
+enum CheckoutStatus {
+  notStarted('NOT_STARTED', '퇴실 전'),
+  guestCompleted('GUEST_COMPLETED', '게스트 퇴실 완료'),
+  hostConfirmed('HOST_CONFIRMED', '호스트 확인 완료'),
+  hostPending('HOST_PENDING', '호스트 확인 보류');
+
+  final String value;
+  final String label;
+
+  const CheckoutStatus(this.value, this.label);
+
+  static CheckoutStatus? fromString(String? value) {
+    if (value == null) return null;
+    return CheckoutStatus.values.firstWhere(
+      (status) => status.value == value,
+      orElse: () {
+        debugPrint('⚠️ [CHECKOUT_STATUS] Unknown status: $value, defaulting to notStarted');
+        return CheckoutStatus.notStarted;
+      },
+    );
+  }
+}
+
 /// 할인 유형
 enum DiscountType {
   none('NONE', '할인 없음'),
@@ -102,6 +126,10 @@ class ContractListItem {
   final int? hostEarnings; // 호스트 실수령액 (NEW)
   final bool? isEzCleaning; // EZ청소 서비스 여부
 
+  // 퇴실 정보
+  final CheckoutStatus? checkoutStatus; // 퇴실 상태
+  final String? roomCheckoutTime; // 퇴실 시간
+
   // 방 정보
   final int roomId;
   final String roomName;
@@ -146,6 +174,8 @@ class ContractListItem {
     this.deposit,
     this.hostEarnings,
     this.isEzCleaning,
+    this.checkoutStatus,
+    this.roomCheckoutTime,
     required this.roomId,
     required this.roomName,
     required this.roomAddress,
@@ -192,6 +222,9 @@ class ContractListItem {
       deposit: json['deposit'] as int?,
       hostEarnings: json['hostEarnings'] as int?,
       isEzCleaning: json['isEzCleaning'] as bool?,
+      // 퇴실 정보
+      checkoutStatus: CheckoutStatus.fromString(json['checkoutStatus'] as String?),
+      roomCheckoutTime: json['roomCheckoutTime'] as String?,
       // 방 정보 - 백엔드 필드명: roomName, thumbnailUrl
       roomId: room['id'],
       roomName: room['roomName'] ?? room['name'],
@@ -254,6 +287,10 @@ class Contract {
   // 계약 상태
   final ContractStatus status;
 
+  // 퇴실 정보
+  final CheckoutStatus? checkoutStatus;
+  final String? roomCheckoutTime;
+
   // 계약 진행 시점
   final DateTime? approvedAt;
   final DateTime? rejectedAt;
@@ -300,6 +337,8 @@ class Contract {
     required this.termsAgreed,
     this.pricingSnapshot,
     required this.status,
+    this.checkoutStatus,
+    this.roomCheckoutTime,
     this.approvedAt,
     this.rejectedAt,
     this.paidAt,
@@ -355,6 +394,8 @@ class Contract {
       termsAgreed: (json['termsAgreed'] as Map<String, dynamic>?) ?? {},
       pricingSnapshot: json['pricingSnapshot'] as Map<String, dynamic>?,
       status: ContractStatus.fromString(json['status'] as String),
+      checkoutStatus: CheckoutStatus.fromString(json['checkoutStatus'] as String?),
+      roomCheckoutTime: json['roomCheckoutTime'] as String?,
       approvedAt: json['approvedAt'] != null ? DateTime.parse(json['approvedAt'] as String) : null,
       rejectedAt: json['rejectedAt'] != null ? DateTime.parse(json['rejectedAt'] as String) : null,
       paidAt: json['paidAt'] != null ? DateTime.parse(json['paidAt'] as String) : null,
@@ -432,10 +473,9 @@ class UserInfo {
 
 /// 배송 상태
 enum DeliveryStatus {
-  pending('pending', '배송 대기'),
-  preparing('preparing', '배송 준비중'),
-  inTransit('in_transit', '배송중'),
-  delivered('delivered', '배송 완료');
+  pending('PENDING', '배송 전'),
+  inTransit('IN_TRANSIT', '배송중'),
+  delivered('DELIVERED', '배송 완료');
 
   final String value;
   final String label;

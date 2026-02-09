@@ -229,15 +229,42 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       );
     }
 
+    final isReadOnly = _chatRoom?.isReadOnly ?? false;
+
     return Column(
       children: [
+        // 읽기 전용 안내 배너
+        if (isReadOnly) _buildReadOnlyBanner(),
         // 메시지 목록
         Expanded(
           child: _buildMessageList(),
         ),
-        // 메시지 입력 필드
-        _buildMessageInput(),
+        // 메시지 입력 필드 (읽기 전용이 아닐 때만)
+        if (!isReadOnly) _buildMessageInput(),
       ],
+    );
+  }
+
+  /// 읽기 전용 안내 배너
+  Widget _buildReadOnlyBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: const Color(0xFFF3F4F6),
+      child: Row(
+        children: [
+          Icon(Icons.lock_outline, size: 16, color: AppColors.textSecondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _chatRoom?.readOnlyReason ?? '종료된 계약의 채팅방입니다. 메시지를 보낼 수 없습니다.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

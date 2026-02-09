@@ -11,6 +11,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/common/app_footer.dart';
+import '../../widgets/modals/required_info_gate_modal.dart';
 
 /// 계약 요청하기 페이지
 /// PRD: 반드시 상세페이지에서 전달받은 calculatedPricing 값을 그대로 사용하고 재계산 금지
@@ -1681,13 +1682,48 @@ class _ContractStartPageState extends State<ContractStartPage> {
         setState(() {
           _isLoading = false;
         });
+
+        // 에러코드 4010: 필수 정보 누락 → 게이트 모달 표시
+        final errorStr = e.toString();
+        if (errorStr.contains('4010') || errorStr.contains('missingFields')) {
+          final missingFields = _parseMissingFields(errorStr);
+          if (missingFields.isNotEmpty) {
+            final result = await RequiredInfoGateModal.show(
+              context,
+              missingFields: missingFields,
+            );
+            if (result != null && result.isNotEmpty) {
+              // 사용자가 필수 정보를 입력한 경우 재시도
+              _requestContract();
+            }
+            return;
+          }
+        }
+
         // 에러 메시지 파싱 (백엔드 에러 메시지 추출)
-        String errorMessage = e.toString();
+        String errorMessage = errorStr;
         if (errorMessage.contains('Exception:')) {
           errorMessage = errorMessage.replaceFirst('Exception:', '').trim();
         }
         await _showContractErrorMessage(errorMessage);
       }
     }
+  }
+
+  /// 에러 메시지에서 missingFields 배열 파싱
+  List<String> _parseMissingFields(String errorStr) {
+    // missingFields: [phoneNumber, name] 패턴 파싱
+    final regex = RegExp(r'missingFields.*?\[([^\]]+)\]');
+    final match = regex.firstMatch(errorStr);
+    if (match != null) {
+      return match.group(1)!.split(',').map((s) => s.trim()).toList();
+    }
+    // 개별 필드명 매칭
+    final fields = <String>[];
+    if (errorStr.contains('phoneNumber')) fields.add('phoneNumber');
+    if (errorStr.contains('name') && !errorStr.contains('roomName')) fields.add('name');
+    if (errorStr.contains('bankAccount')) fields.add('bankAccount');
+    if (errorStr.contains('verification')) fields.add('verification');
+    return fields;
   }
 }

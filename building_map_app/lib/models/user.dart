@@ -9,6 +9,8 @@ class User {
   final AuthProvider provider;
   final bool phoneVerified;
   final bool hasBank;
+  final AccountStatus accountStatus;
+  final String? suspensionReason;
 
   const User({
     required this.id,
@@ -20,10 +22,18 @@ class User {
     required this.provider,
     this.phoneVerified = false,
     this.hasBank = false,
+    this.accountStatus = AccountStatus.active,
+    this.suspensionReason,
   });
 
   /// 표시용 이름 (닉네임 우선, 없으면 이름)
   String get displayName => (nickname?.isNotEmpty == true) ? nickname! : name;
+
+  /// 계정이 정지 상태인지 확인
+  bool get isSuspended => accountStatus == AccountStatus.suspended;
+
+  /// 계정이 활성 상태인지 확인
+  bool get isActive => accountStatus == AccountStatus.active;
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
@@ -42,6 +52,8 @@ class User {
       ),
       phoneVerified: json['phoneVerified'] ?? false,
       hasBank: json['hasBank'] ?? false,
+      accountStatus: AccountStatus.fromString(json['accountStatus']),
+      suspensionReason: json['suspensionReason'],
     );
   }
 
@@ -56,6 +68,8 @@ class User {
       'provider': provider.toString(),
       'phoneVerified': phoneVerified,
       'hasBank': hasBank,
+      'accountStatus': accountStatus.value,
+      'suspensionReason': suspensionReason,
     };
   }
 }
@@ -71,4 +85,22 @@ enum AuthProvider {
   email,
   google,
   kakao,
+}
+
+/// 계정 상태
+enum AccountStatus {
+  active('ACTIVE'),
+  suspended('SUSPENDED'),
+  withdrawn('WITHDRAWN');
+
+  final String value;
+  const AccountStatus(this.value);
+
+  static AccountStatus fromString(String? status) {
+    if (status == null) return AccountStatus.active;
+    return AccountStatus.values.firstWhere(
+      (e) => e.value == status,
+      orElse: () => AccountStatus.active,
+    );
+  }
 }

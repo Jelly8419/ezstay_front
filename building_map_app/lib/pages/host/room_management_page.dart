@@ -653,7 +653,44 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
     context.go('/guest/room/detail/${room.id}');
   }
 
-  void _onEditRoom(Room room) {
+  void _onEditRoom(Room room) async {
+    // 승인된 방 수정 시 재심사 안내
+    if (room.needsReReviewOnEdit) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
+          title: Row(
+            children: [
+              Icon(Icons.info_outline, color: AppColors.warning500, size: 22),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('수정 시 재심사 안내'),
+              ),
+            ],
+          ),
+          content: const Text(
+            '현재 승인된 방입니다.\n\n'
+            '기본 정보(주소, 방 유형 등)는 수정할 수 없으며, '
+            '요금·할인·소개·규칙·입퇴실 시간·사진·EZ서비스만 변경 가능합니다.\n\n'
+            '일부 항목 변경 시 재심사가 필요할 수 있습니다.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('수정하기'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || !mounted) return;
+    }
+
     context.go('/host/room-registration/${room.id}');
   }
 
