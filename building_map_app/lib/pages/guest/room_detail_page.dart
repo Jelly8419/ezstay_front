@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../constants/notice_texts.dart';
 import '../../models/room.dart';
 import '../../models/booking_state.dart';
 import '../../models/refund_policy.dart';
@@ -1123,7 +1124,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           if (_refundPolicy != null) ...[
             // 환불 규칙 목록 (contract_start_page와 동일 포맷)
             ..._refundPolicy!.rules.map(
-              (rule) => _buildRefundBulletText(_calculateCancellationText(rule)),
+              (rule) =>
+                  _buildRefundBulletText(NoticeTexts.cancellationText(rule.description, rule.refundRate)),
             ),
           ] else ...[
             // API 로드 실패 시 기본 텍스트만 표시
@@ -1162,20 +1164,17 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _buildNoticeBulletText(
-                  '결제 당일 취소 시, 환불 규정과 관계 없이 임대료와 계약 수수료를 합계한 10%만 위약금으로 부과됩니다.',
-                ),
+                _buildNoticeBulletText(NoticeTexts.sameDayCancelPenalty),
                 // API에서 로드한 특별 규칙 표시
                 if (_refundPolicy?.specialRules?.alwaysRefund != null)
                   _buildNoticeBulletText(
                     _refundPolicy!.specialRules!.alwaysRefund!,
                   )
                 else
-                  _buildNoticeBulletText('관리비, 청소비, 보증금은 전액 환불됩니다.'),
-                _buildNoticeBulletText('환불 규정은 호스트의 설정에 따라 달라집니다.'),
-                _buildNoticeBulletText(
-                  '계약 승인 요청 후 호스트가 24시간 내에 응답하지 않으면 자동 취소됩니다.',
-                ),
+                  _buildNoticeBulletText(NoticeTexts.alwaysRefundDefault),
+                _buildNoticeBulletText(NoticeTexts.rentRefundByHost),
+                _buildNoticeBulletText(NoticeTexts.optionRefundWithin7Days),
+                _buildNoticeBulletText(NoticeTexts.optionRefundRestrictions),
               ],
             ),
           ),
@@ -1213,18 +1212,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   }
 
   /// 환불 규칙을 텍스트로 변환 (contract_start_page와 동일)
-  String _calculateCancellationText(RefundRule rule) {
-    final description = rule.description;
-    final refundRate = rule.refundRate;
-
-    // 환불 불가인 경우
-    if (refundRate == 0) {
-      return '$description : 환불 불가';
-    }
-
-    // 일반적인 경우: 원본 텍스트 + 환불율
-    return '$description : 임대료의 $refundRate% 환불';
-  }
 
   /// 환불 규칙 불릿 텍스트
   Widget _buildRefundBulletText(String text) {
@@ -2067,11 +2054,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 18,
-                  color: AppColors.warning700,
-                ),
+                Icon(Icons.info_outline, size: 18, color: AppColors.warning700),
                 SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(

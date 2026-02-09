@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../constants/notice_texts.dart';
 import '../../models/contract.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -464,10 +465,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
           ),
           SizedBox(height: AppSpacing.xs),
           Text(
-            '• 결제 당일 취소 시, 환불 규정과 관계없이 임대료와 계약수수료 합계의 10%만 위약금으로 부과됩니다.\n'
-            '• 관리비, 청소비, 보증금은 전액 환불됩니다.\n'
-            '• 결제 당일 이후에는 계약수수료가 환불되지 않습니다.\n'
-            '• 옵션 상품은 배송 전에는 전액 환불, 배송이 시작된 이후에는 왕복 배송비 7,000원 차감 후 환불됩니다.',
+            NoticeTexts.commonRefundPolicyBullets,
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
               height: 1.5,

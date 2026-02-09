@@ -218,8 +218,8 @@ class Room {
       description: json['description'] as String?,
       transportation: json['transportation'] as String?,
       houseRules: json['houseRules'] as String?,
-      checkInTime: json['checkInTime'] as String? ?? '15:00',
-      checkOutTime: json['checkOutTime'] as String? ?? '11:00',
+      checkInTime: json['checkInTime'] != null ? json['checkInTime'].toString() : '15:00',
+      checkOutTime: json['checkOutTime'] != null ? json['checkOutTime'].toString() : '11:00',
 
       // 날짜 정보
       submittedAt: json['submittedAt'] != null ? DateTime.parse(json['submittedAt'] as String) : null,

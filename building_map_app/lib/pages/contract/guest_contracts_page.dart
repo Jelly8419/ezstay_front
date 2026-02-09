@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../constants/notice_texts.dart';
 import '../../models/contract.dart';
 import '../../services/contract_service.dart';
 import '../../services/payment_service_unified.dart';
@@ -3470,8 +3471,8 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                   border: Border.all(color: const Color(0xFFFDE68A)),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  '• 옵션 상품은 배송 전에는 전액 환불, 배송이 시작된 이후에는 왕복 배송비 7,000원 차감 후 환불됩니다.',
+                child: Text(
+                  '• ${NoticeTexts.optionRefundBeforeDelivery}',
                   style: TextStyle(
                     fontSize: 14,
                     color: Color(0xFF854D0E),

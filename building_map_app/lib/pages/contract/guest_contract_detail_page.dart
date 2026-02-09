@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../constants/notice_texts.dart';
 import '../../config/api_config.dart';
 import '../../config/payment_config.dart';
 import '../../models/contract_detail.dart';
@@ -1287,8 +1288,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
           // 환불 정책 규칙 표시
           if (snapshot != null && snapshot.rules.isNotEmpty) ...[
             ...snapshot.rules.map((rule) {
-              final text = _calculateCancellationText(rule);
-              return _buildBulletText(text);
+              return _buildBulletText(NoticeTexts.cancellationText(rule.description, rule.refundRate));
             }),
           ] else ...[
             // Fallback: 기존 상세 설명
@@ -1339,18 +1339,6 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
   }
 
   /// 환불 규칙을 텍스트로 변환
-  String _calculateCancellationText(RefundPolicyRule rule) {
-    final description = rule.description;
-    final refundRate = rule.refundRate;
-
-    // 환불 불가인 경우
-    if (refundRate == 0) {
-      return '$description : 환불 불가';
-    }
-
-    // 일반적인 경우: 원본 텍스트 + 환불율
-    return '$description : 임대료의 $refundRate% 환불';
-  }
 
   /// 불릿 텍스트
   Widget _buildBulletText(String text) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../constants/notice_texts.dart';
 import '../../models/room.dart';
 import '../../models/refund_policy.dart';
 import '../../models/calculated_pricing.dart';
@@ -118,7 +119,8 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 final contentWidth = constraints.maxWidth < maxContentWidth
                     ? constraints.maxWidth
                     : maxContentWidth;
-                final horizontalMargin = (constraints.maxWidth - contentWidth) / 2;
+                final horizontalMargin =
+                    (constraints.maxWidth - contentWidth) / 2;
 
                 return Stack(
                   children: [
@@ -132,7 +134,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
                               child: Padding(
                                 padding: EdgeInsets.only(
                                   left: 24,
-                                  right: isWideScreen ? 424 : 24, // 데스크톱: 오른쪽 카드 공간 확보
+                                  right: isWideScreen
+                                      ? 424
+                                      : 24, // 데스크톱: 오른쪽 카드 공간 확보
                                   top: 24,
                                   bottom: isWideScreen ? 24 : 100,
                                 ),
@@ -284,10 +288,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '기본 정보',
-            style: AppTextStyles.headingSmall,
-          ),
+          Text('기본 정보', style: AppTextStyles.headingSmall),
           const SizedBox(height: 16),
           // 방 이미지 + 정보 (모바일: 세로, 데스크톱: 가로)
           if (isWideScreen)
@@ -381,13 +382,17 @@ class _ContractStartPageState extends State<ContractStartPage> {
               width: 80,
               child: Text(
                 '주소',
-                style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[600]),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: Colors.grey[600],
+                ),
               ),
             ),
             Expanded(
               child: Text(
                 '${widget.room.address}, ${widget.room.floor}층',
-                style: AppTextStyles.bodyMedium.copyWith(color: const Color(0xFF111827)),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: const Color(0xFF111827),
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -403,7 +408,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
               width: 80,
               child: Text(
                 '계약 기간',
-                style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[600]),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: Colors.grey[600],
+                ),
               ),
             ),
             Expanded(
@@ -429,7 +436,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
                     )
                   : Text(
                       '날짜가 선택되지 않았습니다',
-                      style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: Colors.grey[500],
+                      ),
                     ),
             ),
           ],
@@ -458,10 +467,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // React: "호스트"
-          Text(
-            '호스트',
-            style: AppTextStyles.headingSmall,
-          ),
+          Text('호스트', style: AppTextStyles.headingSmall),
           const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -568,14 +574,13 @@ class _ContractStartPageState extends State<ContractStartPage> {
           // React: "옵션 상품" + "(X개 선택)" in gray
           Row(
             children: [
-              Text(
-                '옵션 상품',
-                style: AppTextStyles.headingSmall,
-              ),
+              Text('옵션 상품', style: AppTextStyles.headingSmall),
               const SizedBox(width: 8),
               Text(
                 '(${widget.selectedRentalItems.length}개 선택)',
-                style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: Colors.grey[500],
+                ),
               ),
             ],
           ),
@@ -637,12 +642,16 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 children: [
                   Text(
                     '선택한 옵션 상품이 없습니다.',
-                    style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: Colors.grey[500],
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '방 상세페이지에서 옵션 상품을 선택해주세요.',
-                    style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[400]),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Colors.grey[400],
+                    ),
                   ),
                 ],
               ),
@@ -652,63 +661,70 @@ class _ContractStartPageState extends State<ContractStartPage> {
             Opacity(
               opacity: isRentalDisabled ? 0.5 : 1.0,
               child: Column(
-                children: widget.selectedRentalItems.map(
-                  (item) => Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey[100]!, width: 1),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.name,
-                                style: AppTextStyles.labelMedium.copyWith(
-                                  color: const Color(0xFF111827),
-                                ),
-                              ),
-                              if (item.description != null &&
-                                  item.description!.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Text(
-                                    item.description!,
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      fontSize: 13,
-                                      color: Colors.grey[500],
+                children: widget.selectedRentalItems
+                    .map(
+                      (item) => Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.grey[100]!,
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.name,
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                      color: const Color(0xFF111827),
                                     ),
                                   ),
-                                ),
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  '${_currencyFormat.format(item.price)}원 x ${item.quantity}개',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    fontSize: 13,
-                                    color: const Color(0xFF2563EB), // blue-600
+                                  if (item.description != null &&
+                                      item.description!.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Text(
+                                        item.description!,
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          fontSize: 13,
+                                          color: Colors.grey[500],
+                                        ),
+                                      ),
+                                    ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      '${_currencyFormat.format(item.price)}원 x ${item.quantity}개',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        fontSize: 13,
+                                        color: const Color(
+                                          0xFF2563EB,
+                                        ), // blue-600
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                            Text(
+                              '${_currencyFormat.format(item.totalPrice)}원',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: const Color(0xFF111827),
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '${_currencyFormat.format(item.totalPrice)}원',
-                          style: AppTextStyles.labelMedium.copyWith(
-                            color: const Color(0xFF111827),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ).toList(),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
 
@@ -766,10 +782,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '임대 목적 (선택사항)',
-            style: AppTextStyles.headingSmall,
-          ),
+          Text('임대 목적 (선택사항)', style: AppTextStyles.headingSmall),
           const SizedBox(height: 16),
           // React: textarea with multi-line placeholder
           Stack(
@@ -812,7 +825,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 right: 12,
                 child: Text(
                   '${_messageController.text.length}/500',
-                  style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[400]),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Colors.grey[400],
+                  ),
                 ),
               ),
             ],
@@ -840,9 +855,14 @@ class _ContractStartPageState extends State<ContractStartPage> {
     );
 
     // 6일 정책 위반 시 렌탈 아이템 비용 제외
-    final actualRentalItemsFee = canIncludeRentalItems ? pricing.rentalItemsFee : 0;
-    final adjustedTotalUsageFee = pricing.totalUsageFee - (pricing.rentalItemsFee - actualRentalItemsFee);
-    final adjustedFinalTotalAmount = pricing.finalTotalAmount - (pricing.rentalItemsFee - actualRentalItemsFee);
+    final actualRentalItemsFee = canIncludeRentalItems
+        ? pricing.rentalItemsFee
+        : 0;
+    final adjustedTotalUsageFee =
+        pricing.totalUsageFee - (pricing.rentalItemsFee - actualRentalItemsFee);
+    final adjustedFinalTotalAmount =
+        pricing.finalTotalAmount -
+        (pricing.rentalItemsFee - actualRentalItemsFee);
 
     return Container(
       decoration: BoxDecoration(
@@ -864,12 +884,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '결제 금액',
-                  style: AppTextStyles.headingSmall,
-                ),
-              ],
+              children: [Text('결제 금액', style: AppTextStyles.headingSmall)],
             ),
           ),
 
@@ -1048,9 +1063,14 @@ class _ContractStartPageState extends State<ContractStartPage> {
     );
 
     // 6일 정책 위반 시 렌탈 아이템 비용 제외
-    final actualRentalItemsFee = canIncludeRentalItems ? pricing.rentalItemsFee : 0;
-    final adjustedTotalUsageFee = pricing.totalUsageFee - (pricing.rentalItemsFee - actualRentalItemsFee);
-    final adjustedFinalTotalAmount = pricing.finalTotalAmount - (pricing.rentalItemsFee - actualRentalItemsFee);
+    final actualRentalItemsFee = canIncludeRentalItems
+        ? pricing.rentalItemsFee
+        : 0;
+    final adjustedTotalUsageFee =
+        pricing.totalUsageFee - (pricing.rentalItemsFee - actualRentalItemsFee);
+    final adjustedFinalTotalAmount =
+        pricing.finalTotalAmount -
+        (pricing.rentalItemsFee - actualRentalItemsFee);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1068,10 +1088,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '예상 금액',
-            style: AppTextStyles.headingSmall,
-          ),
+          Text('예상 금액', style: AppTextStyles.headingSmall),
           const SizedBox(height: 16),
 
           // 금액 상세
@@ -1121,9 +1138,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           const Divider(height: 32),
           Text(
             '* 보증금은 3자 예치기관에 보관되며, 퇴실 완료 후 2일 내 자동 환급\n됩니다.',
-            style: AppTextStyles.caption.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: AppTextStyles.caption.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 10),
           _buildPriceRow(
@@ -1163,10 +1178,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
         children: [
           Row(
             children: [
-              Text(
-                '계약 해지 조항',
-                style: AppTextStyles.headingSmall,
-              ),
+              Text('계약 해지 조항', style: AppTextStyles.headingSmall),
               const SizedBox(width: 8),
               // 환불 정책 라벨
               Container(
@@ -1197,8 +1209,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           // API에서 로드한 환불 정책 표시
           else if (_refundPolicy != null) ...[
             ..._refundPolicy!.rules.map((rule) {
-              final cancellationText = _calculateCancellationText(rule);
-              return _buildBulletText(cancellationText);
+              return _buildBulletText(NoticeTexts.cancellationText(rule.description, rule.refundRate));
             }),
           ]
           // Fallback: 하드코딩된 기본값 (API 실패 시)
@@ -1237,9 +1248,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _buildNoticeBulletText(
-                  '결제 당일 취소 시, 환불 규정과 관계 없이 임대료와 계약 수수료를 합계한 10%만 위약금으로 부과됩니다.',
-                ),
+                _buildNoticeBulletText(NoticeTexts.sameDayCancelPenalty),
 
                 // API에서 로드한 특별 규칙 표시
                 if (_refundPolicy?.specialRules?.alwaysRefund != null)
@@ -1247,12 +1256,11 @@ class _ContractStartPageState extends State<ContractStartPage> {
                     _refundPolicy!.specialRules!.alwaysRefund!,
                   )
                 else
-                  _buildNoticeBulletText('관리비, 청소비, 보증금은 전액 환불됩니다.'),
+                  _buildNoticeBulletText(NoticeTexts.alwaysRefundDefault),
 
-                _buildNoticeBulletText('환불 규정은 호스트의 설정에 따라 달라집니다.'),
-                _buildNoticeBulletText(
-                  '계약 승인 요청 후 호스트가 24시간 내에 응답하지 않으면 자동 취소됩니다.',
-                ),
+                _buildNoticeBulletText(NoticeTexts.rentRefundByHost),
+                _buildNoticeBulletText(NoticeTexts.optionRefundWithin7Days),
+                _buildNoticeBulletText(NoticeTexts.optionRefundRestrictions),
               ],
             ),
           ),
@@ -1361,18 +1369,6 @@ class _ContractStartPageState extends State<ContractStartPage> {
   }
 
   /// 환불 규칙을 텍스트로 변환 (원본 그대로 표시)
-  String _calculateCancellationText(RefundRule rule) {
-    final description = rule.description;
-    final refundRate = rule.refundRate;
-
-    // 환불 불가인 경우
-    if (refundRate == 0) {
-      return '$description : 환불 불가';
-    }
-
-    // 일반적인 경우: 원본 텍스트 + 환불율
-    return '$description : 임대료의 $refundRate% 환불';
-  }
 
   /// 불릿 텍스트
   Widget _buildBulletText(String text) {
@@ -1455,9 +1451,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           children: [
             Container(
@@ -1476,9 +1470,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
             const Text('요청 완료'),
           ],
         ),
-        content: const Text(
-          '계약 요청이 완료되었습니다.\n호스트가 승인하면 결제를 진행할 수 있습니다.',
-        ),
+        content: const Text('계약 요청이 완료되었습니다.\n호스트가 승인하면 결제를 진행할 수 있습니다.'),
         actions: [
           ElevatedButton(
             onPressed: () {
@@ -1504,9 +1496,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           children: [
             Container(
@@ -1568,7 +1558,9 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 children: [
                   Text(
                     '최종 결제 금액',
-                    style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[600]),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Colors.grey[600],
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -1583,7 +1575,10 @@ class _ContractStartPageState extends State<ContractStartPage> {
             const SizedBox(height: 12),
             Text(
               '호스트가 승인하면 결제가 진행됩니다.',
-              style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.grey[600]),
+              style: AppTextStyles.bodySmall.copyWith(
+                fontSize: 13,
+                color: Colors.grey[600],
+              ),
             ),
           ],
         ),
@@ -1634,9 +1629,15 @@ class _ContractStartPageState extends State<ContractStartPage> {
           : <Map<String, dynamic>>[];
 
       // 6일 정책 위반 시 렌탈 아이템 비용 제외하여 금액 재계산
-      final actualRentalItemsFee = canIncludeRentalItems ? pricing.rentalItemsFee : 0;
-      final adjustedTotalUsageFee = pricing.totalUsageFee - (pricing.rentalItemsFee - actualRentalItemsFee);
-      final adjustedFinalTotalAmount = pricing.finalTotalAmount - (pricing.rentalItemsFee - actualRentalItemsFee);
+      final actualRentalItemsFee = canIncludeRentalItems
+          ? pricing.rentalItemsFee
+          : 0;
+      final adjustedTotalUsageFee =
+          pricing.totalUsageFee -
+          (pricing.rentalItemsFee - actualRentalItemsFee);
+      final adjustedFinalTotalAmount =
+          pricing.finalTotalAmount -
+          (pricing.rentalItemsFee - actualRentalItemsFee);
 
       await _contractService.requestContract(
         roomId: widget.room.id,
@@ -1721,7 +1722,8 @@ class _ContractStartPageState extends State<ContractStartPage> {
     // 개별 필드명 매칭
     final fields = <String>[];
     if (errorStr.contains('phoneNumber')) fields.add('phoneNumber');
-    if (errorStr.contains('name') && !errorStr.contains('roomName')) fields.add('name');
+    if (errorStr.contains('name') && !errorStr.contains('roomName'))
+      fields.add('name');
     if (errorStr.contains('bankAccount')) fields.add('bankAccount');
     if (errorStr.contains('verification')) fields.add('verification');
     return fields;
