@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/user.dart';
+import '../../models/login_result.dart';
 import '../../models/register_state.dart';
 import '../../services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -60,11 +61,11 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
       final authService = context.read<AuthService>();
 
       // 카카오 로그인 시작
-      final success = await authService.loginWithKakao(widget.mode);
+      final result = await authService.loginWithKakao(widget.mode);
 
       if (!mounted) return;
 
-      if (success) {
+      if (result == LoginResult.success) {
         // 카카오 로그인 완료 - 홈 화면으로 이동
         final currentUser = authService.currentUser;
 
@@ -86,7 +87,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('로그인 실패'),
-            content: const Text('카카오 로그인에 실패했습니다.\n다시 시도해주세요.'),
+            content: Text(result.message),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -312,7 +313,19 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
         ? steps.length - 1
         : _state.currentStep;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_state.currentStep > 0) {
+          setState(() {
+            _state.prevStep();
+          });
+        } else {
+          _showExitConfirmDialog();
+        }
+      },
+      child: Scaffold(
       backgroundColor: backgroundWhite,
       appBar: AppBar(
         backgroundColor: backgroundWhite,
@@ -325,7 +338,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
                 _state.prevStep();
               });
             } else {
-              Navigator.pop(context);
+              _showExitConfirmDialog();
             }
           },
         ),
@@ -362,6 +375,36 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             ),
           ),
         ),
+      ),
+    ), // PopScope
+    );
+  }
+
+  /// 회원가입 이탈 확인 다이얼로그
+  void _showExitConfirmDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('회원가입 중단'),
+        content: const Text(
+          '인증이 진행 중입니다. 나가시겠습니까?\n입력한 정보는 저장되지 않습니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('계속 진행'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.go('/login');
+            },
+            child: Text(
+              '나가기',
+              style: TextStyle(color: AppColors.error500),
+            ),
+          ),
+        ],
       ),
     );
   }

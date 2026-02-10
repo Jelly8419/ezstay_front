@@ -9,7 +9,7 @@ import 'token_service.dart';
 class SettlementService {
   /// API 헤더 생성 (인증 토큰 포함)
   Future<Map<String, String>> _getHeaders() async {
-    final token = await TokenService.getAccessToken();
+    final token = await TokenService.getValidAccessToken();
     return {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',

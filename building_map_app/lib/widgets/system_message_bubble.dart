@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../utils/format_utils.dart';
 import '../models/chat_message.dart';
 import '../constants/app_constants.dart';
 
@@ -60,7 +60,7 @@ class SystemMessageBubble extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  DateFormat('yyyy.MM.dd HH:mm').format(message.timestamp),
+                  FormatUtils.formatDateTimeDot(message.timestamp),
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),

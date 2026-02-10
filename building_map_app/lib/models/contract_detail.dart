@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'payment_history.dart';
 
 /// 계약 상세 정보 모델 (상세 페이지용)
@@ -211,11 +212,7 @@ class ContractDetail {
       // 환불 정책
       refundPolicy: parseStringField(json['refundPolicy'], 'moderate'),
       refundPolicyDetail: parseStringField(json['refundPolicyDetail'], ''),
-      refundPolicySnapshot: json['refundPolicySnapshot'] != null
-          ? RefundPolicySnapshot.fromJson(
-              json['refundPolicySnapshot'] as Map<String, dynamic>,
-            )
-          : null,
+      refundPolicySnapshot: _parseRefundPolicySnapshot(json['refundPolicySnapshot']),
       // 렌탈 아이템 (파싱된 결과)
       rentalItems: parsedRentalItems,
       // 결제 내역
@@ -302,6 +299,23 @@ class ContractDetail {
       if (readOnlyReason != null) 'readOnlyReason': readOnlyReason,
       'isEzCleaning': isEzCleaning,
     };
+  }
+
+  /// refundPolicySnapshot 파싱 (Map 또는 JSON String 모두 처리)
+  static RefundPolicySnapshot? _parseRefundPolicySnapshot(dynamic value) {
+    if (value == null) return null;
+    if (value is Map<String, dynamic>) {
+      return RefundPolicySnapshot.fromJson(value);
+    }
+    if (value is String) {
+      try {
+        final decoded = jsonDecode(value) as Map<String, dynamic>;
+        return RefundPolicySnapshot.fromJson(decoded);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 }
 

@@ -4,7 +4,7 @@ import '../../models/contract.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
-import 'package:intl/intl.dart';
+import '../../utils/format_utils.dart';
 
 /// 환불 계산기 모달
 ///
@@ -31,8 +31,6 @@ class RefundCalculationModal extends StatefulWidget {
 }
 
 class _RefundCalculationModalState extends State<RefundCalculationModal> {
-  final NumberFormat _currencyFormat = NumberFormat('#,###');
-
   // 환불 유형: 'all' (전체 취소) or 'options_only' (옵션만 환불)
   String _refundType = 'all';
 
@@ -263,7 +261,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
           title: const Text('추가 결제 필요'),
           content: Text(
             '환불 상품 금액보다 왕복 배송비가 더 비싸므로 '
-            '${_currencyFormat.format(additionalPayment)}원의 추가 결제가 필요합니다.\n\n'
+            '${FormatUtils.formatCurrency(additionalPayment)}원의 추가 결제가 필요합니다.\n\n'
             '결제를 진행하시겠습니까?',
           ),
           actions: [
@@ -775,8 +773,8 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
           ],
           SizedBox(height: AppSpacing.xs / 2),
           Text(
-            '${_currencyFormat.format(item.price)}원 × ${item.quantity}개 = '
-            '${_currencyFormat.format(item.price * item.quantity)}원',
+            '${FormatUtils.formatCurrency(item.price)}원 × ${item.quantity}개 = '
+            '${FormatUtils.formatCurrency(item.price * item.quantity)}원',
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
               fontSize: 12,
@@ -1012,7 +1010,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
                 ),
                 Text(
                   '${refund['totalRefund']! < 0 ? '-' : ''}'
-                  '${_currencyFormat.format(refund['totalRefund']!.abs())}원',
+                  '${FormatUtils.formatCurrency(refund['totalRefund']!.abs())}원',
                   style: AppTextStyles.headingSmall.copyWith(
                     color: refund['totalRefund']! < 0
                         ? Colors.red[600]
@@ -1053,7 +1051,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
           Row(
             children: [
               Text(
-                '${isNegative ? '-' : ''}${_currencyFormat.format(amount.abs())}원',
+                '${isNegative ? '-' : ''}${FormatUtils.formatCurrency(amount.abs())}원',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: isPartial || isNegative
                       ? Colors.red[600]
@@ -1127,7 +1125,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
                   ),
                 ),
                 Text(
-                  '${_currencyFormat.format(refund['penalty']!)}원',
+                  '${FormatUtils.formatCurrency(refund['penalty']!)}원',
                   style: AppTextStyles.headingSmall.copyWith(
                     color: Colors.red[600],
                     fontWeight: FontWeight.bold,
@@ -1171,7 +1169,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
             ),
           ),
           Text(
-            '${_currencyFormat.format(amount)}원',
+            '${FormatUtils.formatCurrency(amount)}원',
             style: AppTextStyles.bodySmall.copyWith(
               color: Colors.red[600],
               fontWeight: FontWeight.bold,

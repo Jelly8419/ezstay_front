@@ -1167,9 +1167,9 @@ class _RegisterPageState extends State<RegisterPage> {
       final authService = context.read<AuthService>();
 
       // 카카오 로그인 실행 (guest 모드로 기본 설정)
-      final success = await authService.loginWithKakao(UserMode.guest);
+      final result = await authService.loginWithKakao(UserMode.guest);
 
-      if (success && mounted) {
+      if (!result.isFailure && mounted) {
         // 카카오 로그인 성공 → RegisterPage를 소셜 로그인 모드로 다시 로드
         final currentUser = authService.currentUser;
         context.pushReplacement(

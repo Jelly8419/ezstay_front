@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../../utils/format_utils.dart';
 import '../../services/auth_service.dart';
 import '../../services/analytics_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -348,7 +348,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
             Expanded(
               child: Text(
                 hasDate
-                    ? '${DateFormat('MM.dd').format(_checkInDate!)} - ${DateFormat('MM.dd').format(_checkOutDate!)}'
+                    ? '${FormatUtils.formatDateShort(_checkInDate!)} - ${FormatUtils.formatDateShort(_checkOutDate!)}'
                     : '날짜를 선택하세요',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: hasDate
@@ -964,8 +964,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
   // ==================== 유틸리티 ====================
   String _formatPrice(int? price) {
     if (price == null) return '미설정';
-    final formatter = NumberFormat('#,###');
-    return formatter.format(price);
+    return FormatUtils.formatCurrency(price);
   }
 }
 

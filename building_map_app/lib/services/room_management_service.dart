@@ -17,7 +17,7 @@ class RoomManagementService {
 
   /// 인증 헤더 생성
   Future<Map<String, String>> _getAuthHeaders() async {
-    final token = await TokenService.getAccessToken();
+    final token = await TokenService.getValidAccessToken();
     return {
       'Content-Type': 'application/json; charset=UTF-8',
       'Authorization': 'Bearer $token',

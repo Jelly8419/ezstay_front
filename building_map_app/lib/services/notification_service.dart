@@ -18,7 +18,7 @@ class NotificationService {
     int limit = 20,
   }) async {
     try {
-      final token = await TokenService.getAccessToken();
+      final token = await TokenService.getValidAccessToken();
       if (token == null) {
         debugPrint('❌ [NotificationService] 토큰 없음');
         return const NotificationListResponse(
@@ -73,7 +73,7 @@ class NotificationService {
   /// PATCH /api/notifications/mark-all-read?userMode={userMode}
   Future<bool> markAllAsRead({String? userMode}) async {
     try {
-      final token = await TokenService.getAccessToken();
+      final token = await TokenService.getValidAccessToken();
       if (token == null) {
         debugPrint('❌ [NotificationService] 토큰 없음');
         return false;
@@ -111,7 +111,7 @@ class NotificationService {
   /// GET /api/notifications/unread-count?userMode={userMode}
   Future<UnreadCountResponse> getUnreadCount({String? userMode}) async {
     try {
-      final token = await TokenService.getAccessToken();
+      final token = await TokenService.getValidAccessToken();
       if (token == null) {
         return const UnreadCountResponse(singleModeCount: 0);
       }

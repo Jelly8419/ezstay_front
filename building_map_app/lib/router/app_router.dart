@@ -230,6 +230,7 @@ class AppRouter {
       navigatorKey: navigatorKey,
       initialLocation: '/',
       debugLogDiagnostics: true,
+      refreshListenable: authService,
       redirect: (BuildContext context, GoRouterState state) {
         final isInitialized = authService.isInitialized;
         final isLoggedIn = authService.isLoggedIn;
@@ -273,6 +274,19 @@ class AppRouter {
           return '/register?verify=true';
         }
 
+        // 호스트인데 계좌 미등록 시, 호스트 전용 페이지 접근하면 계좌 등록 Step3로 강제 이동
+        final user = authService.currentUser;
+        if (isLoggedIn &&
+            user != null &&
+            user.mode == UserMode.host &&
+            !user.hasBank &&
+            !needsPhoneVerification &&
+            !isGoingToRegister &&
+            !isGoingToLogin &&
+            state.matchedLocation.startsWith('/host')) {
+          return '/register?hostAccount=true';
+        }
+
         // 루트 경로(/) 접근 시 무조건 게스트 홈으로 리다이렉트
         // (호스트 모드는 GNB에서 명시적으로 전환할 때만 /host로 이동)
         if (isGoingToRoot) {
@@ -285,22 +299,17 @@ class AppRouter {
           return '/guest';
         }
 
-        // 로그인 안 된 상태에서 호스트 전용 페이지 접근 시 게스트 홈으로 리다이렉트
+        // 로그인 안 된 상태에서 보호된 페이지 접근 시 로그인 페이지로 리다이렉트
         if (!isLoggedIn &&
             !isGoingToLogin &&
             !isGoingToGuest &&
             !isGoingToMap &&
-            state.matchedLocation.startsWith('/host')) {
-          return '/guest';
-        }
-
-        // 로그인 안 된 상태에서 계약 관리 등 보호된 페이지 접근 시 로그인 페이지로
-        if (!isLoggedIn &&
-            !isGoingToLogin &&
-            !isGoingToGuest &&
-            !isGoingToMap &&
-            (state.matchedLocation.contains('/contracts') ||
-                state.matchedLocation.contains('/chat'))) {
+            !isGoingToRegister &&
+            (state.matchedLocation.startsWith('/host') ||
+                state.matchedLocation.contains('/contracts') ||
+                state.matchedLocation.contains('/chat') ||
+                state.matchedLocation.contains('/notifications') ||
+                state.matchedLocation.contains('/mypage'))) {
           return '/login';
         }
 
@@ -716,7 +725,8 @@ class AppRouter {
                 if (loginType == 'google') {
                   success = await authService.loginWithGoogle(mode);
                 } else if (loginType == 'kakao') {
-                  success = await authService.loginWithKakao(mode);
+                  final result = await authService.loginWithKakao(mode);
+                  success = !result.isFailure;
                 }
 
                 if (success && context.mounted) {

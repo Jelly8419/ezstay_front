@@ -7,7 +7,7 @@ import '../../models/calculated_pricing.dart';
 import '../../services/contract_service.dart';
 import '../../services/refund_policy_service.dart';
 import '../../utils/price_calculator.dart';
-import 'package:intl/intl.dart';
+import '../../utils/format_utils.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -37,7 +37,6 @@ class ContractStartPage extends StatefulWidget {
 }
 
 class _ContractStartPageState extends State<ContractStartPage> {
-  final _currencyFormat = NumberFormat('#,###');
   final _messageController = TextEditingController();
   late final ContractService _contractService;
   final RefundPolicyService _refundPolicyService = RefundPolicyService();
@@ -97,9 +96,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
 
   /// 날짜 포맷: YYYY.MM.DD(요일)
   String _formatDate(DateTime date) {
-    final weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-    final weekday = weekdays[date.weekday - 1];
-    return '${DateFormat('yyyy.MM.dd').format(date)}($weekday)';
+    return FormatUtils.formatDateWithDay(date);
   }
 
   @override
@@ -702,7 +699,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Text(
-                                      '${_currencyFormat.format(item.price)}원 x ${item.quantity}개',
+                                      '${FormatUtils.formatCurrency(item.price)}원 x ${item.quantity}개',
                                       style: AppTextStyles.bodySmall.copyWith(
                                         fontSize: 13,
                                         color: const Color(
@@ -715,7 +712,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                               ),
                             ),
                             Text(
-                              '${_currencyFormat.format(item.totalPrice)}원',
+                              '${FormatUtils.formatCurrency(item.totalPrice)}원',
                               style: AppTextStyles.labelMedium.copyWith(
                                 color: const Color(0xFF111827),
                               ),
@@ -1325,7 +1322,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           ),
         ),
         Text(
-          '${isDiscount ? '-' : ''}${_currencyFormat.format(price.abs())}원',
+          '${isDiscount ? '-' : ''}${FormatUtils.formatCurrency(price.abs())}원',
           style: AppTextStyles.bodyMedium.copyWith(
             fontSize: fontSize,
             fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
@@ -1564,7 +1561,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${_currencyFormat.format(widget.calculatedPricing.finalTotalAmount)}원',
+                    '${FormatUtils.formatCurrency(widget.calculatedPricing.finalTotalAmount)}원',
                     style: AppTextStyles.headingSmall.copyWith(
                       color: AppColors.primary600,
                     ),

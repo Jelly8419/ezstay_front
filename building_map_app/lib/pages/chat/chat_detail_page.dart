@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../utils/format_utils.dart';
 import '../../models/chat_message.dart';
 import '../../models/chat_room.dart';
 import '../../services/chat_service.dart';
@@ -399,9 +399,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     } else if (messageDate == yesterday) {
       return '어제';
     } else if (now.year == date.year) {
-      return DateFormat('M월 d일 (E)', 'ko').format(date);
+      return FormatUtils.formatDateKorean(date);
     } else {
-      return DateFormat('yyyy년 M월 d일 (E)', 'ko').format(date);
+      return FormatUtils.formatDateKoreanFull(date);
     }
   }
 }
@@ -472,7 +472,7 @@ class _ChatBubble extends StatelessWidget {
 
   Widget _buildTime() {
     return Text(
-      DateFormat('HH:mm').format(message.timestamp),
+      FormatUtils.formatTime(message.timestamp),
       style: AppTextStyles.bodySmall.copyWith(
         color: AppColors.textSecondary,
         fontSize: 11,

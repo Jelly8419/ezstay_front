@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -697,6 +698,62 @@ class _HostAccountStepState extends State<HostAccountStep> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+            ),
+          ),
+
+          // "나중에 입력" 버튼 (등록 플로우에서만 표시, standalone 모드에서는 미표시)
+          if (!widget.isStandaloneMode) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 48,
+              child: OutlinedButton(
+                onPressed: _isRegistering ? null : _showSkipAccountDialog,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: secondaryGray,
+                  side: const BorderSide(color: borderGray, width: 1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  '나중에 입력 (게스트로 활동)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// "나중에 입력" 확인 다이얼로그
+  void _showSkipAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('게스트로 활동하시겠습니까?'),
+        content: const Text(
+          '계좌 정보를 나중에 입력하시면 게스트 모드로 활동하게 됩니다.\n'
+          '호스트 기능을 사용하시려면 계좌 정보를 등록해야 합니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // 게스트 모드로 홈 이동 (계좌 미등록 상태 유지)
+              context.go('/guest');
+            },
+            child: Text(
+              '게스트로 활동',
+              style: TextStyle(color: AppColors.primary600),
             ),
           ),
         ],

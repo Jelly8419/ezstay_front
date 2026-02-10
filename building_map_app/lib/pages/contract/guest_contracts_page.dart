@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../../utils/format_utils.dart';
 import '../../constants/notice_texts.dart';
 import '../../models/contract.dart';
 import '../../services/contract_service.dart';
@@ -26,9 +26,6 @@ class GuestContractsPage extends StatefulWidget {
 class _GuestContractsPageState extends State<GuestContractsPage> {
   final ContractService _contractService = ContractService();
   final RentalOrderService _rentalOrderService = RentalOrderService();
-  final NumberFormat _currencyFormat = NumberFormat('#,###', 'ko_KR');
-  final DateFormat _dateFormat = DateFormat('yyyy.MM.dd');
-
   List<ContractListItem> _allContracts = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -1830,7 +1827,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     ),
                   ),
                   Text(
-                    '${totalDiff > 0 ? '+' : ''}${_currencyFormat.format(totalDiff.abs())}원',
+                    '${totalDiff > 0 ? '+' : ''}${FormatUtils.formatCurrency(totalDiff.abs())}원',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1942,7 +1939,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
               if (isEditing) ...[
                 const SizedBox(width: 8),
                 Text(
-                  '(개당 ${_currencyFormat.format(item.price)}원)',
+                  '(개당 ${FormatUtils.formatCurrency(item.price)}원)',
                   style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF2563EB), // blue-600
@@ -2103,7 +2100,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '${_currencyFormat.format(item.price * item.quantity)}원',
+                      '${FormatUtils.formatCurrency(item.price * item.quantity)}원',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -2113,7 +2110,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     if (qtyDiff > 0) ...[
                       const SizedBox(height: 4),
                       Text(
-                        '(+${_currencyFormat.format(diffPrice)}원)',
+                        '(+${FormatUtils.formatCurrency(diffPrice)}원)',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Color(0xFF2563EB), // blue-600
@@ -2123,7 +2120,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     ] else if (qtyDiff < 0) ...[
                       const SizedBox(height: 4),
                       Text(
-                        '(${_currencyFormat.format(diffPrice)}원)',
+                        '(${FormatUtils.formatCurrency(diffPrice)}원)',
                         style: TextStyle(
                           fontSize: 12,
                           color: const Color(0xFFDC2626), // red-600
@@ -2138,7 +2135,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           ] else if (item.quantity > 0) ...[
             const SizedBox(height: 4),
             Text(
-              '${_currencyFormat.format(item.price)}원 × ${item.quantity}개 = ${_currencyFormat.format(item.price * item.quantity)}원',
+              '${FormatUtils.formatCurrency(item.price)}원 × ${item.quantity}개 = ${FormatUtils.formatCurrency(item.price * item.quantity)}원',
               style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF374151), // gray-700
@@ -2254,7 +2251,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         // 계약 기간
         _buildInfoRow(
           '계약 기간',
-          '${_dateFormat.format(contract.checkInDate)} - ${_dateFormat.format(contract.checkOutDate)} (${contract.totalDays}일)',
+          '${FormatUtils.formatDate(contract.checkInDate)} - ${FormatUtils.formatDate(contract.checkOutDate)} (${contract.totalDays}일)',
           isMobile: isMobile,
         ),
         SizedBox(height: isMobile ? 12 : 4),
@@ -2262,7 +2259,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         // 결제 금액
         _buildInfoRow(
           '결제 금액',
-          '₩${_currencyFormat.format(contract.finalTotalAmount)}',
+          '₩${FormatUtils.formatCurrency(contract.finalTotalAmount)}',
           isMobile: isMobile,
           valueStyle: const TextStyle(
             fontSize: 16,
@@ -2623,7 +2620,6 @@ class _RefundModal extends StatefulWidget {
 }
 
 class _RefundModalState extends State<_RefundModal> {
-  final _currencyFormat = NumberFormat('#,###');
   bool _isProcessing = false;
   final Set<String> _selectedItems = {}; // "orderId_itemId" 형식
 
@@ -2778,7 +2774,7 @@ class _RefundModalState extends State<_RefundModal> {
     if (activeItems.isEmpty) return const SizedBox.shrink();
 
     final orderDate = order.createdAt != null
-        ? DateFormat('yyyy.MM.dd HH:mm').format(order.createdAt!)
+        ? FormatUtils.formatDateTimeDot(order.createdAt!)
         : '날짜 없음';
 
     return Container(
@@ -2829,7 +2825,7 @@ class _RefundModalState extends State<_RefundModal> {
                   ),
                 ),
                 Text(
-                  '${_currencyFormat.format(order.totalAmount)}원',
+                  '${FormatUtils.formatCurrency(order.totalAmount)}원',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -2903,7 +2899,7 @@ class _RefundModalState extends State<_RefundModal> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${_currencyFormat.format(item.price)}원 × ${item.quantity}개',
+                    '${FormatUtils.formatCurrency(item.price)}원 × ${item.quantity}개',
                     style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF6B7280),
@@ -2914,7 +2910,7 @@ class _RefundModalState extends State<_RefundModal> {
             ),
             // 금액
             Text(
-              '${_currencyFormat.format(item.subtotal)}원',
+              '${FormatUtils.formatCurrency(item.subtotal)}원',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
@@ -2978,7 +2974,6 @@ class _AddOptionModal extends StatefulWidget {
 }
 
 class _AddOptionModalState extends State<_AddOptionModal> {
-  final _currencyFormat = NumberFormat('#,###');
   final Map<int, int> _quantities = {};
 
   int get _totalAmount {
@@ -3111,7 +3106,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                             ),
                           ),
                           Text(
-                            '${_currencyFormat.format(_totalAmount)}원',
+                            '${FormatUtils.formatCurrency(_totalAmount)}원',
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -3220,7 +3215,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
           // 가격
           const SizedBox(height: 4),
           Text(
-            '개당 ${_currencyFormat.format(option.price)}원',
+            '개당 ${FormatUtils.formatCurrency(option.price)}원',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -3317,7 +3312,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
               // 금액
               if (qty > 0)
                 Text(
-                  '${_currencyFormat.format(option.price * qty)}원',
+                  '${FormatUtils.formatCurrency(option.price * qty)}원',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -3349,7 +3344,6 @@ class _CancelOptionModal extends StatefulWidget {
 }
 
 class _CancelOptionModalState extends State<_CancelOptionModal> {
-  final _currencyFormat = NumberFormat('#,###');
   // 아이템 단위 환불 상태 추적 (key: "orderId-itemIndex")
   final Set<String> _refundedItems = {};
   final Set<String> _refundRequestedItems = {};
@@ -3770,7 +3764,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             child: Text(
-                              '${_currencyFormat.format(itemAmount)}원',
+                              '${FormatUtils.formatCurrency(itemAmount)}원',
                               textAlign: TextAlign.right,
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
                             ),
@@ -3819,7 +3813,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                       const Text('금액 합계', style: TextStyle(fontSize: 14, color: Color(0xFF374151))),
                       const SizedBox(width: 8),
                       Text(
-                        '${_currencyFormat.format(refundCalc.total)}원',
+                        '${FormatUtils.formatCurrency(refundCalc.total)}원',
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
                       ),
                       if (refundCalc.shippingFee > 0) ...[
@@ -3827,7 +3821,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                         const Text('-', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
                         const SizedBox(width: 8),
                         Text(
-                          '${_currencyFormat.format(refundCalc.shippingFee)}원',
+                          '${FormatUtils.formatCurrency(refundCalc.shippingFee)}원',
                           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
                         ),
                         const SizedBox(width: 4),
@@ -3839,7 +3833,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                       const Text('환불 받을 금액', style: TextStyle(fontSize: 14, color: Color(0xFF374151))),
                       const SizedBox(width: 8),
                       Text(
-                        '${_currencyFormat.format(refundCalc.finalAmount)}원',
+                        '${FormatUtils.formatCurrency(refundCalc.finalAmount)}원',
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
                       ),
                       const SizedBox(width: 16),
@@ -4064,7 +4058,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                                     ],
                                     const SizedBox(height: 8),
                                     Text(
-                                      '${_currencyFormat.format(itemAmount)}원 · ${item.quantity}개',
+                                      '${FormatUtils.formatCurrency(itemAmount)}원 · ${item.quantity}개',
                                       style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563)),
                                     ),
                                   ],
@@ -4094,13 +4088,13 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                               runSpacing: 4,
                               children: [
                                 Text(
-                                  '${_currencyFormat.format(refundCalc.total)}원',
+                                  '${FormatUtils.formatCurrency(refundCalc.total)}원',
                                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
                                 ),
                                 if (refundCalc.shippingFee > 0) ...[
                                   const Text('-', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
                                   Text(
-                                    '${_currencyFormat.format(refundCalc.shippingFee)}원',
+                                    '${FormatUtils.formatCurrency(refundCalc.shippingFee)}원',
                                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
                                   ),
                                   const Text('(왕복배송비)', style: TextStyle(fontSize: 12, color: Color(0xFFDC2626))),
@@ -4108,7 +4102,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                                 const Text('=', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
                                 const Text('환불 받을 금액', style: TextStyle(fontSize: 14, color: Color(0xFF374151))),
                                 Text(
-                                  '${_currencyFormat.format(refundCalc.finalAmount)}원',
+                                  '${FormatUtils.formatCurrency(refundCalc.finalAmount)}원',
                                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
                                 ),
                               ],
@@ -4183,12 +4177,12 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
     String confirmMsg;
     if (isDelivered) {
       confirmMsg = refundCalc.shippingFee > 0
-          ? '선택한 상품($itemNames)을 환불 요청하시겠습니까?\n왕복 배송비 ${_currencyFormat.format(refundCalc.shippingFee)}원을 차감한 ${_currencyFormat.format(refundCalc.finalAmount)}원이 환불됩니다.\n관리자 승인 후 처리됩니다.'
-          : '선택한 상품($itemNames)을 환불 요청하시겠습니까?\n${_currencyFormat.format(refundCalc.finalAmount)}원이 환불됩니다.\n관리자 승인 후 처리됩니다.';
+          ? '선택한 상품($itemNames)을 환불 요청하시겠습니까?\n왕복 배송비 ${FormatUtils.formatCurrency(refundCalc.shippingFee)}원을 차감한 ${FormatUtils.formatCurrency(refundCalc.finalAmount)}원이 환불됩니다.\n관리자 승인 후 처리됩니다.'
+          : '선택한 상품($itemNames)을 환불 요청하시겠습니까?\n${FormatUtils.formatCurrency(refundCalc.finalAmount)}원이 환불됩니다.\n관리자 승인 후 처리됩니다.';
     } else {
       confirmMsg = refundCalc.shippingFee > 0
-          ? '선택한 상품을 환불하시겠습니까?\n왕복 배송비 ${_currencyFormat.format(refundCalc.shippingFee)}원을 차감한 ${_currencyFormat.format(refundCalc.finalAmount)}원이 환불됩니다.'
-          : '선택한 상품을 환불하시겠습니까?\n${_currencyFormat.format(refundCalc.finalAmount)}원이 환불됩니다.';
+          ? '선택한 상품을 환불하시겠습니까?\n왕복 배송비 ${FormatUtils.formatCurrency(refundCalc.shippingFee)}원을 차감한 ${FormatUtils.formatCurrency(refundCalc.finalAmount)}원이 환불됩니다.'
+          : '선택한 상품을 환불하시겠습니까?\n${FormatUtils.formatCurrency(refundCalc.finalAmount)}원이 환불됩니다.';
     }
 
     final confirmed = await showDialog<bool>(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../utils/format_utils.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/refund_policy.dart';
@@ -25,7 +25,6 @@ class PricingStep extends StatefulWidget {
 }
 
 class _PricingStepState extends State<PricingStep> {
-  final NumberFormat _numberFormat = NumberFormat('#,###', 'ko_KR');
   final RefundPolicyService _refundPolicyService = RefundPolicyService();
 
   // TextEditingController 선언
@@ -239,7 +238,7 @@ class _PricingStepState extends State<PricingStep> {
     if (value.isEmpty) return '';
     final number = int.tryParse(value.replaceAll(',', ''));
     if (number == null) return '';
-    return _numberFormat.format(number);
+    return FormatUtils.formatCurrency(number);
   }
 
   void _handleDailyRentChange(String value) {

@@ -187,37 +187,96 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
     }
   }
 
+  /// 만 나이 계산
+  int _calculateAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+    if (now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  /// 나이 미달 에러 다이얼로그
+  void _showAgeRestrictionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: backgroundWhite,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text(
+          '가입 불가',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: primaryBlack,
+          ),
+        ),
+        content: const Text(
+          '만 19세 미만은 가입할 수 없습니다.',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: textGray,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // 로그인 페이지로 돌아가기
+              context.go('/login');
+            },
+            child: Text(
+              '확인',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.primary600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 본인인증 요청 (임시 - API 없음)
   Future<void> _requestVerification() async {
-    if (_phoneController.text.isEmpty) {
-      _showErrorDialog('휴대폰 번호를 입력해주세요');
-      return;
-    }
-
-    if (!RegExp(
-      r'^01[016789][-]?\d{3,4}[-]?\d{4}$',
-    ).hasMatch(_phoneController.text)) {
-      _showErrorDialog('올바른 휴대폰 번호 형식이 아닙니다');
-      return;
-    }
-
     setState(() {
       _isVerifying = true;
     });
 
     // TODO: 실제 본인인증 API 연동
-    // 현재는 임시로 2초 후 성공 처리
+    // 현재는 임시로 2초 후 성공 처리 (mock)
     await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
+      // mock 본인인증 결과
+      const mockName = '홍길동';
+      const mockPhone = '01012345678';
+      final mockBirthDate = DateTime(1990, 1, 15);
+
+      // 만 19세 미만 체크
+      final age = _calculateAge(mockBirthDate);
+      if (age < 19) {
+        setState(() {
+          _isVerifying = false;
+        });
+        _showAgeRestrictionDialog();
+        return;
+      }
+
       setState(() {
         _isVerifying = false;
         _isVerified = true;
-        // 테스트용 실명 (실제로는 본인인증 결과에서 받음)
-        _nameController.text = '홍길동';
+        _nameController.text = mockName;
+        _phoneController.text = mockPhone;
       });
 
-      _showSuccessDialog('본인인증이 완료되었습니다\n실명: 홍길동');
+      _showSuccessDialog('본인인증이 완료되었습니다\n실명: $mockName');
     }
   }
 
@@ -589,141 +648,47 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
           ),
           const SizedBox(height: 40),
 
-          // 휴대폰 번호 라벨
-          const Text(
-            '휴대폰 번호',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: textGray,
+          // 본인인증 섹션
+          if (!_isVerified) ...[
+            // 인증 전: "본인인증하기" 버튼만 표시
+            SizedBox(
+              height: 56,
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isVerifying ? null : _requestVerification,
+                icon: _isVerifying
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            backgroundWhite,
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.verified_user_outlined, size: 20),
+                label: Text(
+                  _isVerifying ? '인증 진행 중...' : '본인인증하기',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary600,
+                  foregroundColor: backgroundWhite,
+                  elevation: 0,
+                  disabledBackgroundColor: const Color(0xFFE0E0E0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-
-          // 휴대폰 번호 입력 + 본인인증 버튼
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 52,
-                  child: TextFormField(
-                    controller: _phoneController,
-                    enabled: !_isVerified,
-                    keyboardType: TextInputType.phone,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(11),
-                    ],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: primaryBlack,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: '01012345678',
-                      hintStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: hintGray,
-                      ),
-                      filled: true,
-                      fillColor: _isVerified
-                          ? const Color(0xFFF5F5F5)
-                          : backgroundWhite,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: borderGray,
-                          width: 1,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: _isVerified
-                              ? AppColors.success500
-                              : borderGray,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: AppColors.primary600,
-                          width: 1.5,
-                        ),
-                      ),
-                      disabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: AppColors.success500,
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '휴대폰 번호를 입력해주세요';
-                      }
-                      if (!RegExp(r'^01[016789]\d{7,8}$').hasMatch(value)) {
-                        return '올바른 휴대폰 번호 형식이 아닙니다';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isVerified
-                      ? null
-                      : (_isVerifying ? null : _requestVerification),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isVerified
-                        ? AppColors.success500
-                        : AppColors.primary600,
-                    foregroundColor: backgroundWhite,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    disabledBackgroundColor: _isVerified
-                        ? AppColors.success500
-                        : const Color(0xFFE0E0E0),
-                  ),
-                  child: _isVerifying
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              backgroundWhite,
-                            ),
-                          ),
-                        )
-                      : Text(
-                          _isVerified ? '인증완료' : '본인인증',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // 실명 표시 (본인인증 후)
-          if (_isVerified) ...[
+          ] else ...[
+            // 인증 후: 이름/폰번호 read-only 컨테이너 표시
+            // 실명
             const Text(
               '실명',
               style: TextStyle(
@@ -733,39 +698,93 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
               ),
             ),
             const SizedBox(height: 8),
-            SizedBox(
+            Container(
               height: 52,
-              child: TextFormField(
-                controller: _nameController,
-                enabled: false,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: primaryBlack,
-                ),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: const Color(0xFFF5F5F5),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: borderGray, width: 1),
-                  ),
-                  disabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: AppColors.success500,
-                      width: 1,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.success500, width: 1),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _nameController.text,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: primaryBlack,
+                      ),
                     ),
                   ),
-                ),
+                  Icon(Icons.check_circle, color: AppColors.success500, size: 20),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // 휴대폰 번호
+            const Text(
+              '휴대폰 번호',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: textGray,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.success500, width: 1),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _phoneController.text,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: primaryBlack,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.check_circle, color: AppColors.success500, size: 20),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 인증 완료 뱃지
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.success500.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.verified, color: AppColors.success600, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    '본인인증 완료',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.success600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
+          const SizedBox(height: 20),
 
           // 호스트 계좌 정보 입력 (호스트 모드 + 본인인증 완료 후 + 전체 단계인 경우에만)
           if (widget.mode == UserMode.host &&
@@ -1129,7 +1148,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                 Text(
                   '• 본인인증을 통해 실명이 자동으로 입력됩니다\n'
                   '• 입력하신 정보는 안전하게 보호됩니다\n'
-                  '• 만 14세 이상만 가입 가능합니다',
+                  '• 만 19세 이상만 가입 가능합니다',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: textGray,
                     height: 1.5,

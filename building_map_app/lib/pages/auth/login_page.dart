@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
 import '../../models/user.dart';
+import '../../models/login_result.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/mode_selection_dialog.dart';
 import '../../widgets/common/ezstay_logo.dart';
@@ -23,6 +24,12 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoggingIn = false;
   bool _autoLogin = false;
   bool _obscurePassword = true;
+
+  // PRD 5.2: 로그인 실패 횟수 제한 (5회/10분)
+  int _failureCount = 0;
+  DateTime? _lockoutEndTime;
+  static const int _maxFailures = 5;
+  static const Duration _lockoutDuration = Duration(minutes: 10);
 
   @override
   void dispose() {
@@ -487,14 +494,34 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  /// PRD 5.2: 잠금 상태 확인
+  bool _isLockedOut() {
+    if (_lockoutEndTime == null) return false;
+    if (DateTime.now().isAfter(_lockoutEndTime!)) {
+      _lockoutEndTime = null;
+      _failureCount = 0;
+      return false;
+    }
+    return true;
+  }
+
   void _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // PRD 5.2: 잠금 상태 확인
+    if (_isLockedOut()) {
+      final remaining = _lockoutEndTime!.difference(DateTime.now());
+      _showErrorDialog(
+        '로그인 시도가 여러 번 실패하여\n${remaining.inMinutes}분간 로그인할 수 없습니다.',
+      );
+      return;
+    }
 
     setState(() => _isLoggingIn = true);
 
     try {
       final authService = context.read<AuthService>();
-      final success = await authService.loginWithEmail(
+      final result = await authService.loginWithEmail(
         _emailController.text,
         _passwordController.text,
         null,
@@ -503,16 +530,33 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         setState(() => _isLoggingIn = false);
 
-        if (success) {
+        if (result == LoginResult.success) {
+          _failureCount = 0;
+          _lockoutEndTime = null;
           context.go('/');
+        } else if (result == LoginResult.accountWithdrawn) {
+          // PRD 5.3.2: 탈퇴 계정 재가입 다이얼로그
+          _showWithdrawnAccountDialog();
+        } else if (result == LoginResult.accountSuspended) {
+          // PRD 5.3.1: 정지 계정은 라우터가 처리하지만, 로그인 단계에서도 안내
+          _showErrorDialog(result.message);
         } else {
-          _showErrorDialog('로그인에 실패했습니다.\n이메일과 비밀번호를 확인해주세요.');
+          // PRD 5.2: 실패 횟수 증가
+          _failureCount++;
+          if (_failureCount >= _maxFailures) {
+            _lockoutEndTime = DateTime.now().add(_lockoutDuration);
+            _showErrorDialog(
+              '로그인 시도가 여러 번 실패하여\n10분간 로그인할 수 없습니다.',
+            );
+          } else {
+            _showErrorDialog(result.message);
+          }
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoggingIn = false);
-        _showErrorDialog('로그인 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+        _showErrorDialog(LoginResult.unknownError.message);
       }
     }
   }
@@ -521,19 +565,19 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final authService = context.read<AuthService>();
 
-      // 웹 환경에서는 전체 페이지 리다이렉트 (false 반환은 정상 동작)
+      // 웹 환경에서는 전체 페이지 리다이렉트
       if (kIsWeb) {
-        // 로딩 상태 표시하고 리다이렉트 수행
         await authService.loginWithKakao(UserMode.guest);
         // 페이지가 리다이렉트되므로 이후 코드는 실행되지 않음
         return;
       }
 
       // 모바일 환경: 일반 카카오 로그인 플로우
-      final success = await authService.loginWithKakao(UserMode.guest);
+      final result = await authService.loginWithKakao(UserMode.guest);
 
-      if (success && mounted) {
-        // RegisterPage로 이동 (이메일/이름 자동 입력)
+      if (!mounted) return;
+
+      if (result == LoginResult.success) {
         final currentUser = authService.currentUser;
         context.push(
           '/register',
@@ -544,14 +588,84 @@ class _LoginPageState extends State<LoginPage> {
             'isSocialLogin': true,
           },
         );
-      } else if (mounted) {
-        _showErrorDialog('카카오 로그인에 실패했습니다.\n다시 시도해주세요.');
+      } else if (result == LoginResult.kakaoEmailDuplicate) {
+        // PRD 8: 이메일 중복 안내
+        _showErrorDialog(result.message);
+      } else if (result == LoginResult.accountWithdrawn) {
+        _showWithdrawnAccountDialog();
+      } else if (result.isFailure) {
+        _showErrorDialog(result.message);
       }
     } catch (e) {
       if (mounted) {
-        _showErrorDialog('카카오 로그인 중 오류가 발생했습니다.');
+        _showErrorDialog(LoginResult.kakaoOAuthFailed.message);
       }
     }
+  }
+
+  /// PRD 5.3.2: 탈퇴 계정 재가입 안내 다이얼로그
+  void _showWithdrawnAccountDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: backgroundWhite,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: const Text(
+          '탈퇴한 계정',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: primaryBlack,
+          ),
+        ),
+        content: const Text(
+          '탈퇴한 계정입니다.\n재가입 하시겠습니까?',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: textGray,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text(
+              '취소',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: secondaryGray,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              // 모드 선택 후 회원가입 페이지로 이동
+              final selectedMode = await ModeSelectionDialog.show(context);
+              if (selectedMode != null && mounted) {
+                context.push('/register', extra: {
+                  'mode': selectedMode,
+                  'email': _emailController.text,
+                  'isReregistration': true,
+                });
+              }
+            },
+            child: Text(
+              '재가입하기',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 회원가입 처리 - 모드 선택 다이얼로그 표시

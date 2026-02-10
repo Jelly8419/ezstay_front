@@ -1,7 +1,7 @@
 import 'package:building_map_app/config/api_config.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../../utils/format_utils.dart';
 import '../../models/contract.dart';
 import '../../services/contract_service.dart';
 import '../../widgets/modals/guest_preparation_modal.dart';
@@ -19,9 +19,6 @@ class HostContractsPageNew extends StatefulWidget {
 
 class _HostContractsPageNewState extends State<HostContractsPageNew> {
   final ContractService _contractService = ContractService();
-  final NumberFormat _currencyFormat = NumberFormat('#,###');
-  final DateFormat _dateFormat = DateFormat('yyyy.MM.dd(E)', 'ko_KR');
-
   List<ContractListItem> _contracts = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -711,7 +708,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                     const SizedBox(height: 8),
                     _buildInfoRow(
                       '계약 기간',
-                      '${_dateFormat.format(contract.checkInDate)} - ${_dateFormat.format(contract.checkOutDate)} (${contract.totalDays}일)',
+                      '${FormatUtils.formatDateWithDay(contract.checkInDate)} - ${FormatUtils.formatDateWithDay(contract.checkOutDate)} (${contract.totalDays}일)',
                     ),
                     const SizedBox(height: 8),
                     _buildGuestRow(contract),
@@ -1035,7 +1032,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                       ],
                     ),
                     Text(
-                      '₩${_currencyFormat.format(contract.cleaningFee ?? 0)}',
+                      '₩${FormatUtils.formatCurrency(contract.cleaningFee ?? 0)}',
                       style: AppTextStyles.labelMedium.copyWith(
                         color: const Color(0xFF111827),
                       ),
@@ -1080,7 +1077,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                   ),
                 ),
                 Text(
-                  '₩${_currencyFormat.format(contract.deposit ?? 0)}',
+                  '₩${FormatUtils.formatCurrency(contract.deposit ?? 0)}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -1114,7 +1111,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                   ),
                 ),
                 Text(
-                  '₩${_currencyFormat.format((contract.rentalFee ?? 0) + (contract.maintenanceFee ?? 0) + (contract.cleaningFee ?? 0) + (contract.deposit ?? 0))}',
+                  '₩${FormatUtils.formatCurrency((contract.rentalFee ?? 0) + (contract.maintenanceFee ?? 0) + (contract.cleaningFee ?? 0) + (contract.deposit ?? 0))}',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1142,7 +1139,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                   ),
                 ),
                 Text(
-                  '₩${_currencyFormat.format(settlementAmount)}',
+                  '₩${FormatUtils.formatCurrency(settlementAmount)}',
                   style: AppTextStyles.headingSmall.copyWith(
                     color: const Color(0xFF2563EB),
                   ),
@@ -1161,7 +1158,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       children: [
         Text(label, style: AppTextStyles.bodyMedium.copyWith(color: Colors.black)),
         Text(
-          '₩${_currencyFormat.format(amount)}',
+          '₩${FormatUtils.formatCurrency(amount)}',
           style: AppTextStyles.labelMedium.copyWith(
             color: const Color(0xFF111827),
           ),

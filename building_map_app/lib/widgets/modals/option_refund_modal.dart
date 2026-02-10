@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/format_utils.dart';
 
 /// 옵션 환불 확인 모달
 ///
@@ -45,14 +46,6 @@ class OptionRefundModal extends StatelessWidget {
     required this.onConfirm,
     required this.onClose,
   });
-
-  /// 금액 포맷팅 (천 단위 구분)
-  String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    )}원';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +98,7 @@ class OptionRefundModal extends StatelessWidget {
                           children: [
                             const TextSpan(text: '옵션 수량을 변경하고 '),
                             TextSpan(
-                              text: _formatCurrency(refundAmount),
+                              text: FormatUtils.formatKRW(refundAmount),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFFDC2626), // red-600

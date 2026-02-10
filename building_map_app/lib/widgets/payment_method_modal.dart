@@ -4,6 +4,7 @@ import '../models/payment_method.dart'; // PaymentMethod extensions
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../core/theme/app_spacing.dart';
+import '../utils/format_utils.dart';
 
 /// 결제 수단 선택 모달
 class PaymentMethodModal extends StatefulWidget {
@@ -311,7 +312,7 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
                 child: Center(
                   child: Text(
                     isEnabled
-                        ? '₩${_formatCurrency(widget.totalAmount)} 결제하기'
+                        ? '₩${FormatUtils.formatCurrency(widget.totalAmount)} 결제하기'
                         : '결제 수단을 선택해주세요',
                     style: TextStyle(
                       fontSize: 18,
@@ -328,11 +329,4 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
     );
   }
 
-  /// 금액 포맷팅
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]},',
-        );
-  }
 }

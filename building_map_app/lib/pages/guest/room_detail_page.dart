@@ -18,7 +18,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../utils/price_calculator.dart';
 import '../host/room_registration/components/form_section.dart';
-import 'package:intl/intl.dart';
+import '../../utils/format_utils.dart';
 import '../../widgets/kakao_roadview_web.dart';
 import '../../widgets/common/app_footer.dart';
 
@@ -36,7 +36,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   final GuestRoomService _guestRoomService = GuestRoomService();
   final AnalyticsService _analyticsService = AnalyticsService();
   final RefundPolicyService _refundPolicyService = RefundPolicyService();
-  final NumberFormat _currencyFormat = NumberFormat('#,###');
   final ScrollController _thumbnailScrollController = ScrollController();
 
   Room? _room;
@@ -869,7 +868,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                     ),
                   ),
                   Text(
-                    _currencyFormat.format(_room!.dailyMaintenanceFee * 7),
+                    FormatUtils.formatCurrency(_room!.dailyMaintenanceFee * 7),
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -907,7 +906,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                     ),
                   ),
                   Text(
-                    '${_currencyFormat.format((_room!.ezService?.cleaningService == true) ? PriceCalculator.calculateEzCleaningFee(_room!.area) : _room!.cleaningFee)}원',
+                    '${FormatUtils.formatCurrency((_room!.ezService?.cleaningService == true) ? PriceCalculator.calculateEzCleaningFee(_room!.area) : _room!.cleaningFee)}원',
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -968,7 +967,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                     ),
                   ),
                   Text(
-                    _currencyFormat.format(_room!.deposit),
+                    FormatUtils.formatCurrency(_room!.deposit),
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -1016,7 +1015,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           const Divider(),
           _buildDiscountRow(
             '빠른 입주 할인',
-            '${_room!.quickMoveIn ?? 3}일 이내 입주 시 ${_currencyFormat.format(_room!.quickMoveInDiscount)}원 할인',
+            '${_room!.quickMoveIn ?? 3}일 이내 입주 시 ${FormatUtils.formatCurrency(_room!.quickMoveInDiscount ?? 0)}원 할인',
           ),
         ],
 
@@ -1036,7 +1035,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       children: [
         Text(label, style: AppTextStyles.bodyMedium),
         Text(
-          '${_currencyFormat.format(amount)}원',
+          '${FormatUtils.formatCurrency(amount)}원',
           style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
         ),
       ],

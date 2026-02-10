@@ -201,7 +201,7 @@ class SupportService extends ChangeNotifier {
 
   /// 인증 헤더 생성
   Future<Map<String, String>?> _getAuthHeaders() async {
-    final token = await TokenService.getAccessToken();
+    final token = await TokenService.getValidAccessToken();
     if (token == null) {
       debugPrint('❌ [SupportService] Access Token이 없습니다');
       return null;

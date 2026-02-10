@@ -24,7 +24,7 @@ class BankAccountService {
       debugPrint('🏦 [BankAccountService] 계좌 정보 조회 시작');
 
       // 액세스 토큰 가져오기
-      final accessToken = await TokenService.getAccessToken();
+      final accessToken = await TokenService.getValidAccessToken();
       if (accessToken == null) {
         throw Exception('로그인이 필요합니다.');
       }

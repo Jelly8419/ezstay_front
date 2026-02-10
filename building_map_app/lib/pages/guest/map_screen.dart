@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'dart:html' as html show window, EventListener, Event, MessageEvent;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../../utils/format_utils.dart';
 import '../../models/room.dart';
 import '../../models/search_filters.dart';
 import '../../services/room_service.dart';
@@ -68,6 +68,10 @@ class _MapScreenState extends State<MapScreen> {
 
   // 초기 로드 시 photos 누락 대응
   bool _hasRetriedForPhotos = false; // photos 누락 재시도 여부 추적
+
+  // 캐시된 반응형 값 (JS 콜백에서 안전하게 사용)
+  bool _isMobile = false;
+  bool _isDesktop = true;
 
   @override
   void initState() {
@@ -136,6 +140,10 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    // 반응형 값 캐시 (JS 콜백에서 context 접근 없이 사용)
+    _isMobile = ResponsiveUtil.isMobile(context);
+    _isDesktop = ResponsiveUtil.isDesktop(context);
 
     // guest_home_page로부터 전달받은 필터 처리
     final extra = GoRouterState.of(context).extra;
@@ -244,10 +252,10 @@ class _MapScreenState extends State<MapScreen> {
       String? checkInStr;
       String? checkOutStr;
       if (_checkInDate != null) {
-        checkInStr = DateFormat('yyyy-MM-dd').format(_checkInDate!);
+        checkInStr = FormatUtils.formatDateApi(_checkInDate!);
       }
       if (_checkOutDate != null) {
-        checkOutStr = DateFormat('yyyy-MM-dd').format(_checkOutDate!);
+        checkOutStr = FormatUtils.formatDateApi(_checkOutDate!);
       }
 
       // 디버그: API 요청 파라미터 확인
@@ -410,7 +418,7 @@ class _MapScreenState extends State<MapScreen> {
           });
 
           // 모바일 PageView를 첫 번째 카드로 이동
-          if (ResponsiveUtil.isMobile(context) &&
+          if (_isMobile &&
               _mobileCardController.hasClients) {
             _mobileCardController.jumpToPage(0);
             debugPrint('📱 [MAP] 클러스터 필터링 해제 - PageView 첫 번째 카드로 이동');
@@ -461,7 +469,7 @@ class _MapScreenState extends State<MapScreen> {
         }
 
         // 모바일 PageView를 첫 번째 카드로 이동
-        if (ResponsiveUtil.isMobile(context) &&
+        if (_isMobile &&
             _mobileCardController.hasClients) {
           _mobileCardController.jumpToPage(0);
           debugPrint('📱 [MAP] 모바일 PageView를 첫 번째 카드로 이동');
@@ -1319,7 +1327,7 @@ class _MapScreenState extends State<MapScreen> {
             });
 
             // PageView를 첫 번째 카드로 리셋 (모바일/태블릿)
-            if (!ResponsiveUtil.isDesktop(context) &&
+            if (!_isDesktop &&
                 _mobileCardController.hasClients) {
               _mobileCardController.jumpToPage(0);
               debugPrint('📱 [MOBILE] PageView 첫 번째 카드로 리셋');
@@ -1328,7 +1336,7 @@ class _MapScreenState extends State<MapScreen> {
           }
 
           // 반응형 동작 분기
-          if (ResponsiveUtil.isDesktop(context)) {
+          if (_isDesktop) {
             // 데스크톱: 개별 마커 클릭 시 해당 매물만 리스트에 표시
             debugPrint('🖥️ [DESKTOP] 개별 마커 클릭 - 해당 매물만 리스트 표시: $roomId');
 
@@ -1476,7 +1484,7 @@ class _MapScreenState extends State<MapScreen> {
             _onRoomSelected(Room.fromJson(roomJson), focusMap: false);
 
             // 모바일 PageView를 첫 번째 카드로 이동 (개별 마커는 1개만 있으므로 항상 0번째)
-            if (ResponsiveUtil.isMobile(context) &&
+            if (_isMobile &&
                 _mobileCardController.hasClients) {
               _mobileCardController.jumpToPage(0);
               debugPrint('📱 [MOBILE] 개별 마커 - PageView 첫 번째 카드로 이동');
@@ -1488,7 +1496,7 @@ class _MapScreenState extends State<MapScreen> {
           if (!mounted) return;
 
           // 모바일 환경에서 슬라이드 카드가 표시 중이면 숨김 (지도 드래그 시)
-          if (ResponsiveUtil.isMobile(context) && _showMobileCardList) {
+          if (_isMobile && _showMobileCardList) {
             debugPrint('📱 [MOBILE] 지도 드래그 감지 - 슬라이드 카드 숨김 및 매물 개수 뱃지 재표시');
             setState(() {
               _showMobileCardList = false;
@@ -1510,7 +1518,7 @@ class _MapScreenState extends State<MapScreen> {
             _mapController.selectMarker(-1);
 
             // 모바일 PageView 첫 번째 카드로 리셋
-            if (!ResponsiveUtil.isDesktop(context) &&
+            if (!_isDesktop &&
                 _mobileCardController.hasClients) {
               _mobileCardController.jumpToPage(0);
               debugPrint('📱 [MOBILE] PageView 첫 번째 카드로 리셋');
@@ -1737,8 +1745,7 @@ class _MapScreenState extends State<MapScreen> {
 
   /// 가격 포맷팅 (짧은 형식 - React formatCurrencyShort 동일)
   String _formatPriceShort(int price) {
-    final manWon = price ~/ 10000;
-    return '${NumberFormat('#,###').format(manWon)}만원';
+    return FormatUtils.formatManWon(price);
   }
 
   /// 드래그 가능한 스크롤 인디케이터

@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/contract_detail.dart';
+import '../../utils/format_utils.dart';
 
 /// 계약 정보 모달 위젯
 /// React ContractInfoModal.tsx를 Flutter로 완전 복제
@@ -17,29 +18,6 @@ class ContractInfoModal extends StatelessWidget {
     required this.userMode,
     required this.onClose,
   });
-
-  /// 금액 포맷팅
-  String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원';
-  }
-
-  /// 날짜 포맷팅 (YYYY.MM.DD(요일))
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-      final weekday = weekdays[date.weekday % 7];
-      return '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}($weekday)';
-    } catch (e) {
-      return dateStr;
-    }
-  }
-
-  /// 날짜+시간 포맷팅 (DateTime 객체)
-  String _formatDateTimeFromDateTime(DateTime date) {
-    return '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')} '
-        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
 
   /// 호스트 수수료 계산 (3.3%)
   int _getHostCommissionFee() {
@@ -120,27 +98,6 @@ class ContractInfoModal extends StatelessWidget {
         return '호스트 취소';
       default:
         return '알 수 없음';
-    }
-  }
-
-  IconData _getStatusIcon(String status) {
-    switch (status) {
-      case 'PENDING_APPROVAL':
-        return Icons.access_time;
-      case 'APPROVED':
-        return Icons.info_outline;
-      case 'PAYMENT_COMPLETED':
-        return Icons.check_circle;
-      case 'IN_PROGRESS':
-        return Icons.home;
-      case 'COMPLETED':
-        return Icons.check_circle;
-      case 'REJECTED':
-      case 'CANCELLED_BY_GUEST':
-      case 'CANCELLED_BY_HOST':
-        return Icons.cancel;
-      default:
-        return Icons.help_outline;
     }
   }
 
@@ -349,7 +306,7 @@ class ContractInfoModal extends StatelessWidget {
                   // 계약 기간
                   _buildInfoRow(
                     '계약 기간',
-                    '${_formatDate(contract.checkInDate)} - ${_formatDate(contract.checkOutDate)} (${contract.totalDays}일)',
+                    '${FormatUtils.formatDateWithDayString(contract.checkInDate)} - ${FormatUtils.formatDateWithDayString(contract.checkOutDate)} (${contract.totalDays}일)',
                   ),
 
                   // 계약 확정일 (결제 완료 이후만)
@@ -357,7 +314,7 @@ class ContractInfoModal extends StatelessWidget {
                     const SizedBox(height: 8),
                     _buildInfoRow(
                       '계약 확정',
-                      _formatDate(contract.paidAt!),
+                      FormatUtils.formatDateWithDayString(contract.paidAt!),
                       valueStyle: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.neutral700,
                         fontWeight: FontWeight.w700,
@@ -735,7 +692,7 @@ class ContractInfoModal extends StatelessWidget {
                         ],
                       ),
                       Text(
-                        _formatCurrency(contract.deposit),
+                        FormatUtils.formatKRW(contract.deposit),
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.gray900,
                           fontWeight: FontWeight.w700,
@@ -767,7 +724,7 @@ class ContractInfoModal extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        _formatCurrency(totalContractAmount),
+                        FormatUtils.formatKRW(totalContractAmount),
                         style: AppTextStyles.headingSmall.copyWith(
                           color: AppColors.gray900,
                         ),
@@ -790,7 +747,7 @@ class ContractInfoModal extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '- ${_formatCurrency(_getHostCommissionFee())}',
+                      '- ${FormatUtils.formatKRW(_getHostCommissionFee())}',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.gray900,
                         fontWeight: FontWeight.w700,
@@ -821,7 +778,7 @@ class ContractInfoModal extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        _formatCurrency(_getActualSettlementAmount()),
+                        FormatUtils.formatKRW(_getActualSettlementAmount()),
                         style: AppTextStyles.headingSmall.copyWith(
                           color: AppColors.blue600,
                         ),
@@ -886,7 +843,7 @@ class ContractInfoModal extends StatelessWidget {
               ],
             ),
             Text(
-              _formatCurrency(contract.deposit),
+              FormatUtils.formatKRW(contract.deposit),
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.gray900,
                 fontWeight: FontWeight.w700,
@@ -916,7 +873,7 @@ class ContractInfoModal extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  _formatCurrency(totalRentalAmount),
+                  FormatUtils.formatKRW(totalRentalAmount),
                   style: AppTextStyles.headingSmall.copyWith(
                     color: AppColors.gray900,
                   ),
@@ -940,7 +897,7 @@ class ContractInfoModal extends StatelessWidget {
           ),
         ),
         Text(
-          _formatCurrency(amount),
+          FormatUtils.formatKRW(amount),
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.gray900,
             fontWeight: FontWeight.w700,
@@ -982,7 +939,7 @@ class ContractInfoModal extends StatelessWidget {
           ],
         ),
         Text(
-          _formatCurrency(contract.cleaningFee),
+          FormatUtils.formatKRW(contract.cleaningFee),
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.gray900,
             fontWeight: FontWeight.w700,
@@ -1055,7 +1012,7 @@ class ContractInfoModal extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      _formatCurrency(item.totalPrice),
+                      FormatUtils.formatKRW(item.totalPrice),
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.gray900,
                         fontWeight: FontWeight.w700,
@@ -1085,7 +1042,7 @@ class ContractInfoModal extends StatelessWidget {
                 ),
               ),
               Text(
-                _formatCurrency(contract.rentalItemsFee),
+                FormatUtils.formatKRW(contract.rentalItemsFee),
                 style: AppTextStyles.headingSmall.copyWith(
                   color: AppColors.gray900,
                 ),
@@ -1155,7 +1112,7 @@ class ContractInfoModal extends StatelessWidget {
                             ),
                           const SizedBox(height: 4), // mt-1
                           Text(
-                            _formatDateTimeFromDateTime(history.transactionDate),
+                            FormatUtils.formatDateTimeDot(history.transactionDate),
                             style: AppTextStyles.caption.copyWith(
                               color: AppColors.neutral500,
                             ),
@@ -1164,7 +1121,7 @@ class ContractInfoModal extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${history.isPayment ? '+' : '-'}${_formatCurrency(history.amount)}',
+                      '${history.isPayment ? '+' : '-'}${FormatUtils.formatKRW(history.amount)}',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: history.isPayment
                             ? AppColors.gray900

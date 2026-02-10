@@ -8,7 +8,7 @@ import '../services/token_service.dart';
 class ScheduleService {
   /// API 요청 헤더 생성
   Future<Map<String, String>> _getHeaders() async {
-    final token = await TokenService.getAccessToken();
+    final token = await TokenService.getValidAccessToken();
     return {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
