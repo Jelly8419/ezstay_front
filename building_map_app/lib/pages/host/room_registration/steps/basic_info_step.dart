@@ -107,6 +107,27 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
     );
 
     if (result != null && result.isNotEmpty) {
+      // 서울 지역 제한 검증 (Daum API sido 필드는 축약형: "서울")
+      final sido = result['sido'] ?? '';
+      if (sido.isNotEmpty && sido != '서울') {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('서비스 지역 안내'),
+              content: const Text('현재 서울 지역만 방 등록이 가능합니다.\n서비스 지역은 추후 확대될 예정입니다.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('확인'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
       String fullAddress = '';
       if (result.containsKey('roadAddress') &&
           result['roadAddress']!.isNotEmpty) {

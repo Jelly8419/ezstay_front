@@ -16,6 +16,8 @@ class RegistrationValidator {
     final address = formData['address'] as String?;
     if (address == null || address.isEmpty) {
       errors.add('주소를 입력해주세요');
+    } else if (!address.startsWith('서울')) {
+      errors.add('현재 서울 지역만 방 등록이 가능합니다');
     }
 
     final detailAddress = formData['detailAddress'] as String?;
