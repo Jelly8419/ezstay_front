@@ -1,7 +1,7 @@
-import 'package:building_map_app/config/api_config.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/format_utils.dart';
+import '../../utils/contract_utils.dart';
 import '../../models/contract.dart';
 import '../../services/contract_service.dart';
 import '../../widgets/modals/guest_preparation_modal.dart';
@@ -661,7 +661,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                 borderRadius: BorderRadius.circular(8),
                 child: contract.roomThumbnail != null
                     ? Image.network(
-                        '${ApiConfig.baseUrl}${contract.roomThumbnail!}',
+                        ContractUtils.getFullImageUrl(contract.roomThumbnail),
                         width: 128,
                         height: 128,
                         fit: BoxFit.cover,

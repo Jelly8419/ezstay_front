@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/room.dart';
+import '../utils/contract_utils.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../core/theme/app_spacing.dart';
@@ -123,7 +124,7 @@ class RoomManagementCard extends StatelessWidget {
               height: imageHeight,
               child: imageUrl != null
                   ? CachedNetworkImage(
-                      imageUrl: imageUrl,
+                      imageUrl: ContractUtils.getFullImageUrl(imageUrl),
                       fit: BoxFit.cover,
                       placeholder: (context, url) => _buildPlaceholder(),
                       errorWidget: (context, url, error) => _buildPlaceholder(),

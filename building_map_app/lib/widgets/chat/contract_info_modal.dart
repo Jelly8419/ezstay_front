@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/contract_detail.dart';
 import '../../utils/format_utils.dart';
+import '../../utils/contract_utils.dart';
 
 /// 계약 정보 모달 위젯
 /// React ContractInfoModal.tsx를 Flutter로 완전 복제
@@ -272,7 +273,7 @@ class ContractInfoModal extends StatelessWidget {
               borderRadius: BorderRadius.circular(8), // rounded-lg
               child: contract.roomPhoto.isNotEmpty
                   ? CachedNetworkImage(
-                      imageUrl: contract.roomPhoto,
+                      imageUrl: ContractUtils.getFullImageUrl(contract.roomPhoto),
                       width: 128, // w-32
                       height: 128, // h-32
                       fit: BoxFit.cover,
@@ -448,7 +449,7 @@ class ContractInfoModal extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(9999),
                   child: CachedNetworkImage(
-                    imageUrl: profileImage,
+                    imageUrl: ContractUtils.getFullImageUrl(profileImage),
                     width: 48, // w-12
                     height: 48, // h-12
                     fit: BoxFit.cover,

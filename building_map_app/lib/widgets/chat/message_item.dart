@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/chat_message.dart';
 import '../../models/chat_room.dart';
+import '../../utils/contract_utils.dart';
 
 /// 채팅 메시지 아이템 위젯
 /// React MessageItem.tsx를 Flutter로 완전 복제
@@ -199,7 +200,7 @@ class MessageItem extends StatelessWidget {
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 320), // max-w-xs
                             child: CachedNetworkImage(
-                              imageUrl: message.imageUrl!,
+                              imageUrl: ContractUtils.getFullImageUrl(message.imageUrl),
                               fit: BoxFit.cover,
                               placeholder: (ctx, url) => Container(
                                 width: 200,
@@ -240,7 +241,7 @@ class MessageItem extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(9999), // rounded-full
           child: CachedNetworkImage(
-            imageUrl: otherPartyAvatar,
+            imageUrl: ContractUtils.getFullImageUrl(otherPartyAvatar),
             width: 32, // w-8
             height: 32, // h-8
             fit: BoxFit.cover,
@@ -298,7 +299,7 @@ class MessageItem extends StatelessWidget {
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 320), // max-w-xs
                           child: CachedNetworkImage(
-                            imageUrl: message.imageUrl!,
+                            imageUrl: ContractUtils.getFullImageUrl(message.imageUrl),
                             fit: BoxFit.cover,
                             placeholder: (ctx, url) => Container(
                               width: 200,

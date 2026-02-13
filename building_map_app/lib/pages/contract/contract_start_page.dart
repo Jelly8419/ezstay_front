@@ -8,6 +8,7 @@ import '../../services/contract_service.dart';
 import '../../services/refund_policy_service.dart';
 import '../../utils/price_calculator.dart';
 import '../../utils/format_utils.dart';
+import '../../utils/contract_utils.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -266,7 +267,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
   /// React: 모바일에서 세로 배열, 데스크톱에서 가로 배열
   Widget _buildRoomInfoSection(bool isWideScreen) {
     final thumbnailUrl = widget.room.photos.isNotEmpty
-        ? widget.room.photos.first.url
+        ? ContractUtils.getFullImageUrl(widget.room.photos.first.url)
         : null;
 
     return Container(

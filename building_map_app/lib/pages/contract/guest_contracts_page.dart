@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/format_utils.dart';
+import '../../utils/contract_utils.dart';
 import '../../constants/notice_texts.dart';
 import '../../models/contract.dart';
 import '../../services/contract_service.dart';
@@ -2161,7 +2162,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             borderRadius: BorderRadius.circular(8),
             child: contract.roomThumbnail != null
                 ? Image.network(
-                    contract.roomThumbnail!,
+                    ContractUtils.getFullImageUrl(contract.roomThumbnail),
                     width: double.infinity,
                     height: 192,
                     fit: BoxFit.cover,
@@ -2197,7 +2198,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             borderRadius: BorderRadius.circular(8),
             child: contract.roomThumbnail != null
                 ? Image.network(
-                    contract.roomThumbnail!,
+                    ContractUtils.getFullImageUrl(contract.roomThumbnail),
                     width: 140,
                     height: 140,
                     fit: BoxFit.cover,
