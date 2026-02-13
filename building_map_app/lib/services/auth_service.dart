@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:html' as html;
 import '../models/user.dart';
+import '../models/login_result.dart';
 import '../config/kakao_config.dart';
 import '../config/api_config.dart';
 import 'token_service.dart';
@@ -21,6 +22,15 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _currentUser != null;
   bool get isInitialized => _isInitialized; // 초기화 완료 여부 getter
+
+  /// 본인인증이 필요한 상태인지 확인
+  bool get needsPhoneVerification => _currentUser != null && !(_currentUser!.phoneVerified);
+
+  /// 계정이 정지 상태인지 확인
+  bool get isAccountSuspended => _currentUser != null && _currentUser!.isSuspended;
+
+  /// 정지 사유
+  String? get suspensionReason => _currentUser?.suspensionReason;
 
   /// 로그인 상태 변경
   void _setLoading(bool loading) {
@@ -98,22 +108,60 @@ class AuthService extends ChangeNotifier {
 
           if (userInfo != null) {
             final userMode = userInfo['mode'] ?? userInfo['userMode'];
+
+            // 🔍 디버그: phoneVerified 값 추적
+            final rawPhoneVerified = userInfo['phoneVerified'];
+            final rawHasBank = userInfo['hasBank'];
+            debugPrint('🔍 [DEV_BYPASS] 백엔드 응답 phoneVerified: $rawPhoneVerified (타입: ${rawPhoneVerified.runtimeType})');
+            debugPrint('🔍 [DEV_BYPASS] 백엔드 응답 hasBank: $rawHasBank (타입: ${rawHasBank.runtimeType})');
+
+            // phoneVerified 값 안전하게 파싱 (bool, int, String 모두 처리)
+            bool phoneVerifiedValue = true; // bypass 기본값은 true
+            if (rawPhoneVerified != null) {
+              if (rawPhoneVerified is bool) {
+                phoneVerifiedValue = rawPhoneVerified;
+              } else if (rawPhoneVerified is int) {
+                phoneVerifiedValue = rawPhoneVerified == 1;
+              } else if (rawPhoneVerified is String) {
+                phoneVerifiedValue = rawPhoneVerified.toLowerCase() == 'true' || rawPhoneVerified == '1';
+              }
+            }
+
+            // hasBank 값 안전하게 파싱
+            bool hasBankValue = false;
+            if (rawHasBank != null) {
+              if (rawHasBank is bool) {
+                hasBankValue = rawHasBank;
+              } else if (rawHasBank is int) {
+                hasBankValue = rawHasBank == 1;
+              } else if (rawHasBank is String) {
+                hasBankValue = rawHasBank.toLowerCase() == 'true' || rawHasBank == '1';
+              }
+            }
+
+            debugPrint('✅ [DEV_BYPASS] 파싱된 phoneVerified: $phoneVerifiedValue');
+            debugPrint('✅ [DEV_BYPASS] 파싱된 hasBank: $hasBankValue');
+
             _currentUser = User(
               id: userInfo['id'].toString(),
               email: userInfo['email'] ?? 'dev@test.com',
               name: userInfo['name'] ?? 'Dev User',
+              nickname: userInfo['nickname'],
               mode: UserMode.values.firstWhere(
                 (m) => m.name == userMode,
                 orElse: () => UserMode.guest,
               ),
               provider: AuthProvider.email,
               profileImageUrl: userInfo['profileImageUrl'],
+              phoneVerified: phoneVerifiedValue,
+              hasBank: hasBankValue,
             );
 
             // 사용자 정보 저장
             await UserRepository.saveUser(_currentUser!);
             debugPrint('✅ [DEV_BYPASS] 사용자 정보 저장 완료');
             debugPrint('👤 [DEV_BYPASS] 사용자: ${_currentUser!.email} (${_currentUser!.mode.name})');
+            debugPrint('📊 [DEV_BYPASS] phoneVerified: ${_currentUser!.phoneVerified}, hasBank: ${_currentUser!.hasBank}');
           }
         }
 
@@ -132,7 +180,9 @@ class AuthService extends ChangeNotifier {
   }
 
   /// 이메일 로그인
-  Future<bool> loginWithEmail(String email, String password, UserMode? mode) async {
+  ///
+  /// PRD v2.0 섹션 5.2에 따라 실패 케이스별 [LoginResult]를 반환합니다.
+  Future<LoginResult> loginWithEmail(String email, String password, UserMode? mode) async {
     debugPrint('🚀 [LOGIN] 로그인 시작 - Email: $email, Mode: ${mode?.name ?? 'null'}');
     _setLoading(true);
 
@@ -204,11 +254,16 @@ class AuthService extends ChangeNotifier {
               id: userInfo['id'].toString(),
               email: email,
               name: userInfo['name'] ?? email.split('@')[0],
+              nickname: userInfo['nickname'],
               mode: UserMode.values.firstWhere(
                 (m) => m.name == userMode,
                 orElse: () => mode ?? UserMode.guest,
               ),
               provider: AuthProvider.email,
+              phoneVerified: userInfo['phoneVerified'] ?? false,
+              hasBank: userInfo['hasBank'] ?? false,
+              accountStatus: AccountStatus.fromString(userInfo['accountStatus']),
+              suspensionReason: userInfo['suspensionReason'],
             );
           } else {
             // 사용자 정보가 없는 경우 기본값 설정
@@ -239,18 +294,48 @@ class AuthService extends ChangeNotifier {
         }
 
         _setLoading(false);
-        return true;
+        return LoginResult.success;
       } else if (response.statusCode == 401) {
-        debugPrint('로그인 실패: 이메일 또는 비밀번호가 잘못되었습니다');
+        // PRD 5.2.1: 이메일/비밀번호 에러 분리
+        final data = json.decode(response.body);
+        final errorCode = data['code'];
+        debugPrint('로그인 실패: 에러코드=$errorCode');
         _setLoading(false);
-        return false;
+
+        if (errorCode == 4001) {
+          return LoginResult.emailNotFound;
+        } else if (errorCode == 4002) {
+          return LoginResult.wrongPassword;
+        }
+        // 에러코드 없으면 기존 호환성 유지 (통합 메시지)
+        return LoginResult.wrongPassword;
+      } else if (response.statusCode == 403) {
+        // PRD 5.3: 계정 상태별 처리
+        final data = json.decode(response.body);
+        final errorCode = data['code'];
+        debugPrint('로그인 차단: 에러코드=$errorCode');
+        _setLoading(false);
+
+        if (errorCode == 4031) {
+          return LoginResult.accountSuspended;
+        } else if (errorCode == 4032) {
+          return LoginResult.accountWithdrawn;
+        }
+        return LoginResult.unknownError;
       } else {
         debugPrint('로그인 실패: ${response.statusCode} - ${response.body}');
         _setLoading(false);
-        return false;
+        return LoginResult.unknownError;
       }
     } catch (e) {
       debugPrint('❌ [LOGIN] 로그인 에러 발생: $e');
+
+      if (ApiConfig.isProduction) {
+        // 프로덕션 환경에서는 네트워크 에러로 처리
+        _setLoading(false);
+        return LoginResult.networkError;
+      }
+
       debugPrint('⚠️ [LOGIN] 백엔드 연결 실패 - 시뮬레이션 모드로 전환');
       // 백엔드 연결 실패 시 시뮬레이션으로 처리 (개발 환경)
       await Future.delayed(const Duration(seconds: 1));
@@ -263,11 +348,16 @@ class AuthService extends ChangeNotifier {
         provider: AuthProvider.email,
       );
 
+      // 시뮬레이션 토큰 생성 및 저장 (개발 환경에서 로그인 유지를 위해)
+      final simToken = 'sim_${DateTime.now().millisecondsSinceEpoch}_${email.hashCode}';
+      await _saveTokens(simToken, simToken);
+      debugPrint('💾 [LOGIN] 시뮬레이션 토큰 저장 완료');
+
       // 사용자 정보 저장
       await UserRepository.saveUser(_currentUser!);
 
       _setLoading(false);
-      return true;
+      return LoginResult.success;
     }
   }
 
@@ -297,11 +387,11 @@ class AuthService extends ChangeNotifier {
   }
 
   /// 카카오 로그인
-  Future<bool> loginWithKakao(UserMode? mode) async {
+  ///
+  /// PRD v2.0 섹션 5.2.2에 따라 실패 케이스별 [LoginResult]를 반환합니다.
+  Future<LoginResult> loginWithKakao(UserMode? mode) async {
     debugPrint('🚀 [KAKAO] 로그인 시작');
-    debugPrint('🔧 [KAKAO] API 키: ${KakaoConfig.restApiKey}');
     debugPrint('🔧 [KAKAO] Redirect URL: ${KakaoConfig.redirectUrl}');
-    debugPrint('🔧 [KAKAO] Auth URL: ${KakaoConfig.authUrl}');
     _setLoading(true);
 
     try {
@@ -309,9 +399,9 @@ class AuthService extends ChangeNotifier {
         // 웹에서는 브라우저에서 직접 OAuth URL 열기
         debugPrint('웹 환경: 브라우저에서 카카오 로그인 페이지 열기');
         html.window.location.href = KakaoConfig.authUrl;
-        // 웹에서는 리다이렉트로 처리되므로 여기서는 false 반환
+        // 웹에서는 리다이렉트로 처리되므로 여기서는 unknownError 반환 (페이지 이동됨)
         _setLoading(false);
-        return false;
+        return LoginResult.unknownError;
       } else {
         // 모바일에서는 기존 Flutter SDK 사용
         return await _loginWithKakaoMobile(mode);
@@ -319,12 +409,12 @@ class AuthService extends ChangeNotifier {
     } catch (error) {
       debugPrint('카카오 로그인 에러: $error');
       _setLoading(false);
-      return false;
+      return LoginResult.kakaoOAuthFailed;
     }
   }
 
   /// 모바일 환경 카카오 로그인
-  Future<bool> _loginWithKakaoMobile(UserMode? mode) async {
+  Future<LoginResult> _loginWithKakaoMobile(UserMode? mode) async {
     try {
       // 1. 카카오 로그인 시도
       kakao.OAuthToken? token;
@@ -342,7 +432,7 @@ class AuthService extends ChangeNotifier {
           // 의도적인 로그인 취소로 보고 카카오계정으로 로그인 시도 없이 로그인 취소로 처리 (예: 뒤로 가기)
           if (error is PlatformException && error.code == 'CANCELED') {
             _setLoading(false);
-            return false;
+            return LoginResult.unknownError;
           }
           // 카카오톡에 연결된 카카오계정이 없는 경우, 카카오계정으로 로그인
           try {
@@ -351,7 +441,7 @@ class AuthService extends ChangeNotifier {
           } catch (error) {
             debugPrint('카카오계정으로 로그인 실패 $error');
             _setLoading(false);
-            return false;
+            return LoginResult.kakaoOAuthFailed;
           }
         }
       } else {
@@ -362,7 +452,7 @@ class AuthService extends ChangeNotifier {
         } catch (error) {
           debugPrint('카카오계정으로 로그인 실패 $error');
           _setLoading(false);
-          return false;
+          return LoginResult.kakaoOAuthFailed;
         }
       }
 
@@ -372,34 +462,40 @@ class AuthService extends ChangeNotifier {
       debugPrint('카카오 사용자 정보: ${kakaoUser.toString()}');
 
       // 3. 백엔드에 토큰 전송 및 인증 처리
-      final success = await _authenticateWithBackend(token, kakaoUser, mode);
+      final backendResult = await _authenticateWithBackend(token, kakaoUser, mode);
 
-      if (success) {
+      if (backendResult == LoginResult.success) {
         // 4. 로컬 사용자 정보 설정
+        // 카카오 로그인 시 카카오 닉네임을 nickname으로 사용
         _currentUser = User(
           id: kakaoUser.id.toString(),
           email: kakaoUser.kakaoAccount?.email ?? 'user@kakao.com',
           name: kakaoUser.kakaoAccount?.profile?.nickname ?? '카카오 사용자',
+          nickname: kakaoUser.kakaoAccount?.profile?.nickname,
           profileImageUrl: kakaoUser.kakaoAccount?.profile?.profileImageUrl,
           mode: mode ?? UserMode.guest,
           provider: AuthProvider.kakao,
         );
 
         _setLoading(false);
-        return true;
+        return LoginResult.success;
       } else {
         _setLoading(false);
-        return false;
+        return backendResult;
       }
     } catch (error) {
       debugPrint('모바일 카카오 로그인 에러: $error');
       _setLoading(false);
-      return false;
+      // PRD 5.2.2: 연동 실패 vs OAuth 실패 구분
+      if (error.toString().contains('network') || error.toString().contains('connection')) {
+        return LoginResult.kakaoConnectionFailed;
+      }
+      return LoginResult.kakaoOAuthFailed;
     }
   }
 
   /// 백엔드와 카카오 토큰 인증 처리
-  Future<bool> _authenticateWithBackend(kakao.OAuthToken token, kakao.User kakaoUser, UserMode? mode) async {
+  Future<LoginResult> _authenticateWithBackend(kakao.OAuthToken token, kakao.User kakaoUser, UserMode? mode) async {
     try {
       // 백엔드 API 엔드포인트
       final backendUrl = ApiConfig.authKakaoUrl;
@@ -422,22 +518,37 @@ class AuthService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint('백엔드 인증 성공: $data');
+        debugPrint('✅ [KAKAO_AUTH] 백엔드 인증 응답: $data');
 
-        // JWT 토큰 저장 등 추가 처리
-        if (data['accessToken'] != null && data['refreshToken'] != null) {
-          await _saveTokens(data['accessToken'], data['refreshToken']);
+        // JWT 토큰 저장
+        final accessToken = data['accessToken'];
+        final refreshToken = data['refreshToken'];
+
+        if (accessToken != null && refreshToken != null) {
+          debugPrint('🔐 [KAKAO_AUTH] JWT 토큰 저장');
+          await _saveTokens(accessToken, refreshToken);
+          return LoginResult.success;
         }
 
-        return true;
+        debugPrint('⚠️ [KAKAO_AUTH] 응답에 토큰 정보가 없습니다');
+        return LoginResult.unknownError;
+      } else if (response.statusCode == 409) {
+        // PRD 8: 이메일 중복 - 카카오 이메일이 기존 이메일 계정과 동일
+        debugPrint('❌ [KAKAO_AUTH] 이메일 중복: ${response.body}');
+        return LoginResult.kakaoEmailDuplicate;
+      } else if (response.statusCode == 403) {
+        final data = json.decode(response.body);
+        final errorCode = data['code'];
+        if (errorCode == 4031) return LoginResult.accountSuspended;
+        if (errorCode == 4032) return LoginResult.accountWithdrawn;
+        return LoginResult.unknownError;
       } else {
-        debugPrint('백엔드 인증 실패: ${response.statusCode} - ${response.body}');
-        return false;
+        debugPrint('❌ [KAKAO_AUTH] 백엔드 인증 실패: ${response.statusCode} - ${response.body}');
+        return LoginResult.kakaoConnectionFailed;
       }
     } catch (e) {
-      debugPrint('백엔드 인증 에러: $e');
-      // 백엔드 연결 실패해도 로그인은 성공으로 처리 (개발 환경)
-      return true;
+      debugPrint('❌ [KAKAO_AUTH] 백엔드 인증 에러: $e');
+      return LoginResult.kakaoConnectionFailed;
     }
   }
 
@@ -526,6 +637,34 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// OAuth 콜백에서 전달받은 토큰으로 인증 (라우터에서 호출)
+  Future<bool> handleOAuthCallback(String accessToken, String refreshToken) async {
+    try {
+      debugPrint('✅ [AUTH_CALLBACK] OAuth 콜백 처리 시작');
+      debugPrint('🔐 Access Token: ${accessToken.substring(0, 20)}...');
+      debugPrint('🔄 Refresh Token: ${refreshToken.substring(0, 20)}...');
+
+      // 토큰들 저장
+      await _saveTokens(accessToken, refreshToken);
+
+      // 토큰으로 사용자 정보 요청
+      final success = await _authenticateWithToken(accessToken);
+
+      if (success) {
+        debugPrint('✅ [AUTH_CALLBACK] 인증 성공');
+        return true;
+      } else {
+        debugPrint('❌ [AUTH_CALLBACK] 사용자 정보 가져오기 실패');
+        await _clearTokens();
+        return false;
+      }
+    } catch (error) {
+      debugPrint('❌ [AUTH_CALLBACK] 에러: $error');
+      await _clearTokens();
+      return false;
+    }
+  }
+
   /// JWT 토큰으로 사용자 정보 인증
   Future<bool> _authenticateWithToken(String token) async {
     try {
@@ -559,20 +698,44 @@ class AuthService extends ChangeNotifier {
           }
 
           // 서버에서 검증된 사용자 정보로 설정
+          String userMode;
+          if (user['mode'] != null) {
+            userMode = user['mode'];
+            debugPrint('🔍 [USER_MODE] user[mode]에서 가져옴: $userMode');
+          } else if (user['userMode'] != null) {
+            userMode = user['userMode'];
+            debugPrint('🔍 [USER_MODE] user[userMode]에서 가져옴: $userMode');
+          } else {
+            // 백엔드가 userMode를 보내주지 않는 경우: 기본값 guest
+            // (hasBank로 추론하면 계좌 등록한 게스트가 호스트로 잘못 인식됨)
+            userMode = 'guest';
+            debugPrint('⚠️ [USER_MODE] 서버 응답에 userMode 없음 - 기본값 guest로 설정');
+            debugPrint('⚠️ [USER_MODE] 백엔드에 userMode 필드 추가 필요! (hasBank=${user['hasBank']})');
+          }
+
+          debugPrint('🎯 [USER_MODE] 최종 결정된 userMode: $userMode');
+          debugPrint('📊 [USER_MODE] 사용자 정보: phoneVerified=${user['phoneVerified']}, hasBank=${user['hasBank']}');
+
           _currentUser = User(
             id: user['id'].toString(),
             email: user['email'] ?? 'user@kakao.com',
             name: user['name'] ?? '카카오 사용자',
+            nickname: user['nickname'],
             profileImageUrl: user['profileImageUrl'],
-            mode: UserMode.guest, // 기본값, 나중에 사용자가 선택
+            mode: UserMode.values.firstWhere(
+              (m) => m.name == userMode,
+              orElse: () => UserMode.guest,
+            ),
             provider: AuthProvider.kakao,
+            phoneVerified: user['phoneVerified'] ?? false,
+            hasBank: user['hasBank'] ?? false,
           );
 
           // 검증된 토큰 저장
           await TokenService.saveTokens(token, data['refreshToken']);
 
           notifyListeners();
-          debugPrint('✅ 서버 검증 완료 - 사용자: ${user['name']}');
+          debugPrint('✅ 서버 검증 완료 - 사용자: ${user['name']} (닉네임: ${user['nickname']})');
           return true;
         } else {
           debugPrint('❌ 서버 응답 데이터 형식 오류');
@@ -599,20 +762,34 @@ class AuthService extends ChangeNotifier {
 
       return false;
     } on TimeoutException {
-      debugPrint('❌ 서버 요청 타임아웃');
-      return false;
+      debugPrint('❌ 서버 요청 타임아웃 (네트워크 문제)');
+      rethrow; // 네트워크 오류는 호출자가 판단하도록 전파
     } on FormatException catch (e) {
       debugPrint('❌ JSON 파싱 오류: $e');
       return false;
     } catch (error) {
+      // 네트워크 관련 에러인지 확인
+      final errorStr = error.toString().toLowerCase();
+      if (errorStr.contains('socketexception') ||
+          errorStr.contains('connection') ||
+          errorStr.contains('network') ||
+          errorStr.contains('handshake')) {
+        debugPrint('❌ 네트워크 연결 오류: $error');
+        rethrow; // 네트워크 오류는 호출자가 판단하도록 전파
+      }
       debugPrint('❌ 토큰 인증 에러: $error');
       return false;
     }
   }
 
-  /// JWT 토큰 형식 검증 (기본적인 형식만 확인)
+  /// JWT 토큰 형식 검증 (기본적인 형식만 확인, 만료 여부는 서버에서 처리)
   bool _isValidTokenFormat(String token) {
-    return !TokenService.isTokenExpired(token);
+    if (token.isEmpty || token.length < 10) return false;
+    // 시뮬레이션 토큰 (sim_ 접두사) 허용
+    if (token.startsWith('sim_')) return true;
+    // JWT는 3개 파트 (header.payload.signature)
+    final parts = token.split('.');
+    return parts.length == 3 && parts.every((part) => part.isNotEmpty);
   }
 
   /// 사용자 데이터 유효성 검증
@@ -670,33 +847,45 @@ class AuthService extends ChangeNotifier {
       }
 
       if (accessToken != null) {
-        // 서버에서 토큰 검증 및 사용자 정보 가져오기
-        final success = await _authenticateWithToken(accessToken);
+        try {
+          // 서버에서 토큰 검증 및 사용자 정보 가져오기
+          final success = await _authenticateWithToken(accessToken);
 
-        if (success) {
+          if (success) {
+            if (!ApiConfig.isProduction) {
+              debugPrint('✅ [AUTO_LOGIN] 자동 로그인 성공');
+            }
+            return;
+          } else {
+            // 인증 실패 (401, 403 등 서버가 토큰을 거부) - 토큰 및 사용자 정보 모두 제거
+            // 반로그인 상태 방지: 토큰 없이 사용자 정보만 남으면 isLoggedIn=true인데 API는 모두 실패
+            if (!ApiConfig.isProduction) {
+              debugPrint('⚠️ [AUTO_LOGIN] 서버 인증 실패 - 토큰 및 사용자 정보 제거');
+            }
+            await _clearTokens();
+            await _clearUserInfo();
+          }
+        } catch (e) {
+          // 네트워크 오류 (타임아웃, 연결 실패 등) - 토큰은 유지하고 저장된 사용자 정보로 복원
           if (!ApiConfig.isProduction) {
-            debugPrint('✅ [AUTO_LOGIN] 자동 로그인 성공');
+            debugPrint('⚠️ [AUTO_LOGIN] 네트워크 오류로 서버 검증 불가 - 토큰 유지, 오프라인 모드');
+            debugPrint('⚠️ [AUTO_LOGIN] 에러: $e');
+          }
+          // 토큰은 삭제하지 않고, 저장된 사용자 정보로 복원
+          final userInfo = await UserRepository.loadUser();
+          if (userInfo != null) {
+            _currentUser = userInfo;
+            if (!ApiConfig.isProduction) {
+              debugPrint('✅ [AUTO_LOGIN] 오프라인 복원 성공: ${userInfo.email}');
+            }
           }
           return;
-        } else {
-          // 토큰 검증 실패 - 토큰 제거
-          await _clearTokens();
         }
       }
 
-      // 토큰이 없거나 만료된 경우, 저장된 사용자 정보로 복원 시도
-      final userInfo = await UserRepository.loadUser();
-
-      if (userInfo != null) {
-        _currentUser = userInfo;
-        if (!ApiConfig.isProduction) {
-          debugPrint('✅ [AUTO_LOGIN] 저장된 사용자 정보 복원: ${userInfo.email}');
-          debugPrint('⚠️ [AUTO_LOGIN] 토큰이 없어 API 호출은 불가능합니다. 다시 로그인이 필요합니다.');
-        }
-      } else {
-        if (!ApiConfig.isProduction) {
-          debugPrint('ℹ️ [AUTO_LOGIN] 저장된 사용자 정보 없음');
-        }
+      // 토큰이 없는 경우에만 여기 도달 (토큰 삭제 후 또는 처음부터 없었던 경우)
+      if (!ApiConfig.isProduction) {
+        debugPrint('ℹ️ [AUTO_LOGIN] 유효한 토큰 없음 - 로그인 필요');
       }
     } catch (e) {
       debugPrint('❌ [AUTO_LOGIN] 자동 로그인 실패: $e');
@@ -721,50 +910,10 @@ class AuthService extends ChangeNotifier {
     await UserRepository.clearUser();
   }
 
-  /// Refresh 토큰으로 Access 토큰 갱신
+  /// Refresh 토큰으로 Access 토큰 갱신 (TokenService에 위임)
   Future<bool> _refreshAccessToken() async {
-    try {
-      final refreshToken = await getRefreshToken();
-      if (refreshToken == null) {
-        debugPrint('❌ Refresh 토큰이 없음');
-        return false;
-      }
-
-      debugPrint('🔄 Access 토큰 갱신 시도...');
-
-      final response = await http.post(
-        Uri.parse(ApiConfig.authRefreshUrl),
-        headers: {
-          'Authorization': 'Bearer $refreshToken',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(ApiConfig.timeout);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['success'] == true && data['accessToken'] != null) {
-          // 새로운 토큰들 저장
-          await _saveTokens(
-            data['accessToken'],
-            data['refreshToken'] ?? refreshToken, // 새 refresh token이 없으면 기존 것 유지
-          );
-
-          debugPrint('✅ Access 토큰 갱신 성공');
-          return true;
-        }
-      } else if (response.statusCode == 401) {
-        debugPrint('❌ Refresh 토큰도 만료됨 - 재로그인 필요');
-        await _clearTokens();
-      } else {
-        debugPrint('❌ 토큰 갱신 서버 오류: ${response.statusCode}');
-      }
-
-      return false;
-    } catch (error) {
-      debugPrint('❌ 토큰 갱신 에러: $error');
-      return false;
-    }
+    final newToken = await TokenService.refreshAccessToken();
+    return newToken != null;
   }
 
   /// 회원가입 (이메일)
@@ -806,6 +955,7 @@ class AuthService extends ChangeNotifier {
             id: data['data']['user']['id'].toString(),
             email: email,
             name: data['data']['user']['name'] ?? email.split('@')[0],
+            nickname: data['data']['user']['nickname'],
             mode: UserMode.values.firstWhere(
               (m) => m.name == data['data']['user']['userMode'],
               orElse: () => mode ?? UserMode.guest,
@@ -893,12 +1043,18 @@ class AuthService extends ChangeNotifier {
         id: _currentUser!.id,
         email: _currentUser!.email,
         name: _currentUser!.name,
+        nickname: _currentUser!.nickname, // 유지
         profileImageUrl: _currentUser!.profileImageUrl,
         mode: newMode,
         provider: _currentUser!.provider,
+        phoneVerified: _currentUser!.phoneVerified, // 유지
+        hasBank: _currentUser!.hasBank, // 유지
+        accountStatus: _currentUser!.accountStatus, // 유지
+        suspensionReason: _currentUser!.suspensionReason, // 유지
       );
       await UserRepository.updateUserMode(newMode);
       notifyListeners();
+      debugPrint('✅ [AUTH] 사용자 모드 변경: ${newMode.name}');
     }
   }
 }

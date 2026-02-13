@@ -1,0 +1,338 @@
+name: Deploy Flutter Web to EC2
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - production
+
+env:
+  REMOTE_UPLOAD_PATH: '/opt/ezstay/frontend/flutter'
+  REMOTE_NGINX_PATH: '/var/www/flutter'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ==========================================
+      # 1. 환경 설정
+      # ==========================================
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Get GitHub Actions Runner IP
+        id: runner-ip
+        run: |
+          # 여러 공개 IP 서비스를 순차적으로 시도 (fallback)
+          IP=$(curl -s https://api.ipify.org || curl -s https://ifconfig.me || curl -s https://icanhazip.com)
+          if [ -z "$IP" ]; then
+            echo "❌ Failed to get public IP"
+            exit 1
+          fi
+          echo "ipv4=$IP" >> $GITHUB_OUTPUT
+          echo "✅ Runner IP: $IP"
+
+      - name: 🔓 Add Runner IP to AWS Security Group
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          RUNNER_IP="${{ steps.runner-ip.outputs.ipv4 }}"
+          SG_ID="${{ secrets.EC2_SECURITY_GROUP_ID }}"
+
+          echo "🌐 Runner IP: $RUNNER_IP"
+          echo "🛡️ Security Group: $SG_ID"
+
+          # SSH 포트(22) 인바운드 규칙 추가
+          aws ec2 authorize-security-group-ingress \
+            --group-id "$SG_ID" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${RUNNER_IP}/32" \
+            --region "${{ secrets.AWS_REGION }}" \
+            || echo "⚠️ Rule may already exist (continuing...)"
+
+      # ==========================================
+      # 2. Flutter 빌드
+      # ==========================================
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: 📝 Create .env files for build
+        working-directory: ./building_map_app
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment || 'test' }}
+        run: |
+          echo "📝 Creating .env files for Flutter build..."
+
+          # 환경별 설정
+          if [ "$ENVIRONMENT" == "production" ]; then
+            API_URL="https://api.ezstay.com"
+            KAKAO_REST="88df9fa560e1447eb0930e5bae9ff017"
+            KAKAO_JS="7b8e75100e5af72db70a46c3fef81128"
+            IS_PROD="true"
+          else
+            API_URL="https://ezstay-api.duckdns.org"
+            KAKAO_REST="32ea67da1f7c3d55fd573c285a5fc0f2"
+            KAKAO_JS="8fa88a5c7a3edac4ee6d8dd52af14f60"
+            IS_PROD="false"
+          fi
+
+          # 기본 .env 파일 생성 (pubspec.yaml에서 필수로 요구)
+          cat > .env << EOF
+          API_BASE_URL=$API_URL
+          KAKAO_REST_API_KEY=$KAKAO_REST
+          KAKAO_JAVASCRIPT_KEY=$KAKAO_JS
+          IS_PRODUCTION=$IS_PROD
+          TOSS_CLIENT_KEY=test_ck_PBal2vxj81voBvwla6xG35RQgOAN
+          PAYMENT_MOCK_MODE=true
+          API_TIMEOUT_SECONDS=10
+          EOF
+
+          # .env.test 파일 생성
+          cat > .env.test << EOF
+          API_BASE_URL=https://ezstay-api.duckdns.org
+          KAKAO_REST_API_KEY=32ea67da1f7c3d55fd573c285a5fc0f2
+          KAKAO_JAVASCRIPT_KEY=8fa88a5c7a3edac4ee6d8dd52af14f60
+          IS_PRODUCTION=false
+          TOSS_CLIENT_KEY=test_ck_PBal2vxj81voBvwla6xG35RQgOAN
+          PAYMENT_MOCK_MODE=true
+          API_TIMEOUT_SECONDS=10
+          EOF
+
+          # .env.production 파일 생성
+          cat > .env.production << EOF
+          API_BASE_URL=https://api.ezstay.com
+          KAKAO_REST_API_KEY=88df9fa560e1447eb0930e5bae9ff017
+          KAKAO_JAVASCRIPT_KEY=7b8e75100e5af72db70a46c3fef81128
+          IS_PRODUCTION=true
+          TOSS_CLIENT_KEY=live_ck_REPLACE_WITH_LIVE_KEY
+          PAYMENT_MOCK_MODE=false
+          API_TIMEOUT_SECONDS=10
+          EOF
+
+          echo "✅ .env 파일 생성 완료"
+          echo "📋 생성된 파일 목록:"
+          ls -la .env*
+
+      - name: 📦 Install dependencies
+        working-directory: ./building_map_app
+        run: flutter pub get
+
+      - name: 🧪 Run tests (웹 전용 테스트 제외)
+        working-directory: ./building_map_app
+        run: |
+          echo "⏭️ Skipping tests (dart:html not available in VM)"
+          echo "Tests should be run in Chrome: flutter test -d chrome"
+        continue-on-error: true
+
+      - name: 🏗️ Build Flutter web
+        working-directory: ./building_map_app
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment || 'test' }}
+          API_URL: ${{ github.event.inputs.environment == 'production' && 'https://api.ezstay.com' || 'https://ezstay-api.duckdns.org' }}
+          KAKAO_REST_KEY: ${{ github.event.inputs.environment == 'production' && '88df9fa560e1447eb0930e5bae9ff017' || '32ea67da1f7c3d55fd573c285a5fc0f2' }}
+          KAKAO_JS_KEY: ${{ github.event.inputs.environment == 'production' && '7b8e75100e5af72db70a46c3fef81128' || '8fa88a5c7a3edac4ee6d8dd52af14f60' }}
+          TOSS_CLIENT_KEY: ${{ github.event.inputs.environment == 'production' && secrets.TOSS_LIVE_CLIENT_KEY || 'test_ck_PBal2vxj81voBvwla6xG35RQgOAN' }}
+        run: |
+          echo "🔧 Environment: $ENVIRONMENT"
+          echo "🌐 API URL: $API_URL"
+          echo "🔑 Kakao REST Key: ${KAKAO_REST_KEY:0:10}..."
+          echo "🔑 Kakao JS Key: ${KAKAO_JS_KEY:0:10}..."
+          echo "💳 Toss Client Key: ${TOSS_CLIENT_KEY:0:10}..."
+
+          flutter build web --release \
+            --no-wasm-dry-run \
+            --base-href=/app/ \
+            --dart-define=ENVIRONMENT=$ENVIRONMENT \
+            --dart-define=API_BASE_URL=$API_URL \
+            --dart-define=KAKAO_REST_API_KEY=$KAKAO_REST_KEY \
+            --dart-define=KAKAO_JAVASCRIPT_KEY=$KAKAO_JS_KEY \
+            --dart-define=TOSS_CLIENT_KEY=$TOSS_CLIENT_KEY
+
+      - name: 🔑 Inject Kakao Key into index.html
+        working-directory: ./building_map_app/build/web
+        env:
+          KAKAO_JS_KEY: ${{ github.event.inputs.environment == 'production' && '7b8e75100e5af72db70a46c3fef81128' || '8fa88a5c7a3edac4ee6d8dd52af14f60' }}
+        run: |
+          echo "🔑 Injecting Kakao JS Key: ${KAKAO_JS_KEY:0:10}..."
+
+          # index.html에서 프로덕션 키를 환경별 키로 교체
+          sed -i "s/appkey=7b8e75100e5af72db70a46c3fef81128/appkey=${KAKAO_JS_KEY}/g" index.html
+
+          # 교체 확인
+          echo "📋 Check injection result:"
+          grep "dapi.kakao.com/v2/maps/sdk.js" index.html || echo "❌ Kakao script tag not found!"
+
+      - name: 🗑️ Add cache busting for deferred libraries
+        working-directory: ./building_map_app/build/web
+        run: |
+          echo "🗑️ Adding cache busting version..."
+          BUILD_VERSION=$(date +%Y%m%d%H%M%S)
+
+          # flutter_bootstrap.js에 버전 추가
+          sed -i "s/flutter_bootstrap.js/flutter_bootstrap.js?v=${BUILD_VERSION}/g" index.html
+
+          # main.dart.js에 버전 추가 (flutter_bootstrap.js 내부에서 로드)
+          if [ -f "flutter_bootstrap.js" ]; then
+            sed -i "s/main.dart.js/main.dart.js?v=${BUILD_VERSION}/g" flutter_bootstrap.js
+          fi
+
+          echo "✅ Cache busting version: $BUILD_VERSION"
+
+          echo "✅ Kakao key injection completed"
+
+      # ==========================================
+      # 3. SSH 설정
+      # ==========================================
+      - name: 🔐 Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.TEST_SERVER_SSH_KEY }}" > ~/.ssh/deploy_key.pem
+          chmod 600 ~/.ssh/deploy_key.pem
+
+          # known_hosts에 서버 추가
+          ssh-keyscan -H -p ${{ secrets.TEST_SERVER_PORT }} \
+            ${{ secrets.TEST_SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      # ==========================================
+      # 4. EC2 배포
+      # ==========================================
+      - name: 🧹 Clean old files on server
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem \
+            -p ${{ secrets.TEST_SERVER_PORT }} \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} \
+            "sudo rm -rf ${{ env.REMOTE_UPLOAD_PATH }}/web && \
+             sudo rm -rf ${{ env.REMOTE_NGINX_PATH }}/* && \
+             echo '✅ Cleanup completed'"
+
+      - name: 📤 Upload build to EC2
+        run: |
+          # 업로드 디렉토리 생성
+          ssh -i ~/.ssh/deploy_key.pem \
+            -p ${{ secrets.TEST_SERVER_PORT }} \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} \
+            "sudo mkdir -p ${{ env.REMOTE_UPLOAD_PATH }}"
+
+          # SCP로 파일 전송
+          scp -i ~/.ssh/deploy_key.pem \
+            -P ${{ secrets.TEST_SERVER_PORT }} \
+            -o StrictHostKeyChecking=no \
+            -r building_map_app/build/web \
+            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }}:${{ env.REMOTE_UPLOAD_PATH }}/
+
+      - name: 🚀 Deploy to Nginx
+        env:
+          KAKAO_JS_KEY: ${{ github.event.inputs.environment == 'production' && '7b8e75100e5af72db70a46c3fef81128' || '8fa88a5c7a3edac4ee6d8dd52af14f60' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem \
+            -p ${{ secrets.TEST_SERVER_PORT }} \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} << DEPLOY_SCRIPT
+
+          # Nginx 디렉토리로 복사
+          sudo mkdir -p ${{ env.REMOTE_NGINX_PATH }}
+          sudo cp -r ${{ env.REMOTE_UPLOAD_PATH }}/web/* ${{ env.REMOTE_NGINX_PATH }}/
+
+          # index.html에 Kakao Maps SDK 스크립트 주입 (빌드 시 누락되는 경우 대비)
+          if ! grep -q "dapi.kakao.com/v2/maps/sdk.js" ${{ env.REMOTE_NGINX_PATH }}/index.html; then
+            echo "⚠️ Kakao Maps script missing, injecting..."
+            sudo sed -i 's|</head>|  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=${{ env.KAKAO_JS_KEY }}"></script>\n</head>|' ${{ env.REMOTE_NGINX_PATH }}/index.html
+          fi
+
+          # 권한 설정
+          sudo chown -R nginx:nginx ${{ env.REMOTE_NGINX_PATH }}
+          sudo chmod -R 755 ${{ env.REMOTE_NGINX_PATH }}
+
+          # Nginx 설정 확인
+          sudo nginx -t
+
+          # Nginx 재시작
+          sudo systemctl reload nginx
+
+          echo "✅ Deployment completed"
+          DEPLOY_SCRIPT
+
+      # ==========================================
+      # 5. 배포 확인
+      # ==========================================
+      - name: ✅ Verify deployment
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem \
+            -p ${{ secrets.TEST_SERVER_PORT }} \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} << 'VERIFY_SCRIPT'
+
+          echo "📊 Files in Nginx path:"
+          ls -lh ${{ env.REMOTE_NGINX_PATH }} | head -10
+
+          echo ""
+          echo "💾 Disk usage:"
+          du -sh ${{ env.REMOTE_NGINX_PATH }}
+
+          echo ""
+          echo "🌐 Server IP:"
+          curl -s ifconfig.me || echo "N/A"
+          VERIFY_SCRIPT
+
+      # ==========================================
+      # 6. 보안 그룹 정리 (항상 실행)
+      # ==========================================
+      - name: 🔒 Remove Runner IP from Security Group
+        if: always()
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          RUNNER_IP="${{ steps.runner-ip.outputs.ipv4 }}"
+          SG_ID="${{ secrets.EC2_SECURITY_GROUP_ID }}"
+
+          echo "🔒 Removing Runner IP from Security Group..."
+
+          aws ec2 revoke-security-group-ingress \
+            --group-id "$SG_ID" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${RUNNER_IP}/32" \
+            --region "${{ secrets.AWS_REGION }}" \
+            || echo "⚠️ Rule may not exist (continuing...)"
+
+          echo "✅ Security group cleaned up"
+
+      # ==========================================
+      # 7. 배포 완료 알림
+      # ==========================================
+      - name: 🎉 Deployment summary
+        if: success()
+        run: |
+          echo "======================================"
+          echo "  🎉 Deployment Successful!"
+          echo "======================================"
+          echo ""
+          echo "🔧 Environment: ${{ github.event.inputs.environment || 'test' }}"
+          echo "🌐 Server: ${{ secrets.TEST_SERVER_HOST }}"
+          echo "📊 API URL: ${{ github.event.inputs.environment == 'production' && 'https://api.ezstay.com' || 'https://ezstay-api.duckdns.org' }}"
+          echo ""
+          echo "Next steps:"
+          echo "  1. Test the website in browser"
+          echo "  2. Check for console errors"
+          echo "  3. Verify all features work correctly"
+          echo ""

@@ -209,29 +209,29 @@ class RoomService {
     }
   }
 
-  /// 5. 무료 부가서비스 설정
-  Future<bool> updateFreeServices(int roomId, Map<String, dynamic> servicesData) async {
+  /// 5. 이지스테이 관리 서비스 설정 (EZ Service)
+  Future<bool> updateEzServices(int roomId, Map<String, dynamic> servicesData) async {
     try {
-      debugPrint('🎁 [SERVICES] 무료 부가서비스 설정 시작 - roomId: $roomId');
-      debugPrint('📦 [SERVICES] 요청 데이터: $servicesData');
+      debugPrint('🎁 [EZ_SERVICES] 이지스테이 관리 서비스 설정 시작 - roomId: $roomId');
+      debugPrint('📦 [EZ_SERVICES] 요청 데이터: $servicesData');
 
       final response = await http.patch(
-        Uri.parse(ApiConfig.roomFreeServicesUrl(roomId)),
+        Uri.parse(ApiConfig.roomEzServicesUrl(roomId)),
         headers: await _getHeaders(),
         body: json.encode(servicesData),
       ).timeout(ApiConfig.timeout);
 
-      debugPrint('📡 [SERVICES] 응답 상태: ${response.statusCode}');
+      debugPrint('📡 [EZ_SERVICES] 응답 상태: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        debugPrint('✅ [SERVICES] 무료 부가서비스 설정 성공');
+        debugPrint('✅ [EZ_SERVICES] 이지스테이 관리 서비스 설정 성공');
         return true;
       } else {
-        debugPrint('❌ [SERVICES] 무료 부가서비스 설정 실패: ${response.statusCode}');
+        debugPrint('❌ [EZ_SERVICES] 이지스테이 관리 서비스 설정 실패: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      debugPrint('❌ [SERVICES] 무료 부가서비스 설정 에러: $e');
+      debugPrint('❌ [EZ_SERVICES] 이지스테이 관리 서비스 설정 에러: $e');
       return false;
     }
   }
@@ -427,11 +427,11 @@ class RoomService {
           final rooms = List<Map<String, dynamic>>.from(data['data']['rooms']);
           debugPrint('📊 [ROOMS] 전체 방 개수: ${rooms.length}개');
 
-          // draft 또는 pending_review 상태인 방만 필터링
+          // draft 상태인 방만 필터링 (pending_review는 심사 요청 완료 상태이므로 제외)
           final inProgressRooms = rooms.where((room) {
             final status = room['status'];
             debugPrint('🔍 [ROOMS] 방 ID ${room['id']}, status: $status');
-            return status == 'draft' || status == 'pending_review';
+            return status == 'draft';
           }).toList();
 
           debugPrint('📊 [ROOMS] 등록 중인 방: ${inProgressRooms.length}개');
@@ -494,12 +494,17 @@ class RoomService {
     required double neLat,
     required double neLng,
     int? zoom,
+    String? checkIn,
+    String? checkOut,
   }) async {
     try {
       debugPrint('🗺️ [MAP] 지도 영역 기반 방 검색 시작');
       debugPrint('📍 [MAP] SW: ($swLat, $swLng) - NE: ($neLat, $neLng)');
       if (zoom != null) {
         debugPrint('🔍 [MAP] 줌 레벨: $zoom');
+      }
+      if (checkIn != null && checkOut != null) {
+        debugPrint('📅 [MAP] 체크인: $checkIn, 체크아웃: $checkOut');
       }
 
       final queryParams = {
@@ -512,6 +517,14 @@ class RoomService {
       // 줌 레벨이 있으면 추가
       if (zoom != null) {
         queryParams['zoom'] = zoom.toString();
+      }
+
+      // 체크인/체크아웃 날짜가 있으면 추가
+      if (checkIn != null) {
+        queryParams['checkIn'] = checkIn;
+      }
+      if (checkOut != null) {
+        queryParams['checkOut'] = checkOut;
       }
 
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/rooms/map').replace(

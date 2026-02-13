@@ -4,59 +4,100 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ChatMessage {
   final String id;
   final int senderId;
+  final String? senderName;  // 시스템 메시지용
   final String text;
   final DateTime timestamp;
   final bool isRead;
   final MessageType type;
+  final String? systemMessageType;  // 'contract_approved', 'contract_completed' 등
+  final String? imageUrl;  // 이미지 메시지용 (React UI 호환)
 
   ChatMessage({
     required this.id,
     required this.senderId,
+    this.senderName,
     required this.text,
     required this.timestamp,
     this.isRead = false,
     this.type = MessageType.text,
+    this.systemMessageType,
+    this.imageUrl,
   });
 
   factory ChatMessage.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    // timestamp가 null이거나 Timestamp가 아닌 경우 방어 처리
+    DateTime parsedTimestamp;
+    if (data['timestamp'] is Timestamp) {
+      parsedTimestamp = (data['timestamp'] as Timestamp).toDate();
+    } else {
+      parsedTimestamp = DateTime.now();
+    }
     return ChatMessage(
       id: doc.id,
-      senderId: data['senderId'],
+      senderId: data['senderId'] ?? 0,
+      senderName: data['senderName'],
       text: data['text'] ?? '',
-      timestamp: (data['timestamp'] as Timestamp).toDate(),
+      timestamp: parsedTimestamp,
       isRead: data['isRead'] ?? false,
       type: MessageType.fromString(data['type'] ?? 'text'),
+      systemMessageType: data['systemMessageType'],
+      imageUrl: data['imageUrl'],
     );
   }
 
   Map<String, dynamic> toFirestore() {
     return {
       'senderId': senderId,
+      if (senderName != null) 'senderName': senderName,
       'text': text,
       'timestamp': Timestamp.fromDate(timestamp),
       'isRead': isRead,
       'type': type.value,
+      if (systemMessageType != null) 'systemMessageType': systemMessageType,
+      if (imageUrl != null) 'imageUrl': imageUrl,
     };
   }
 
   ChatMessage copyWith({
     String? id,
     int? senderId,
+    String? senderName,
     String? text,
     DateTime? timestamp,
     bool? isRead,
     MessageType? type,
+    String? systemMessageType,
+    String? imageUrl,
   }) {
     return ChatMessage(
       id: id ?? this.id,
       senderId: senderId ?? this.senderId,
+      senderName: senderName ?? this.senderName,
       text: text ?? this.text,
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
       type: type ?? this.type,
+      systemMessageType: systemMessageType ?? this.systemMessageType,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
+
+  /// 메시지 시간 포맷팅 (React UI 호환 - HH:mm)
+  String getFormattedTime() {
+    return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// 시스템 메시지인지 확인
+  bool get isSystemMessage => type == MessageType.system;
+
+  /// 계약 메시지인지 확인 (systemMessageType이 contract 관련인 경우)
+  bool get isContractMessage =>
+      type == MessageType.system &&
+      (systemMessageType?.contains('contract') ?? false);
+
+  /// 이미지 메시지인지 확인
+  bool get isImageMessage => type == MessageType.image || imageUrl != null;
 }
 
 /// 메시지 타입

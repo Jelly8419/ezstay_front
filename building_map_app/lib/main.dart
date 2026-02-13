@@ -15,32 +15,77 @@ import 'constants/app_constants.dart';
 import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
 import 'services/room_service.dart';
-import 'providers/chat_provider.dart';
+import 'services/map_interaction_coordinator.dart';
+import 'services/payment_service_unified.dart';
+import 'providers/gnb_provider.dart';
 import 'router/app_router.dart';
 import 'widgets/kakao_map_web.dart';
 import 'widgets/splash_screen.dart';
+
+/// Flutter Web Focus 에러 방지를 위한 안전한 Focus Traversal Policy
+/// inactive element의 renderObject 접근 시도를 안전하게 처리
+class SafeFocusTraversalPolicy extends ReadingOrderTraversalPolicy {
+  @override
+  Iterable<FocusNode> sortDescendants(Iterable<FocusNode> descendants, FocusNode currentNode) {
+    try {
+      return super.sortDescendants(descendants, currentNode);
+    } catch (e) {
+      // inactive element 에러 무시하고 빈 리스트 반환
+      debugPrint('⚠️ [SafeFocusTraversalPolicy] Focus 정렬 중 에러 무시: $e');
+      return <FocusNode>[];
+    }
+  }
+
+  @override
+  FocusNode? findFirstFocus(FocusNode currentNode, {bool ignoreCurrentFocus = false}) {
+    try {
+      return super.findFirstFocus(currentNode, ignoreCurrentFocus: ignoreCurrentFocus);
+    } catch (e) {
+      // inactive element 에러 무시
+      debugPrint('⚠️ [SafeFocusTraversalPolicy] 첫 Focus 찾기 중 에러 무시: $e');
+      return null;
+    }
+  }
+}
 
 /// 앱의 진입점
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // .env 파일 로드
-  await dotenv.load(fileName: ".env");
+  // .env 파일 로드 (환경별 분리)
+  // 빌드 시 --dart-define=ENVIRONMENT=test/production 으로 지정
+  const environment = String.fromEnvironment('ENVIRONMENT', defaultValue: 'development');
+  final envFile = environment == 'production'
+      ? '.env.production'
+      : environment == 'test'
+          ? '.env.test'
+          : '.env';
 
-  // 🔥 Firebase 초기화를 백그라운드로 이동 (await 제거)
-  final firebaseInitFuture = _initializeFirebase();
+  debugPrint('🔧 [ENV] 환경: $environment, 로드할 파일: $envFile');
 
-  // 한국어 날짜 포맷 초기화 (table_calendar를 위함)
+  // .env 파일 로드 시도 (실패해도 계속 진행)
+  // 프로덕션 빌드에서는 --dart-define으로 전달된 값 사용
+  try {
+    await dotenv.load(fileName: envFile);
+    debugPrint('✅ [ENV] $envFile 파일 로드 성공');
+  } catch (e) {
+    debugPrint('⚠️ [ENV] $envFile 파일 로드 실패 (--dart-define 값 사용): $e');
+  }
+
+  // 한국어 날짜 포맷 초기화 (intl 패키지)
   await initializeDateFormatting('ko_KR', null);
 
   // 웹에서 URL의 '#' 제거 (path 기반 라우팅 사용)
   usePathUrlStrategy();
 
-  // 카카오 SDK 초기화
+  // 카카오 SDK 초기화 (dotenv 로드 후 호출 - 안전성 보장)
   kakao.KakaoSdk.init(
     nativeAppKey: KakaoConfig.restApiKey,
     javaScriptAppKey: KakaoConfig.restApiKey,
   );
+
+  // 🔥 Firebase 초기화를 백그라운드로 이동 (await 제거)
+  final firebaseInitFuture = _initializeFirebase();
 
   // 카카오 맵 초기화
   AuthRepository.initialize(appKey: KakaoConfig.javascriptKey);
@@ -60,6 +105,20 @@ Future<void> main() async {
     await authService.handleKakaoWebCallback();
   }
 
+  // 웹 결제 서비스 초기화 (토스페이먼츠 SDK)
+  // SDK 초기화 실패 시에도 앱이 계속 작동하도록 try-catch
+  if (kIsWeb) {
+    try {
+      final paymentService = PaymentServiceUnified();
+      // ignore: deprecated_member_use_from_same_package
+      paymentService.initializeWebSDK();
+      debugPrint('✅ [MAIN] 토스페이먼츠 웹 SDK 초기화 완료');
+    } catch (e) {
+      debugPrint('⚠️ [MAIN] 토스페이먼츠 SDK 초기화 실패: $e');
+      debugPrint('⚠️ [MAIN] 결제 기능이 비활성화됩니다. 앱은 계속 작동합니다.');
+    }
+  }
+
   // 🔥 자동 로그인을 백그라운드로 실행 (await 제거)
   unawaited(authService.tryAutoLogin());
 
@@ -67,7 +126,9 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authService),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => GNBProvider()),
+        // 지도 상호작용 조정자 (이벤트 충돌 방지)
+        ChangeNotifierProvider(create: (_) => MapInteractionCoordinator()),
         // Firebase 초기화 Future 제공
         Provider<Future<FirebaseApp>>.value(value: firebaseInitFuture),
       ],
@@ -152,6 +213,22 @@ class _MyAppState extends State<MyApp> {
           debugShowCheckedModeBanner: false,
           routerConfig: _router!,
           theme: AppTheme.lightTheme(),
+          // Flutter Web Focus 에러 방지 + 텍스트 선택 활성화
+          builder: (context, child) {
+            return FocusTraversalGroup(
+              policy: SafeFocusTraversalPolicy(),
+              // Overlay를 먼저 제공한 후 SelectionArea 적용
+              child: Overlay(
+                initialEntries: [
+                  OverlayEntry(
+                    builder: (context) => SelectionArea(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

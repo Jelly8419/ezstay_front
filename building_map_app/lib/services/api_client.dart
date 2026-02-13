@@ -1,6 +1,5 @@
 import 'package:http/http.dart' as http;
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'error_handler_service.dart';
@@ -10,19 +9,23 @@ import '../config/api_config.dart';
 class ApiClient {
   final ErrorHandlerService _errorHandler = ErrorHandlerService();
 
-  /// GET 요청
-  Future<http.Response?> get(
-    Uri url, {
-    Map<String, String>? headers,
-    Duration? timeout,
+  /// 공통 HTTP 요청 실행 및 에러 핸들링
+  Future<http.Response?> _executeRequest({
+    required String method,
+    required Uri url,
+    required Future<http.Response> Function() request,
+    Object? body,
     bool showErrorDialog = true,
   }) async {
     try {
       if (!ApiConfig.isProduction) {
-        debugPrint('🌐 [API] GET: $url');
+        debugPrint('🌐 [API] $method: $url');
+        if (body != null) {
+          debugPrint('📦 [API] Body: $body');
+        }
       }
 
-      final response = await http.get(url, headers: headers).timeout(timeout ?? ApiConfig.timeout);
+      final response = await request();
 
       if (!ApiConfig.isProduction) {
         debugPrint('📡 [API] Response: ${response.statusCode}');
@@ -60,6 +63,21 @@ class ApiClient {
       }
       return null;
     }
+  }
+
+  /// GET 요청
+  Future<http.Response?> get(
+    Uri url, {
+    Map<String, String>? headers,
+    Duration? timeout,
+    bool showErrorDialog = true,
+  }) async {
+    return _executeRequest(
+      method: 'GET',
+      url: url,
+      request: () => http.get(url, headers: headers).timeout(timeout ?? ApiConfig.timeout),
+      showErrorDialog: showErrorDialog,
+    );
   }
 
   /// POST 요청
@@ -70,54 +88,13 @@ class ApiClient {
     Duration? timeout,
     bool showErrorDialog = true,
   }) async {
-    try {
-      if (!ApiConfig.isProduction) {
-        debugPrint('🌐 [API] POST: $url');
-        debugPrint('📦 [API] Body: $body');
-      }
-
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: body,
-      ).timeout(timeout ?? ApiConfig.timeout);
-
-      if (!ApiConfig.isProduction) {
-        debugPrint('📡 [API] Response: ${response.statusCode}');
-      }
-
-      return _handleResponse(response, showErrorDialog);
-    } on TimeoutException {
-      debugPrint('⏱️ [API] Timeout: $url');
-      if (showErrorDialog) {
-        _errorHandler.handleTimeoutError();
-      }
-      return null;
-    } on SocketException catch (e) {
-      debugPrint('❌ [API] Network Error: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleNetworkError();
-      }
-      return null;
-    } on HttpException catch (e) {
-      debugPrint('❌ [API] HTTP Exception: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleException(e);
-      }
-      return null;
-    } on FormatException catch (e) {
-      debugPrint('❌ [API] Format Exception: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleException(e);
-      }
-      return null;
-    } catch (e) {
-      debugPrint('❌ [API] Unknown Error: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleUnknownError(e);
-      }
-      return null;
-    }
+    return _executeRequest(
+      method: 'POST',
+      url: url,
+      body: body,
+      request: () => http.post(url, headers: headers, body: body).timeout(timeout ?? ApiConfig.timeout),
+      showErrorDialog: showErrorDialog,
+    );
   }
 
   /// PUT 요청
@@ -128,54 +105,13 @@ class ApiClient {
     Duration? timeout,
     bool showErrorDialog = true,
   }) async {
-    try {
-      if (!ApiConfig.isProduction) {
-        debugPrint('🌐 [API] PUT: $url');
-        debugPrint('📦 [API] Body: $body');
-      }
-
-      final response = await http.put(
-        url,
-        headers: headers,
-        body: body,
-      ).timeout(timeout ?? ApiConfig.timeout);
-
-      if (!ApiConfig.isProduction) {
-        debugPrint('📡 [API] Response: ${response.statusCode}');
-      }
-
-      return _handleResponse(response, showErrorDialog);
-    } on TimeoutException {
-      debugPrint('⏱️ [API] Timeout: $url');
-      if (showErrorDialog) {
-        _errorHandler.handleTimeoutError();
-      }
-      return null;
-    } on SocketException catch (e) {
-      debugPrint('❌ [API] Network Error: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleNetworkError();
-      }
-      return null;
-    } on HttpException catch (e) {
-      debugPrint('❌ [API] HTTP Exception: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleException(e);
-      }
-      return null;
-    } on FormatException catch (e) {
-      debugPrint('❌ [API] Format Exception: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleException(e);
-      }
-      return null;
-    } catch (e) {
-      debugPrint('❌ [API] Unknown Error: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleUnknownError(e);
-      }
-      return null;
-    }
+    return _executeRequest(
+      method: 'PUT',
+      url: url,
+      body: body,
+      request: () => http.put(url, headers: headers, body: body).timeout(timeout ?? ApiConfig.timeout),
+      showErrorDialog: showErrorDialog,
+    );
   }
 
   /// PATCH 요청
@@ -186,54 +122,13 @@ class ApiClient {
     Duration? timeout,
     bool showErrorDialog = true,
   }) async {
-    try {
-      if (!ApiConfig.isProduction) {
-        debugPrint('🌐 [API] PATCH: $url');
-        debugPrint('📦 [API] Body: $body');
-      }
-
-      final response = await http.patch(
-        url,
-        headers: headers,
-        body: body,
-      ).timeout(timeout ?? ApiConfig.timeout);
-
-      if (!ApiConfig.isProduction) {
-        debugPrint('📡 [API] Response: ${response.statusCode}');
-      }
-
-      return _handleResponse(response, showErrorDialog);
-    } on TimeoutException {
-      debugPrint('⏱️ [API] Timeout: $url');
-      if (showErrorDialog) {
-        _errorHandler.handleTimeoutError();
-      }
-      return null;
-    } on SocketException catch (e) {
-      debugPrint('❌ [API] Network Error: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleNetworkError();
-      }
-      return null;
-    } on HttpException catch (e) {
-      debugPrint('❌ [API] HTTP Exception: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleException(e);
-      }
-      return null;
-    } on FormatException catch (e) {
-      debugPrint('❌ [API] Format Exception: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleException(e);
-      }
-      return null;
-    } catch (e) {
-      debugPrint('❌ [API] Unknown Error: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleUnknownError(e);
-      }
-      return null;
-    }
+    return _executeRequest(
+      method: 'PATCH',
+      url: url,
+      body: body,
+      request: () => http.patch(url, headers: headers, body: body).timeout(timeout ?? ApiConfig.timeout),
+      showErrorDialog: showErrorDialog,
+    );
   }
 
   /// DELETE 요청
@@ -244,53 +139,13 @@ class ApiClient {
     Duration? timeout,
     bool showErrorDialog = true,
   }) async {
-    try {
-      if (!ApiConfig.isProduction) {
-        debugPrint('🌐 [API] DELETE: $url');
-      }
-
-      final response = await http.delete(
-        url,
-        headers: headers,
-        body: body,
-      ).timeout(timeout ?? ApiConfig.timeout);
-
-      if (!ApiConfig.isProduction) {
-        debugPrint('📡 [API] Response: ${response.statusCode}');
-      }
-
-      return _handleResponse(response, showErrorDialog);
-    } on TimeoutException {
-      debugPrint('⏱️ [API] Timeout: $url');
-      if (showErrorDialog) {
-        _errorHandler.handleTimeoutError();
-      }
-      return null;
-    } on SocketException catch (e) {
-      debugPrint('❌ [API] Network Error: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleNetworkError();
-      }
-      return null;
-    } on HttpException catch (e) {
-      debugPrint('❌ [API] HTTP Exception: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleException(e);
-      }
-      return null;
-    } on FormatException catch (e) {
-      debugPrint('❌ [API] Format Exception: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleException(e);
-      }
-      return null;
-    } catch (e) {
-      debugPrint('❌ [API] Unknown Error: $e');
-      if (showErrorDialog) {
-        _errorHandler.handleUnknownError(e);
-      }
-      return null;
-    }
+    return _executeRequest(
+      method: 'DELETE',
+      url: url,
+      body: body,
+      request: () => http.delete(url, headers: headers, body: body).timeout(timeout ?? ApiConfig.timeout),
+      showErrorDialog: showErrorDialog,
+    );
   }
 
   /// 응답 처리 및 에러 핸들링

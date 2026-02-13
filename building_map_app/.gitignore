@@ -33,6 +33,7 @@ deploy_to_ec2.ps1
 deploy_to_ec2.bat
 server_deploy.sh
 
+
 # IntelliJ related
 *.iml
 *.ipr

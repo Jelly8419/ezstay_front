@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import '../../constants/app_constants.dart';
 
 /// 공통 텍스트 필드 위젯
+///
+/// React UI 일치:
+/// - py-2.5 = 10px 상하 패딩 (높이 ~42px)
 class CustomTextField extends StatelessWidget {
   final String? label;
   final String? hint;
@@ -87,8 +90,8 @@ class CustomTextField extends StatelessWidget {
         filled: true,
         fillColor: enabled ? AppColors.grey50 : AppColors.grey100,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
+          horizontal: 16, // ✅ React pl-10 pr-4와 유사
+          vertical: 10,   // ✅ React py-2.5 = 10px
         ),
       ),
     );

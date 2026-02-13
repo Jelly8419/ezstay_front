@@ -1,6 +1,6 @@
 import 'room_photo.dart';
-import 'room_amenity.dart';
-import 'room_free_service.dart';
+import 'room_amenity_freezed.dart';
+import 'room_ez_service.dart';
 import 'rental_item.dart';
 
 /// 방/숙소 정보 모델 (API 응답 기준)
@@ -22,13 +22,14 @@ class Room {
   final int livingRoomCount; // 거실 개수
   final int kitchenCount; // 주방 개수
   final bool isDuplex; // 복층 여부
+  final int maxGuests; // 권장 최대 인원
 
   // 가격 정보
   final int dailyRent; // 일 임대료
-  final int longTermWeeks; // 장기계약 기준 주수
-  final int longTermDiscount; // 장기계약 할인율 (%)
-  final String? quickMoveIn; // 빠른 입주 가능일 (ISO 8601)
-  final int quickMoveInDiscount; // 빠른 입주 할인율 (%)
+  final int? longTermWeeks; // 장기계약 기준 주수 (discounts.longTermWeeks, nullable)
+  final int? longTermDiscount; // 장기계약 할인율 (%) (discounts.longTermDiscount, nullable)
+  final int? quickMoveIn; // 빠른 입주 가능 일수 (숫자, 예: 13) (discounts.quickMoveIn)
+  final int? quickMoveInDiscount; // 빠른 입주 할인 금액 (원) (discounts.quickMoveInDiscount, nullable)
   final int dailyMaintenanceFee; // 일 관리비
   final String? maintenanceDetail; // 관리비 상세 설명
   final bool includeElectricity; // 관리비에 전기 포함 여부
@@ -36,6 +37,7 @@ class Room {
   final bool includeGas; // 관리비에 가스 포함 여부
   final bool includeInternet; // 관리비에 인터넷 포함 여부
   final int cleaningFee; // 청소비
+  final int deposit; // 보증금
 
   // 계약 정보
   final int minContractWeeks; // 최소 계약 주수
@@ -55,8 +57,8 @@ class Room {
 
   // 연관 데이터
   final List<RoomPhoto> photos;
-  final RoomAmenity? amenity;
-  final RoomFreeService? freeService;
+  final RoomAmenityFreezed? amenity;
+  final RoomEzService? ezService;
   final AvailableRentalItems? availableRentalItems;
 
   // UI 전용 필드
@@ -65,8 +67,45 @@ class Room {
   final bool? hostPhoneVerified;
   final bool? hostAccountVerified;
   final String? hostName;
+  final String? hostNickname;
   final int? hostId;
-  final String status; // 방 상태 (draft, submitted, approved, rejected, published)
+  final String status; // 방 상태 (draft, pending_review, approved, rejected)
+  final bool isActive; // 게시 여부 (approved 상태에서만 의미 있음)
+  final String? rejectionReason; // 반려 사유
+
+  /// 호스트 표시명 (닉네임 우선, 없으면 이름)
+  String get hostDisplayName =>
+      (hostNickname?.isNotEmpty == true) ? hostNickname! : (hostName ?? '호스트');
+
+  /// 승인된 방인지 확인
+  bool get isApproved => status == 'approved';
+
+  /// 심사 중인 방인지 확인
+  bool get isPendingReview => status == 'pending_review';
+
+  /// 승인된 방에서 수정 가능한 필드 그룹인지 확인
+  ///
+  /// 정책: approved 상태에서는 가격/할인/소개/하우스룰만 수정 가능
+  /// 주소, 구조, 편의시설 등 핵심 정보 변경 시 재심사 필요
+  bool canEditFieldGroup(String fieldGroup) {
+    // draft/rejected 상태에서는 모든 필드 수정 가능
+    if (status == 'draft' || status == 'rejected') return true;
+
+    // approved/pending_review 상태에서는 제한된 필드만 수정 가능
+    const editableGroups = {
+      'pricing',       // 일 임대료, 관리비, 청소비, 보증금
+      'discount',      // 장기계약/빠른입주 할인
+      'description',   // 방 소개, 교통정보
+      'houseRules',    // 하우스 룰
+      'checkInOut',    // 체크인/체크아웃 시간
+      'photos',        // 사진 추가/삭제
+      'ezService',     // EZ서비스 설정
+    };
+    return editableGroups.contains(fieldGroup);
+  }
+
+  /// 수정 시 재심사가 필요한지 확인
+  bool get needsReReviewOnEdit => isApproved;
 
   const Room({
     required this.id,
@@ -85,11 +124,12 @@ class Room {
     required this.livingRoomCount,
     required this.kitchenCount,
     required this.isDuplex,
+    required this.maxGuests,
     required this.dailyRent,
-    required this.longTermWeeks,
-    required this.longTermDiscount,
+    this.longTermWeeks,
+    this.longTermDiscount,
     this.quickMoveIn,
-    required this.quickMoveInDiscount,
+    this.quickMoveInDiscount,
     required this.dailyMaintenanceFee,
     this.maintenanceDetail,
     required this.includeElectricity,
@@ -97,6 +137,7 @@ class Room {
     required this.includeGas,
     required this.includeInternet,
     required this.cleaningFee,
+    required this.deposit,
     required this.minContractWeeks,
     required this.refundPolicy,
     this.description,
@@ -111,15 +152,18 @@ class Room {
     required this.updatedAt,
     required this.photos,
     this.amenity,
-    this.freeService,
+    this.ezService,
     this.availableRentalItems,
     this.isNearSubway = false,
     this.hostProfileImage,
     this.hostPhoneVerified,
     this.hostAccountVerified,
     this.hostName,
+    this.hostNickname,
     this.hostId,
     this.status = 'draft',
+    this.isActive = false,
+    this.rejectionReason,
   });
 
 
@@ -150,13 +194,15 @@ class Room {
       livingRoomCount: json['livingRoomCount'] as int? ?? 0,
       kitchenCount: json['kitchenCount'] as int? ?? 0,
       isDuplex: json['isDuplex'] as bool? ?? false,
+      maxGuests: json['maxGuests'] as int? ?? 2,
 
       // 가격 정보
       dailyRent: json['dailyRent'] as int? ?? 0,
-      longTermWeeks: json['longTermWeeks'] as int? ?? 12,
-      longTermDiscount: json['longTermDiscount'] as int? ?? 0,
-      quickMoveIn: json['quickMoveIn'] as String?,
-      quickMoveInDiscount: json['quickMoveInDiscount'] as int? ?? 0,
+      // discounts 객체에서 할인 정보 파싱 (nullable with explicit null handling)
+      longTermWeeks: _parseNullableInt(json['discounts']?['longTermWeeks']) ?? _parseNullableInt(json['longTermWeeks']),
+      longTermDiscount: _parseNullableInt(json['discounts']?['longTermDiscount']) ?? _parseNullableInt(json['longTermDiscount']),
+      quickMoveIn: _parseNullableInt(json['discounts']?['quickMoveIn']) ?? _parseNullableInt(json['quickMoveIn']),
+      quickMoveInDiscount: _parseNullableInt(json['discounts']?['quickMoveInDiscount']) ?? _parseNullableInt(json['quickMoveInDiscount']),
       dailyMaintenanceFee: json['dailyMaintenanceFee'] as int? ?? 0,
       maintenanceDetail: json['maintenanceDetail'] as String?,
       includeElectricity: json['includeElectricity'] as bool? ?? false,
@@ -164,6 +210,7 @@ class Room {
       includeGas: json['includeGas'] as bool? ?? false,
       includeInternet: json['includeInternet'] as bool? ?? false,
       cleaningFee: json['cleaningFee'] as int? ?? 0,
+      deposit: json['deposit'] as int? ?? 0,
 
       // 계약 정보
       minContractWeeks: json['minContractWeeks'] as int? ?? 4,
@@ -171,8 +218,8 @@ class Room {
       description: json['description'] as String?,
       transportation: json['transportation'] as String?,
       houseRules: json['houseRules'] as String?,
-      checkInTime: json['checkInTime'] as String? ?? '15:00',
-      checkOutTime: json['checkOutTime'] as String? ?? '11:00',
+      checkInTime: json['checkInTime'] != null ? json['checkInTime'].toString() : '15:00',
+      checkOutTime: json['checkOutTime'] != null ? json['checkOutTime'].toString() : '11:00',
 
       // 날짜 정보
       submittedAt: json['submittedAt'] != null ? DateTime.parse(json['submittedAt'] as String) : null,
@@ -183,20 +230,39 @@ class Room {
 
       // 연관 데이터
       photos: photoList,
-      amenity: json['amenity'] != null ? RoomAmenity.fromJson(json['amenity'] as Map<String, dynamic>) : null,
-      freeService: json['freeService'] != null ? RoomFreeService.fromJson(json['freeService'] as Map<String, dynamic>) : null,
-      availableRentalItems: json['availableRentalItems'] != null ? AvailableRentalItems.fromJson(json['availableRentalItems'] as Map<String, dynamic>) : null,
+      amenity: json['amenity'] != null ? RoomAmenityFreezed.fromJson(json['amenity'] as Map<String, dynamic>) : null,
+      // ezService 우선, 없으면 freeService fallback (백엔드 마이그레이션 기간 호환성)
+      ezService: json['ezService'] != null
+          ? RoomEzService.fromJson(json['ezService'] as Map<String, dynamic>)
+          : json['freeService'] != null
+              ? RoomEzService.fromJson(json['freeService'] as Map<String, dynamic>)
+              : null,
+      // EZStay가 제공하는 렌탈 아이템 (모든 방에 표시)
+      availableRentalItems: json['availableRentalItems'] != null
+          ? AvailableRentalItems.fromJson(json['availableRentalItems'] as Map<String, dynamic>)
+          : null,
 
       // UI 전용 필드
       isNearSubway: json['isNearSubway'] as bool? ?? false,
       // host 객체에서 정보 추출
       hostProfileImage: json['host'] != null ? json['host']['profileImageUrl'] as String? : json['hostProfileImage'] as String?,
-      hostPhoneVerified: json['host'] != null ? json['host']['phoneVerified'] as bool? : json['hostPhoneVerified'] as bool?,
-      hostAccountVerified: json['host'] != null ? json['host']['accountVerified'] as bool? : json['hostAccountVerified'] as bool?,
+      hostPhoneVerified: json['host'] != null ? _parseBool(json['host']['phoneVerified']) : _parseBool(json['hostPhoneVerified']),
+      hostAccountVerified: json['host'] != null ? _parseBool(json['host']['accountVerified']) : _parseBool(json['hostAccountVerified']),
       hostName: json['host'] != null ? json['host']['name'] as String? : json['hostName'] as String?,
+      hostNickname: json['host'] != null ? json['host']['nickname'] as String? : json['hostNickname'] as String?,
       hostId: json['host'] != null ? json['host']['id'] as int? : json['hostId'] as int?,
-      status: json['status'] as String? ?? 'draft',
+      status: _normalizeStatus(json['status'] as String?),
+      isActive: json['isActive'] as bool? ?? false,
+      rejectionReason: json['rejectionReason'] as String?,
     );
+  }
+
+  /// status 값 정규화 (API 응답값을 앱 내부 상태값으로 변환)
+  /// - published → approved (백엔드 API와 앱 내부 용어 불일치 해결)
+  static String _normalizeStatus(String? status) {
+    if (status == null) return 'draft';
+    if (status == 'published') return 'approved';
+    return status;
   }
 
   /// latitude/longitude를 String 또는 num에서 double로 안전하게 파싱
@@ -206,6 +272,23 @@ class Room {
     if (value is int) return value.toDouble();
     if (value is String) return double.tryParse(value) ?? 0.0;
     return 0.0;
+  }
+
+  /// nullable int 값을 안전하게 파싱 (null, int, String 지원)
+  static int? _parseNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  /// bool 값을 안전하게 파싱 (bool, int(1/0), String 지원)
+  static bool? _parseBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return null;
   }
 
   Map<String, dynamic> toJson() {
@@ -226,6 +309,7 @@ class Room {
       'livingRoomCount': livingRoomCount,
       'kitchenCount': kitchenCount,
       'isDuplex': isDuplex,
+      'maxGuests': maxGuests,
       'dailyRent': dailyRent,
       'longTermWeeks': longTermWeeks,
       'longTermDiscount': longTermDiscount,
@@ -238,6 +322,7 @@ class Room {
       'includeGas': includeGas,
       'includeInternet': includeInternet,
       'cleaningFee': cleaningFee,
+      'deposit': deposit,
       'minContractWeeks': minContractWeeks,
       'refundPolicy': refundPolicy,
       'description': description,
@@ -252,19 +337,24 @@ class Room {
       'updatedAt': updatedAt.toIso8601String(),
       'photos': photos.map((p) => p.toJson()).toList(),
       'amenity': amenity?.toJson(),
-      'freeService': freeService?.toJson(),
+      'ezService': ezService?.toJson(),
       'availableRentalItems': availableRentalItems?.toJson(),
       'isNearSubway': isNearSubway,
       'hostProfileImage': hostProfileImage,
       'hostPhoneVerified': hostPhoneVerified,
       'hostAccountVerified': hostAccountVerified,
       'hostName': hostName,
+      'hostNickname': hostNickname,
       'hostId': hostId,
       'status': status,
+      'isActive': isActive,
+      'rejectionReason': rejectionReason,
     };
   }
 
-  // === 계산 프로퍼티 (Computed Properties) ===
+
+  /// 최소 계약 일수 (주 단위를 일 단위로 변환, React UI 호환)
+  int get minContractDays => minContractWeeks * 7;
 
   /// 1일 임대료로 1주일 임대료 계산
   int get weeklyRent => (dailyRent * 7 / 1000).round() * 1000;
@@ -274,16 +364,16 @@ class Room {
 
   /// 장기 계약 할인 적용된 주 임대료
   int get longTermDiscountedRent {
-    if (longTermDiscount > 0) {
-      return (weeklyRent * (100 - longTermDiscount) / 100).round();
+    if (longTermDiscount != null && longTermDiscount! > 0) {
+      return (weeklyRent * (100 - longTermDiscount!) / 100).round();
     }
     return weeklyRent;
   }
 
   /// 빠른 입주 할인 적용된 주 임대료
   int get quickMoveInDiscountedRent {
-    if (quickMoveInDiscount > 0) {
-      return (weeklyRent * (100 - quickMoveInDiscount) / 100).round();
+    if (quickMoveInDiscount != null && quickMoveInDiscount! > 0) {
+      return (weeklyRent - quickMoveInDiscount!).round();
     }
     return weeklyRent;
   }
@@ -294,19 +384,11 @@ class Room {
   /// 장기 계약 할인 적용된 월 임대료
   int get longTermDiscountedMonthlyRent => (longTermDiscountedRent * 4.3).round();
 
-  /// 총 침대 수 (freeService의 bed 정보에서 계산)
-  int get totalBeds {
-    if (freeService == null) return 0;
-    return freeService!.bedSizeSuperSingle +
-           freeService!.bedSizeQueen +
-           freeService!.bedSizeKing;
-  }
-
   /// 편의시설 평탄화 리스트 (UI용)
   List<String> get amenitiesList => amenity?.toFlatList() ?? [];
 
-  /// 무료 서비스 평탄화 리스트 (UI용)
-  List<String> get freeServicesList => freeService?.toFlatList() ?? [];
+  /// 이지스테이 관리 서비스 평탄화 리스트 (UI용)
+  List<String> get ezServicesList => ezService?.toFlatList() ?? [];
 
   /// 반려동물 동반 가능 여부
   bool get isPetFriendly => amenity?.petsAllowed ?? false;
@@ -328,10 +410,11 @@ class Room {
     int? livingRoomCount,
     int? kitchenCount,
     bool? isDuplex,
+    int? maxGuests,
     int? dailyRent,
     int? longTermWeeks,
     int? longTermDiscount,
-    String? quickMoveIn,
+    int? quickMoveIn,
     int? quickMoveInDiscount,
     int? dailyMaintenanceFee,
     String? maintenanceDetail,
@@ -340,6 +423,7 @@ class Room {
     bool? includeGas,
     bool? includeInternet,
     int? cleaningFee,
+    int? deposit,
     int? minContractWeeks,
     String? refundPolicy,
     String? description,
@@ -353,16 +437,19 @@ class Room {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<RoomPhoto>? photos,
-    RoomAmenity? amenity,
-    RoomFreeService? freeService,
+    RoomAmenityFreezed? amenity,
+    RoomEzService? ezService,
     AvailableRentalItems? availableRentalItems,
     bool? isNearSubway,
     String? hostProfileImage,
     bool? hostPhoneVerified,
     bool? hostAccountVerified,
     String? hostName,
+    String? hostNickname,
     int? hostId,
     String? status,
+    bool? isActive,
+    String? rejectionReason,
   }) {
     return Room(
       id: id ?? this.id,
@@ -381,6 +468,7 @@ class Room {
       livingRoomCount: livingRoomCount ?? this.livingRoomCount,
       kitchenCount: kitchenCount ?? this.kitchenCount,
       isDuplex: isDuplex ?? this.isDuplex,
+      maxGuests: maxGuests ?? this.maxGuests,
       dailyRent: dailyRent ?? this.dailyRent,
       longTermWeeks: longTermWeeks ?? this.longTermWeeks,
       longTermDiscount: longTermDiscount ?? this.longTermDiscount,
@@ -393,6 +481,7 @@ class Room {
       includeGas: includeGas ?? this.includeGas,
       includeInternet: includeInternet ?? this.includeInternet,
       cleaningFee: cleaningFee ?? this.cleaningFee,
+      deposit: deposit ?? this.deposit,
       minContractWeeks: minContractWeeks ?? this.minContractWeeks,
       refundPolicy: refundPolicy ?? this.refundPolicy,
       description: description ?? this.description,
@@ -407,15 +496,45 @@ class Room {
       updatedAt: updatedAt ?? this.updatedAt,
       photos: photos ?? this.photos,
       amenity: amenity ?? this.amenity,
-      freeService: freeService ?? this.freeService,
+      ezService: ezService ?? this.ezService,
       availableRentalItems: availableRentalItems ?? this.availableRentalItems,
       isNearSubway: isNearSubway ?? this.isNearSubway,
       hostProfileImage: hostProfileImage ?? this.hostProfileImage,
       hostPhoneVerified: hostPhoneVerified ?? this.hostPhoneVerified,
       hostAccountVerified: hostAccountVerified ?? this.hostAccountVerified,
       hostName: hostName ?? this.hostName,
+      hostNickname: hostNickname ?? this.hostNickname,
       hostId: hostId ?? this.hostId,
       status: status ?? this.status,
+      isActive: isActive ?? this.isActive,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
     );
   }
+
+  /// 방 관리 페이지용 헬퍼 메서드들
+
+  /// 현재 표시할 상태 라벨 (status + isActive 조합)
+  String get displayStatus {
+    if (status == 'approved' && isActive) return '게시중';
+    if (status == 'approved' && !isActive) return '게시중단';
+    if (status == 'pending_review') return '심사중';
+    if (status == 'rejected') return '등록 반려';
+    return '등록중';
+  }
+
+  /// 수정 가능 여부 (React: draft, rejected, approved일 때)
+  bool get canEdit => status == 'draft' || status == 'rejected' || status == 'approved';
+
+  /// 일정관리 가능 여부 (React: approved 또는 inactive일 때)
+  bool get canSchedule => status == 'approved';
+
+  /// 복제 가능 여부 (React: draft가 아닐 때)
+  bool get canDuplicate => status != 'draft';
+
+  /// 삭제 가능 여부 (React: 항상 표시)
+  bool get canDelete => true;
+
+  /// 게시/비공개 토글 가능 여부 (React: approved 또는 inactive일 때)
+  bool get canTogglePublish => status == 'approved';
 }
+

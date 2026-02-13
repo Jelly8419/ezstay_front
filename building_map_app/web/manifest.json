@@ -1,32 +1,32 @@
 {
-    "name": "building_map_app",
-    "short_name": "building_map_app",
+    "name": "EZStay",
+    "short_name": "EZStay",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#4DD9FA",
+    "description": "단기임대 No.1, 편리하고 안전한 단기 숙소 찾기",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
         {
-            "src": "icons/Icon-192.png",
+            "src": "assets/logos/ezstay_logo_primary.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "icons/Icon-512.png",
+            "src": "assets/logos/ezstay_logo_primary.png",
             "sizes": "512x512",
             "type": "image/png"
         },
         {
-            "src": "icons/Icon-maskable-192.png",
+            "src": "assets/logos/ezstay_icon_only.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "maskable"
         },
         {
-            "src": "icons/Icon-maskable-512.png",
+            "src": "assets/logos/ezstay_icon_only.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"

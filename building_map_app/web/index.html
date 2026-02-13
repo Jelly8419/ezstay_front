@@ -20,6 +20,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
 
+  <!-- 캐시 제어 - Deferred 라이브러리 로딩 문제 방지 -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
   <!-- SEO 메타 태그 -->
   <title>EZStay - 단기임대 No.1, 편리하고 안전한 단기 숙소 찾기</title>
   <meta name="description" content="출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 찾아보세요.">
@@ -48,13 +53,13 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="EZStay">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-  <link rel="apple-touch-icon" sizes="192x192" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" href="assets/logos/ezstay_logo_primary.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/logos/ezstay_logo_primary.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icons/Icon-512.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png"/>
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/logos/ezstay_icon_only.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/logos/ezstay_icon_only.png"/>
   <link rel="manifest" href="manifest.json">
 
   <!-- Material Icons - preload로 최적화 -->
@@ -69,6 +74,9 @@
 
   <!-- Daum Postcode API - 필수 API이므로 동기 로딩 유지 -->
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+
+  <!-- Toss Payments JavaScript SDK -->
+  <script src="https://js.tosspayments.com/v2/standard"></script>
 
   <!-- Firebase Configuration (설정만 먼저 노출) -->
   <script>

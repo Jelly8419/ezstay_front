@@ -289,8 +289,13 @@ class TokenService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final newAccessToken = data['accessToken'] as String?;
-        final newRefreshToken = data['refreshToken'] as String?;
+        // 두 가지 응답 구조 모두 처리:
+        // 1) { accessToken, refreshToken } (직접)
+        // 2) { success, data: { accessToken, refreshToken } } (래핑)
+        final String? newAccessToken = data['accessToken'] as String? ??
+            (data['data'] is Map ? data['data']['accessToken'] as String? : null);
+        final String? newRefreshToken = data['refreshToken'] as String? ??
+            (data['data'] is Map ? data['data']['refreshToken'] as String? : null);
 
         if (newAccessToken != null) {
           await saveAccessToken(newAccessToken);

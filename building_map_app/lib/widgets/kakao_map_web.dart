@@ -20,6 +20,16 @@ class KakaoMapWebController {
   void focusOnLocation(double latitude, double longitude, {int zoomLevel = 5}) {
     _state?.focusOnLocation(latitude, longitude, zoomLevel: zoomLevel);
   }
+
+  /// 특정 방 ID의 마커를 선택 (PropertyCard 클릭 시 호출)
+  void selectMarker(int roomId) {
+    _state?.selectMarker(roomId);
+  }
+
+  /// 지도 드래그 활성화/비활성화 (드롭다운 열림/닫힘 시 호출)
+  void setMapDraggable(bool enabled) {
+    _state?.setMapDraggable(enabled);
+  }
 }
 
 /// 웹용 카카오 지도 위젯 (JavaScript SDK 직접 사용)
@@ -27,7 +37,14 @@ class KakaoMapWeb extends StatefulWidget {
   final List<Map<String, dynamic>> rooms;
   final Function(Map<String, dynamic>)? onMarkerTap;
   final Function(double)? onZoomChanged;
-  final Function(double swLat, double swLng, double neLat, double neLng, int zoom)? onBoundsChanged;
+  final Function(
+    double swLat,
+    double swLng,
+    double neLat,
+    double neLng,
+    int zoom,
+  )?
+  onBoundsChanged;
   final KakaoMapWebController? controller;
 
   const KakaoMapWeb({
@@ -53,7 +70,9 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🎬 [MAP WEB] initState 호출됨! 위젯 초기화 시작');
     _viewId = 'kakao-map-${_idCounter++}';
+    debugPrint('🆔 [MAP WEB] View ID 생성: $_viewId');
 
     // 컨트롤러에 state 연결
     widget.controller?._attach(this);
@@ -63,6 +82,7 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
       ..id = _viewId
       ..style.width = '100%'
       ..style.height = '100%';
+    debugPrint('📦 [MAP WEB] HTML DivElement 생성 완료 (ID: $_viewId)');
 
     // ViewFactory 등록
     // ignore: undefined_prefixed_name
@@ -70,11 +90,16 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
       _viewId,
       (int viewId) => _mapElement,
     );
+    debugPrint('🏭 [MAP WEB] ViewFactory 등록 완료');
 
     // bounds_changed 이벤트 리스너 등록
     _boundsChangedListener = (html.Event event) {
+      // 🔒 위젯이 dispose된 후에는 콜백 호출하지 않음
+      if (!mounted) return;
+
       final messageEvent = event as html.MessageEvent;
-      if (messageEvent.data is Map && messageEvent.data['type'] == 'bounds_changed') {
+      if (messageEvent.data is Map &&
+          messageEvent.data['type'] == 'bounds_changed') {
         final data = messageEvent.data;
         if (widget.onBoundsChanged != null) {
           // zoom을 안전하게 int로 변환
@@ -103,26 +128,59 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
     // marker_click 이벤트 리스너 등록
     _markerClickListener = (html.Event event) {
-      final messageEvent = event as html.MessageEvent;
-      if (messageEvent.data is Map && messageEvent.data['type'] == 'marker_click') {
-        final data = messageEvent.data;
-        final roomId = data['roomId'] as int;
+      // 🔒 위젯이 dispose된 후에는 콜백 호출하지 않음
+      if (!mounted) return;
 
-        // 클릭된 방의 정보를 찾아서 콜백 호출
+      final messageEvent = event as html.MessageEvent;
+      if (messageEvent.data is Map &&
+          messageEvent.data['type'] == 'marker_click') {
+        final data = messageEvent.data;
+
+        // 클러스터 클릭인지 개별 마커 클릭인지 구분
+        final clusterRoomIds = data['clusterRoomIds'] as List?;
+
+        // 클러스터 이벤트인 경우 (clusterRoomIds가 2개 이상이면) onMarkerTap 호출하지 않음
+        // → map_screen.dart의 _setupClusterClickListener()가 처리
+        // 개별 마커는 클러스터 크기가 1이므로 onMarkerTap 호출해야 함
+        if (clusterRoomIds != null && clusterRoomIds.length > 1) {
+          debugPrint('🎯 [MAP WEB] 클러스터 이벤트 감지 (${clusterRoomIds.length}개) - onMarkerTap 스킵');
+          return;
+        }
+
+        // 개별 마커 이벤트인 경우 (clusterRoomIds 필드 없음) onMarkerTap 콜백 호출
+        final roomId = data['roomId'] as int?;
+        if (roomId == null) return;
+
+        // roomId: -1인 경우 → 개별 마커 재클릭 (선택 해제)
+        if (roomId == -1) {
+          debugPrint('🔄 [MAP WEB] 개별 마커 재클릭 감지 (roomId: -1) - 선택 해제');
+          if (widget.onMarkerTap != null) {
+            widget.onMarkerTap!({'id': -1}); // 특수 마커로 재클릭 이벤트 전달
+          }
+          return;
+        }
+
+        // 일반 개별 마커 클릭: 클릭된 방의 정보를 찾아서 콜백 호출
         final clickedRoom = widget.rooms.firstWhere(
           (room) => room['id'] == roomId,
           orElse: () => {},
         );
 
         if (clickedRoom.isNotEmpty && widget.onMarkerTap != null) {
+          debugPrint('📍 [MAP WEB] 개별 마커 클릭 - roomId: $roomId');
           widget.onMarkerTap!(clickedRoom);
         }
       }
     };
     html.window.addEventListener('message', _markerClickListener);
+    debugPrint('🔔 [MAP WEB] 이벤트 리스너 등록 완료 (bounds_changed, marker_click)');
 
     // 지도 초기화
+    debugPrint('⏰ [MAP WEB] addPostFrameCallback 등록 (다음 프레임에서 _initMap 호출 예정)');
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 🔒 위젯이 dispose된 후에는 초기화하지 않음
+      if (!mounted) return;
+      debugPrint('▶️ [MAP WEB] PostFrameCallback 실행됨! _initMap 호출 시작');
       _initMap();
     });
   }
@@ -131,10 +189,20 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
   void didUpdateWidget(KakaoMapWeb oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // 방 데이터가 변경되었으면 마커 업데이트
-    if (widget.rooms != oldWidget.rooms) {
+    // 방 데이터가 실제로 변경되었는지 체크 (ID 목록 비교)
+    final oldRoomIds = oldWidget.rooms.map((r) => r['id']).toList()..sort();
+    final newRoomIds = widget.rooms.map((r) => r['id']).toList()..sort();
+
+    // ID 목록이 다르거나 방 개수가 다를 때만 마커 업데이트
+    final roomsChanged =
+        oldRoomIds.length != newRoomIds.length ||
+        !_listEquals(oldRoomIds, newRoomIds);
+
+    if (roomsChanged) {
       debugPrint('🔄 [Dart] 방 데이터 변경 감지 - 마커 업데이트 시작');
-      debugPrint('🔄 [Dart] 이전: ${oldWidget.rooms.length}개, 현재: ${widget.rooms.length}개');
+      debugPrint(
+        '🔄 [Dart] 이전: ${oldWidget.rooms.length}개, 현재: ${widget.rooms.length}개',
+      );
 
       // 지도 초기화를 기다린 후 마커 업데이트 (약간의 딜레이)
       Future.delayed(Duration(milliseconds: 500), () {
@@ -142,7 +210,18 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
           _updateMarkers();
         }
       });
+    } else {
+      debugPrint('⏭️ [Dart] 방 데이터 변경 없음 - 마커 업데이트 스킵');
     }
+  }
+
+  /// 두 리스트가 같은지 비교 (순서 무관)
+  bool _listEquals<T>(List<T> a, List<T> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   @override
@@ -162,18 +241,22 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
     debugPrint('🔄 [Dart] _updateMarkers 호출됨 - 방 ${widget.rooms.length}개');
 
     // 방 데이터를 JavaScript로 전달하여 마커 재생성
-    final roomsJsonString = widget.rooms.map((room) {
-      final weeklyRent = room['weeklyRent'] ?? room['weeklyPrice'] ?? room['price'] ?? 0;
-      return '''{
+    final roomsJsonString = widget.rooms
+        .map((room) {
+          final weeklyRent =
+              room['weeklyRent'] ?? room['weeklyPrice'] ?? room['price'] ?? 0;
+          return '''{
         id: ${room['id']},
         latitude: ${room['latitude']},
         longitude: ${room['longitude']},
         weeklyRent: $weeklyRent,
         roomName: "${room['roomName'] ?? ''}"
       }''';
-    }).join(',');
+        })
+        .join(',');
 
-    final jsCode = '''
+    final jsCode =
+        '''
       (function() {
         var container = document.getElementById('$_viewId');
         if (!container || !container._kakaoMap) {
@@ -217,6 +300,11 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
         console.log('🔄 [JS] 클러스터링 완료: ' + clusters.length + '개');
 
+        // 선택된 마커 ID 초기화 (없으면)
+        if (!container._selectedMarkerId) {
+          container._selectedMarkerId = null;
+        }
+
         // 마커 재생성
         clusters.forEach(function(cluster) {
           if (cluster.minPrice === 0) return;
@@ -231,11 +319,21 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
           var content = document.createElement('div');
           content.className = 'price-marker';
-          content.style.cssText = 'background:#4A90E2;color:white;padding:8px 14px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.25);white-space:nowrap;transition:all 0.2s ease;z-index:10;position:relative;';
+
+          // 첫 번째 방 ID로 선택 여부 판단
+          var firstRoomId = cluster.rooms[0].id;
+          var isSelected = container._selectedMarkerId === firstRoomId;
+
+          // 기본: 흰색 배경, 선택 시: 파란색 배경
+          var baseStyle = isSelected
+            ? 'background:#3B82F6;color:white;border:none;'
+            : 'background:white;color:#1F2937;border:1px solid #E5E7EB;';
+
+          content.style.cssText = baseStyle + 'padding:8px 14px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);white-space:nowrap;transition:all 0.2s ease;z-index:' + (isSelected ? '20' : '10') + ';position:relative;';
           content.textContent = markerText;
 
           content.dataset.clusterRooms = JSON.stringify(cluster.rooms.map(function(r) { return r.id; }));
-          content.dataset.firstRoomId = cluster.rooms[0].id;
+          content.dataset.firstRoomId = firstRoomId;
 
           var overlay = new kakao.maps.CustomOverlay({
             position: markerPosition,
@@ -250,26 +348,89 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
           }
           markers.push(overlay);
 
-          // 호버 효과
+          // 호버 효과 (선택 상태에 따라 다른 색상)
           content.addEventListener('mouseover', function() {
-            content.style.backgroundColor = '#3A7BC8';
-            content.style.transform = 'scale(1.08)';
-            content.style.boxShadow = '0 4px 12px rgba(0,0,0,0.35)';
+            var currentlySelected = container._selectedMarkerId === firstRoomId;
+            if (currentlySelected) {
+              // 선택된 마커: blue-700 (더 진한 파란색)
+              content.style.backgroundColor = '#2563EB';
+            } else {
+              // 기본 마커: gray-100 (연한 회색)
+              content.style.backgroundColor = '#F3F4F6';
+            }
+            content.style.transform = 'scale(1.05)';
+            content.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
           });
 
           content.addEventListener('mouseout', function() {
-            content.style.backgroundColor = '#4A90E2';
+            var currentlySelected = container._selectedMarkerId === firstRoomId;
+            if (currentlySelected) {
+              // 선택된 마커: blue-600으로 복귀
+              content.style.backgroundColor = '#3B82F6';
+              content.style.color = 'white';
+              content.style.border = 'none';
+            } else {
+              // 기본 마커: 흰색으로 복귀
+              content.style.backgroundColor = 'white';
+              content.style.color = '#1F2937';
+              content.style.border = '1px solid #E5E7EB';
+            }
             content.style.transform = 'scale(1)';
-            content.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+            content.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
           });
 
-          // 클릭 이벤트
-          content.addEventListener('click', function() {
-            var firstRoomId = content.dataset.firstRoomId;
-            console.log('마커 클릭, 방 ID:', firstRoomId);
+          // 클릭 이벤트 - 마커 선택 토글
+          content.addEventListener('click', function(event) {
+            // 이벤트 전파 중지 (지도 드래그 동작 보호)
+            event.stopPropagation();
+
+            var clickedRoomId = parseInt(content.dataset.firstRoomId);
+            var clusterRoomIds = JSON.parse(content.dataset.clusterRooms); // 클러스터 전체 방 ID 목록
+            console.log('마커 클릭, 방 ID:', clickedRoomId, '클러스터 방 개수:', clusterRoomIds.length);
+
+            // 같은 마커 재클릭 시 토글 (선택 해제)
+            if (container._selectedMarkerId === clickedRoomId) {
+              console.log('🔄 [JS] 같은 마커 재클릭 - 선택 해제');
+              container._selectedMarkerId = null;
+              content.style.backgroundColor = 'white';
+              content.style.color = '#1F2937';
+              content.style.border = '1px solid #E5E7EB';
+              content.style.zIndex = '10';
+
+              // Flutter로 메시지 전송 (개별 마커 재클릭이므로 clusterRoomIds 필드 제외)
+              window.postMessage({
+                type: 'marker_click',
+                roomId: -1
+                // clusterRoomIds 필드 제거 → 개별 마커 재클릭임을 나타냄
+              }, '*');
+              return; // 조기 종료
+            }
+
+            // 이전 선택 마커 찾아서 스타일 초기화
+            if (container._selectedMarkerId !== null && container._selectedMarkerId !== clickedRoomId) {
+              var oldMarkerElements = document.querySelectorAll('.price-marker');
+              oldMarkerElements.forEach(function(el) {
+                if (parseInt(el.dataset.firstRoomId) === container._selectedMarkerId) {
+                  el.style.backgroundColor = 'white';
+                  el.style.color = '#1F2937';
+                  el.style.border = '1px solid #E5E7EB';
+                  el.style.zIndex = '10';
+                }
+              });
+            }
+
+            // 현재 마커 선택 상태로 변경
+            container._selectedMarkerId = clickedRoomId;
+            content.style.backgroundColor = '#3B82F6';
+            content.style.color = 'white';
+            content.style.border = 'none';
+            content.style.zIndex = '20';
+
+            // Flutter로 메시지 전송 (클러스터 전체 방 ID 목록 포함)
             window.postMessage({
               type: 'marker_click',
-              roomId: parseInt(firstRoomId)
+              roomId: clickedRoomId,
+              clusterRoomIds: clusterRoomIds // 클러스터에 포함된 모든 방 ID
             }, '*');
           });
         });
@@ -286,7 +447,8 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
   /// 특정 위치로 지도 포커싱
   void focusOnLocation(double latitude, double longitude, {int zoomLevel = 5}) {
-    final jsCode = '''
+    final jsCode =
+        '''
       (function() {
         var container = document.getElementById('$_viewId');
         if (!container || !container._kakaoMap) {
@@ -306,36 +468,90 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
     js.context.callMethod('eval', [jsCode]);
   }
 
+  /// 특정 방 ID의 마커를 선택
+  void selectMarker(int roomId) {
+    final jsCode =
+        '''
+      (function() {
+        var container = document.getElementById('$_viewId');
+        if (!container || !container._kakaoMap) {
+          console.error('지도 인스턴스를 찾을 수 없습니다');
+          return;
+        }
+
+        // selectMarkerById 함수 호출
+        if (container._selectMarkerById) {
+          container._selectMarkerById($roomId);
+        }
+      })();
+    ''';
+
+    js.context.callMethod('eval', [jsCode]);
+  }
+
+  /// 지도 드래그 활성화/비활성화
+  void setMapDraggable(bool enabled) {
+    final jsCode =
+        '''
+      (function() {
+        var container = document.getElementById('$_viewId');
+        if (!container || !container._kakaoMap) {
+          console.warn('[지도 드래그 제어] 지도 인스턴스를 찾을 수 없습니다');
+          return;
+        }
+
+        var map = container._kakaoMap;
+        map.setDraggable($enabled);
+        console.log('[지도 드래그 제어] 드래그 ${enabled ? '활성화' : '비활성화'}됨');
+      })();
+    ''';
+
+    js.context.callMethod('eval', [jsCode]);
+  }
+
   void _initMap() {
+    debugPrint('🚀 [MAP WEB] _initMap 호출됨! 지도 초기화 시작');
     int attempts = 0;
 
     void tryInit() {
+      // 🔒 위젯이 dispose된 후에는 초기화 중단
+      if (!mounted) {
+        debugPrint('⏹️ [MAP WEB] 위젯 dispose됨 - 초기화 중단');
+        return;
+      }
+
       attempts++;
+      debugPrint('🔄 [MAP WEB] tryInit 시도 #$attempts - Kakao SDK 확인 중...');
 
       try {
         final kakaoMaps = js.context['kakao']?['maps'];
         if (kakaoMaps == null) {
+          debugPrint('⏳ [MAP WEB] Kakao SDK 아직 로드 안됨 (시도 $attempts/20)');
           if (attempts < 20) {
             Future.delayed(Duration(milliseconds: 300), tryInit);
           } else {
-            debugPrint('❌ kakao.maps 로드 타임아웃');
+            debugPrint('❌ [MAP WEB] kakao.maps 로드 타임아웃 (20회 시도 실패)');
           }
           return;
         }
+
+        debugPrint('✅ [MAP WEB] Kakao SDK 로드 완료!');
 
         // DOM에 컨테이너가 추가될 때까지 대기
         final container = html.document.getElementById(_viewId);
         if (container == null) {
-          debugPrint('⏳ 컨테이너 대기 중... (시도 $attempts)');
+          debugPrint(
+            '⏳ [MAP WEB] 컨테이너 대기 중... (시도 $attempts/20, ID: $_viewId)',
+          );
           if (attempts < 20) {
             Future.delayed(Duration(milliseconds: 300), tryInit);
           } else {
-            debugPrint('❌ 컨테이너 타임아웃: $_viewId');
+            debugPrint('❌ [MAP WEB] 컨테이너 타임아웃: $_viewId (20회 시도 실패)');
           }
           return;
         }
 
-        debugPrint('✅ 컨테이너 발견, 지도 생성 중...');
+        debugPrint('✅ [MAP WEB] 컨테이너 발견! 지도 생성 중... (ID: $_viewId)');
 
         // 첫 번째 방의 좌표를 중심으로 설정 (없으면 서울시청)
         double centerLat = 37.5665;
@@ -344,13 +560,16 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
         if (widget.rooms.isNotEmpty) {
           final firstRoom = widget.rooms.first;
           if (firstRoom['latitude'] != null && firstRoom['longitude'] != null) {
-            centerLat = double.tryParse(firstRoom['latitude'].toString()) ?? centerLat;
-            centerLng = double.tryParse(firstRoom['longitude'].toString()) ?? centerLng;
+            centerLat =
+                double.tryParse(firstRoom['latitude'].toString()) ?? centerLat;
+            centerLng =
+                double.tryParse(firstRoom['longitude'].toString()) ?? centerLng;
           }
         }
 
         // JavaScript로 지도 생성 및 마커 추가
-        final jsCode = '''
+        final jsCode =
+            '''
           (function() {
             var container = document.getElementById('$_viewId');
             if (!container) {
@@ -364,8 +583,48 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
             };
 
             var map = new kakao.maps.Map(container, options);
-            var zoomControl = new kakao.maps.ZoomControl();
-            map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+
+            // 커스텀 라운드 줌 컨트롤 생성
+            var zoomControlDiv = document.createElement('div');
+            zoomControlDiv.style.cssText = 'position:absolute;top:24px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:100;';
+
+            // 줌 인 버튼 (+)
+            var zoomInBtn = document.createElement('button');
+            zoomInBtn.textContent = '+';
+            zoomInBtn.style.cssText = 'width:40px;height:40px;background:white;border:none;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.15);cursor:pointer;font-size:20px;font-weight:600;color:#374151;transition:all 0.2s ease;display:flex;align-items:center;justify-content:center;';
+            zoomInBtn.addEventListener('mouseover', function() {
+              zoomInBtn.style.backgroundColor = '#F3F4F6';
+              zoomInBtn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            });
+            zoomInBtn.addEventListener('mouseout', function() {
+              zoomInBtn.style.backgroundColor = 'white';
+              zoomInBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+            });
+            zoomInBtn.addEventListener('click', function() {
+              var level = map.getLevel();
+              map.setLevel(level - 1);
+            });
+
+            // 줌 아웃 버튼 (-)
+            var zoomOutBtn = document.createElement('button');
+            zoomOutBtn.textContent = '−';
+            zoomOutBtn.style.cssText = 'width:40px;height:40px;background:white;border:none;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.15);cursor:pointer;font-size:20px;font-weight:600;color:#374151;transition:all 0.2s ease;display:flex;align-items:center;justify-content:center;';
+            zoomOutBtn.addEventListener('mouseover', function() {
+              zoomOutBtn.style.backgroundColor = '#F3F4F6';
+              zoomOutBtn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            });
+            zoomOutBtn.addEventListener('mouseout', function() {
+              zoomOutBtn.style.backgroundColor = 'white';
+              zoomOutBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+            });
+            zoomOutBtn.addEventListener('click', function() {
+              var level = map.getLevel();
+              map.setLevel(level + 1);
+            });
+
+            zoomControlDiv.appendChild(zoomInBtn);
+            zoomControlDiv.appendChild(zoomOutBtn);
+            container.appendChild(zoomControlDiv);
 
             // 지도 인스턴스를 컨테이너에 저장 (외부에서 접근 가능하도록)
             container._kakaoMap = map;
@@ -451,6 +710,9 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
             // 마커 배열 초기화
             container._markers = [];
 
+            // 선택된 마커 ID 초기화
+            container._selectedMarkerId = null;
+
             // 헬퍼 함수 등록 (마커 업데이트 시 사용)
             container._getClusterDistance = function(zoomLevel) {
               if (zoomLevel <= 2) return 0.00001;
@@ -502,6 +764,54 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
               return clusters;
             };
 
+            // 특정 방 ID의 마커를 선택하는 함수 (Flutter에서 호출)
+            container._selectMarkerById = function(roomId) {
+              console.log('🎯 [JS] 마커 선택 요청, 방 ID:', roomId);
+
+              // -1인 경우: 모든 마커 선택 해제
+              if (roomId === -1) {
+                console.log('🔄 [JS] 모든 마커 선택 해제');
+                var allMarkerElements = document.querySelectorAll('.price-marker');
+                allMarkerElements.forEach(function(el) {
+                  el.style.backgroundColor = 'white';
+                  el.style.color = '#1F2937';
+                  el.style.border = '1px solid #E5E7EB';
+                  el.style.zIndex = '10';
+                });
+                container._selectedMarkerId = null;
+                console.log('✅ [JS] 모든 마커 선택 해제 완료');
+                return;
+              }
+
+              // 이전 선택 마커 찾아서 스타일 초기화
+              if (container._selectedMarkerId !== null && container._selectedMarkerId !== roomId) {
+                var oldMarkerElements = document.querySelectorAll('.price-marker');
+                oldMarkerElements.forEach(function(el) {
+                  if (parseInt(el.dataset.firstRoomId) === container._selectedMarkerId) {
+                    el.style.backgroundColor = 'white';
+                    el.style.color = '#1F2937';
+                    el.style.border = '1px solid #E5E7EB';
+                    el.style.zIndex = '10';
+                  }
+                });
+              }
+
+              // 새로운 마커 선택
+              container._selectedMarkerId = roomId;
+
+              var markerElements = document.querySelectorAll('.price-marker');
+              markerElements.forEach(function(el) {
+                if (parseInt(el.dataset.firstRoomId) === roomId) {
+                  el.style.backgroundColor = '#3B82F6';
+                  el.style.color = 'white';
+                  el.style.border = 'none';
+                  el.style.zIndex = '20';
+                }
+              });
+
+              console.log('✅ [JS] 마커 선택 완료');
+            };
+
             console.log('✅ 지도 생성 완료, 헬퍼 함수 등록됨');
 
             // 초기 로드를 위해 수동으로 bounds_changed 트리거
@@ -531,349 +841,15 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
           })();
         ''';
 
+        debugPrint('📝 [MAP WEB] JavaScript 코드 실행 시작...');
         js.context.callMethod('eval', [jsCode]);
+        debugPrint('✅ [MAP WEB] JavaScript 코드 실행 완료! (지도 초기화 요청됨)');
       } catch (e) {
-        debugPrint('❌ 지도 초기화 실패: $e');
+        debugPrint('❌ [MAP WEB] 지도 초기화 실패: $e');
       }
     }
 
     tryInit();
-  }
-
-  /// 방 데이터를 기반으로 JavaScript 마커 생성 코드 반환
-  /// 줌 레벨에 따라 동적으로 클러스터링하여 표시
-  String _generateMarkersJS() {
-    if (widget.rooms.isEmpty) {
-      return '// 마커 없음';
-    }
-
-    debugPrint('🎯 [Dart] 마커 생성 시작 - 방 개수: ${widget.rooms.length}');
-    debugPrint('🎯 [Dart] 방 데이터: ${widget.rooms}');
-
-    // 모든 방 데이터를 JavaScript 배열로 전달
-    final roomsJson = widget.rooms.map((room) {
-      final weeklyRent = room['weeklyRent'] ?? room['weeklyPrice'] ?? room['price'] ?? 0;
-      debugPrint('🎯 [Dart] 방 ID: ${room['id']}, 가격: $weeklyRent, 위도: ${room['latitude']}, 경도: ${room['longitude']}');
-      return {
-        'id': room['id'],
-        'latitude': room['latitude'],
-        'longitude': room['longitude'],
-        'weeklyRent': weeklyRent,
-        'roomName': room['roomName'] ?? '',
-      };
-    }).toList();
-
-    final roomsJsonString = roomsJson.map((room) => '''
-      {
-        id: ${room['id']},
-        latitude: ${room['latitude']},
-        longitude: ${room['longitude']},
-        weeklyRent: ${room['weeklyRent']},
-        roomName: "${room['roomName']}"
-      }
-    ''').join(',');
-
-    // JavaScript에서 동적 클러스터링 수행
-    return '''
-      var allRooms = [$roomsJsonString];
-
-      // 현재 줌 레벨 가져오기
-      var currentZoomLevel = map.getLevel();
-      console.log('🔍 [초기 마커 생성 시작] 방 개수: ' + allRooms.length);
-      console.log('🔍 [초기 마커 생성] 현재 줌 레벨: ' + currentZoomLevel);
-
-      // 헬퍼 함수들을 컨테이너에 저장 (마커 업데이트 시 재사용)
-      container._getClusterDistance = function(zoomLevel) {
-        // 카카오맵: 레벨이 낮을수록 확대(작은 거리), 높을수록 축소(큰 거리)
-        if (zoomLevel <= 2) return 0.00001;  // 줌 1-2 (최대확대) → 클러스터링 거의 비활성화 (약 1m)
-        if (zoomLevel <= 4) return 0.0005;   // 줌 3-4 (확대) → 약 50m 반경
-        if (zoomLevel <= 6) return 0.002;    // 줌 5-6 (중간) → 약 200m 반경
-        if (zoomLevel <= 8) return 0.01;     // 줌 7-8 (축소) → 1km 반경
-        if (zoomLevel <= 10) return 0.05;    // 줌 9-10 (더 축소) → 5km 반경
-        return 0.1;                           // 줌 11+ (최대축소) → 10km 반경
-      };
-
-      container._clusterRooms = function(rooms, distance) {
-        var clusters = [];
-        var processed = new Set();
-
-        rooms.forEach(function(room, index) {
-          if (processed.has(index)) return;
-
-          var cluster = {
-            rooms: [room],
-            centerLat: room.latitude,
-            centerLng: room.longitude,
-            minPrice: room.weeklyRent
-          };
-
-          processed.add(index);
-
-          // 근처의 다른 방들을 찾아서 클러스터에 추가
-          rooms.forEach(function(otherRoom, otherIndex) {
-            if (processed.has(otherIndex)) return;
-
-            var latDiff = Math.abs(room.latitude - otherRoom.latitude);
-            var lngDiff = Math.abs(room.longitude - otherRoom.longitude);
-
-            if (latDiff < distance && lngDiff < distance) {
-              cluster.rooms.push(otherRoom);
-              cluster.centerLat = (cluster.centerLat * (cluster.rooms.length - 1) + otherRoom.latitude) / cluster.rooms.length;
-              cluster.centerLng = (cluster.centerLng * (cluster.rooms.length - 1) + otherRoom.longitude) / cluster.rooms.length;
-
-              if (otherRoom.weeklyRent > 0 && (cluster.minPrice === 0 || otherRoom.weeklyRent < cluster.minPrice)) {
-                cluster.minPrice = otherRoom.weeklyRent;
-              }
-
-              processed.add(otherIndex);
-            }
-          });
-
-          clusters.push(cluster);
-        });
-
-        return clusters;
-      };
-
-      // 줌 레벨에 따른 클러스터링 거리 설정
-      var clusterDistance = container._getClusterDistance(currentZoomLevel);
-
-      // 방들을 클러스터링
-      var clusters = container._clusterRooms(allRooms, clusterDistance);
-      console.log('🗂️ [클러스터링 완료] 클러스터 개수: ' + clusters.length);
-
-      // 마커 배열을 컨테이너에 저장
-      container._markers = markers;
-
-      // 클러스터별로 마커 생성
-      clusters.forEach(function(cluster) {
-        if (cluster.minPrice === 0) return; // 가격 정보 없으면 스킵
-
-        var markerPosition = new kakao.maps.LatLng(cluster.centerLat, cluster.centerLng);
-        var priceInManWon = Math.round(cluster.minPrice / 10000);
-        var roomCount = cluster.rooms.length;
-
-        // 마커 텍스트 생성
-        var markerText;
-        if (roomCount > 1) {
-          markerText = priceInManWon + '만원 외 ' + (roomCount - 1) + '개';
-        } else {
-          markerText = priceInManWon + '만원';
-        }
-
-        // 커스텀 오버레이로 가격 마커 생성
-        var content = document.createElement('div');
-        content.className = 'price-marker';
-        content.style.cssText = 'background:#4A90E2;color:white;padding:8px 14px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.25);white-space:nowrap;transition:all 0.2s ease;z-index:10;position:relative;';
-        content.textContent = markerText;
-
-        // 클러스터 정보를 data attribute로 저장
-        content.dataset.clusterRooms = JSON.stringify(cluster.rooms.map(function(r) { return r.id; }));
-        content.dataset.firstRoomId = cluster.rooms[0].id;
-
-        var overlay = new kakao.maps.CustomOverlay({
-          position: markerPosition,
-          content: content,
-          yAnchor: 1.2
-        });
-
-        // 줌 레벨 6 미만(확대)일 때만 마커 표시
-        var shouldShow = currentZoomLevel < 6;
-        console.log('📍 [초기 마커] 줌레벨: ' + currentZoomLevel + ' 표시여부: ' + shouldShow);
-        if (shouldShow) {
-          overlay.setMap(map);
-        }
-        markers.push(overlay);
-
-        // 호버 효과
-        content.addEventListener('mouseover', function() {
-          content.style.backgroundColor = '#3A7BC8';
-          content.style.transform = 'scale(1.08)';
-          content.style.boxShadow = '0 4px 12px rgba(0,0,0,0.35)';
-        });
-
-        content.addEventListener('mouseout', function() {
-          content.style.backgroundColor = '#4A90E2';
-          content.style.transform = 'scale(1)';
-          content.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
-        });
-
-        // 클릭 이벤트
-        content.addEventListener('click', function() {
-          var firstRoomId = content.dataset.firstRoomId;
-          console.log('마커 클릭, 방 ID:', firstRoomId);
-
-          // Flutter로 메시지 전송
-          window.postMessage({
-            type: 'marker_click',
-            roomId: parseInt(firstRoomId)
-          }, '*');
-        });
-      });
-
-      // 줌 변경 시 마커 재생성을 위한 이벤트 리스너
-      var previousZoomLevel = currentZoomLevel;
-      kakao.maps.event.addListener(map, 'zoom_changed', function() {
-        var newZoomLevel = map.getLevel();
-        console.log('🔄 [줌 변경] 레벨: ' + previousZoomLevel + ' → ' + newZoomLevel);
-
-        var messageDiv = document.getElementById('zoom-message-$_viewId');
-        var wasZoomedOut = previousZoomLevel < 6;  // 이전에 확대 상태였는가?
-        var isZoomedOut = newZoomLevel >= 6;        // 현재 축소 상태인가?
-
-        // 케이스 1: 5→6 (확대→축소) - 마커 제거 및 메시지 표시
-        if (wasZoomedOut && isZoomedOut) {
-          console.log('📤 [줌 변경] 확대→축소: 마커 제거 및 메시지 표시');
-
-          // 모든 마커 제거
-          markers.forEach(function(marker) {
-            marker.setMap(null);
-          });
-
-          // 메시지 표시
-          if (!messageDiv) {
-            messageDiv = document.createElement('div');
-            messageDiv.id = 'zoom-message-$_viewId';
-            messageDiv.style.position = 'absolute';
-            messageDiv.style.top = '50%';
-            messageDiv.style.left = '50%';
-            messageDiv.style.transform = 'translate(-50%, -50%)';
-            messageDiv.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
-            messageDiv.style.padding = '20px 30px';
-            messageDiv.style.borderRadius = '12px';
-            messageDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-            messageDiv.style.fontSize = '16px';
-            messageDiv.style.color = '#666';
-            messageDiv.style.fontWeight = '500';
-            messageDiv.style.zIndex = '9999';
-            messageDiv.style.pointerEvents = 'none';
-            messageDiv.textContent = '지도를 확대하면 매물을 볼 수 있어요';
-            container.appendChild(messageDiv);
-          }
-
-          previousZoomLevel = newZoomLevel;
-          return;
-        }
-
-        // 케이스 2: 6→5 (축소→확대) - API 요청 트리거
-        if (!wasZoomedOut && !isZoomedOut) {
-          console.log('📥 [줌 변경] 축소→확대: API 요청 및 마커 표시');
-
-          // 메시지 제거
-          if (messageDiv) {
-            messageDiv.remove();
-          }
-
-          // bounds_changed 이벤트를 트리거하여 API 요청
-          previousZoomLevel = newZoomLevel;
-
-          // 즉시 bounds_changed 이벤트 발생시켜 API 호출
-          var bounds = map.getBounds();
-          var sw = bounds.getSouthWest();
-          var ne = bounds.getNorthEast();
-
-          window.postMessage({
-            type: 'bounds_changed',
-            swLat: sw.getLat(),
-            swLng: sw.getLng(),
-            neLat: ne.getLat(),
-            neLng: ne.getLng(),
-            zoom: newZoomLevel
-          }, '*');
-
-          return;
-        }
-
-        // 케이스 3: 축소 상태 유지 (6 이상)
-        if (isZoomedOut) {
-          console.log('⛔ [줌 변경] 축소 상태 유지 - 마커 표시 안함');
-          previousZoomLevel = newZoomLevel;
-          return;
-        }
-
-        // 케이스 4: 확대 상태에서 줌 레벨 변경 (0-5 범위 내)
-        // 메시지 제거
-        if (messageDiv) {
-          messageDiv.remove();
-        }
-
-        // 줌 레벨이 크게 변경되었을 때만 마커 재생성
-        if (Math.abs(newZoomLevel - previousZoomLevel) >= 1) {
-          console.log('🔄 [클러스터링] 마커 재생성 시작');
-          previousZoomLevel = newZoomLevel;
-
-          // 기존 마커 제거
-          markers.forEach(function(marker) {
-            marker.setMap(null);
-          });
-          markers = [];
-
-          // 새로운 클러스터 거리로 재계산
-          var newClusterDistance = container._getClusterDistance(newZoomLevel);
-          var newClusters = container._clusterRooms(allRooms, newClusterDistance);
-
-          // 마커 재생성 (위 코드 반복)
-          newClusters.forEach(function(cluster) {
-            if (cluster.minPrice === 0) return;
-
-            var markerPosition = new kakao.maps.LatLng(cluster.centerLat, cluster.centerLng);
-            var priceInManWon = Math.round(cluster.minPrice / 10000);
-            var roomCount = cluster.rooms.length;
-
-            var markerText;
-            if (roomCount > 1) {
-              markerText = priceInManWon + '만원 외 ' + (roomCount - 1) + '개';
-            } else {
-              markerText = priceInManWon + '만원';
-            }
-
-            var content = document.createElement('div');
-            content.className = 'price-marker';
-            content.style.cssText = 'background:#4A90E2;color:white;padding:8px 14px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.25);white-space:nowrap;transition:all 0.2s ease;z-index:10;position:relative;';
-            content.textContent = markerText;
-
-            content.dataset.clusterRooms = JSON.stringify(cluster.rooms.map(function(r) { return r.id; }));
-            content.dataset.firstRoomId = cluster.rooms[0].id;
-
-            var overlay = new kakao.maps.CustomOverlay({
-              position: markerPosition,
-              content: content,
-              yAnchor: 1.2
-            });
-
-            // 줌 레벨 6 미만(확대)일 때만 마커 표시
-            var shouldShow = newZoomLevel < 6;
-            console.log('📍 [재생성 마커] 줌레벨: ' + newZoomLevel + ' 표시여부: ' + shouldShow);
-            if (shouldShow) {
-              overlay.setMap(map);
-            }
-            markers.push(overlay);
-
-            content.addEventListener('mouseover', function() {
-              content.style.backgroundColor = '#3A7BC8';
-              content.style.transform = 'scale(1.08)';
-              content.style.boxShadow = '0 4px 12px rgba(0,0,0,0.35)';
-            });
-
-            content.addEventListener('mouseout', function() {
-              content.style.backgroundColor = '#4A90E2';
-              content.style.transform = 'scale(1)';
-              content.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
-            });
-
-            content.addEventListener('click', function() {
-              var firstRoomId = content.dataset.firstRoomId;
-              console.log('마커 클릭, 방 ID:', firstRoomId);
-
-              window.postMessage({
-                type: 'marker_click',
-                roomId: parseInt(firstRoomId)
-              }, '*');
-            });
-          });
-        }
-      });
-    ''';
   }
 
   @override

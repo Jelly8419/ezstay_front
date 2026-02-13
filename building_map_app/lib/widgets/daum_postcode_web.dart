@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:js' as js;
+import '../core/theme/app_text_styles.dart';
 
 /// 웹용 다음 우편번호 검색 위젯
 class DaumPostcodeWeb extends StatefulWidget {
@@ -68,7 +69,10 @@ class _DaumPostcodeWebState extends State<DaumPostcodeWeb> {
 
       js.context['onAddressClose'] = (state) {
         // 사용자가 주소 선택 없이 창을 닫은 경우
-        Navigator.of(context).pop();
+        // 이미 pop된 경우 중복 pop 방지
+        if (Navigator.canPop(context)) {
+          Navigator.of(context).pop();
+        }
       };
 
       // 다음 우편번호 API 실행
@@ -106,20 +110,20 @@ class _DaumPostcodeWebState extends State<DaumPostcodeWeb> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
             Text(
               '다음 우편번호 검색 서비스를 불러오는 중...',
-              style: TextStyle(fontSize: 16),
+              style: AppTextStyles.bodyMedium,
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               '팝업이 나타나지 않으면 팝업 차단을 해제해주세요.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: AppTextStyles.bodySmall.copyWith(color: Colors.grey),
             ),
           ],
         ),

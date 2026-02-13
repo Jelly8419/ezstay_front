@@ -1,4 +1,4 @@
-/// 렌탈 아이템 모델 (헤어드라이어, 침구세트, 어메니티 키트, 타올 세트)
+/// 렌탈 아이템 모델
 class RentalItem {
   final int id;
   final String name;
@@ -19,10 +19,10 @@ class RentalItem {
   factory RentalItem.fromJson(Map<String, dynamic> json) {
     return RentalItem(
       id: json['id'] as int,
-      name: json['name'] as String? ?? '',
+      name: json['name'] as String,
       description: json['description'] as String? ?? '',
-      price: json['price'] as int? ?? 0,
-      availableStock: json['availableStock'] as int? ?? 0,
+      price: json['price'] as int,
+      availableStock: json['availableStock'] as int,
       imageUrl: json['imageUrl'] as String?,
     );
   }
@@ -39,12 +39,12 @@ class RentalItem {
   }
 }
 
-/// 렌탈 아이템 카테고리별 묶음
+/// 대여 가능한 렌탈 아이템 목록 (카테고리별)
 class AvailableRentalItems {
-  final List<RentalItem> hairDryers;
-  final List<RentalItem> beddingSets;
-  final List<RentalItem> amenityKits;
-  final List<RentalItem> towelSets;
+  final List<RentalItem> hairDryers;      // 헤어드라이기
+  final List<RentalItem> beddingSets;     // 침구류
+  final List<RentalItem> amenityKits;     // 어메니티 키트
+  final List<RentalItem> towelSets;       // 타올
 
   const AvailableRentalItems({
     this.hairDryers = const [],
@@ -83,10 +83,21 @@ class AvailableRentalItems {
     };
   }
 
-  /// 모든 카테고리가 비어있는지 확인
-  bool get isEmpty =>
-      hairDryers.isEmpty &&
-      beddingSets.isEmpty &&
-      amenityKits.isEmpty &&
-      towelSets.isEmpty;
+  /// 모든 카테고리의 아이템을 평탄화한 리스트
+  List<RentalItem> get allItems {
+    return [
+      ...hairDryers,
+      ...beddingSets,
+      ...amenityKits,
+      ...towelSets,
+    ];
+  }
+
+  /// 대여 가능한 아이템이 있는지 여부
+  bool get hasItems {
+    return hairDryers.isNotEmpty ||
+        beddingSets.isNotEmpty ||
+        amenityKits.isNotEmpty ||
+        towelSets.isNotEmpty;
+  }
 }
