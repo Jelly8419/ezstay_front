@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/chat_room.dart';
+import '../../utils/contract_utils.dart';
 
 /// 채팅 목록 아이템 위젯
 /// React ChatList.tsx의 개별 아이템을 Flutter로 완전 복제
@@ -190,7 +191,7 @@ class ChatListItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(9999), // rounded-full
             child: avatarUrl.isNotEmpty
                 ? CachedNetworkImage(
-                    imageUrl: avatarUrl,
+                    imageUrl: ContractUtils.getFullImageUrl(avatarUrl),
                     width: 48,
                     height: 48,
                     fit: BoxFit.cover,

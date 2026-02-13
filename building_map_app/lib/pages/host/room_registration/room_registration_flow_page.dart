@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../config/api_config.dart';
+import '../../../utils/contract_utils.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -154,10 +154,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
             for (var photo in roomData['photos']) {
               final url = photo['url'] as String;
-              // 상대 경로인 경우 API_BASE_URL 추가
-              final fullUrl = url.startsWith('/')
-                  ? '${ApiConfig.baseUrl}$url'
-                  : url;
+              // 상대 경로인 경우 절대 URL로 변환
+              final fullUrl = ContractUtils.getFullImageUrl(url);
 
               photosList.add(fullUrl);
               photoObjects.add({'id': photo['id'], 'url': fullUrl});

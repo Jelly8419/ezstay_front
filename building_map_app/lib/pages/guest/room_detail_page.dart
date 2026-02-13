@@ -19,6 +19,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../utils/price_calculator.dart';
 import '../host/room_registration/components/form_section.dart';
 import '../../utils/format_utils.dart';
+import '../../utils/contract_utils.dart';
 import '../../widgets/kakao_roadview_web.dart';
 import '../../widgets/common/app_footer.dart';
 
@@ -1453,7 +1454,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               child: Stack(
                 children: [
                   Image.network(
-                    _room!.photos[_currentPhotoIndex].url,
+                    ContractUtils.getFullImageUrl(_room!.photos[_currentPhotoIndex].url),
                     width: double.infinity,
                     height: double.infinity,
                     fit: BoxFit.cover,
@@ -1600,7 +1601,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                         14,
                       ), // radiusLg - borderWidth
                       child: Image.network(
-                        _room!.photos[index].url,
+                        ContractUtils.getFullImageUrl(_room!.photos[index].url),
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(

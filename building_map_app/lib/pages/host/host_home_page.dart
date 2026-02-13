@@ -12,7 +12,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../shared/widgets/app_buttons.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
-import '../../config/api_config.dart';
+import '../../utils/contract_utils.dart';
 
 /// 호스트 모드 홈 화면 - 새 디자인 시스템 적용
 class HostHomePage extends StatefulWidget {
@@ -314,9 +314,7 @@ class _HostHomePageState extends State<HostHomePage> {
       }
 
       // 상대 경로를 절대 URL로 변환
-      if (photoUrl.isNotEmpty && photoUrl.startsWith('/')) {
-        photoUrl = '${ApiConfig.baseUrl}$photoUrl';
-      }
+      photoUrl = ContractUtils.getFullImageUrl(photoUrl);
 
       debugPrint('🖼️ [HOST] 추출된 photoUrl: $photoUrl');
     }

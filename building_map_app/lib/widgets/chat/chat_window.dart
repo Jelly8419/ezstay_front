@@ -8,6 +8,7 @@ import '../../models/chat_room.dart';
 import '../../models/chat_message.dart';
 import '../system_message_bubble.dart';
 import 'message_item.dart';
+import '../../utils/contract_utils.dart';
 
 /// 채팅 윈도우 위젯
 /// React ChatWindow.tsx를 Flutter로 완전 복제
@@ -231,7 +232,7 @@ class _ChatWindowState extends State<ChatWindow> {
               borderRadius: BorderRadius.circular(9999), // rounded-full
               child: otherUserAvatar.isNotEmpty
                   ? CachedNetworkImage(
-                      imageUrl: otherUserAvatar,
+                      imageUrl: ContractUtils.getFullImageUrl(otherUserAvatar),
                       width: isDesktop ? 40 : 32, // w-8 sm:w-10
                       height: isDesktop ? 40 : 32, // h-8 sm:h-10
                       fit: BoxFit.cover,

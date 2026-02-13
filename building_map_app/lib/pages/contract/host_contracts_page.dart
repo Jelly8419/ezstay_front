@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/format_utils.dart';
+import '../../utils/contract_utils.dart';
 import '../../constants/app_constants.dart' hide AppColors, AppTextStyles;
 import '../../models/contract.dart';
 import '../../services/contract_service.dart';
@@ -853,7 +854,7 @@ class _HostContractsPageState extends State<HostContractsPage> {
           borderRadius: BorderRadius.circular(8),
           child: contract.roomThumbnail != null
               ? Image.network(
-                  contract.roomThumbnail!,
+                  ContractUtils.getFullImageUrl(contract.roomThumbnail),
                   width: double.infinity,
                   height: 192, // h-48
                   fit: BoxFit.cover,
@@ -977,7 +978,7 @@ class _HostContractsPageState extends State<HostContractsPage> {
           borderRadius: BorderRadius.circular(8),
           child: contract.roomThumbnail != null
               ? Image.network(
-                  contract.roomThumbnail!,
+                  ContractUtils.getFullImageUrl(contract.roomThumbnail),
                   width: 128,
                   height: 128,
                   fit: BoxFit.cover,

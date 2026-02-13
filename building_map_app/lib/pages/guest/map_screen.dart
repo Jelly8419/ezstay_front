@@ -5,10 +5,10 @@ import 'dart:html' as html show window, EventListener, Event, MessageEvent;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/format_utils.dart';
+import '../../utils/contract_utils.dart';
 import '../../models/room.dart';
 import '../../models/search_filters.dart';
 import '../../services/room_service.dart';
-import '../../config/api_config.dart';
 import '../../widgets/kakao_map_web.dart';
 import '../../widgets/property_card.dart';
 import '../../widgets/search_filter_bar.dart';
@@ -276,19 +276,11 @@ class _MapScreenState extends State<MapScreen> {
       );
 
       if (result != null && result['rooms'] != null) {
-        // 썸네일 상대경로를 절대경로로 변환 (호스트 방 등록과 동일한 방식)
+        // 썸네일 상대경로를 절대경로로 변환
         final rooms = List<Map<String, dynamic>>.from(result['rooms']);
         for (var room in rooms) {
-          if (room['thumbnail'] != null &&
-              room['thumbnail'].toString().startsWith('/')) {
-            if (kIsWeb) {
-              // 웹 환경: 서버 URL prefix 추가
-              room['thumbnail'] = '${ApiConfig.baseUrl}${room['thumbnail']}';
-            } else {
-              // 모바일/데스크톱: 로컬 경로 (개발 환경)
-              // TODO: 프로덕션에서는 서버 URL 사용
-              room['thumbnail'] = 'C:\\study${room['thumbnail']}';
-            }
+          if (room['thumbnail'] != null) {
+            room['thumbnail'] = ContractUtils.getFullImageUrl(room['thumbnail'].toString());
           }
         }
 
@@ -969,9 +961,7 @@ class _MapScreenState extends State<MapScreen> {
             final photos = photosData != null && photosData.isNotEmpty
                 ? photosData.map((photo) {
                     final relativeUrl = photo['url'] ?? '';
-                    final fullUrl = relativeUrl.isNotEmpty
-                        ? '${ApiConfig.baseUrl}$relativeUrl'
-                        : '';
+                    final fullUrl = ContractUtils.getFullImageUrl(relativeUrl);
                     return {'url': fullUrl, 'order': photo['order'] ?? 0};
                   }).toList()
                 : <Map<String, dynamic>>[];
@@ -1357,9 +1347,7 @@ class _MapScreenState extends State<MapScreen> {
             final photos = photosData != null && photosData.isNotEmpty
                 ? photosData.map((photo) {
                     final relativeUrl = photo['url'] ?? '';
-                    final fullUrl = relativeUrl.isNotEmpty
-                        ? '${ApiConfig.baseUrl}$relativeUrl'
-                        : '';
+                    final fullUrl = ContractUtils.getFullImageUrl(relativeUrl);
                     return {'url': fullUrl, 'order': photo['order'] ?? 0};
                   }).toList()
                 : <Map<String, dynamic>>[];
@@ -1437,9 +1425,7 @@ class _MapScreenState extends State<MapScreen> {
             final photos = photosData != null && photosData.isNotEmpty
                 ? photosData.map((photo) {
                     final relativeUrl = photo['url'] ?? '';
-                    final fullUrl = relativeUrl.isNotEmpty
-                        ? '${ApiConfig.baseUrl}$relativeUrl'
-                        : '';
+                    final fullUrl = ContractUtils.getFullImageUrl(relativeUrl);
                     return {'url': fullUrl, 'order': photo['order'] ?? 0};
                   }).toList()
                 : <Map<String, dynamic>>[];
@@ -1547,9 +1533,8 @@ class _MapScreenState extends State<MapScreen> {
     String? firstPhotoUrl;
     if (photosData != null && photosData.isNotEmpty) {
       final relativeUrl = photosData[0]['url'] as String?;
-      firstPhotoUrl = relativeUrl != null && relativeUrl.isNotEmpty
-          ? '${ApiConfig.baseUrl}$relativeUrl'
-          : null;
+      final fullUrl = ContractUtils.getFullImageUrl(relativeUrl);
+      firstPhotoUrl = fullUrl.isNotEmpty ? fullUrl : null;
     }
 
     final dailyRent = roomData['dailyRent'] ?? 0;
