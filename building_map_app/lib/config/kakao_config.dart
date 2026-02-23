@@ -18,7 +18,7 @@ class KakaoConfig {
     }
 
     // fallback: 로컬 개발용 (배포 시에는 사용되지 않음)
-    return '32ea67da1f7c3d55fd573c285a5fc0f2'; // test 키로 변경
+    return 'e68e331e3c2fd104aa8d7194f7c3a066'; // 로컬 개발용 테스트 앱 키
   }
 
   /// 카카오 JavaScript API 키 (지도용)
@@ -36,7 +36,7 @@ class KakaoConfig {
     }
 
     // fallback: 로컬 개발용
-    return '8fa88a5c7a3edac4ee6d8dd52af14f60'; // test 키로 변경
+    return '5e2b60c33562fb4806fde94853956642'; // 로컬 개발용 테스트 앱 키
   }
 
   /// 리다이렉트 URL
