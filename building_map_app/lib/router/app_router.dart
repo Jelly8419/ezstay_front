@@ -51,6 +51,8 @@ import '../pages/host/host_settlement_page.dart' deferred as host_settlement;
 import '../pages/host/host_settlement_detail_page.dart'
     deferred as host_settlement_detail;
 import '../pages/auth/account_suspended_page.dart' deferred as account_suspended;
+import '../pages/legal/terms_of_service_page.dart' deferred as terms_of_service;
+import '../pages/legal/privacy_policy_page.dart' deferred as privacy_policy;
 
 
 class AppRouter {
@@ -484,6 +486,24 @@ class AppRouter {
                   },
                 ),
               ],
+            ),
+            // 이용약관
+            GoRoute(
+              path: '/terms',
+              name: 'terms',
+              builder: (context, state) => _deferredShellWidget(
+                terms_of_service.loadLibrary,
+                () => terms_of_service.TermsOfServicePage(),
+              ),
+            ),
+            // 개인정보 처리방침
+            GoRoute(
+              path: '/privacy',
+              name: 'privacy',
+              builder: (context, state) => _deferredShellWidget(
+                privacy_policy.loadLibrary,
+                () => privacy_policy.PrivacyPolicyPage(),
+              ),
             ),
             // 고객센터
             GoRoute(
