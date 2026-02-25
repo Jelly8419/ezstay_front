@@ -184,17 +184,17 @@ class PriceCalculator {
     }
   }
 
-  /// 날짜 차이가 최소 계약 일수를 만족하는지 검증
+  /// 날짜 차이가 계약 일수 범위(최소~최대)를 만족하는지 검증
   static bool isValidContractDuration({
     required Room room,
     required BookingState bookingState,
   }) {
     final days = bookingState.selectedDays;
     if (days == null) return false;
-    return days >= room.minContractDays;
+    return days >= room.minContractDays && days <= room.maxContractDays;
   }
 
-  /// 날짜 선택이 가능한지 검증 (최소 계약 일수 체크)
+  /// 날짜 선택이 가능한지 검증 (최소/최대 계약 일수 체크)
   static String? validateDateSelection({
     required Room room,
     required BookingState bookingState,
@@ -209,13 +209,21 @@ class PriceCalculator {
       return '최소 ${room.minContractDays}일 이상 선택해주세요. (현재: ${days}일)';
     }
 
+    if (days > room.maxContractDays) {
+      return '최대 ${room.maxContractDays}일까지 선택할 수 있습니다. (현재: ${days}일)';
+    }
+
     return null; // 유효함
   }
 
   /// 옵션 상품(렌탈 아이템) 선택 가능 여부 판단
   ///
-  /// 정책: 계약 시작일(체크인)로부터 현재 시점까지 6일 미만이면 옵션 상품 선택 불가
-  /// - 예: 입주일 1/31 14:00, 현재 1/25 15:00 → 5일 23시간 → 6일 미만 → 비활성화
+  /// 정책: 입주일 6일 전 날짜의 23:59:59까지 옵션 선택 가능
+  /// - 예: 입주일 2/16 → 마감일 = 2/10 → 2/10 23:59:59까지 선택 가능
+  /// - 2/11 00:00:00부터 선택 불가
+  ///
+  /// 시분초를 제거한 날짜(calendar day) 단위로 비교하여,
+  /// 하루 중 어느 시간이든 동일한 결과를 보장합니다.
   ///
   /// [checkInDate] - 체크인(입주) 날짜
   /// [currentTime] - 현재 시간 (테스트용으로 주입 가능, 기본값 DateTime.now())
@@ -229,12 +237,15 @@ class PriceCalculator {
     if (checkInDate == null) return false;
 
     final now = currentTime ?? DateTime.now();
-    final daysUntilCheckIn = checkInDate.difference(now).inDays;
+    // 시분초를 제거하여 날짜(calendar day) 단위로 비교
+    final today = DateTime(now.year, now.month, now.day);
+    final checkInDay = DateTime(checkInDate.year, checkInDate.month, checkInDate.day);
+    final calendarDaysDiff = checkInDay.difference(today).inDays;
 
-    // 6일 이상 남았으면 선택 가능
-    // inDays는 정수로 내림하므로, 5일 23시간은 5로 계산됨
-    // 따라서 >= 6 조건으로 체크
-    return daysUntilCheckIn >= 6;
+    // 입주일까지 6일 이상 남았으면 선택 가능
+    // 예: 입주일 2/16, 오늘 2/10 → diff=6 → 가능 (2/10 23:59:59까지)
+    // 예: 입주일 2/16, 오늘 2/11 → diff=5 → 불가
+    return calendarDaysDiff >= 6;
   }
 
   /// 옵션 상품 비활성화 사유 메시지
@@ -252,10 +263,16 @@ class PriceCalculator {
     }
 
     final now = currentTime ?? DateTime.now();
-    final daysUntilCheckIn = checkInDate.difference(now).inDays;
+    // 시분초를 제거하여 날짜(calendar day) 단위로 비교
+    final today = DateTime(now.year, now.month, now.day);
+    final checkInDay = DateTime(checkInDate.year, checkInDate.month, checkInDate.day);
+    final calendarDaysDiff = checkInDay.difference(today).inDays;
 
-    if (daysUntilCheckIn < 6) {
-      return '옵션 상품은 입주일 6일 전까지만 선택 가능합니다.';
+    if (calendarDaysDiff < 6) {
+      // 마감일 계산하여 안내 (입주일 - 6일)
+      final deadline = checkInDay.subtract(const Duration(days: 6));
+      final deadlineStr = '${deadline.month}/${deadline.day}';
+      return '옵션 상품 선택 기한이 지났습니다. ($deadlineStr 23:59까지 선택 가능)';
     }
 
     return null; // 선택 가능

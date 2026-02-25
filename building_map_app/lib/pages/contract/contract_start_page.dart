@@ -51,8 +51,15 @@ class _ContractStartPageState extends State<ContractStartPage> {
   bool get _hasValidDates =>
       widget.checkInDate != null && widget.checkOutDate != null;
 
+  // 임대 기간이 유효 범위(최소~최대) 내인지 확인
+  bool get _isValidContractPeriod {
+    if (!_hasValidDates) return false;
+    final days = widget.checkOutDate!.difference(widget.checkInDate!).inDays;
+    return days >= widget.room.minContractDays && days <= widget.room.maxContractDays;
+  }
+
   // 계약 요청 가능 여부
-  bool get _canSubmit => _hasValidDates && widget.calculatedPricing.isValid;
+  bool get _canSubmit => _hasValidDates && _isValidContractPeriod && widget.calculatedPricing.isValid;
 
   @override
   void initState() {
@@ -1609,17 +1616,24 @@ class _ContractStartPageState extends State<ContractStartPage> {
   Future<void> _requestContract() async {
     if (_isLoading || !_canSubmit) return;
 
+    // 세션 방어: 제출 시점에 옵션 선택 기한 재검증
+    // 예약 창을 오래 열어둔 채 날짜가 넘어간 경우를 방어
+    final canIncludeRentalItems = PriceCalculator.canSelectRentalItems(
+      checkInDate: widget.checkInDate,
+    );
+
+    // 옵션을 선택했는데 기한이 지난 경우 → 사용자에게 안내
+    if (!canIncludeRentalItems && widget.selectedRentalItems.isNotEmpty) {
+      final shouldContinue = await _showOptionDeadlineExpiredDialog();
+      if (!shouldContinue) return; // 사용자가 취소 선택
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
       final pricing = widget.calculatedPricing;
-
-      // 6일 정책 체크: 입주일 6일 전까지만 옵션 상품 포함 가능
-      final canIncludeRentalItems = PriceCalculator.canSelectRentalItems(
-        checkInDate: widget.checkInDate,
-      );
 
       // 렌탈 아이템 API 형식으로 변환 (6일 정책 위반 시 빈 리스트)
       final rentalItemsPayload = canIncludeRentalItems
@@ -1707,6 +1721,59 @@ class _ContractStartPageState extends State<ContractStartPage> {
         await _showContractErrorMessage(errorMessage);
       }
     }
+  }
+
+  /// 옵션 선택 기한 만료 안내 다이얼로그 (세션 방어)
+  /// 예약 창을 열어둔 채 기한이 지난 경우 표시
+  /// 반환값: true면 옵션 제외 후 계속 진행, false면 취소
+  Future<bool> _showOptionDeadlineExpiredDialog() async {
+    final checkInDay = widget.checkInDate != null
+        ? DateTime(widget.checkInDate!.year, widget.checkInDate!.month, widget.checkInDate!.day)
+        : null;
+    final deadline = checkInDay?.subtract(const Duration(days: 6));
+    final deadlineStr = deadline != null
+        ? '${deadline.month}/${deadline.day}'
+        : '';
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.schedule, color: AppColors.warning500, size: 24),
+            const SizedBox(width: 8),
+            const Text('옵션 선택 기한 만료'),
+          ],
+        ),
+        content: Text(
+          '옵션 상품 선택 가능 기한이 지났습니다.\n'
+          '($deadlineStr 23:59까지 선택 가능)\n\n'
+          '선택하신 옵션 상품을 제외하고 계약 요청을 진행할까요?\n'
+          '옵션 상품은 계약 승인 후에도 기한 내 추가할 수 있습니다.',
+          style: AppTextStyles.bodyMedium.copyWith(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('취소', style: TextStyle(color: Colors.grey[600])),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('옵션 제외 후 진행', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
   }
 
   /// 에러 메시지에서 missingFields 배열 파싱

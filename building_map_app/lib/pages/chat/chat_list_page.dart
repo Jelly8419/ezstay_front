@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -504,17 +503,28 @@ class _ChatListPageState extends State<ChatListPage> {
   }
 
   /// 메시지 전송 핸들러
-  Future<void> _handleSendMessage(String text, List<File> images, int senderId) async {
+  Future<void> _handleSendMessage(String text, List<XFile> images, int senderId) async {
     if (_selectedChat == null) return;
 
     try {
-      // TODO: 이미지 업로드 로직 추가
-      // Firebase 채팅방 ID 사용
-      await _chatService.sendMessage(
-        chatRoomId: _selectedChat!.firebaseChatRoomId,
-        senderId: senderId,
-        text: text,
-      );
+      final chatRoomId = _selectedChat!.firebaseChatRoomId;
+
+      if (images.isNotEmpty) {
+        // 이미지가 있으면 이미지 메시지 전송 (텍스트 포함)
+        await _chatService.sendImageMessages(
+          chatRoomId: chatRoomId,
+          senderId: senderId,
+          images: images,
+          text: text.trim().isNotEmpty ? text : null,
+        );
+      } else {
+        // 텍스트만 전송
+        await _chatService.sendMessage(
+          chatRoomId: chatRoomId,
+          senderId: senderId,
+          text: text,
+        );
+      }
     } catch (e) {
       debugPrint('❌ [CHAT_LIST] 메시지 전송 실패: $e');
       if (mounted) {

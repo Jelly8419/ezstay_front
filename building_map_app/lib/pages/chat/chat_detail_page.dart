@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/format_utils.dart';
+import '../../utils/contract_utils.dart';
 import '../../models/chat_message.dart';
 import '../../models/chat_room.dart';
 import '../../services/chat_service.dart';
@@ -441,9 +443,9 @@ class _ChatBubble extends StatelessWidget {
   Widget _buildBubble() {
     return Container(
       constraints: const BoxConstraints(maxWidth: 280),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 10,
+      padding: EdgeInsets.symmetric(
+        horizontal: message.isImageMessage && message.text.isEmpty ? 4 : 16,
+        vertical: message.isImageMessage && message.text.isEmpty ? 4 : 10,
       ),
       decoration: BoxDecoration(
         color: isMe ? AppColors.primary : AppColors.grey200,
@@ -461,11 +463,41 @@ class _ChatBubble extends StatelessWidget {
           ),
         ],
       ),
-      child: Text(
-        message.text,
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: isMe ? Colors.white : AppColors.textPrimary,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (message.text.isNotEmpty)
+            Text(
+              message.text,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: isMe ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
+          if (message.imageUrl != null) ...[
+            if (message.text.isNotEmpty) const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: CachedNetworkImage(
+                imageUrl: ContractUtils.getFullImageUrl(message.imageUrl),
+                fit: BoxFit.cover,
+                placeholder: (ctx, url) => Container(
+                  width: 200,
+                  height: 150,
+                  color: Colors.black.withValues(alpha: 0.1),
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (ctx, url, error) => Container(
+                  width: 200,
+                  height: 150,
+                  color: Colors.black.withValues(alpha: 0.1),
+                  child: const Icon(Icons.broken_image),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

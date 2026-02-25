@@ -40,13 +40,13 @@ class _DescriptionStepState extends State<DescriptionStep> {
     '11:00'
   ];
 
-  String get _maxGuests => (widget.formData['maxGuests'] as String?) ?? '';
+  String get _maxGuests => widget.formData['maxGuests']?.toString() ?? '';
   String get _checkInTime =>
-      (widget.formData['checkInTime'] as String?) ?? '14:00';
+      widget.formData['checkInTime']?.toString() ?? '14:00';
   String get _checkOutTime =>
-      (widget.formData['checkOutTime'] as String?) ?? '11:00';
+      widget.formData['checkOutTime']?.toString() ?? '11:00';
   String get _propertyDescription =>
-      (widget.formData['propertyDescription'] as String?) ?? '';
+      widget.formData['propertyDescription']?.toString() ?? '';
 
   @override
   void initState() {

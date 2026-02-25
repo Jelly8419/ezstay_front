@@ -207,6 +207,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                       checkInDate: _bookingState.checkInDate,
                       checkOutDate: _bookingState.checkOutDate,
                       minContractDays: widget.room.minContractDays,
+                      maxContractDays: widget.room.maxContractDays,
                       onDateSelected: (checkIn, checkOut) {
                         _updateState(
                           _bookingState.copyWith(
