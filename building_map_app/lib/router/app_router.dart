@@ -744,7 +744,7 @@ class AppRouter {
                   // 이메일 회원가입 플로우 - 회원가입 페이지로 이동
                   await register_flow.loadLibrary();
                   if (context.mounted) {
-                    context.push('/register', extra: mode);
+                    context.go('/register', extra: mode);
                   }
                   return;
                 }
