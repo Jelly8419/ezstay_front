@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/verification_service.dart';
 import '../../../models/user.dart';
+import '../../../utils/password_validator.dart';
 
 /// Step 1: 이메일/비밀번호 입력 및 이메일 인증 단계
 class EmailPasswordStep extends StatefulWidget {
@@ -678,7 +679,7 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
                 color: primaryBlack,
               ),
               decoration: InputDecoration(
-                hintText: '8자 이상, 영문과 숫자 포함',
+                hintText: PasswordValidator.hintText,
                 hintStyle: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
@@ -733,18 +734,7 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
                   },
                 ),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return '비밀번호를 입력해주세요';
-                }
-                if (value.length < 8) {
-                  return '비밀번호는 8자 이상이어야 합니다';
-                }
-                if (!RegExp(r'^(?=.*[a-zA-Z])(?=.*\d).+$').hasMatch(value)) {
-                  return '영문과 숫자를 포함해야 합니다';
-                }
-                return null;
-              },
+              validator: PasswordValidator.validate,
             ),
           ),
           const SizedBox(height: 20),
@@ -827,15 +817,8 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
                   },
                 ),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return '비밀번호 확인을 입력해주세요';
-                }
-                if (value != _passwordController.text) {
-                  return '비밀번호가 일치하지 않습니다';
-                }
-                return null;
-              },
+              validator: (value) => PasswordValidator.validateConfirm(
+                value, _passwordController.text),
             ),
           ),
           const SizedBox(height: 40),

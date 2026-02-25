@@ -53,6 +53,7 @@ import '../pages/host/host_settlement_detail_page.dart'
 import '../pages/auth/account_suspended_page.dart' deferred as account_suspended;
 import '../pages/legal/terms_of_service_page.dart' deferred as terms_of_service;
 import '../pages/legal/privacy_policy_page.dart' deferred as privacy_policy;
+import '../pages/auth/reset_password_page.dart' deferred as reset_password;
 
 
 class AppRouter {
@@ -329,6 +330,14 @@ class AppRouter {
               path: '/login',
               name: 'login',
               builder: (context, state) => const LoginPage(),
+            ),
+            GoRoute(
+              path: '/reset-password',
+              name: 'reset-password',
+              builder: (context, state) => _deferredWidget(
+                reset_password.loadLibrary,
+                () => reset_password.ResetPasswordPage(),
+              ),
             ),
             GoRoute(
               path: '/guest',

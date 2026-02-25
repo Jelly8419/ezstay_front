@@ -13,6 +13,7 @@ import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../widgets/common/custom_text_field.dart';
+import '../../utils/password_validator.dart';
 
 /// 호스트 마이페이지 (내 정보 관리)
 /// React: src/pages/HostMyPage.tsx
@@ -37,6 +38,8 @@ class _HostMyPageState extends State<HostMyPage> {
 
   // 비밀번호 변경 상태
   bool _isEditingPassword = false;
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
@@ -53,6 +56,7 @@ class _HostMyPageState extends State<HostMyPage> {
 
   @override
   void dispose() {
+    _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     _nicknameController.dispose();
@@ -109,6 +113,7 @@ class _HostMyPageState extends State<HostMyPage> {
   void _cancelPasswordEdit() {
     setState(() {
       _isEditingPassword = false;
+      _currentPasswordController.clear();
       _newPasswordController.clear();
       _confirmPasswordController.clear();
     });
@@ -161,22 +166,18 @@ class _HostMyPageState extends State<HostMyPage> {
       return;
     }
 
-    // 비밀번호 형식 검증 (영문, 숫자, 특수문자 조합 6자~15자)
-    final password = _newPasswordController.text;
-    final passwordRegex = RegExp(
-      r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,15}$',
-    );
-
-    if (!passwordRegex.hasMatch(password)) {
-      _showErrorDialog('영문, 숫자, 특수문자 조합 6자~15자로 입력해주세요.');
+    // 비밀번호 형식 검증
+    final passwordError = PasswordValidator.validate(_newPasswordController.text);
+    if (passwordError != null) {
+      _showErrorDialog(passwordError);
       return;
     }
 
     try {
-      // TODO: 호스트용 비밀번호 변경 API 호출
-      // await _userProfileService.changePasswordWithoutCurrent(
-      //   newPassword: _newPasswordController.text,
-      // );
+      await _userProfileService.changePassword(
+        currentPassword: _currentPasswordController.text,
+        newPassword: _newPasswordController.text,
+      );
 
       if (mounted) {
         _showSuccessDialog('정상적으로 변경되었습니다.');
@@ -990,31 +991,40 @@ class _HostMyPageState extends State<HostMyPage> {
 
   /// 비밀번호 편집 폼 (편집 모드 ON)
   Widget _buildPasswordEditForm() {
-    final canSubmit = _newPasswordController.text.isNotEmpty &&
+    final canSubmit = _currentPasswordController.text.isNotEmpty &&
+        _newPasswordController.text.isNotEmpty &&
         _confirmPasswordController.text.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 현재 비밀번호 입력
+        CustomTextField(
+          controller: _currentPasswordController,
+          hint: '현재 비밀번호',
+          obscureText: true,
+          onChanged: (_) => setState(() {}),
+        ),
+
+        SizedBox(height: AppSpacing.sm),
+
         // 새 비밀번호 입력
-        // React: <input type="password" placeholder="새 비밀번호" />
         CustomTextField(
           controller: _newPasswordController,
           hint: '새 비밀번호',
           obscureText: true,
-          onChanged: (_) => setState(() {}), // 버튼 활성화 상태 업데이트
+          onChanged: (_) => setState(() {}),
         ),
 
         const SizedBox(height: 4),
 
         // 안내 문구
-        // React: <div className="text-xs text-gray-500 -mt-1 px-1">영문, 숫자, 특수문자 조합 6자~15자</div>
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
-            '영문, 숫자, 특수문자 조합 6자~15자',
+            PasswordValidator.policyDescription,
             style: AppTextStyles.bodySmall.copyWith(
-              fontSize: 12, // text-xs
+              fontSize: 12,
               color: AppColors.textSecondary,
             ),
           ),
@@ -1027,7 +1037,7 @@ class _HostMyPageState extends State<HostMyPage> {
           controller: _confirmPasswordController,
           hint: '새 비밀번호 확인',
           obscureText: true,
-          onChanged: (_) => setState(() {}), // 버튼 활성화 상태 업데이트
+          onChanged: (_) => setState(() {}),
         ),
 
         SizedBox(height: AppSpacing.sm),

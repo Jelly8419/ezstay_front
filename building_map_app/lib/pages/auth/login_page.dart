@@ -338,8 +338,7 @@ class _LoginPageState extends State<LoginPage> {
                       // 비밀번호 찾기
                       TextButton(
                         onPressed: () {
-                          // TODO: 비밀번호 찾기 기능
-                          _showInfoDialog('비밀번호 찾기 기능은 준비 중입니다.');
+                          context.push('/reset-password');
                         },
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
