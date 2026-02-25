@@ -54,6 +54,7 @@ import '../pages/auth/account_suspended_page.dart' deferred as account_suspended
 import '../pages/legal/terms_of_service_page.dart' deferred as terms_of_service;
 import '../pages/legal/privacy_policy_page.dart' deferred as privacy_policy;
 import '../pages/auth/reset_password_page.dart' deferred as reset_password;
+import '../pages/auth/kmc_callback_page.dart' deferred as kmc_callback;
 
 
 class AppRouter {
@@ -256,6 +257,11 @@ class AppRouter {
           return null;
         }
 
+        // KMC 본인인증 콜백 경로는 리다이렉트 안 함
+        if (state.matchedLocation == '/kmc/callback') {
+          return null;
+        }
+
         // 바이패스 로그인 경로는 리다이렉트 안 함
         if (isGoingToBypass) {
           return null;
@@ -338,6 +344,22 @@ class AppRouter {
                 reset_password.loadLibrary,
                 () => reset_password.ResetPasswordPage(),
               ),
+            ),
+            // KMC 본인인증 콜백 (KMC가 인증 완료 후 이 URL로 결과 POST)
+            GoRoute(
+              path: '/kmc/callback',
+              name: 'kmc-callback',
+              builder: (context, state) {
+                final apiToken = state.uri.queryParameters['apiToken'];
+                final certNum = state.uri.queryParameters['certNum'];
+                return _deferredWidget(
+                  kmc_callback.loadLibrary,
+                  () => kmc_callback.KmcCallbackPage(
+                    apiToken: apiToken,
+                    certNum: certNum,
+                  ),
+                );
+              },
             ),
             GoRoute(
               path: '/guest',
