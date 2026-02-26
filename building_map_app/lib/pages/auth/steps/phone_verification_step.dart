@@ -563,6 +563,12 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
           if (_verifiedBirth != null) 'birth': _verifiedBirth,
           if (_verifiedGender != null) 'gender': _verifiedGender,
           if (_verifiedDi != null) 'di': _verifiedDi,
+          'terms': {
+            'service_terms': _agreeTerms,
+            'privacy_policy': _agreeTerms,
+            'marketing_consent': _agreeMarketing,
+            'age_confirmed': true,
+          },
         };
         debugPrint('📦 [REGISTER] 회원가입 요청 데이터: $registerBody');
         final registerResponse = await http
@@ -609,117 +615,26 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         debugPrint('✅ [REGISTER] JWT 토큰 저장 완료');
       }
 
-      // Step 3: 본인인증 API 호출 (또는 본인인증만 호출)
+      // 본인인증만 하는 단계인 경우 다음 단계로 이동
       if (widget.isPhoneVerificationOnly) {
-        // 본인인증만 하는 단계 (호스트 소셜 로그인 첫 단계)
-        debugPrint('📞 [REGISTER] 본인인증만 API 호출');
-        final verificationUrl =
-            '${ApiConfig.baseUrl}/api/user/host/phone-verification';
-
-        final verificationBody = {
-          'name': _nameController.text,
-          'phone_number': _phoneController.text,
-        };
-
-        final verificationResponse = await http
-            .post(
-              Uri.parse(verificationUrl),
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer $accessToken',
-              },
-              body: json.encode(verificationBody),
-            )
-            .timeout(ApiConfig.timeout);
-
-        debugPrint(
-          '📡 [REGISTER] 본인인증 응답 상태: ${verificationResponse.statusCode}',
-        );
-        debugPrint('📄 [REGISTER] 본인인증 응답 내용: ${verificationResponse.body}');
-
-        if (verificationResponse.statusCode != 200 &&
-            verificationResponse.statusCode != 201) {
-          final data = json.decode(verificationResponse.body);
-          final message = data['message'] ?? '본인인증에 실패했습니다';
-          throw Exception(message);
-        }
-
-        final verificationData = json.decode(verificationResponse.body);
-        if (verificationData['success'] != true) {
-          final message = verificationData['message'] ?? '본인인증에 실패했습니다';
-          throw Exception(message);
-        }
-
-        // 본인인증 완료 - 다음 단계로 이동
         debugPrint('✅ [REGISTER] 본인인증 완료 - 다음 단계로 이동');
         if (mounted) {
           setState(() {
             _isRegistering = false;
           });
-          widget.onNext();
+          widget.onNext(
+            realName: _nameController.text,
+            phoneNumber: _phoneController.text,
+            di: _verifiedDi,
+            birth: _verifiedBirth,
+            gender: _verifiedGender,
+          );
         }
-        return; // 여기서 종료
+        return;
       }
 
-      // 전체 단계인 경우: 본인인증 + 약관동의 + (호스트의 경우) 계좌 정보
-      debugPrint('📞 [REGISTER] Step 3: 본인인증 API 호출');
-      final verificationUrl = widget.mode == UserMode.guest
-          ? '${ApiConfig.baseUrl}/api/user/guest/verification'
-          : '${ApiConfig.baseUrl}/api/user/host/verification';
-
-      final verificationBody = {
-        'name': _nameController.text,
-        'phone_number': _phoneController.text,
-        'terms': {
-          'service_terms': _agreeTerms,
-          'privacy_policy': _agreeTerms,
-          'marketing_consent': _agreeMarketing,
-          'age_confirmed': true,
-        },
-      };
-
-      // 호스트의 경우 계좌 정보 추가
-      if (widget.mode == UserMode.host) {
-        verificationBody['bank_code'] = _getBankCode(_selectedBank!);
-        verificationBody['account_num'] = _accountController.text;
-        verificationBody['account_holder_name'] = _accountHolderController.text;
-        debugPrint('🏦 [REGISTER] 호스트 계좌 정보 포함');
-        debugPrint('은행 코드: ${verificationBody['bank_code']}');
-        debugPrint('계좌번호: ${verificationBody['account_num']}');
-        debugPrint('예금주: ${verificationBody['account_holder_name']}');
-      }
-
-      final verificationResponse = await http
-          .post(
-            Uri.parse(verificationUrl),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-            body: json.encode(verificationBody),
-          )
-          .timeout(ApiConfig.timeout);
-
-      debugPrint(
-        '📡 [REGISTER] 본인인증 응답 상태: ${verificationResponse.statusCode}',
-      );
-      debugPrint('📄 [REGISTER] 본인인증 응답 내용: ${verificationResponse.body}');
-
-      if (verificationResponse.statusCode != 200 &&
-          verificationResponse.statusCode != 201) {
-        final data = json.decode(verificationResponse.body);
-        final message = data['message'] ?? '본인인증에 실패했습니다';
-        throw Exception(message);
-      }
-
-      final verificationData = json.decode(verificationResponse.body);
-      if (verificationData['success'] != true) {
-        final message = verificationData['message'] ?? '본인인증에 실패했습니다';
-        throw Exception(message);
-      }
-
-      // Step 4: 성공 (JWT 토큰 이미 저장됨)
-      debugPrint('✅ [REGISTER] 회원가입 및 본인인증 완료');
+      // 전체 단계: register API에서 본인인증+약관 모두 처리 완료
+      debugPrint('✅ [REGISTER] 회원가입 완료 (본인인증+약관동의 포함)');
 
       if (mounted) {
         setState(() {

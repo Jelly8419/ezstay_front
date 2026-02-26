@@ -330,6 +330,15 @@ class _HostAccountStepState extends State<HostAccountStep> {
       if (widget.birth != null) 'birth': widget.birth,
       if (widget.gender != null) 'gender': widget.gender,
       if (widget.di != null) 'di': widget.di,
+      'bank_code': _getBankCode(_selectedBank!),
+      'account_num': _accountController.text,
+      'account_holder_name': _accountHolderController.text,
+      'terms': {
+        'service_terms': _agreeTerms,
+        'privacy_policy': _agreeTerms,
+        'marketing_consent': _agreeMarketing,
+        'age_confirmed': true,
+      },
     };
     debugPrint('📦 [REGISTER] 회원가입 요청 데이터: $registerBody');
     final registerResponse = await http
@@ -377,52 +386,8 @@ class _HostAccountStepState extends State<HostAccountStep> {
     await TokenService.saveTokens(accessToken, refreshToken);
     debugPrint('✅ [REGISTER] JWT 토큰 저장 완료');
 
-    // Step 3: 호스트 본인인증 + 계좌 정보 등록
-    debugPrint('📞 [REGISTER] Step 3: 호스트 본인인증 + 계좌 정보 등록');
-    final verificationUrl = '${ApiConfig.baseUrl}/api/user/host/verification';
-
-    final verificationBody = {
-      'name': widget.realName,
-      'phone_number': widget.phoneNumber,
-      'bank_code': _getBankCode(_selectedBank!),
-      'account_num': _accountController.text,
-      'account_holder_name': _accountHolderController.text,
-      'terms': {
-        'service_terms': _agreeTerms,
-        'privacy_policy': _agreeTerms,
-        'marketing_consent': _agreeMarketing,
-        'age_confirmed': true,
-      },
-    };
-
-    final verificationResponse = await http
-        .post(
-          Uri.parse(verificationUrl),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $accessToken',
-          },
-          body: jsonEncode(verificationBody),
-        )
-        .timeout(ApiConfig.timeout);
-
-    debugPrint('📡 [REGISTER] 본인인증 응답 상태: ${verificationResponse.statusCode}');
-    debugPrint('📄 [REGISTER] 본인인증 응답 내용: ${verificationResponse.body}');
-
-    if (verificationResponse.statusCode != 200 &&
-        verificationResponse.statusCode != 201) {
-      final data = jsonDecode(verificationResponse.body);
-      final message = data['message'] ?? '본인인증 및 계좌 등록에 실패했습니다';
-      throw Exception(message);
-    }
-
-    final verificationData = jsonDecode(verificationResponse.body);
-    if (verificationData['success'] != true) {
-      final message = verificationData['message'] ?? '본인인증 및 계좌 등록에 실패했습니다';
-      throw Exception(message);
-    }
-
-    // Step 4: 성공 - 자동 로그인 후 홈 화면으로 이동
+    // Step 3: 성공 - register API에서 본인인증+계좌+약관 모두 처리 완료
+    debugPrint('✅ [REGISTER] 회원가입 완료 (본인인증+계좌+약관동의 포함)');
     debugPrint('✅ [REGISTER] 호스트 회원가입 완료');
     widget.onNext();
   }
