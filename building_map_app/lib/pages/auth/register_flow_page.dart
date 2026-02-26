@@ -131,12 +131,19 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             mode: _state.mode,
             isSocialLogin: true, // 소셜 로그인 (카카오)
             isPhoneVerificationOnly: true, // 본인인증만 하는 단계
-            onNext: ({String? realName, String? phoneNumber}) {
+            onNext: ({
+              String? realName,
+              String? phoneNumber,
+              String? di,
+              String? birth,
+              String? gender,
+            }) {
               // 본인인증 완료 - 다음 단계로
               if (!mounted) return;
               setState(() {
                 if (realName != null && phoneNumber != null) {
-                  _state.markPhoneVerified(phoneNumber, realName);
+                  _state.markPhoneVerified(phoneNumber, realName,
+                      di: di, birth: birth, gender: gender);
                 }
                 _state.nextStep();
               });
@@ -149,6 +156,9 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             password: '', // 소셜 로그인은 비밀번호 없음
             phoneNumber: _state.phoneNumber ?? '',
             realName: _state.realName ?? '',
+            di: _state.di,
+            birth: _state.birth,
+            gender: _state.gender,
             onNext: () async {
               // 회원가입 성공 - 자동 로그인 후 홈 화면으로 이동
               if (!mounted) return;
@@ -181,7 +191,13 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             mode: _state.mode,
             isSocialLogin: true, // 소셜 로그인 (카카오)
             isPhoneVerificationOnly: false, // 전체 단계
-            onNext: ({String? realName, String? phoneNumber}) async {
+            onNext: ({
+              String? realName,
+              String? phoneNumber,
+              String? di,
+              String? birth,
+              String? gender,
+            }) async {
               // 회원가입 성공 - 자동 로그인 후 홈 화면으로 이동
               if (!mounted) return;
 
@@ -232,12 +248,19 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             mode: _state.mode,
             isSocialLogin: false,
             isPhoneVerificationOnly: true, // 본인인증만
-            onNext: ({String? realName, String? phoneNumber}) {
+            onNext: ({
+              String? realName,
+              String? phoneNumber,
+              String? di,
+              String? birth,
+              String? gender,
+            }) {
               if (!mounted) return;
               // 본인인증 정보를 RegisterState에 저장
               setState(() {
                 if (realName != null && phoneNumber != null) {
-                  _state.markPhoneVerified(phoneNumber, realName);
+                  _state.markPhoneVerified(phoneNumber, realName,
+                      di: di, birth: birth, gender: gender);
                 }
                 _state.nextStep();
               });
@@ -250,6 +273,9 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             password: _state.password ?? '',
             phoneNumber: _state.phoneNumber ?? '',
             realName: _state.realName ?? '',
+            di: _state.di,
+            birth: _state.birth,
+            gender: _state.gender,
             onNext: () async {
               if (!mounted) return;
               final authService = context.read<AuthService>();
@@ -289,7 +315,13 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             mode: _state.mode,
             isSocialLogin: false,
             isPhoneVerificationOnly: false, // 전체 단계
-            onNext: ({String? realName, String? phoneNumber}) async {
+            onNext: ({
+              String? realName,
+              String? phoneNumber,
+              String? di,
+              String? birth,
+              String? gender,
+            }) async {
               if (!mounted) return;
               final authService = context.read<AuthService>();
               await authService.tryAutoLogin();

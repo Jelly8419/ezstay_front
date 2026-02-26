@@ -22,6 +22,9 @@ class HostAccountStep extends StatefulWidget {
   final String? password;
   final String? phoneNumber;
   final String? realName;
+  final String? di;
+  final String? birth;
+  final String? gender;
   final Function() onNext;
   final bool isStandaloneMode; // true: 게스트→호스트 전환, false: 회원가입
 
@@ -31,6 +34,9 @@ class HostAccountStep extends StatefulWidget {
     this.password,
     this.phoneNumber,
     this.realName,
+    this.di,
+    this.birth,
+    this.gender,
     required this.onNext,
     this.isStandaloneMode = false,
   });
@@ -313,17 +319,24 @@ class _HostAccountStepState extends State<HostAccountStep> {
       throw Exception('회원가입에 필요한 정보가 부족합니다');
     }
 
-    // Step 1: 회원가입 API 호출 (이메일, 비밀번호, user_mode)
+    // Step 1: 회원가입 API 호출 (이메일, 비밀번호, user_mode + KMC 본인인증 데이터)
     debugPrint('📝 [REGISTER] Step 1: 회원가입 API 호출');
+    final registerBody = {
+      'email': widget.email,
+      'password': widget.password,
+      'user_mode': 'host',
+      'name': widget.realName,
+      'phoneNumber': widget.phoneNumber,
+      if (widget.birth != null) 'birth': widget.birth,
+      if (widget.gender != null) 'gender': widget.gender,
+      if (widget.di != null) 'di': widget.di,
+    };
+    debugPrint('📦 [REGISTER] 회원가입 요청 데이터: $registerBody');
     final registerResponse = await http
         .post(
           Uri.parse(ApiConfig.authRegisterUrl),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'email': widget.email,
-            'password': widget.password,
-            'user_mode': 'host',
-          }),
+          body: jsonEncode(registerBody),
         )
         .timeout(ApiConfig.timeout);
 

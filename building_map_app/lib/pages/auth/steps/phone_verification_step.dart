@@ -20,7 +20,13 @@ class PhoneVerificationStep extends StatefulWidget {
   final String email;
   final String password;
   final UserMode mode;
-  final Function({String? realName, String? phoneNumber}) onNext;
+  final Function({
+    String? realName,
+    String? phoneNumber,
+    String? di,
+    String? birth,
+    String? gender,
+  }) onNext;
   final bool isSocialLogin; // 소셜 로그인 여부 (카카오 등)
   final bool isPhoneVerificationOnly; // 본인인증만 하는 단계인지 (호스트 소셜 로그인 첫 단계)
 
@@ -47,6 +53,11 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
   bool _isVerifying = false;
   bool _isVerified = false;
   bool _isRegistering = false;
+
+  // KMC 본인인증 결과 데이터
+  String? _verifiedDi;
+  String? _verifiedBirth;
+  String? _verifiedGender;
 
   // 약관 동의
   bool _agreeTerms = false;
@@ -294,6 +305,9 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         setState(() {
           _nameController.text = mockName;
           _phoneController.text = mockPhone;
+          _verifiedDi = 'mock_di_${DateTime.now().millisecondsSinceEpoch}';
+          _verifiedBirth = '19900101';
+          _verifiedGender = 'M';
           _isVerified = true;
           _isVerifying = false;
         });
@@ -370,6 +384,9 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       setState(() {
         _nameController.text = verifyResult.name;
         _phoneController.text = verifyResult.phoneNumber;
+        _verifiedDi = verifyResult.di;
+        _verifiedBirth = verifyResult.birth;
+        _verifiedGender = verifyResult.gender;
         _isVerified = true;
         _isVerifying = false;
       });
@@ -480,10 +497,13 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       debugPrint('실명: ${_nameController.text}');
       debugPrint('휴대폰: ${_phoneController.text}');
 
-      // 실명과 전화번호를 onNext 콜백으로 전달
+      // 실명과 전화번호, KMC 본인인증 데이터를 onNext 콜백으로 전달
       widget.onNext(
         realName: _nameController.text,
         phoneNumber: _phoneController.text,
+        di: _verifiedDi,
+        birth: _verifiedBirth,
+        gender: _verifiedGender,
       );
       return;
     }
@@ -534,15 +554,22 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         // 일반 회원가입: Step 1, 2 진행
         // Step 1: 회원가입 API 호출 (이메일, 비밀번호, user_mode만)
         debugPrint('📝 [REGISTER] Step 1: 회원가입 API 호출');
+        final registerBody = {
+          'email': widget.email,
+          'password': widget.password,
+          'user_mode': widget.mode == UserMode.guest ? 'guest' : 'host',
+          'name': _nameController.text,
+          'phoneNumber': _phoneController.text,
+          if (_verifiedBirth != null) 'birth': _verifiedBirth,
+          if (_verifiedGender != null) 'gender': _verifiedGender,
+          if (_verifiedDi != null) 'di': _verifiedDi,
+        };
+        debugPrint('📦 [REGISTER] 회원가입 요청 데이터: $registerBody');
         final registerResponse = await http
             .post(
               Uri.parse(ApiConfig.authRegisterUrl),
               headers: {'Content-Type': 'application/json'},
-              body: json.encode({
-                'email': widget.email,
-                'password': widget.password,
-                'user_mode': widget.mode == UserMode.guest ? 'guest' : 'host',
-              }),
+              body: json.encode(registerBody),
             )
             .timeout(ApiConfig.timeout);
 
