@@ -75,6 +75,9 @@ class KmcWebViewHelper {
         // JS 콜백 정리
         try {
           js.context.deleteProperty('_kmcMessageHandler');
+          js.context.callMethod('eval', [
+            'if (window._kmcBroadcastChannel) { window._kmcBroadcastChannel.close(); window._kmcBroadcastChannel = null; }'
+          ]);
         } catch (_) {}
       }
 
@@ -113,7 +116,8 @@ class KmcWebViewHelper {
         }
       };
 
-      // addEventListener로 message 이벤트 수신
+      // addEventListener로 message 이벤트 수신 (opener가 살아있는 경우)
+      // + BroadcastChannel 수신 (백엔드 리다이렉트로 opener가 끊어진 경우)
       js.context.callMethod('eval', ['''
         window.addEventListener('message', function _kmcListener(event) {
           if (event.data && event.data.type === 'KMC_RESULT') {
@@ -121,18 +125,37 @@ class KmcWebViewHelper {
             window.removeEventListener('message', _kmcListener);
           }
         });
+
+        try {
+          window._kmcBroadcastChannel = new BroadcastChannel('kmc_auth');
+          window._kmcBroadcastChannel.onmessage = function(event) {
+            if (event.data && event.data.type === 'KMC_RESULT') {
+              console.log('[KMC] BroadcastChannel로 인증 결과 수신');
+              window._kmcMessageHandler({data: event.data});
+              window._kmcBroadcastChannel.close();
+              window._kmcBroadcastChannel = null;
+            }
+          };
+        } catch(e) {
+          console.log('[KMC] BroadcastChannel 미지원:', e);
+        }
       ''']);
 
       // 팝업 닫힘 감지 (1초 간격 폴링)
+      // BroadcastChannel 결과가 먼저 도착할 수 있으므로 닫힘 후 잠시 대기
       pollTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         try {
           final closed = popupRef['closed'];
           if (closed == true) {
-            cleanup();
-            if (!completer.isCompleted) {
-              debugPrint('ℹ️ [KMC] 팝업 닫힘 (사용자 취소 또는 완료)');
-              completer.complete(null);
-            }
+            // 팝업 닫힘 감지 → BroadcastChannel 결과 대기 (1초)
+            Timer(const Duration(seconds: 1), () {
+              if (!completer.isCompleted) {
+                debugPrint('ℹ️ [KMC] 팝업 닫힘 (사용자 취소 또는 완료)');
+                cleanup();
+                completer.complete(null);
+              }
+            });
+            timer.cancel();
           }
         } catch (_) {
           // cross-origin 접근 에러 무시

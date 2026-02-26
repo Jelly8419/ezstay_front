@@ -5,9 +5,12 @@ import '../../core/theme/app_colors.dart';
 
 /// KMC 본인인증 결과 수신 페이지
 ///
-/// KMC 인증 완료 후 이 페이지로 apiToken과 certNum이 전달됩니다.
-/// 이 페이지는 부모 창(팝업을 연 페이지)으로 postMessage를 보내고
-/// 팝업 창을 닫습니다.
+/// KMC 인증 완료 후 백엔드가 이 페이지로 리다이렉트합니다.
+/// apiToken과 certNum을 부모 창으로 전달하고 팝업을 닫습니다.
+///
+/// 전달 방식 (우선순위):
+/// 1. window.opener.postMessage - 팝업 → 부모 창 직접 전달
+/// 2. BroadcastChannel - 백엔드 리다이렉트로 opener가 끊어진 경우
 ///
 /// 라우트: /kmc/callback?apiToken=...&certNum=...
 class KmcCallbackPage extends StatefulWidget {
@@ -28,46 +31,65 @@ class _KmcCallbackPageState extends State<KmcCallbackPage> {
   @override
   void initState() {
     super.initState();
-    // 페이지 로드 후 즉시 부모 창으로 결과 전달
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _sendResultToParent();
     });
   }
 
-  /// 부모 창으로 KMC 인증 결과를 postMessage로 전달하고 팝업 닫기
+  /// 부모 창으로 KMC 인증 결과 전달 후 팝업 닫기
   void _sendResultToParent() {
     final apiToken = widget.apiToken ?? '';
     final certNum = widget.certNum ?? '';
 
-    debugPrint('📨 [KMC Callback] 결과 수신 - apiToken: ${apiToken.isNotEmpty ? "있음" : "없음"}, certNum: ${certNum.isNotEmpty ? "있음" : "없음"}');
+    debugPrint(
+        '📨 [KMC Callback] 결과 수신 - apiToken: ${apiToken.isNotEmpty ? "있음" : "없음"}, certNum: ${certNum.isNotEmpty ? "있음" : "없음"}');
 
     try {
-      // 부모 창(opener)이 있으면 postMessage로 결과 전달
-      js.context.callMethod('eval', ['''
+      js.context.callMethod('eval', [
+        '''
         (function() {
           var apiToken = ${_jsString(apiToken)};
           var certNum = ${_jsString(certNum)};
+          var result = {
+            type: 'KMC_RESULT',
+            apiToken: apiToken,
+            certNum: certNum
+          };
+          var sent = false;
 
-          if (window.opener) {
-            // PC: 팝업에서 부모 창으로 전달
-            window.opener.postMessage({
-              type: 'KMC_RESULT',
-              apiToken: apiToken,
-              certNum: certNum
-            }, '*');
-            window.close();
-          } else {
-            // 모바일 또는 opener 없는 경우: 리다이렉트
-            // Flutter SPA이므로 history 조작
-            var baseUrl = window.location.origin;
-            window.location.href = baseUrl + '/#/kmc/complete?apiToken='
-              + encodeURIComponent(apiToken)
-              + '&certNum=' + encodeURIComponent(certNum);
+          // 1차: window.opener로 직접 전달
+          if (window.opener && !window.opener.closed) {
+            try {
+              window.opener.postMessage(result, '*');
+              sent = true;
+              console.log('[KMC Callback] opener.postMessage 전송 성공');
+            } catch(e) {
+              console.log('[KMC Callback] opener.postMessage 실패:', e);
+            }
           }
+
+          // 2차: BroadcastChannel로 전달 (opener가 끊어진 경우)
+          if (!sent) {
+            try {
+              var bc = new BroadcastChannel('kmc_auth');
+              bc.postMessage(result);
+              bc.close();
+              sent = true;
+              console.log('[KMC Callback] BroadcastChannel 전송 성공');
+            } catch(e) {
+              console.log('[KMC Callback] BroadcastChannel 실패:', e);
+            }
+          }
+
+          // 팝업 닫기
+          setTimeout(function() {
+            window.close();
+          }, 500);
         })();
-      ''']);
+      '''
+      ]);
     } catch (e) {
-      debugPrint('❌ [KMC Callback] postMessage 전달 에러: $e');
+      debugPrint('❌ [KMC Callback] 결과 전달 에러: $e');
     }
   }
 
