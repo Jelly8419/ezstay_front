@@ -21,17 +21,19 @@ class KmcService {
     debugPrint('🔐 [KMC] 본인인증 요청 데이터 생성 시작');
 
     try {
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+
+      // 로그인 상태면 토큰 추가 (회원가입 시에는 토큰 없이 호출)
       final accessToken = await TokenService.getValidAccessToken();
-      if (accessToken == null) {
-        throw KmcException(code: 'AUTH', message: '로그인이 필요합니다.');
+      if (accessToken != null) {
+        headers['Authorization'] = 'Bearer $accessToken';
       }
 
       final response = await http.post(
         Uri.parse(ApiConfig.kmcRequestUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $accessToken',
-        },
+        headers: headers,
       ).timeout(ApiConfig.timeout);
 
       debugPrint('📡 [KMC] 요청 응답 상태: ${response.statusCode}');
@@ -74,17 +76,19 @@ class KmcService {
     debugPrint('🔍 [KMC] 인증 결과 검증 시작');
 
     try {
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+
+      // 로그인 상태면 토큰 추가 (회원가입 시에는 토큰 없이 호출)
       final accessToken = await TokenService.getValidAccessToken();
-      if (accessToken == null) {
-        throw KmcException(code: 'AUTH', message: '로그인이 필요합니다.');
+      if (accessToken != null) {
+        headers['Authorization'] = 'Bearer $accessToken';
       }
 
       final response = await http.post(
         Uri.parse(ApiConfig.kmcVerifyUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $accessToken',
-        },
+        headers: headers,
         body: json.encode({
           'apiToken': apiToken,
           'certNum': certNum,
