@@ -122,11 +122,11 @@ jobs:
         run: |
           BUILD_VERSION=$(date +%Y%m%d%H%M%S)
 
+          # index.html에서 flutter_bootstrap.js에만 버전 태그 추가
+          # (flutter_bootstrap.js 내부의 main.dart.js, .part.js는 수정하지 않음
+          #  — .part.js 파일과 main.dart.js는 같은 빌드에서 생성되므로
+          #  부분적 cache busting은 불일치를 유발함)
           sed -i "s/flutter_bootstrap.js/flutter_bootstrap.js?v=${BUILD_VERSION}/g" index.html
-
-          if [ -f "flutter_bootstrap.js" ]; then
-            sed -i "s/main.dart.js/main.dart.js?v=${BUILD_VERSION}/g" flutter_bootstrap.js
-          fi
 
           echo "Cache busting version: $BUILD_VERSION"
 
@@ -177,6 +177,10 @@ jobs:
 
           sudo mkdir -p ${{ env.REMOTE_NGINX_PATH }}
           sudo cp -r ${{ env.REMOTE_UPLOAD_PATH }}/web/* ${{ env.REMOTE_NGINX_PATH }}/
+
+          # .part.js 파일 수 확인 (빌드 완전성 검증)
+          PART_COUNT=\$(ls ${{ env.REMOTE_NGINX_PATH }}/main.dart.js_*.part.js 2>/dev/null | wc -l)
+          echo "Deployed .part.js files: \$PART_COUNT"
 
           # Kakao Maps SDK 스크립트 누락 시 주입 (안전장치)
           if ! grep -q "dapi.kakao.com/v2/maps/sdk.js" ${{ env.REMOTE_NGINX_PATH }}/index.html; then
