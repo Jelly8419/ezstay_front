@@ -185,40 +185,18 @@ class MessageItem extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 텍스트 내용
-                      Text(
-                        message.text,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.neutral0, // text-white
-                        ),
-                      ),
-                      // 이미지 (있는 경우)
-                      if (message.imageUrl != null) ...[
-                        const SizedBox(height: 8), // mt-2
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8), // rounded-lg
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 320), // max-w-xs
-                            child: CachedNetworkImage(
-                              imageUrl: ContractUtils.getFullImageUrl(message.imageUrl),
-                              fit: BoxFit.cover,
-                              placeholder: (ctx, url) => Container(
-                                width: 200,
-                                height: 150,
-                                color: AppColors.neutral200,
-                                child: const Center(
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                              ),
-                              errorWidget: (ctx, url, error) => Container(
-                                width: 200,
-                                height: 150,
-                                color: AppColors.neutral200,
-                                child: const Icon(Icons.error),
-                              ),
-                            ),
+                      // 텍스트 내용 (비어있지 않을 때만)
+                      if (message.text.isNotEmpty)
+                        Text(
+                          message.text,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.neutral0, // text-white
                           ),
                         ),
+                      // 이미지 (있는 경우)
+                      if (message.imageUrl != null) ...[
+                        if (message.text.isNotEmpty) const SizedBox(height: 8),
+                        _buildChatImage(message.imageUrl!),
                       ],
                     ],
                   ),
@@ -284,40 +262,18 @@ class MessageItem extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 텍스트 내용
-                    Text(
-                      message.text,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    // 이미지 (있는 경우)
-                    if (message.imageUrl != null) ...[
-                      const SizedBox(height: 8), // mt-2
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8), // rounded-lg
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 320), // max-w-xs
-                          child: CachedNetworkImage(
-                            imageUrl: ContractUtils.getFullImageUrl(message.imageUrl),
-                            fit: BoxFit.cover,
-                            placeholder: (ctx, url) => Container(
-                              width: 200,
-                              height: 150,
-                              color: AppColors.neutral200,
-                              child: const Center(
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            ),
-                            errorWidget: (ctx, url, error) => Container(
-                              width: 200,
-                              height: 150,
-                              color: AppColors.neutral200,
-                              child: const Icon(Icons.error),
-                            ),
-                          ),
+                    // 텍스트 내용 (비어있지 않을 때만)
+                    if (message.text.isNotEmpty)
+                      Text(
+                        message.text,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
                         ),
                       ),
+                    // 이미지 (있는 경우)
+                    if (message.imageUrl != null) ...[
+                      if (message.text.isNotEmpty) const SizedBox(height: 8),
+                      _buildChatImage(message.imageUrl!),
                     ],
                   ],
                 ),
@@ -337,6 +293,56 @@ class MessageItem extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// 채팅 이미지 위젯 (웹 CORS 호환)
+  Widget _buildChatImage(String imageUrl) {
+    final url = ContractUtils.getFullImageUrl(imageUrl);
+    debugPrint('🖼️ [CHAT] 이미지 로딩: $url');
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Image.network(
+          url,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              width: 200,
+              height: 150,
+              color: AppColors.neutral200,
+              child: const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('❌ [CHAT] 이미지 로딩 실패: $error');
+            debugPrint('❌ [CHAT] URL: $url');
+            return Container(
+              width: 200,
+              height: 150,
+              color: AppColors.neutral200,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.broken_image, color: AppColors.neutral500),
+                  const SizedBox(height: 4),
+                  Text(
+                    '이미지 로딩 실패',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.neutral500,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

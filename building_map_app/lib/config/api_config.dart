@@ -53,6 +53,12 @@ class ApiConfig {
   static String get authVerifyEmailUrl => '$baseUrl/api/auth/verify-email';
   static String get authResendVerificationCodeUrl =>
       '$baseUrl/api/auth/resend-verification-code';
+  static String get authResetPasswordUrl =>
+      '$baseUrl/api/auth/reset-password';
+
+  /// KMC 본인인증 API 엔드포인트
+  static String get kmcRequestUrl => '$baseUrl/api/auth/kmc/request';
+  static String get kmcVerifyUrl => '$baseUrl/api/auth/kmc/verify';
 
   /// 방 관리 API 엔드포인트
   static String get roomsBaseUrl => '$baseUrl/api/host/rooms';

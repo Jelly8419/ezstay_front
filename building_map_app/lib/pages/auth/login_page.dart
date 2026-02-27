@@ -338,8 +338,7 @@ class _LoginPageState extends State<LoginPage> {
                       // 비밀번호 찾기
                       TextButton(
                         onPressed: () {
-                          // TODO: 비밀번호 찾기 기능
-                          _showInfoDialog('비밀번호 찾기 기능은 준비 중입니다.');
+                          context.push('/reset-password');
                         },
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
@@ -668,13 +667,12 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /// 회원가입 처리 - 모드 선택 다이얼로그 표시
+  /// 회원가입 처리 - 모드 선택 다이얼로그 후 회원가입 페이지로 이동
   Future<void> _handleSignup() async {
     final selectedMode = await ModeSelectionDialog.show(context);
 
     if (selectedMode != null && mounted) {
-      // 선택한 모드와 함께 회원가입 페이지로 이동
-      context.push('/register', extra: selectedMode);
+      context.go('/register', extra: selectedMode);
     }
   }
 

@@ -72,7 +72,21 @@
       "Bash(xargs git branch -D)",
       "Bash(git pull:*)",
       "Bash(git stash:*)",
-      "Bash(git stash pop:*)"
+      "Bash(git stash pop:*)",
+      "mcp__notion__notion_retrieve_page",
+      "WebFetch(domain:www.notion.so)",
+      "mcp__notion__notion_retrieve_block_children",
+      "Bash(cd:*)",
+      "Bash(pushd:*)",
+      "Bash(del \"c:\\\\study\\\\ezstay_front\\\\building_map_app\\\\lib\\\\shared\\\\widgets\\\\property_card.dart\")",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__take_snapshot",
+      "WebFetch(domain:postcode.map.daum.net)",
+      "Bash(dir:*)",
+      "Bash(xargs grep -l \"identity\\\\|ID verification\\\\|ipin\\\\|niceverify\")",
+      "Bash(gcloud --version)"
     ],
     "deny": [],
     "ask": []

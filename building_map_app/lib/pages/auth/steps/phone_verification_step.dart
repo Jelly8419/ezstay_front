@@ -11,6 +11,8 @@ import '../../../config/api_config.dart';
 import '../../../models/user.dart';
 import '../../../services/token_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/kmc_service.dart';
+import '../../../widgets/kmc_webview.dart';
 
 /// Step 1 (이메일/소셜 가입): 휴대폰 본인인증 + 약관동의 단계
 class PhoneVerificationStep extends StatefulWidget {
@@ -18,7 +20,13 @@ class PhoneVerificationStep extends StatefulWidget {
   final String email;
   final String password;
   final UserMode mode;
-  final Function({String? realName, String? phoneNumber}) onNext;
+  final Function({
+    String? realName,
+    String? phoneNumber,
+    String? di,
+    String? birth,
+    String? gender,
+  }) onNext;
   final bool isSocialLogin; // 소셜 로그인 여부 (카카오 등)
   final bool isPhoneVerificationOnly; // 본인인증만 하는 단계인지 (호스트 소셜 로그인 첫 단계)
 
@@ -45,6 +53,11 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
   bool _isVerifying = false;
   bool _isVerified = false;
   bool _isRegistering = false;
+
+  // KMC 본인인증 결과 데이터
+  String? _verifiedDi;
+  String? _verifiedBirth;
+  String? _verifiedGender;
 
   // 약관 동의
   bool _agreeTerms = false;
@@ -243,40 +256,154 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
     );
   }
 
-  /// 본인인증 요청 (임시 - API 없음)
+  /// KMC 본인인증 요청
+  ///
+  /// 로컬 환경(IS_PRODUCTION=false + localhost)에서는 Mock 데이터로 동작합니다.
+  /// 테스트/운영 서버에서는 실제 KMC 인증을 수행합니다.
   Future<void> _requestVerification() async {
     setState(() {
       _isVerifying = true;
     });
 
-    // TODO: 실제 본인인증 API 연동
-    // 현재는 임시로 2초 후 성공 처리 (mock)
-    await Future.delayed(const Duration(seconds: 2));
+    // 로컬 환경: Mock 데이터로 본인인증 처리
+    if (!ApiConfig.isProduction && ApiConfig.baseUrl.contains('localhost')) {
+      await _handleMockVerification();
+      return;
+    }
 
-    if (mounted) {
-      // mock 본인인증 결과
+    // 실서버 환경: KMC 본인인증 API 호출
+    await _handleKmcVerification();
+  }
+
+  /// 로컬 Mock 본인인증 처리
+  ///
+  /// 로컬 개발 환경에서 KMC 없이 테스트용 더미 데이터로 인증을 완료합니다.
+  Future<void> _handleMockVerification() async {
+    debugPrint('🧪 [KMC Mock] 로컬 환경 - Mock 본인인증 처리');
+
+    try {
+      // 0.5초 딜레이로 API 호출 시뮬레이션
+      await Future.delayed(const Duration(milliseconds: 500));
+
       const mockName = '홍길동';
       const mockPhone = '01012345678';
-      final mockBirthDate = DateTime(1990, 1, 15);
 
-      // 만 19세 미만 체크
-      final age = _calculateAge(mockBirthDate);
+      // 만 19세 이상 검증 (Mock 생년월일: 1990-01-01)
+      final birthDate = DateTime(1990, 1, 1);
+      final age = _calculateAge(birthDate);
+      debugPrint('🧪 [KMC Mock] Mock 나이: $age세');
+
       if (age < 19) {
-        setState(() {
-          _isVerifying = false;
-        });
-        _showAgeRestrictionDialog();
+        if (mounted) {
+          setState(() => _isVerifying = false);
+          _showAgeRestrictionDialog();
+        }
         return;
       }
 
+      if (mounted) {
+        setState(() {
+          _nameController.text = mockName;
+          _phoneController.text = mockPhone;
+          _verifiedDi = 'mock_di_${DateTime.now().millisecondsSinceEpoch}';
+          _verifiedBirth = '19900101';
+          _verifiedGender = 'M';
+          _isVerified = true;
+          _isVerifying = false;
+        });
+        debugPrint('✅ [KMC Mock] Mock 본인인증 완료 (이름: $mockName, 전화번호: $mockPhone)');
+      }
+    } catch (e) {
+      debugPrint('❌ [KMC Mock] Mock 본인인증 에러: $e');
+      if (mounted) {
+        setState(() => _isVerifying = false);
+        _showErrorDialog('본인인증 처리 중 오류가 발생했습니다');
+      }
+    }
+  }
+
+  /// 실서버 KMC 본인인증 처리
+  ///
+  /// 1. 백엔드에서 인증 요청 데이터(trCert) 생성
+  /// 2. KMC 인증창 팝업으로 열기
+  /// 3. 인증 결과(apiToken, certNum) 수신
+  /// 4. 백엔드에서 결과 검증 → 실명/전화번호 반환
+  Future<void> _handleKmcVerification() async {
+    debugPrint('🔐 [KMC] 실서버 KMC 본인인증 시작');
+
+    try {
+      // Step 1: 백엔드에서 인증 요청 데이터 생성
+      final requestResult = await KmcService.requestVerification();
+      debugPrint('✅ [KMC] 인증 요청 데이터 수신 (certNum: ${requestResult.certNum})');
+
+      if (!mounted) return;
+
+      // Step 2: KMC 인증창 팝업 열기
+      final popupResult = await KmcWebViewHelper.openKmcVerification(
+        context: context,
+        requestResult: requestResult,
+      );
+
+      if (!mounted) return;
+
+      if (popupResult == null) {
+        // 사용자가 인증 취소하거나 팝업 닫음
+        debugPrint('ℹ️ [KMC] 사용자가 인증을 취소했습니다');
+        setState(() => _isVerifying = false);
+        return;
+      }
+
+      // Step 3: 백엔드에서 인증 결과 검증
+      final verifyResult = await KmcService.verifyResult(
+        apiToken: popupResult['apiToken']!,
+        certNum: popupResult['certNum']!,
+      );
+
+      if (!mounted) return;
+
+      if (!verifyResult.verified) {
+        setState(() => _isVerifying = false);
+        _showErrorDialog('본인인증에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+
+      // 만 19세 이상 검증
+      final birthDate = verifyResult.birthDate;
+      if (birthDate != null) {
+        final age = _calculateAge(birthDate);
+        debugPrint('🎂 [KMC] 생년월일: ${verifyResult.birth}, 만 나이: $age세');
+
+        if (age < 19) {
+          setState(() => _isVerifying = false);
+          _showAgeRestrictionDialog();
+          return;
+        }
+      }
+
+      // Step 4: 인증 성공 → UI 업데이트
       setState(() {
-        _isVerifying = false;
+        _nameController.text = verifyResult.name;
+        _phoneController.text = verifyResult.phoneNumber;
+        _verifiedDi = verifyResult.di;
+        _verifiedBirth = verifyResult.birth;
+        _verifiedGender = verifyResult.gender;
         _isVerified = true;
-        _nameController.text = mockName;
-        _phoneController.text = mockPhone;
+        _isVerifying = false;
       });
 
-      _showSuccessDialog('본인인증이 완료되었습니다\n실명: $mockName');
+      debugPrint('✅ [KMC] 본인인증 완료 (이름: ${verifyResult.name}, 전화번호: ${verifyResult.phoneNumber})');
+    } on KmcException catch (e) {
+      debugPrint('❌ [KMC] 인증 에러: [${e.code}] ${e.message}');
+      if (mounted) {
+        setState(() => _isVerifying = false);
+        _showErrorDialog(KmcService.getErrorMessage(e.code));
+      }
+    } catch (e) {
+      debugPrint('❌ [KMC] 예기치 않은 에러: $e');
+      if (mounted) {
+        setState(() => _isVerifying = false);
+        _showErrorDialog('본인인증 중 오류가 발생했습니다. 다시 시도해주세요.');
+      }
     }
   }
 
@@ -370,10 +497,13 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       debugPrint('실명: ${_nameController.text}');
       debugPrint('휴대폰: ${_phoneController.text}');
 
-      // 실명과 전화번호를 onNext 콜백으로 전달
+      // 실명과 전화번호, KMC 본인인증 데이터를 onNext 콜백으로 전달
       widget.onNext(
         realName: _nameController.text,
         phoneNumber: _phoneController.text,
+        di: _verifiedDi,
+        birth: _verifiedBirth,
+        gender: _verifiedGender,
       );
       return;
     }
@@ -424,15 +554,28 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         // 일반 회원가입: Step 1, 2 진행
         // Step 1: 회원가입 API 호출 (이메일, 비밀번호, user_mode만)
         debugPrint('📝 [REGISTER] Step 1: 회원가입 API 호출');
+        final registerBody = {
+          'email': widget.email,
+          'password': widget.password,
+          'user_mode': widget.mode == UserMode.guest ? 'guest' : 'host',
+          'name': _nameController.text,
+          'phoneNumber': _phoneController.text,
+          if (_verifiedBirth != null) 'birth': _verifiedBirth,
+          if (_verifiedGender != null) 'gender': _verifiedGender,
+          if (_verifiedDi != null) 'di': _verifiedDi,
+          'terms': {
+            'service_terms': _agreeTerms,
+            'privacy_policy': _agreeTerms,
+            'marketing_consent': _agreeMarketing,
+            'age_confirmed': true,
+          },
+        };
+        debugPrint('📦 [REGISTER] 회원가입 요청 데이터: $registerBody');
         final registerResponse = await http
             .post(
               Uri.parse(ApiConfig.authRegisterUrl),
               headers: {'Content-Type': 'application/json'},
-              body: json.encode({
-                'email': widget.email,
-                'password': widget.password,
-                'user_mode': widget.mode == UserMode.guest ? 'guest' : 'host',
-              }),
+              body: json.encode(registerBody),
             )
             .timeout(ApiConfig.timeout);
 
@@ -472,117 +615,26 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         debugPrint('✅ [REGISTER] JWT 토큰 저장 완료');
       }
 
-      // Step 3: 본인인증 API 호출 (또는 본인인증만 호출)
+      // 본인인증만 하는 단계인 경우 다음 단계로 이동
       if (widget.isPhoneVerificationOnly) {
-        // 본인인증만 하는 단계 (호스트 소셜 로그인 첫 단계)
-        debugPrint('📞 [REGISTER] 본인인증만 API 호출');
-        final verificationUrl =
-            '${ApiConfig.baseUrl}/api/user/host/phone-verification';
-
-        final verificationBody = {
-          'name': _nameController.text,
-          'phone_number': _phoneController.text,
-        };
-
-        final verificationResponse = await http
-            .post(
-              Uri.parse(verificationUrl),
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer $accessToken',
-              },
-              body: json.encode(verificationBody),
-            )
-            .timeout(ApiConfig.timeout);
-
-        debugPrint(
-          '📡 [REGISTER] 본인인증 응답 상태: ${verificationResponse.statusCode}',
-        );
-        debugPrint('📄 [REGISTER] 본인인증 응답 내용: ${verificationResponse.body}');
-
-        if (verificationResponse.statusCode != 200 &&
-            verificationResponse.statusCode != 201) {
-          final data = json.decode(verificationResponse.body);
-          final message = data['message'] ?? '본인인증에 실패했습니다';
-          throw Exception(message);
-        }
-
-        final verificationData = json.decode(verificationResponse.body);
-        if (verificationData['success'] != true) {
-          final message = verificationData['message'] ?? '본인인증에 실패했습니다';
-          throw Exception(message);
-        }
-
-        // 본인인증 완료 - 다음 단계로 이동
         debugPrint('✅ [REGISTER] 본인인증 완료 - 다음 단계로 이동');
         if (mounted) {
           setState(() {
             _isRegistering = false;
           });
-          widget.onNext();
+          widget.onNext(
+            realName: _nameController.text,
+            phoneNumber: _phoneController.text,
+            di: _verifiedDi,
+            birth: _verifiedBirth,
+            gender: _verifiedGender,
+          );
         }
-        return; // 여기서 종료
+        return;
       }
 
-      // 전체 단계인 경우: 본인인증 + 약관동의 + (호스트의 경우) 계좌 정보
-      debugPrint('📞 [REGISTER] Step 3: 본인인증 API 호출');
-      final verificationUrl = widget.mode == UserMode.guest
-          ? '${ApiConfig.baseUrl}/api/user/guest/verification'
-          : '${ApiConfig.baseUrl}/api/user/host/verification';
-
-      final verificationBody = {
-        'name': _nameController.text,
-        'phone_number': _phoneController.text,
-        'terms': {
-          'service_terms': _agreeTerms,
-          'privacy_policy': _agreeTerms,
-          'marketing_consent': _agreeMarketing,
-          'age_confirmed': true,
-        },
-      };
-
-      // 호스트의 경우 계좌 정보 추가
-      if (widget.mode == UserMode.host) {
-        verificationBody['bank_code'] = _getBankCode(_selectedBank!);
-        verificationBody['account_num'] = _accountController.text;
-        verificationBody['account_holder_name'] = _accountHolderController.text;
-        debugPrint('🏦 [REGISTER] 호스트 계좌 정보 포함');
-        debugPrint('은행 코드: ${verificationBody['bank_code']}');
-        debugPrint('계좌번호: ${verificationBody['account_num']}');
-        debugPrint('예금주: ${verificationBody['account_holder_name']}');
-      }
-
-      final verificationResponse = await http
-          .post(
-            Uri.parse(verificationUrl),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-            body: json.encode(verificationBody),
-          )
-          .timeout(ApiConfig.timeout);
-
-      debugPrint(
-        '📡 [REGISTER] 본인인증 응답 상태: ${verificationResponse.statusCode}',
-      );
-      debugPrint('📄 [REGISTER] 본인인증 응답 내용: ${verificationResponse.body}');
-
-      if (verificationResponse.statusCode != 200 &&
-          verificationResponse.statusCode != 201) {
-        final data = json.decode(verificationResponse.body);
-        final message = data['message'] ?? '본인인증에 실패했습니다';
-        throw Exception(message);
-      }
-
-      final verificationData = json.decode(verificationResponse.body);
-      if (verificationData['success'] != true) {
-        final message = verificationData['message'] ?? '본인인증에 실패했습니다';
-        throw Exception(message);
-      }
-
-      // Step 4: 성공 (JWT 토큰 이미 저장됨)
-      debugPrint('✅ [REGISTER] 회원가입 및 본인인증 완료');
+      // 전체 단계: register API에서 본인인증+약관 모두 처리 완료
+      debugPrint('✅ [REGISTER] 회원가입 완료 (본인인증+약관동의 포함)');
 
       if (mounted) {
         setState(() {

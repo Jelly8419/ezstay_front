@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -58,13 +59,16 @@
   <link rel="apple-touch-icon" sizes="512x512" href="icons/Icon-512.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="16x16" href="assets/logos/ezstay_icon_only.png"/>
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/logos/ezstay_icon_only.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/logos/ezstay_icon_only.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/logos/ezstay_icon_only.png" />
   <link rel="manifest" href="manifest.json">
 
   <!-- Material Icons - preload로 최적화 -->
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Material+Icons&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Icons&display=swap" rel="stylesheet"></noscript>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Material+Icons&display=swap" as="style"
+    onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons&display=swap" rel="stylesheet">
+  </noscript>
 
   <!-- API 설정 파일 - 필수이므로 동기 로드 유지 -->
   <script src="js/api_config.js"></script>
@@ -96,17 +100,18 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js" defer></script>
 
   <!-- Firebase 초기화 (SDK 로드 후 실행) -->
   <script defer>
     // Firebase SDK 로드 대기 후 초기화
-    window.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('DOMContentLoaded', function () {
       // Firebase SDK 로드 확인 (최대 5초 대기)
       let attempts = 0;
       const maxAttempts = 50;
       const checkInterval = 100; // 100ms
 
-      const initFirebase = function() {
+      const initFirebase = function () {
         if (typeof firebase !== 'undefined') {
           console.log('🔥 [WEB] Firebase SDK 로드 확인: OK');
           try {
@@ -149,24 +154,29 @@
       z-index: 9999;
       transition: opacity 0.3s ease-out;
     }
+
     #loading.fade-out {
       opacity: 0;
     }
+
     .loading-content {
       text-align: center;
     }
+
     .loading-logo {
       width: 80px;
       height: 80px;
       margin-bottom: 20px;
       animation: pulse 2s ease-in-out infinite;
     }
+
     .loading-text {
       color: #2196F3;
       font-size: 16px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin-top: 20px;
     }
+
     .loading-spinner {
       border: 3px solid #E3F2FD;
       border-top: 3px solid #2196F3;
@@ -176,16 +186,31 @@
       animation: spin 1s linear infinite;
       margin: 0 auto;
     }
+
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
+
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.6;
+      }
     }
   </style>
 </head>
+
 <body>
   <!-- 로딩 스플래시 -->
   <div id="loading">
@@ -198,11 +223,11 @@
 
   <script>
     // Flutter 첫 프레임 렌더링 후 로딩 화면 제거
-    window.addEventListener('flutter-first-frame', function() {
+    window.addEventListener('flutter-first-frame', function () {
       var loadingElement = document.getElementById('loading');
       if (loadingElement) {
         loadingElement.classList.add('fade-out');
-        setTimeout(function() {
+        setTimeout(function () {
           loadingElement.style.display = 'none';
         }, 300);
       }
@@ -211,4 +236,5 @@
 
   <script src="flutter_bootstrap.js" async></script>
 </body>
+
 </html>

@@ -51,6 +51,10 @@ import '../pages/host/host_settlement_page.dart' deferred as host_settlement;
 import '../pages/host/host_settlement_detail_page.dart'
     deferred as host_settlement_detail;
 import '../pages/auth/account_suspended_page.dart' deferred as account_suspended;
+import '../pages/legal/terms_of_service_page.dart' deferred as terms_of_service;
+import '../pages/legal/privacy_policy_page.dart' deferred as privacy_policy;
+import '../pages/auth/reset_password_page.dart' deferred as reset_password;
+import '../pages/auth/kmc_callback_page.dart' deferred as kmc_callback;
 
 
 class AppRouter {
@@ -58,16 +62,31 @@ class AppRouter {
   ///
   /// 지연 로딩 실패 시 에러 화면을 표시하고 새로고침 옵션을 제공합니다.
   /// 브라우저 캐시 불일치, 네트워크 문제 등으로 인한 로딩 실패를 처리합니다.
+  /// Deferred 라이브러리 로딩 (최대 3회 자동 재시도)
+  static Future<void> _loadWithRetry(Future<void> Function() loadLibrary) async {
+    const maxRetries = 3;
+    for (var i = 0; i < maxRetries; i++) {
+      try {
+        await loadLibrary();
+        return;
+      } catch (e) {
+        debugPrint('⚠️ [Deferred] 로딩 재시도 ${i + 1}/$maxRetries: $e');
+        if (i == maxRetries - 1) rethrow;
+        // 재시도 전 대기 (500ms, 1000ms)
+        await Future.delayed(Duration(milliseconds: 500 * (i + 1)));
+      }
+    }
+  }
+
   static Widget _deferredWidget(
     Future<void> Function() loadLibrary,
     Widget Function() builder,
   ) {
     return FutureBuilder(
-      future: loadLibrary(),
+      future: _loadWithRetry(loadLibrary),
       builder: (context, snapshot) {
-        // 에러 발생 시 에러 화면 표시
         if (snapshot.hasError) {
-          debugPrint('❌ [Deferred] 라이브러리 로딩 실패: ${snapshot.error}');
+          debugPrint('❌ [Deferred] 라이브러리 로딩 최종 실패: ${snapshot.error}');
           return Scaffold(
             body: Center(
               child: Padding(
@@ -75,31 +94,21 @@ class AppRouter {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
                     const SizedBox(height: 16),
                     const Text(
                       '페이지를 불러올 수 없습니다',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      '브라우저 캐시를 지우고 다시 시도해주세요.\n(Ctrl+Shift+R 또는 Cmd+Shift+R)',
+                      '네트워크 상태를 확인하고 다시 시도해주세요.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
-                      onPressed: () {
-                        // 현재 라우트로 다시 이동 (강제 새로고침 효과)
-                        context.go('/');
-                      },
+                      onPressed: () => context.go('/'),
                       icon: const Icon(Icons.home),
                       label: const Text('홈으로 이동'),
                     ),
@@ -109,31 +118,24 @@ class AppRouter {
             ),
           );
         }
-
-        // 로딩 완료
         if (snapshot.connectionState == ConnectionState.done) {
           return builder();
         }
-
-        // 로딩 중 표시
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }
 
   /// ShellRoute용 Deferred 라이브러리 로딩 위젯 (Scaffold 미포함)
-  ///
-  /// ShellRoute 내부에서 사용하며, Shell이 이미 Scaffold를 제공하므로
-  /// 로딩/에러 상태에서 Scaffold를 생성하지 않습니다.
   static Widget _deferredShellWidget(
     Future<void> Function() loadLibrary,
     Widget Function() builder,
   ) {
     return FutureBuilder(
-      future: loadLibrary(),
+      future: _loadWithRetry(loadLibrary),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          debugPrint('❌ [Deferred] 라이브러리 로딩 실패: ${snapshot.error}');
+          debugPrint('❌ [Deferred] 라이브러리 로딩 최종 실패: ${snapshot.error}');
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -148,7 +150,7 @@ class AppRouter {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '브라우저 캐시를 지우고 다시 시도해주세요.\n(Ctrl+Shift+R 또는 Cmd+Shift+R)',
+                    '네트워크 상태를 확인하고 다시 시도해주세요.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
                   ),
@@ -253,6 +255,11 @@ class AppRouter {
           return null;
         }
 
+        // KMC 본인인증 콜백 경로는 리다이렉트 안 함
+        if (state.matchedLocation == '/kmc/callback') {
+          return null;
+        }
+
         // 바이패스 로그인 경로는 리다이렉트 안 함
         if (isGoingToBypass) {
           return null;
@@ -327,6 +334,30 @@ class AppRouter {
               path: '/login',
               name: 'login',
               builder: (context, state) => const LoginPage(),
+            ),
+            GoRoute(
+              path: '/reset-password',
+              name: 'reset-password',
+              builder: (context, state) => _deferredWidget(
+                reset_password.loadLibrary,
+                () => reset_password.ResetPasswordPage(),
+              ),
+            ),
+            // KMC 본인인증 콜백 (KMC가 인증 완료 후 이 URL로 결과 POST)
+            GoRoute(
+              path: '/kmc/callback',
+              name: 'kmc-callback',
+              builder: (context, state) {
+                final apiToken = state.uri.queryParameters['apiToken'];
+                final certNum = state.uri.queryParameters['certNum'];
+                return _deferredWidget(
+                  kmc_callback.loadLibrary,
+                  () => kmc_callback.KmcCallbackPage(
+                    apiToken: apiToken,
+                    certNum: certNum,
+                  ),
+                );
+              },
             ),
             GoRoute(
               path: '/guest',
@@ -484,6 +515,24 @@ class AppRouter {
                   },
                 ),
               ],
+            ),
+            // 이용약관
+            GoRoute(
+              path: '/terms',
+              name: 'terms',
+              builder: (context, state) => _deferredShellWidget(
+                terms_of_service.loadLibrary,
+                () => terms_of_service.TermsOfServicePage(),
+              ),
+            ),
+            // 개인정보 처리방침
+            GoRoute(
+              path: '/privacy',
+              name: 'privacy',
+              builder: (context, state) => _deferredShellWidget(
+                privacy_policy.loadLibrary,
+                () => privacy_policy.PrivacyPolicyPage(),
+              ),
             ),
             // 고객센터
             GoRoute(
@@ -715,7 +764,7 @@ class AppRouter {
                   // 이메일 회원가입 플로우 - 회원가입 페이지로 이동
                   await register_flow.loadLibrary();
                   if (context.mounted) {
-                    context.push('/register', extra: mode);
+                    context.go('/register', extra: mode);
                   }
                   return;
                 }

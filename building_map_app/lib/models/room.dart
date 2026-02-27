@@ -40,7 +40,8 @@ class Room {
   final int deposit; // 보증금
 
   // 계약 정보
-  final int minContractWeeks; // 최소 계약 주수
+  final int minContractDays; // 최소 계약 일수 (기본 7일)
+  final int maxContractDays; // 최대 계약 일수 (기본 90일)
   final String refundPolicy; // 환불 규정 (flexible, moderate, strict)
   final String? description; // 방 설명
   final String? transportation; // 교통 정보
@@ -138,7 +139,8 @@ class Room {
     required this.includeInternet,
     required this.cleaningFee,
     required this.deposit,
-    required this.minContractWeeks,
+    this.minContractDays = 7,
+    this.maxContractDays = 90,
     required this.refundPolicy,
     this.description,
     this.transportation,
@@ -213,7 +215,8 @@ class Room {
       deposit: json['deposit'] as int? ?? 0,
 
       // 계약 정보
-      minContractWeeks: json['minContractWeeks'] as int? ?? 4,
+      minContractDays: json['minContractDays'] as int? ?? 7,
+      maxContractDays: json['maxContractDays'] as int? ?? 90,
       refundPolicy: json['refundPolicy'] as String? ?? 'moderate',
       description: json['description'] as String?,
       transportation: json['transportation'] as String?,
@@ -323,7 +326,8 @@ class Room {
       'includeInternet': includeInternet,
       'cleaningFee': cleaningFee,
       'deposit': deposit,
-      'minContractWeeks': minContractWeeks,
+      'minContractDays': minContractDays,
+      'maxContractDays': maxContractDays,
       'refundPolicy': refundPolicy,
       'description': description,
       'transportation': transportation,
@@ -352,9 +356,6 @@ class Room {
     };
   }
 
-
-  /// 최소 계약 일수 (주 단위를 일 단위로 변환, React UI 호환)
-  int get minContractDays => minContractWeeks * 7;
 
   /// 1일 임대료로 1주일 임대료 계산
   int get weeklyRent => (dailyRent * 7 / 1000).round() * 1000;
@@ -424,7 +425,8 @@ class Room {
     bool? includeInternet,
     int? cleaningFee,
     int? deposit,
-    int? minContractWeeks,
+    int? minContractDays,
+    int? maxContractDays,
     String? refundPolicy,
     String? description,
     String? transportation,
@@ -482,7 +484,8 @@ class Room {
       includeInternet: includeInternet ?? this.includeInternet,
       cleaningFee: cleaningFee ?? this.cleaningFee,
       deposit: deposit ?? this.deposit,
-      minContractWeeks: minContractWeeks ?? this.minContractWeeks,
+      minContractDays: minContractDays ?? this.minContractDays,
+      maxContractDays: maxContractDays ?? this.maxContractDays,
       refundPolicy: refundPolicy ?? this.refundPolicy,
       description: description ?? this.description,
       transportation: transportation ?? this.transportation,

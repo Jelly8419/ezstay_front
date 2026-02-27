@@ -17,6 +17,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
+import '../../widgets/common/mobile_bottom_nav.dart';
 import '../../services/map_interaction_coordinator.dart';
 import 'package:provider/provider.dart';
 
@@ -736,68 +737,13 @@ class _MapScreenState extends State<MapScreen> {
             ],
           ),
 
-          // 모바일 하단 네비게이션 (React 코드 기반)
-          if (ResponsiveUtil.isMobile(context))
-            Positioned(
+          // 모바일 하단 네비게이션
+          if (!ResponsiveUtil.isDesktop(context))
+            const Positioned(
               bottom: 0,
               left: 0,
               right: 0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border(top: BorderSide(color: Colors.grey[300]!)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildNavItem(
-                          icon: Icons.map,
-                          label: '지도',
-                          isActive: true,
-                          onTap: () {
-                            // 현재 페이지 (지도)
-                          },
-                        ),
-                        _buildNavItem(
-                          icon: Icons.description_outlined,
-                          label: '계약서',
-                          isActive: false,
-                          onTap: () {
-                            context.go('/guest/contracts');
-                          },
-                        ),
-                        _buildNavItem(
-                          icon: Icons.chat_bubble_outline,
-                          label: '채팅',
-                          isActive: false,
-                          onTap: () {
-                            context.go('/guest/chats');
-                          },
-                        ),
-                        _buildNavItem(
-                          icon: Icons.menu,
-                          label: '더보기',
-                          isActive: false,
-                          onTap: () {
-                            context.go('/guest/more');
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              child: MobileBottomNav(),
             ),
         ],
       ),
@@ -1002,7 +948,7 @@ class _MapScreenState extends State<MapScreen> {
               'includeGas': false,
               'includeInternet': false,
               'cleaningFee': 0,
-              'minContractWeeks': 4,
+              'minContractDays': 28,
               'refundPolicy': 'moderate',
               'createdAt': DateTime.now().toIso8601String(),
               'updatedAt': DateTime.now().toIso8601String(),
@@ -1378,7 +1324,7 @@ class _MapScreenState extends State<MapScreen> {
               'includeGas': false,
               'includeInternet': false,
               'cleaningFee': 0,
-              'minContractWeeks': 4,
+              'minContractDays': 28,
               'refundPolicy': 'moderate',
               'createdAt': DateTime.now().toIso8601String(),
               'updatedAt': DateTime.now().toIso8601String(),
@@ -1456,7 +1402,7 @@ class _MapScreenState extends State<MapScreen> {
               'includeGas': false,
               'includeInternet': false,
               'cleaningFee': 0,
-              'minContractWeeks': 4,
+              'minContractDays': 28,
               'refundPolicy': 'moderate',
               'createdAt': DateTime.now().toIso8601String(),
               'updatedAt': DateTime.now().toIso8601String(),
@@ -1833,37 +1779,4 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /// 모바일 하단 네비게이션 아이템 (React 코드 기반)
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 24,
-              color: isActive ? const Color(0xFF3B82F6) : Colors.grey[600],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                color: isActive ? const Color(0xFF3B82F6) : Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

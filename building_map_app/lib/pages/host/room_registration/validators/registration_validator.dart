@@ -140,10 +140,15 @@ class RegistrationValidator {
       }
     }
 
-    // 최소 계약 기간
-    final minContractPeriod = formData['minContractPeriod'] as String?;
-    if (minContractPeriod == null || minContractPeriod.isEmpty) {
-      errors.add('최소 계약 기간을 선택해주세요');
+    // 최소 계약 기간 (7~90일)
+    final minContractDays = formData['minContractDays'] as String?;
+    if (minContractDays == null || minContractDays.isEmpty) {
+      errors.add('최소 계약 기간을 입력해주세요');
+    } else {
+      final days = int.tryParse(minContractDays);
+      if (days == null || days < 7 || days > 90) {
+        errors.add('최소 계약 기간은 7일 ~ 90일 사이로 입력해주세요');
+      }
     }
 
     // 환불 정책

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/chat_message.dart';
 import '../models/chat_room.dart';
 import 'firebase_auth_service.dart';
@@ -147,6 +149,7 @@ class ChatService {
     required int senderId,
     required String text,
     MessageType type = MessageType.text,
+    String? imageUrl,
   }) async {
     try {
       // Firebase 인증 확인
@@ -161,6 +164,7 @@ class ChatService {
         timestamp: DateTime.now(),
         isRead: false,
         type: type,
+        imageUrl: imageUrl,
       );
 
       // Firestore에 메시지 추가
@@ -171,9 +175,10 @@ class ChatService {
           .add(message.toFirestore());
 
       // 채팅방 메타데이터 업데이트
+      final lastMessageText = type == MessageType.image ? '사진' : text;
       await _updateChatRoomMetadata(
         chatRoomId: chatRoomId,
-        lastMessage: text,
+        lastMessage: lastMessageText,
         lastMessageSenderId: senderId,
       );
 
@@ -181,6 +186,100 @@ class ChatService {
     } catch (e) {
       debugPrint('❌ [CHAT] 메시지 전송 실패: $e');
       rethrow;
+    }
+  }
+
+  /// 이미지를 Firebase Storage에 업로드하고 다운로드 URL 반환
+  Future<String> uploadChatImage({
+    required String chatRoomId,
+    required XFile imageFile,
+  }) async {
+    try {
+      await _firebaseAuth.ensureAuthenticated();
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final extension = imageFile.name.split('.').last.toLowerCase();
+      final fileName = '${timestamp}_${imageFile.name}';
+      final storagePath = 'chat_images/$chatRoomId/$fileName';
+
+      debugPrint('📤 [CHAT] 이미지 업로드 시작: $storagePath');
+
+      // 1. 바이트 읽기
+      final bytes = await imageFile.readAsBytes();
+      debugPrint('📤 [CHAT] 바이트 읽기 완료: ${bytes.length} bytes');
+
+      // 2. Storage ref 생성
+      final ref = FirebaseStorage.instance.ref().child(storagePath);
+      debugPrint('📤 [CHAT] Storage ref 생성 완료, bucket: ${FirebaseStorage.instance.bucket}');
+
+      // 3. contentType 결정
+      final contentType = switch (extension) {
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        _ => 'image/jpeg',
+      };
+      final metadata = SettableMetadata(contentType: contentType);
+      debugPrint('📤 [CHAT] 업로드 시작 (contentType: $contentType)...');
+
+      // 4. 업로드
+      final uploadTask = ref.putData(bytes, metadata);
+
+      // 진행 상태 로깅
+      uploadTask.snapshotEvents.listen(
+        (snapshot) {
+          final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          debugPrint('📤 [CHAT] 업로드 진행: ${(progress * 100).toStringAsFixed(1)}% (${snapshot.state})');
+        },
+        onError: (e) {
+          debugPrint('❌ [CHAT] 업로드 스냅샷 에러: $e');
+        },
+      );
+
+      await uploadTask;
+      debugPrint('📤 [CHAT] putData 완료, URL 가져오는 중...');
+
+      // 5. 다운로드 URL
+      final downloadUrl = await ref.getDownloadURL();
+      debugPrint('✅ [CHAT] 이미지 업로드 완료: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      debugPrint('❌ [CHAT] 이미지 업로드 실패: $e');
+      debugPrint('❌ [CHAT] 에러 타입: ${e.runtimeType}');
+      rethrow;
+    }
+  }
+
+  /// 이미지 메시지 전송 (업로드 + Firestore 메시지 생성)
+  Future<void> sendImageMessages({
+    required String chatRoomId,
+    required int senderId,
+    required List<XFile> images,
+    String? text,
+  }) async {
+    // 텍스트가 있으면 먼저 텍스트 메시지 전송
+    if (text != null && text.trim().isNotEmpty) {
+      await sendMessage(
+        chatRoomId: chatRoomId,
+        senderId: senderId,
+        text: text,
+      );
+    }
+
+    // 각 이미지를 업로드 후 이미지 메시지 전송
+    for (final image in images) {
+      final imageUrl = await uploadChatImage(
+        chatRoomId: chatRoomId,
+        imageFile: image,
+      );
+
+      await sendMessage(
+        chatRoomId: chatRoomId,
+        senderId: senderId,
+        text: '',
+        type: MessageType.image,
+        imageUrl: imageUrl,
+      );
     }
   }
 

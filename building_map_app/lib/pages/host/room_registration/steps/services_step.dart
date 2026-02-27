@@ -47,7 +47,7 @@ class _ServicesStepState extends State<ServicesStep> {
   String get _servicePassword =>
       (widget.formData['servicePassword'] as String?) ?? '';
   String get _area => (widget.formData['area'] as String?) ?? '';
-  String get _cleaningFee => (widget.formData['cleaningFee'] as String?) ?? '';
+  String get _cleaningFee => widget.formData['cleaningFee']?.toString() ?? '';
 
   bool get _needsPasswordInput =>
       _cleaningService || _exitInspectionService;
@@ -76,11 +76,67 @@ class _ServicesStepState extends State<ServicesStep> {
 
   void _toggleService(String serviceId) {
     if (serviceId == 'cleaningService') {
-      _handleCleaningServiceChange(!_cleaningService);
+      // 켜는 경우에만 확인 모달 표시
+      if (!_cleaningService) {
+        _showCleaningServiceConfirmDialog();
+      } else {
+        _handleCleaningServiceChange(false);
+      }
     } else {
       final currentValue = widget.formData[serviceId] as bool? ?? false;
       _updateFormData(serviceId, !currentValue);
     }
+  }
+
+  void _showCleaningServiceConfirmDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline, color: AppColors.primary600, size: 24),
+            const SizedBox(width: 8),
+            const Text('청소 서비스 안내'),
+          ],
+        ),
+        titleTextStyle: AppTextStyles.headingSmall.copyWith(
+          fontSize: 18,
+          color: AppColors.textPrimary,
+        ),
+        content: const Text(
+          '청소 서비스 선택 시, 호스트님은 청소비를 설정 및 정산받을 수 없습니다.',
+        ),
+        contentTextStyle: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.textSecondary,
+          height: 1.5,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              '취소',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _handleCleaningServiceChange(true);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('확인', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildServiceCard({

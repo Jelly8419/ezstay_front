@@ -917,7 +917,16 @@ class AuthService extends ChangeNotifier {
   }
 
   /// 회원가입 (이메일)
-  Future<bool> signUpWithEmail(String email, String password, UserMode mode) async {
+  Future<bool> signUpWithEmail(
+    String email,
+    String password,
+    UserMode mode, {
+    String? name,
+    String? phoneNumber,
+    String? birth,
+    String? gender,
+    String? di,
+  }) async {
     debugPrint('🚀 [SIGNUP] 회원가입 시작 - Email: $email, Mode: ${mode.name}');
     _setLoading(true);
 
@@ -925,11 +934,17 @@ class AuthService extends ChangeNotifier {
       // 백엔드 회원가입 API 호출
       final backendUrl = ApiConfig.authRegisterUrl;
 
-      final requestBody = json.encode({
+      final bodyMap = {
         'email': email,
         'password': password,
         'user_mode': mode.name,
-      });
+        if (name != null) 'name': name,
+        if (phoneNumber != null) 'phoneNumber': phoneNumber,
+        if (birth != null) 'birth': birth,
+        if (gender != null) 'gender': gender,
+        if (di != null) 'di': di,
+      };
+      final requestBody = json.encode(bodyMap);
 
       debugPrint('📦 [SIGNUP] 요청 데이터: $requestBody');
 

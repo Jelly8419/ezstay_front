@@ -105,6 +105,99 @@ class VerificationService {
     }
   }
 
+  /// 비밀번호 재설정용 이메일 인증 코드 발송
+  ///
+  /// [email] 인증 코드를 받을 이메일 주소
+  /// type: "password_reset"으로 발송
+  static Future<bool> sendPasswordResetVerification(String email) async {
+    debugPrint('📧 [VERIFICATION] 비밀번호 재설정 인증 코드 발송: $email');
+
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.authSendVerificationCodeUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email,
+          'type': 'password_reset',
+        }),
+      ).timeout(ApiConfig.timeout);
+
+      debugPrint('📡 [VERIFICATION] 응답 상태: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          debugPrint('✅ [VERIFICATION] 비밀번호 재설정 인증 코드 발송 성공');
+          return true;
+        } else {
+          final message = data['message'] ?? '인증 코드 발송에 실패했습니다';
+          throw VerificationException(message);
+        }
+      } else {
+        final data = json.decode(response.body);
+        final message = data['message'] ?? '인증 코드 발송에 실패했습니다';
+        throw VerificationException(message);
+      }
+    } on SocketException {
+      throw VerificationException('네트워크 연결을 확인해주세요');
+    } on http.ClientException {
+      throw VerificationException('서버에 연결할 수 없습니다');
+    } catch (e) {
+      if (e is VerificationException) rethrow;
+      debugPrint('❌ [VERIFICATION] 비밀번호 재설정 인증 코드 발송 에러: $e');
+      throw VerificationException('인증 코드 발송 중 오류가 발생했습니다');
+    }
+  }
+
+  /// 비밀번호 재설정
+  ///
+  /// [email] 이메일 주소
+  /// [newPassword] 새 비밀번호
+  /// 이메일 인증 완료 후 호출 (10분 유효)
+  static Future<bool> resetPassword(String email, String newPassword) async {
+    debugPrint('🔐 [VERIFICATION] 비밀번호 재설정 요청: $email');
+
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.authResetPasswordUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email,
+          'newPassword': newPassword,
+        }),
+      ).timeout(ApiConfig.timeout);
+
+      debugPrint('📡 [VERIFICATION] 응답 상태: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          debugPrint('✅ [VERIFICATION] 비밀번호 재설정 성공');
+          return true;
+        } else {
+          final message = data['message'] ?? '비밀번호 재설정에 실패했습니다';
+          throw VerificationException(message);
+        }
+      } else {
+        final data = json.decode(response.body);
+        final message = data['message'] ?? '비밀번호 재설정에 실패했습니다';
+        throw VerificationException(message);
+      }
+    } on SocketException {
+      throw VerificationException('네트워크 연결을 확인해주세요');
+    } on http.ClientException {
+      throw VerificationException('서버에 연결할 수 없습니다');
+    } catch (e) {
+      if (e is VerificationException) rethrow;
+      debugPrint('❌ [VERIFICATION] 비밀번호 재설정 에러: $e');
+      throw VerificationException('비밀번호 재설정 중 오류가 발생했습니다');
+    }
+  }
+
   /// 이메일 인증 코드 재발송
   ///
   /// [email] 인증 코드를 재발송할 이메일 주소

@@ -139,7 +139,7 @@ class GuestRoomService {
       'dailyMaintenanceFee',
       'cleaningFee',
       'deposit',
-      'minContractWeeks',
+      'minContractDays',
       'longTermWeeks',
       'longTermDiscount',
       'quickMoveIn',

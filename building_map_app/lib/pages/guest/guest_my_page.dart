@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -10,6 +11,7 @@ import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../widgets/common/custom_text_field.dart';
+import '../../utils/password_validator.dart';
 
 /// 게스트 마이페이지 (내 정보 관리)
 /// React: src/pages/GuestMyPage.tsx
@@ -142,14 +144,10 @@ class _GuestMyPageState extends State<GuestMyPage> {
       return;
     }
 
-    // 비밀번호 형식 검증 (영문, 숫자, 특수문자 조합 6자~15자)
-    final password = _newPasswordController.text;
-    final passwordRegex = RegExp(
-      r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,15}$',
-    );
-
-    if (!passwordRegex.hasMatch(password)) {
-      _showErrorDialog('영문, 숫자, 특수문자 조합 6자~15자로 입력해주세요.');
+    // 비밀번호 형식 검증
+    final passwordError = PasswordValidator.validate(_newPasswordController.text);
+    if (passwordError != null) {
+      _showErrorDialog(passwordError);
       return;
     }
 
@@ -366,7 +364,13 @@ class _GuestMyPageState extends State<GuestMyPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/guest');
+            }
+          },
         ),
         titleTextStyle: AppTextStyles.headingMedium.copyWith(
           fontSize: 20,
@@ -830,11 +834,10 @@ class _GuestMyPageState extends State<GuestMyPage> {
         const SizedBox(height: 4),
 
         // 안내 문구
-        // React: <div className="text-xs text-gray-500 -mt-1 px-1">영문, 숫자, 특수문자 조합 6자~15자</div>
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
-            '영문, 숫자, 특수문자 조합 6자~15자',
+            PasswordValidator.policyDescription,
             style: AppTextStyles.bodySmall.copyWith(
               fontSize: 12, // text-xs
               color: AppColors.textSecondary,

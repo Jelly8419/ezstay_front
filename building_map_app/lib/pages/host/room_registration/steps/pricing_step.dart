@@ -34,6 +34,7 @@ class _PricingStepState extends State<PricingStep> {
   late final TextEditingController _cleaningFeeController;
   late final TextEditingController _longTermDiscountPercentController;
   late final TextEditingController _earlyCheckInDiscountAmountController;
+  late final TextEditingController _minContractDaysController;
 
   // FocusNode 선언
   late final FocusNode _dailyRentFocus;
@@ -50,7 +51,7 @@ class _PricingStepState extends State<PricingStep> {
   bool _isLoadingPolicies = false;
   String? _policyLoadError;
 
-  String get _dailyRent => (widget.formData['dailyRent'] as String?) ?? '';
+  String get _dailyRent => widget.formData['dailyRent']?.toString() ?? '';
 
   // 주간 임대료는 일일 임대료 * 7로 자동 계산
   String get _weeklyRent {
@@ -62,7 +63,7 @@ class _PricingStepState extends State<PricingStep> {
   String get _deposit => '300000'; // 고정값
 
   String get _dailyMaintenanceFee =>
-      (widget.formData['dailyMaintenanceFee'] as String?) ?? '';
+      widget.formData['dailyMaintenanceFee']?.toString() ?? '';
 
   // 주간 관리비는 일일 관리비 * 7로 자동 계산
   String get _weeklyMaintenanceFee {
@@ -72,20 +73,20 @@ class _PricingStepState extends State<PricingStep> {
   }
 
   String get _maintenanceDescription =>
-      (widget.formData['maintenanceDescription'] as String?) ?? '';
-  String get _cleaningFee => (widget.formData['cleaningFee'] as String?) ?? '';
-  String get _minContractPeriod =>
-      (widget.formData['minContractPeriod'] as String?) ?? '1주';
+      widget.formData['maintenanceDescription']?.toString() ?? '';
+  String get _cleaningFee => widget.formData['cleaningFee']?.toString() ?? '';
+  String get _minContractDays =>
+      widget.formData['minContractDays']?.toString() ?? '7';
   String get _refundPolicy =>
-      (widget.formData['refundPolicy'] as String?) ?? '';
+      widget.formData['refundPolicy']?.toString() ?? '';
   String get _longTermDiscountWeeks =>
-      (widget.formData['longTermDiscountWeeks'] as String?) ?? '0';
+      widget.formData['longTermDiscountWeeks']?.toString() ?? '0';
   String get _longTermDiscountPercent =>
-      (widget.formData['longTermDiscountPercent'] as String?) ?? '';
+      widget.formData['longTermDiscountPercent']?.toString() ?? '';
   String get _earlyCheckInDiscountDays =>
-      (widget.formData['earlyCheckInDiscountDays'] as String?) ?? '0';
+      widget.formData['earlyCheckInDiscountDays']?.toString() ?? '0';
   String get _earlyCheckInDiscountAmount =>
-      (widget.formData['earlyCheckInDiscountAmount'] as String?) ?? '';
+      widget.formData['earlyCheckInDiscountAmount']?.toString() ?? '';
 
   List<String> get _maintenanceInclusions =>
       (widget.formData['maintenanceInclusions'] as List<dynamic>?)
@@ -115,6 +116,9 @@ class _PricingStepState extends State<PricingStep> {
     );
     _earlyCheckInDiscountAmountController = TextEditingController(
       text: _formatNumberWithCommas(_earlyCheckInDiscountAmount),
+    );
+    _minContractDaysController = TextEditingController(
+      text: _minContractDays,
     );
 
     // FocusNode 초기화
@@ -217,6 +221,7 @@ class _PricingStepState extends State<PricingStep> {
     _cleaningFeeController.dispose();
     _longTermDiscountPercentController.dispose();
     _earlyCheckInDiscountAmountController.dispose();
+    _minContractDaysController.dispose();
 
     // FocusNode 해제
     _dailyRentFocus.dispose();
@@ -755,23 +760,30 @@ class _PricingStepState extends State<PricingStep> {
           // 최소 계약 기간
           FormSection(
             title: '최소 계약 기간',
-            child: DropdownButtonFormField<String>(
-              initialValue:
-                  ['1주', '2주', '3주', '4주'].contains(_minContractPeriod)
-                  ? _minContractPeriod
-                  : '1주',
-              items: ['1주', '2주', '3주', '4주']
-                  .map(
-                    (period) =>
-                        DropdownMenuItem(value: period, child: Text(period)),
-                  )
-                  .toList(),
+            child: TextField(
+              controller: _minContractDaysController,
+              keyboardType: TextInputType.number,
               onChanged: (value) {
-                if (value != null) {
-                  _updateFormData('minContractPeriod', value);
-                }
+                final number = value.replaceAll(RegExp(r'[^0-9]'), '');
+                _updateFormData('minContractDays', number);
               },
               decoration: InputDecoration(
+                hintText: '7 ~ 90',
+                hintStyle: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+                suffixText: '일',
+                suffixStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+                helperText: '최소 7일, 최대 90일까지 설정 가능합니다',
+                helperStyle: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(

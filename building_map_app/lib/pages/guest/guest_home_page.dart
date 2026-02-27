@@ -442,7 +442,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
           // 호스트 3-Step 가이드
           Container(
-            padding: EdgeInsets.all(AppSpacing.xl * 2),
+            padding: EdgeInsets.all(isMobile ? AppSpacing.md : AppSpacing.xl * 2),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: AppRadius.radiusLg,
@@ -513,7 +513,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
           builder: (context, constraints) {
             // 모바일: 2열, 데스크톱: 4열 (게스트) 또는 3열 (호스트)
             final crossAxisCount = isMobile ? 2 : steps.length;
-            final childAspectRatio = isMobile ? 0.75 : 0.8;
+            final childAspectRatio = isMobile ? 0.55 : 0.8;
 
             return GridView.builder(
               shrinkWrap: true,

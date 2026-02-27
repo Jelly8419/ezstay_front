@@ -79,7 +79,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     'maintenanceInclusions': <String>['수도세', '전기세'],
     'maintenanceDescription': '',
     'cleaningFee': '',
-    'minContractPeriod': '1주',
+    'minContractDays': '7',
     'refundPolicy': '보통',
     'longTermDiscountWeeks': '',
     'longTermDiscountPercent': '',
@@ -280,8 +280,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           _formData['maintenanceDescription'] =
               roomData['maintenanceDescription'] ?? '';
           _formData['cleaningFee'] = roomData['cleaningFee']?.toString() ?? '';
-          _formData['minContractPeriod'] =
-              roomData['minContractPeriod'] ?? '1주';
+          _formData['minContractDays'] =
+              roomData['minContractDays']?.toString() ?? '7';
           _formData['refundPolicy'] = roomData['refundPolicy'] ?? '보통';
           _formData['longTermDiscountWeeks'] =
               roomData['longTermDiscountWeeks']?.toString() ?? '';
@@ -388,7 +388,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     'bedSelections': ['침대'],
     'dailyRent': ['임대료'],
     'cleaningFee': ['청소비'],
-    'minContractPeriod': ['최소 계약 기간'],
+    'minContractDays': ['최소 계약 기간'],
     'refundPolicy': ['환불 정책'],
     'longTermDiscountWeeks': ['장기 할인 주'],
     'longTermDiscountPercent': ['장기 할인 퍼센트'],
@@ -839,7 +839,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           'maintenanceInclusions': _formData['maintenanceInclusions'] ?? [],
           'maintenanceDescription': _formData['maintenanceDescription'],
           'cleaningFee': int.tryParse(_formData['cleaningFee'] ?? ''),
-          'minContractPeriod': _formData['minContractPeriod'],
+          'minContractDays': int.tryParse(_formData['minContractDays'] ?? '7'),
           'refundPolicy': _formData['refundPolicy'],
           'longTermDiscountWeeks': int.tryParse(
             _formData['longTermDiscountWeeks'] ?? '0',

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,7 +18,7 @@ class ChatWindow extends StatefulWidget {
   final int currentUserId;
   final VoidCallback onOpenContractInfo;
   final VoidCallback? onBack;
-  final Function(String message, List<File> images)? onSendMessage;
+  final Function(String message, List<XFile> images)? onSendMessage;
 
   const ChatWindow({
     super.key,
@@ -38,7 +38,7 @@ class _ChatWindowState extends State<ChatWindow> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
-  final List<File> _selectedImages = [];
+  final List<XFile> _selectedImages = [];
 
   @override
   void dispose() {
@@ -90,7 +90,7 @@ class _ChatWindowState extends State<ChatWindow> {
         }
 
         setState(() {
-          _selectedImages.addAll(images.map((xFile) => File(xFile.path)));
+          _selectedImages.addAll(images);
         });
       }
     } catch (e) {
@@ -527,11 +527,24 @@ class _ChatWindowState extends State<ChatWindow> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8), // rounded-lg
-                        child: Image.file(
-                          _selectedImages[index],
-                          width: 64, // w-16
-                          height: 64, // h-16
-                          fit: BoxFit.cover,
+                        child: FutureBuilder<Uint8List>(
+                          future: _selectedImages[index].readAsBytes(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              return Image.memory(
+                                snapshot.data!,
+                                width: 64, // w-16
+                                height: 64, // h-16
+                                fit: BoxFit.cover,
+                              );
+                            }
+                            return Container(
+                              width: 64,
+                              height: 64,
+                              color: AppColors.neutral200,
+                              child: const Icon(Icons.image, size: 24, color: AppColors.neutral500),
+                            );
+                          },
                         ),
                       ),
                       Positioned(
