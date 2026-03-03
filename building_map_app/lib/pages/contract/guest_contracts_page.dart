@@ -14,6 +14,7 @@ import '../../utils/responsive_util.dart';
 import '../../widgets/payment_webview.dart';
 // import '../../widgets/modals/refund_calculation_modal.dart'; // TODO: API로 전체 Contract 가져오기 후 사용
 import '../../widgets/modals/cancel_request_modal.dart';
+import '../../widgets/modals/deposit_agreement_review_modal.dart';
 import '../../widgets/common/app_footer.dart';
 
 /// 게스트용 계약 목록 페이지 (리액트 UI 기반 재설계)
@@ -240,7 +241,11 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   bool _isDaysBeforeCheckIn(DateTime checkInDate, int days) {
     final now = DateTime.now();
     // 시간을 제외하고 날짜만 비교
-    final checkInDateOnly = DateTime(checkInDate.year, checkInDate.month, checkInDate.day);
+    final checkInDateOnly = DateTime(
+      checkInDate.year,
+      checkInDate.month,
+      checkInDate.day,
+    );
     final todayOnly = DateTime(now.year, now.month, now.day);
     final diff = checkInDateOnly.difference(todayOnly).inDays;
     // 5일 전까지 수정 가능 = 6일 이상 남아야 함
@@ -385,7 +390,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       if (itemIndex == -1) return;
 
       final item = options[itemIndex];
-      final newQuantity = (item.quantity + delta).clamp(0, 99);
+      final newQuantity = (item.quantity + delta).clamp(0, 5);
 
       options[itemIndex] = item.copyWith(quantity: newQuantity);
     });
@@ -399,7 +404,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     // 결제 전 상태인지 확인 (승인대기 또는 승인됨)
     // - PENDING_APPROVAL: 호스트 승인 대기 중
     // - APPROVED: 호스트 승인됨, 게스트 결제 대기 중
-    final isBeforePayment = contract.status == ContractStatus.pendingApproval ||
+    final isBeforePayment =
+        contract.status == ContractStatus.pendingApproval ||
         contract.status == ContractStatus.approved;
 
     if (isBeforePayment) {
@@ -424,10 +430,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       if (item.quantity == 0) continue;
       final itemIdInt = int.tryParse(item.id);
       if (itemIdInt == null) continue;
-      itemsToUpdate.add(RentalOrderItem(
-        itemId: itemIdInt,
-        quantity: item.quantity,
-      ));
+      itemsToUpdate.add(
+        RentalOrderItem(itemId: itemIdInt, quantity: item.quantity),
+      );
     }
 
     debugPrint(
@@ -491,10 +496,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         // 수량 증가 → 추가 결제
         final itemIdInt = int.tryParse(item.id);
         if (itemIdInt == null) continue;
-        itemsToOrder.add(RentalOrderItem(
-          itemId: itemIdInt,
-          quantity: addedQty,
-        ));
+        itemsToOrder.add(
+          RentalOrderItem(itemId: itemIdInt, quantity: addedQty),
+        );
       }
     }
 
@@ -568,7 +572,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     final customerName = paymentInfo['customerName'] as String?;
     final customerEmail = paymentInfo['customerEmail'] as String?;
 
-    debugPrint('💳 [PAYMENT INFO] Retrieved for order: $orderId, amount: $amount');
+    debugPrint(
+      '💳 [PAYMENT INFO] Retrieved for order: $orderId, amount: $amount',
+    );
 
     // 3단계: 토스페이먼츠 SDK 직접 호출
     if (!mounted) return;
@@ -634,9 +640,13 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       // 미결제 주문 취소 시도
       try {
         await _rentalOrderService.cancelPendingOrder(rentalOrderId);
-        debugPrint('🗑️ [RENTAL PAYMENT] Cancelled pending order: $rentalOrderId');
+        debugPrint(
+          '🗑️ [RENTAL PAYMENT] Cancelled pending order: $rentalOrderId',
+        );
       } catch (cancelError) {
-        debugPrint('⚠️ [RENTAL PAYMENT] Failed to cancel pending order: $cancelError');
+        debugPrint(
+          '⚠️ [RENTAL PAYMENT] Failed to cancel pending order: $cancelError',
+        );
       }
 
       if (!mounted) return;
@@ -670,88 +680,60 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     return items.any((item) => item.quantity > 0);
   }
 
-  /// 환불 모달 표시
-  Future<void> _showRefundModal(ContractListItem contract) async {
-    // 결제건별 렌탈 주문 조회
+  /// 보증금 합의 확인 모달 표시 (게스트)
+  Future<void> _showDepositAgreementReviewModal(
+    ContractListItem contract,
+  ) async {
     try {
-      final response = await _rentalOrderService.getRentalOrders(contract.id);
+      final agreement = await _contractService.getDepositAgreement(contract.id);
 
       if (!mounted) return;
 
-      // PAID 상태이고 ACTIVE 아이템이 있는 주문만 필터링
-      final refundableOrders = response.orders.where((order) {
-        return order.status == 'PAID' &&
-            order.items.any((item) => item.status == 'ACTIVE');
-      }).toList();
-
-      if (refundableOrders.isEmpty) {
+      if (agreement == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('환불 가능한 옵션 상품이 없습니다.'),
+            content: Text('합의 정보가 없습니다.'),
             backgroundColor: Color(0xFF6B7280),
           ),
         );
         return;
       }
 
-      // 환불 모달 표시
-      await showModalBottomSheet(
+      showDialog(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => _RefundModal(
-          contract: contract,
-          orders: refundableOrders,
-          onRefund: (rentalOrderId, itemId) async {
-            await _processRefund(contract, rentalOrderId, itemId);
+        builder: (context) => DepositAgreementReviewModal(
+          agreement: agreement,
+          onAccept: () async {
+            Navigator.of(context).pop();
+            try {
+              await _contractService.acceptDepositAgreement(contract.id);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('합의에 동의하였습니다.'),
+                  backgroundColor: Color(0xFF10B981),
+                ),
+              );
+              _loadContracts();
+            } catch (e) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('합의 동의 처리에 실패했습니다: $e'),
+                  backgroundColor: const Color(0xFFDC2626),
+                ),
+              );
+            }
           },
+          onClose: () => Navigator.of(context).pop(),
         ),
       );
     } catch (e) {
-      debugPrint('❌ [REFUND MODAL] Error loading orders: $e');
+      debugPrint('❌ [DEPOSIT AGREEMENT] Error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('주문 정보를 불러오는데 실패했습니다: $e'),
-          backgroundColor: const Color(0xFFDC2626),
-        ),
-      );
-    }
-  }
-
-  /// 환불 처리
-  Future<void> _processRefund(
-    ContractListItem contract,
-    int rentalOrderId,
-    int itemId,
-  ) async {
-    try {
-      debugPrint('🔄 [REFUND] Processing: orderId=$rentalOrderId, itemId=$itemId');
-
-      final result = await _rentalOrderService.cancelItem(
-        rentalOrderId: rentalOrderId,
-        itemId: itemId,
-        reason: '게스트 요청 환불',
-      );
-
-      debugPrint('✅ [REFUND] Success: $result');
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('환불 요청이 처리되었습니다.'),
-          backgroundColor: Color(0xFF10B981),
-        ),
-      );
-
-      // 계약 목록 새로고침
-      await _loadContracts();
-    } catch (e) {
-      debugPrint('❌ [REFUND] Error: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('환불 처리 중 오류가 발생했습니다: $e'),
+          content: Text('합의 정보를 불러오는데 실패했습니다: $e'),
           backgroundColor: const Color(0xFFDC2626),
         ),
       );
@@ -936,9 +918,57 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         borderColor = const Color(0xFFFED7AA); // orange-200
         textColor = const Color(0xFF9A3412); // orange-800
         title = '⚠️ 퇴실 확인 보류';
-        message = '관리자가 확인 중입니다. 추가 안내를 기다려주세요.';
+        message = '호스트가 보증금 반환을 보류했습니다. 합의 절차가 진행 중입니다.';
+      case CheckoutStatus.agreementSubmitted:
+        bgColor = const Color(0xFFEFF6FF); // blue-50
+        borderColor = const Color(0xFFBFDBFE); // blue-200
+        textColor = const Color(0xFF1E40AF); // blue-800
+        title = '합의 내용 확인 요청';
+        message = '호스트가 보증금 합의 내용을 제출했습니다. 확인해주세요.';
+      case CheckoutStatus.autoReturned:
+        bgColor = const Color(0xFFDCFCE7); // green-100
+        borderColor = const Color(0xFFBBF7D0); // green-200
+        textColor = const Color(0xFF166534); // green-800
+        title = '보증금 전액 반환';
+        message = '합의 기한이 경과하여 보증금이 전액 반환됩니다.';
       case CheckoutStatus.notStarted:
         return const SizedBox.shrink();
+    }
+
+    // 합의 데드라인 계산 (정책 7.9.1: 관리자 승인 시점 + 10일)
+    String? deadlineText;
+    if (contract.checkoutStatus == CheckoutStatus.hostPending ||
+        contract.checkoutStatus == CheckoutStatus.agreementSubmitted) {
+      // 서버에서 agreementDeadline을 내려주면 사용, 없으면 퇴실일 + 10일 폴백
+      DateTime deadline;
+      if (contract.agreementDeadline != null) {
+        deadline = DateTime.tryParse(contract.agreementDeadline!) ??
+            contract.checkOutDate.add(const Duration(days: 10));
+      } else {
+        final checkoutTimeStr = contract.roomCheckoutTime ?? '11:00';
+        final timeParts = checkoutTimeStr.split(':');
+        final checkoutHour = int.tryParse(timeParts[0]) ?? 11;
+        final checkoutMinute = timeParts.length > 1
+            ? (int.tryParse(timeParts[1]) ?? 0)
+            : 0;
+        final checkOutDate = contract.checkOutDate;
+        deadline = DateTime(
+          checkOutDate.year,
+          checkOutDate.month,
+          checkOutDate.day,
+          checkoutHour,
+          checkoutMinute,
+        ).add(const Duration(days: 10));
+      }
+      final remaining = deadline.difference(DateTime.now()).inDays;
+      if (remaining > 0) {
+        deadlineText =
+            '합의 마감까지 D-$remaining일 (${deadline.month}/${deadline.day})';
+      } else if (remaining == 0) {
+        deadlineText = '합의 마감 오늘까지';
+      } else {
+        deadlineText = '합의 기한 경과';
+      }
     }
 
     return Padding(
@@ -967,14 +997,48 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                   const SizedBox(height: 4),
                   Text(
                     message,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: textColor,
-                    ),
+                    style: TextStyle(fontSize: 13, color: textColor),
                   ),
+                  if (deadlineText != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      deadlineText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: textColor.withValues(alpha: 0.7),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
+            // AGREEMENT_SUBMITTED: "확인하기" 버튼
+            if (contract.checkoutStatus ==
+                CheckoutStatus.agreementSubmitted) ...[
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: () => _showDepositAgreementReviewModal(contract),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  side: BorderSide(color: textColor),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                child: Text(
+                  '확인하기',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1008,7 +1072,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     if (confirmed != true) return;
 
     try {
-      await _contractService.guestCheckout(contractId);
+      await _contractService.requestCheckout(contractId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1022,7 +1086,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('퇴실 처리 실패: ${e.toString().replaceAll('Exception: ', '')}'),
+            content: Text(
+              '퇴실 처리 실패: ${e.toString().replaceAll('Exception: ', '')}',
+            ),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -1041,9 +1107,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             color: Colors.white,
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 896,
-                ),
+                constraints: const BoxConstraints(maxWidth: 896),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1180,9 +1244,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 896,
-              ),
+              constraints: const BoxConstraints(maxWidth: 896),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -1281,7 +1343,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           const SizedBox(height: 16),
           Text(
             '계약 내역이 없습니다.',
-            style: AppTextStyles.bodyLarge.copyWith(color: Colors.grey.shade600),
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: Colors.grey.shade600,
+            ),
           ),
         ],
       ),
@@ -1360,7 +1424,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     if (statusMessage.isNotEmpty)
                       Text(
                         statusMessage,
-                        style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: statusColor),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontSize: 13,
+                          color: statusColor,
+                        ),
                       ),
                   ],
                 ),
@@ -1387,34 +1454,6 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
           // 퇴실 상태 표시
           _buildCheckoutStatusSection(contract),
-
-          // 퇴실 완료 버튼 (IN_PROGRESS + 종료일 지남 + NOT_STARTED)
-          if (contract.status == ContractStatus.inProgress &&
-              contract.checkOutDate.isBefore(DateTime.now()) &&
-              (contract.checkoutStatus == null || contract.checkoutStatus == CheckoutStatus.notStarted)) ...[
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => _handleGuestCheckout(contract.id),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: const Color(0xFF2563EB), // blue-600
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  '퇴실 완료',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
 
           // 액션 버튼 영역
           if (contract.status == ContractStatus.pendingApproval) ...[
@@ -1472,10 +1511,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
               child: ElevatedButton.icon(
                 onPressed: () => _handlePayment(contract),
                 icon: const Icon(Icons.credit_card, size: 16),
-                label: Text(
-                  '결제하기',
-                  style: AppTextStyles.labelMedium,
-                ),
+                label: Text('결제하기', style: AppTextStyles.labelMedium),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   backgroundColor: const Color(0xFF2563EB), // blue-600
@@ -1490,34 +1526,75 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             Row(
               children: [
                 OutlinedButton(
-                  onPressed: () async {
-                    // TODO: API로 전체 Contract 데이터 가져오기
-                    // final fullContract = await _contractService.getContractById(contract.id);
-
-                    // 임시: 간단한 확인 다이얼로그 표시
+                  onPressed: () {
+                    final reasonController = TextEditingController();
                     showDialog(
                       context: context,
-                      builder: (context) => AlertDialog(
+                      builder: (dialogContext) => AlertDialog(
                         title: const Text('계약 취소'),
-                        content: const Text(
-                          '계약을 취소하시겠습니까?\n환불 정책에 따라 환불 금액이 계산됩니다.',
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('계약을 취소하시겠습니까?\n결제 금액의 100%가 환불됩니다.'),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: reasonController,
+                              maxLines: 3,
+                              decoration: InputDecoration(
+                                hintText: '취소 사유를 입력해주세요',
+                                hintStyle: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF9CA3AF),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: const EdgeInsets.all(12),
+                              ),
+                            ),
+                          ],
                         ),
                         actions: [
                           TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
+                            onPressed: () => Navigator.of(dialogContext).pop(),
                             child: const Text('돌아가기'),
                           ),
                           ElevatedButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              // TODO: 환불 계산기 모달 표시 (전체 Contract 필요)
-                              // RefundCalculationModal(contract: fullContract, ...)
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('계약 취소 기능은 개발 중입니다.'),
-                                  backgroundColor: Color(0xFF2563EB),
-                                ),
-                              );
+                            onPressed: () async {
+                              final reason = reasonController.text.trim();
+                              if (reason.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('취소 사유를 입력해주세요.'),
+                                    backgroundColor: Color(0xFFDC2626),
+                                  ),
+                                );
+                                return;
+                              }
+                              Navigator.of(dialogContext).pop();
+                              try {
+                                await _contractService.requestRefund(
+                                  contract.id,
+                                  reason,
+                                );
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('환불 요청이 처리되었습니다.'),
+                                    backgroundColor: Color(0xFF10B981),
+                                  ),
+                                );
+                                _loadContracts();
+                              } catch (e) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('환불 요청에 실패했습니다: $e'),
+                                    backgroundColor: const Color(0xFFDC2626),
+                                  ),
+                                );
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFDC2626),
@@ -1548,7 +1625,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                 const Icon(
                   Icons.info_outline,
                   size: 16,
-                  color: Color(0xFF6B7280), // gray-500
+                  color: Color(0xFF6B7280),
                 ),
               ],
             ),
@@ -1564,19 +1641,30 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     showDialog(
                       context: context,
                       builder: (context) => CancelRequestModal(
-                        onSubmit: (reason) {
+                        onSubmit: (reason) async {
                           Navigator.of(context).pop();
-                          // API 호출: 취소 요청 전송
-                          debugPrint(
-                            '⚠️ [CANCEL_REQUEST] Contract ID: ${contract.id}, Reason: $reason',
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('취소 요청이 관리자에게 전송되었습니다.'),
-                              backgroundColor: Color(0xFF10B981), // green-600
-                            ),
-                          );
-                          _loadContracts();
+                          try {
+                            await _contractService.requestCancellation(
+                              contract.id,
+                              reason,
+                            );
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('취소 요청이 관리자에게 전송되었습니다.'),
+                                backgroundColor: Color(0xFF10B981),
+                              ),
+                            );
+                            _loadContracts();
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('취소 요청에 실패했습니다: $e'),
+                                backgroundColor: const Color(0xFFDC2626),
+                              ),
+                            );
+                          }
                         },
                         onClose: () => Navigator.of(context).pop(),
                       ),
@@ -1610,6 +1698,36 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
           // 옵션 상품 섹션
           _buildOptionsSection(contract),
+
+          // 퇴실 완료 버튼 (COMPLETED 상태 + 퇴실 미처리)
+          if (contract.status == ContractStatus.completed &&
+              (contract.checkoutStatus == null ||
+                  contract.checkoutStatus == CheckoutStatus.notStarted)) ...[
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _handleGuestCheckout(contract.id),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 24,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                '퇴실 완료',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1709,12 +1827,19 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                         context: context,
                         builder: (ctx) => AlertDialog(
                           title: const Text('알림'),
-                          content: const Text('계약 시작일의 5일 전부터는 옵션을 추가할 수 없습니다.'),
+                          content: const Text(
+                            '계약 시작일의 5일 전부터는 옵션을 추가할 수 없습니다.',
+                          ),
                           actions: [
                             ElevatedButton(
                               onPressed: () => Navigator.pop(ctx),
-                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
-                              child: const Text('확인', style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2563EB),
+                              ),
+                              child: const Text(
+                                '확인',
+                                style: TextStyle(color: Colors.white),
+                              ),
                             ),
                           ],
                         ),
@@ -1976,45 +2101,47 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                         // 마이너스 버튼
                         // 결제 후 상태: 원래 수량 이하로 감소 불가 (환불은 별도 UI로)
                         // 결제 전 상태: 0까지 감소 가능
-                        Builder(builder: (context) {
-                          final isAfterPayment = _isAfterPayment(contract);
-                          final minQty = isAfterPayment ? originalQty : 0;
-                          final canDecrease = item.quantity > minQty;
+                        Builder(
+                          builder: (context) {
+                            final isAfterPayment = _isAfterPayment(contract);
+                            final minQty = isAfterPayment ? originalQty : 0;
+                            final canDecrease = item.quantity > minQty;
 
-                          return InkWell(
-                            onTap: canDecrease
-                                ? () => _handleOptionQuantityChange(
-                                    contract.id,
-                                    item.id,
-                                    -1,
-                                  )
-                                : null,
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                border: Border.all(
+                            return InkWell(
+                              onTap: canDecrease
+                                  ? () => _handleOptionQuantityChange(
+                                      contract.id,
+                                      item.id,
+                                      -1,
+                                    )
+                                  : null,
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: canDecrease
+                                        ? const Color(0xFFD1D5DB) // gray-300
+                                        : const Color(0xFFE5E7EB), // gray-200
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
                                   color: canDecrease
-                                      ? const Color(0xFFD1D5DB) // gray-300
-                                      : const Color(0xFFE5E7EB), // gray-200
-                                  width: 2,
+                                      ? Colors.white
+                                      : const Color(0xFFF9FAFB),
                                 ),
-                                borderRadius: BorderRadius.circular(8),
-                                color: canDecrease
-                                    ? Colors.white
-                                    : const Color(0xFFF9FAFB),
+                                child: Icon(
+                                  Icons.remove,
+                                  size: 16,
+                                  color: canDecrease
+                                      ? const Color(0xFF374151) // gray-700
+                                      : const Color(0xFFD1D5DB), // gray-300
+                                ),
                               ),
-                              child: Icon(
-                                Icons.remove,
-                                size: 16,
-                                color: canDecrease
-                                    ? const Color(0xFF374151) // gray-700
-                                    : const Color(0xFFD1D5DB), // gray-300
-                              ),
-                            ),
-                          );
-                        }),
+                            );
+                          },
+                        ),
                         const SizedBox(width: 8),
 
                         // 수량 표시
@@ -2033,31 +2160,44 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                         ),
                         const SizedBox(width: 8),
 
-                        // 플러스 버튼
-                        InkWell(
-                          onTap: () => _handleOptionQuantityChange(
-                            contract.id,
-                            item.id,
-                            1,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: const Color(0xFF2563EB), // blue-600
-                                width: 2,
-                              ),
+                        // 플러스 버튼 (품목별 최대 5개)
+                        Builder(
+                          builder: (context) {
+                            final canIncrease = item.quantity < 5;
+                            return InkWell(
+                              onTap: canIncrease
+                                  ? () => _handleOptionQuantityChange(
+                                      contract.id,
+                                      item.id,
+                                      1,
+                                    )
+                                  : null,
                               borderRadius: BorderRadius.circular(8),
-                              color: Colors.white,
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              size: 16,
-                              color: Color(0xFF2563EB), // blue-600
-                            ),
-                          ),
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: canIncrease
+                                        ? const Color(0xFF2563EB)
+                                        : const Color(0xFFE5E7EB),
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: canIncrease
+                                      ? Colors.white
+                                      : const Color(0xFFF9FAFB),
+                                ),
+                                child: Icon(
+                                  Icons.add,
+                                  size: 16,
+                                  color: canIncrease
+                                      ? const Color(0xFF2563EB)
+                                      : const Color(0xFFD1D5DB),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -2222,7 +2362,11 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
           // 계약 정보
           Expanded(
-            child: _buildContractInfoColumn(contract, showChatButton, isMobile: false),
+            child: _buildContractInfoColumn(
+              contract,
+              showChatButton,
+              isMobile: false,
+            ),
           ),
         ],
       );
@@ -2230,7 +2374,11 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   }
 
   /// 계약 정보 컬럼
-  Widget _buildContractInfoColumn(ContractListItem contract, bool showChatButton, {required bool isMobile}) {
+  Widget _buildContractInfoColumn(
+    ContractListItem contract,
+    bool showChatButton, {
+    required bool isMobile,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2277,7 +2425,11 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   }
 
   /// 호스트 행 (채팅 버튼 포함)
-  Widget _buildHostRow(ContractListItem contract, bool showChatButton, {required bool isMobile}) {
+  Widget _buildHostRow(
+    ContractListItem contract,
+    bool showChatButton, {
+    required bool isMobile,
+  }) {
     final labelWidget = Text(
       '호스트',
       style: const TextStyle(
@@ -2292,10 +2444,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       children: [
         Text(
           contract.partnerDisplayName,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Color(0xFF111827),
-          ),
+          style: const TextStyle(fontSize: 16, color: Color(0xFF111827)),
         ),
         if (showChatButton) ...[
           const SizedBox(width: 6),
@@ -2317,11 +2466,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       // 모바일: 세로 배치
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          labelWidget,
-          const SizedBox(height: 4),
-          valueWidget,
-        ],
+        children: [labelWidget, const SizedBox(height: 4), valueWidget],
       );
     } else {
       // 태블릿/데스크톱: 가로 배치
@@ -2336,7 +2481,12 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   }
 
   /// 정보 행 (모바일 반응형)
-  Widget _buildInfoRow(String label, String value, {TextStyle? valueStyle, bool isMobile = false}) {
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    TextStyle? valueStyle,
+    bool isMobile = false,
+  }) {
     final labelWidget = Text(
       label,
       style: const TextStyle(
@@ -2348,22 +2498,20 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
     final valueWidget = Text(
       value,
-      style: valueStyle ?? const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.normal,
-        color: Color(0xFF000000),
-      ),
+      style:
+          valueStyle ??
+          const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.normal,
+            color: Color(0xFF000000),
+          ),
     );
 
     if (isMobile) {
       // 모바일: 세로 배치
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          labelWidget,
-          const SizedBox(height: 4),
-          valueWidget,
-        ],
+        children: [labelWidget, const SizedBox(height: 4), valueWidget],
       );
     } else {
       // 태블릿/데스크톱: 가로 배치
@@ -2383,7 +2531,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     List<AvailableRentalItem> availableItems;
     try {
       final rentalOrderService = RentalOrderService();
-      availableItems = await rentalOrderService.getAvailableRentalItems(contract.id);
+      availableItems = await rentalOrderService.getAvailableRentalItems(
+        contract.id,
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2449,8 +2599,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       builder: (_) => _CancelOptionModal(
         contract: contract,
         orders: response.orders,
-        onRefund: (rentalOrderId, itemId, reason) async {
-          await _handleRefund(rentalOrderId, itemId, reason);
+        onRefund: (rentalOrderId, reason) async {
+          return await _handleRefund(rentalOrderId, reason: reason);
         },
       ),
     );
@@ -2469,10 +2619,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
       for (final entry in selectedOptions.entries) {
         if (entry.value > 0) {
-          items.add(RentalOrderItem(
-            itemId: entry.key,
-            quantity: entry.value,
-          ));
+          items.add(RentalOrderItem(itemId: entry.key, quantity: entry.value));
         }
       }
 
@@ -2486,7 +2633,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       if (!mounted) return;
 
       // 결제 정보 조회
-      final paymentInfo = await rentalOrderService.getPaymentInfo(orderResponse.rentalOrderId);
+      final paymentInfo = await rentalOrderService.getPaymentInfo(
+        orderResponse.rentalOrderId,
+      );
 
       if (!mounted) return;
 
@@ -2513,18 +2662,21 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     }
   }
 
-  /// 환불 처리
-  Future<void> _handleRefund(int rentalOrderId, int itemId, String reason) async {
+  /// 환불 처리 (주문 단위)
+  Future<Map<String, dynamic>> _handleRefund(
+    int rentalOrderId, {
+    String reason = '',
+  }) async {
     try {
       final rentalOrderService = RentalOrderService();
-      await rentalOrderService.cancelItem(
+      final result = await rentalOrderService.cancelOrder(
         rentalOrderId: rentalOrderId,
-        itemId: itemId,
         reason: reason,
       );
 
       // 계약 목록 새로고침 (결과 알림은 모달 내 AlertDialog에서 처리)
       _loadContracts();
+      return result;
     } catch (e) {
       rethrow;
     }
@@ -2604,361 +2756,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   }
 }
 
-/// 환불 모달 위젯
-class _RefundModal extends StatefulWidget {
-  final ContractListItem contract;
-  final List<RentalOrder> orders;
-  final Future<void> Function(int rentalOrderId, int itemId) onRefund;
-
-  const _RefundModal({
-    required this.contract,
-    required this.orders,
-    required this.onRefund,
-  });
-
-  @override
-  State<_RefundModal> createState() => _RefundModalState();
-}
-
-class _RefundModalState extends State<_RefundModal> {
-  bool _isProcessing = false;
-  final Set<String> _selectedItems = {}; // "orderId_itemId" 형식
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.8,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 핸들 바
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD1D5DB),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          // 헤더
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.receipt_long,
-                  color: Color(0xFFDC2626),
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    '옵션 상품 환불',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                  color: const Color(0xFF6B7280),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          // 주문 목록
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '환불할 상품을 선택하세요',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ...widget.orders.map((order) => _buildOrderCard(order)),
-                ],
-              ),
-            ),
-          ),
-          // 하단 버튼
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0xFFE5E7EB)),
-              ),
-            ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isProcessing ? null : () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: const BorderSide(color: Color(0xFFD1D5DB)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        '취소',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF374151),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _selectedItems.isEmpty || _isProcessing
-                          ? null
-                          : _processRefunds,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        backgroundColor: const Color(0xFFDC2626),
-                        disabledBackgroundColor: const Color(0xFFD1D5DB),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isProcessing
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(
-                              '환불 요청 (${_selectedItems.length}개)',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOrderCard(RentalOrder order) {
-    final activeItems = order.items.where((item) => item.status == 'ACTIVE').toList();
-    if (activeItems.isEmpty) return const SizedBox.shrink();
-
-    final orderDate = order.createdAt != null
-        ? FormatUtils.formatDateTimeDot(order.createdAt!)
-        : '날짜 없음';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 주문 헤더
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(11)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: order.orderType == 'INITIAL'
-                        ? const Color(0xFFDBEAFE)
-                        : const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    order.orderType == 'INITIAL' ? '최초 주문' : '추가 주문',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: order.orderType == 'INITIAL'
-                          ? const Color(0xFF2563EB)
-                          : const Color(0xFFDC2626),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    orderDate,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                ),
-                Text(
-                  '${FormatUtils.formatCurrency(order.totalAmount)}원',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // 아이템 목록
-          ...activeItems.map((item) => _buildItemRow(order, item)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItemRow(RentalOrder order, RentalOrderItemDetail item) {
-    final key = '${order.id}_${item.id}';
-    final isSelected = _selectedItems.contains(key);
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          if (isSelected) {
-            _selectedItems.remove(key);
-          } else {
-            _selectedItems.add(key);
-          }
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          border: Border(
-            top: BorderSide(color: Color(0xFFE5E7EB)),
-          ),
-        ),
-        child: Row(
-          children: [
-            // 체크박스
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFDC2626) : Colors.white,
-                border: Border.all(
-                  color: isSelected
-                      ? const Color(0xFFDC2626)
-                      : const Color(0xFFD1D5DB),
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: isSelected
-                  ? const Icon(Icons.check, size: 16, color: Colors.white)
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            // 상품 정보
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${FormatUtils.formatCurrency(item.price)}원 × ${item.quantity}개',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // 금액
-            Text(
-              '${FormatUtils.formatCurrency(item.subtotal)}원',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: isSelected
-                    ? const Color(0xFFDC2626)
-                    : const Color(0xFF374151),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _processRefunds() async {
-    if (_selectedItems.isEmpty) return;
-
-    setState(() => _isProcessing = true);
-
-    try {
-      for (final key in _selectedItems) {
-        final parts = key.split('_');
-        final rentalOrderId = int.parse(parts[0]);
-        final itemId = int.parse(parts[1]);
-
-        await widget.onRefund(rentalOrderId, itemId);
-      }
-
-      if (!mounted) return;
-      Navigator.pop(context);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('환불 처리 중 오류: $e'),
-          backgroundColor: const Color(0xFFDC2626),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
-}
-
-/// 옵션 추가 모달 (리액트 UI 기준)
+/// 옵션 추가 구매 모달
 class _AddOptionModal extends StatefulWidget {
   final ContractListItem contract;
   final List<AvailableRentalItem> availableOptions;
@@ -2999,7 +2797,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(16),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 672), // max-w-2xl
+        constraints: const BoxConstraints(maxWidth: 672),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -3025,7 +2823,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF111827), // gray-900
+                      color: Color(0xFF111827),
                     ),
                   ),
                   InkWell(
@@ -3034,7 +2832,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                     child: const Icon(
                       Icons.close,
                       size: 24,
-                      color: Color(0xFF9CA3AF), // gray-400
+                      color: Color(0xFF9CA3AF),
                     ),
                   ),
                 ],
@@ -3048,15 +2846,15 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF), // blue-50
-                  border: Border.all(color: const Color(0xFFBFDBFE)), // blue-200
+                  color: const Color(0xFFEFF6FF),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
                   '• 계약 시작일의 5일 전 까지만 구매할 수 있어요.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF1E40AF), // blue-800
+                    color: Color(0xFF1E40AF),
                   ),
                 ),
               ),
@@ -3083,7 +2881,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                 padding: const EdgeInsets.all(24),
                 decoration: const BoxDecoration(
                   border: Border(
-                    top: BorderSide(color: Color(0xFFD1D5DB)), // gray-300
+                    top: BorderSide(color: Color(0xFFD1D5DB)),
                   ),
                 ),
                 child: Column(
@@ -3092,7 +2890,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF), // blue-50
+                        color: const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -3103,7 +2901,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF111827), // gray-900
+                              color: Color(0xFF111827),
                             ),
                           ),
                           Text(
@@ -3111,7 +2909,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF2563EB), // blue-600
+                              color: Color(0xFF2563EB),
                             ),
                           ),
                         ],
@@ -3128,7 +2926,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               side: const BorderSide(
-                                color: Color(0xFFD1D5DB), // gray-300
+                                color: Color(0xFFD1D5DB),
                                 width: 2,
                               ),
                               shape: RoundedRectangleBorder(
@@ -3140,7 +2938,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF374151), // gray-700
+                                color: Color(0xFF374151),
                               ),
                             ),
                           ),
@@ -3154,7 +2952,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                             },
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              backgroundColor: const Color(0xFF2563EB), // blue-600
+                              backgroundColor: const Color(0xFF2563EB),
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -3187,7 +2985,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE5E7EB)), // gray-200
+        border: Border.all(color: const Color(0xFFE5E7EB)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -3199,7 +2997,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF111827), // gray-900
+              color: Color(0xFF111827),
             ),
           ),
           // 설명
@@ -3209,7 +3007,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
               option.description!,
               style: const TextStyle(
                 fontSize: 14,
-                color: Color(0xFF6B7280), // gray-500
+                color: Color(0xFF6B7280),
               ),
             ),
           ],
@@ -3220,7 +3018,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2563EB), // blue-600
+              color: Color(0xFF2563EB),
             ),
           ),
           const SizedBox(height: 12),
@@ -3247,7 +3045,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                       height: 32,
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: const Color(0xFFD1D5DB), // gray-300
+                          color: const Color(0xFFD1D5DB),
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(8),
@@ -3256,8 +3054,8 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                         Icons.remove,
                         size: 16,
                         color: qty > 0
-                            ? const Color(0xFF4B5563) // gray-600
-                            : const Color(0xFFD1D5DB), // gray-300
+                            ? const Color(0xFF4B5563)
+                            : const Color(0xFFD1D5DB),
                       ),
                     ),
                   ),
@@ -3296,7 +3094,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                       height: 32,
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: const Color(0xFF2563EB), // blue-600
+                          color: const Color(0xFF2563EB),
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(8),
@@ -3304,7 +3102,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                       child: const Icon(
                         Icons.add,
                         size: 16,
-                        color: Color(0xFF2563EB), // blue-600
+                        color: Color(0xFF2563EB),
                       ),
                     ),
                   ),
@@ -3317,7 +3115,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF111827), // gray-900
+                    color: Color(0xFF111827),
                   ),
                 ),
             ],
@@ -3328,11 +3126,12 @@ class _AddOptionModalState extends State<_AddOptionModal> {
   }
 }
 
-/// 옵션 환불 모달 (리액트 UI 기준 - 아이템별 체크박스 선택)
+/// 옵션 환불 모달 (주문 단위 취소)
 class _CancelOptionModal extends StatefulWidget {
   final ContractListItem contract;
   final List<RentalOrder> orders;
-  final Future<void> Function(int rentalOrderId, int itemId, String reason) onRefund;
+  final Future<Map<String, dynamic>> Function(int rentalOrderId, String reason)
+      onRefund;
 
   const _CancelOptionModal({
     required this.contract,
@@ -3345,11 +3144,9 @@ class _CancelOptionModal extends StatefulWidget {
 }
 
 class _CancelOptionModalState extends State<_CancelOptionModal> {
-  // 아이템 단위 환불 상태 추적 (key: "orderId-itemIndex")
-  final Set<String> _refundedItems = {};
-  final Set<String> _refundRequestedItems = {};
-  // 아이템 단위 체크박스 선택 (key: "orderId-itemIndex")
-  final Set<String> _selectedItems = {};
+  // 주문 단위 취소 상태 추적
+  final Set<int> _cancelledOrderIds = {};
+  final Set<int> _cancelRequestedOrderIds = {};
   bool _isProcessing = false;
 
   String _formatDateWithDay(DateTime? date) {
@@ -3372,48 +3169,96 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
     }
   }
 
-  /// 체크박스 토글
-  void _toggleItemSelection(String itemKey) {
-    setState(() {
-      if (_selectedItems.contains(itemKey)) {
-        _selectedItems.remove(itemKey);
-      } else {
-        _selectedItems.add(itemKey);
-      }
-    });
-  }
+  /// 주문별 환불 금액 계산 (ACTIVE 아이템 전체)
+  ({int total, int shippingFee, int finalAmount}) _getOrderRefundCalc(
+    RentalOrder order,
+  ) {
+    final activeItems =
+        order.items.where((item) => item.status == 'ACTIVE').toList();
+    if (activeItems.isEmpty) {
+      return (total: 0, shippingFee: 0, finalAmount: 0);
+    }
 
-  /// 주문별 선택된 환불 금액 계산
-  ({int total, int shippingFee, int finalAmount}) _getOrderSelectedRefundAmount(RentalOrder order) {
-    final checkedItems = order.items.asMap().entries
-        .where((e) => _selectedItems.contains('${order.id}-${e.key}'))
-        .toList();
-
-    if (checkedItems.isEmpty) return (total: 0, shippingFee: 0, finalAmount: 0);
-
-    final totalRefundAmount = checkedItems.fold<int>(0, (sum, e) {
-      final item = e.value;
-      return sum + (item.price * item.quantity);
-    });
+    final totalAmount = activeItems.fold<int>(
+      0,
+      (sum, item) => sum + (item.price * item.quantity),
+    );
 
     final deliveryStatus = order.deliveryStatus?.toUpperCase() ?? '';
-    final hasShippedItem = deliveryStatus == 'IN_TRANSIT' || deliveryStatus == 'DELIVERED';
-    final shippingFee = hasShippedItem ? 7000 : 0;
-    final finalAmount = (totalRefundAmount - shippingFee).clamp(0, totalRefundAmount);
+    final shippingFee = deliveryStatus == 'IN_TRANSIT' ? 7000 : 0;
+    final finalAmount = (totalAmount - shippingFee).clamp(0, totalAmount);
 
-    return (total: totalRefundAmount, shippingFee: shippingFee, finalAmount: finalAmount);
+    return (
+      total: totalAmount,
+      shippingFee: shippingFee,
+      finalAmount: finalAmount,
+    );
+  }
+
+  /// 임대중 시작 시점으로부터 7일(168시간) 이내인지 확인
+  bool _isWithin7DaysOfCheckIn() {
+    final checkInDate = widget.contract.checkInDate;
+    final deadline = checkInDate.add(const Duration(hours: 168));
+    return DateTime.now().isBefore(deadline);
+  }
+
+  /// 주문별 취소 가능 여부
+  bool _canCancelOrder(RentalOrder order) {
+    // 이미 취소/요청 완료
+    if (_cancelledOrderIds.contains(order.id) ||
+        _cancelRequestedOrderIds.contains(order.id)) {
+      return false;
+    }
+
+    // 주문 상태가 CANCEL_REQUESTED → 이미 취소 요청됨
+    if (order.status == 'CANCEL_REQUESTED') return false;
+
+    // 배송 완료 → 환불 불가
+    if (order.deliveryStatus?.toUpperCase() == 'DELIVERED') return false;
+
+    // 모든 아이템이 이미 취소/환불됨
+    final hasActiveItem =
+        order.items.any((item) => item.status == 'ACTIVE');
+    if (!hasActiveItem) return false;
+
+    // 임대중 + 7일 초과 → 불가
+    final isInProgress =
+        widget.contract.status == ContractStatus.inProgress;
+    if (isInProgress && !_isWithin7DaysOfCheckIn()) return false;
+
+    return true;
+  }
+
+  /// 주문별 취소 불가 사유 메시지
+  String? _getCancelDisabledReason(RentalOrder order) {
+    if (order.deliveryStatus?.toUpperCase() == 'DELIVERED') {
+      return '배송 완료 주문은 환불할 수 없습니다';
+    }
+
+    final isInProgress =
+        widget.contract.status == ContractStatus.inProgress;
+    if (isInProgress && !_isWithin7DaysOfCheckIn()) {
+      return '입주 후 7일 경과로 취소 불가';
+    }
+
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final paidOrders = widget.orders.where((o) => o.status == 'PAID').toList();
+    // PAID + CANCEL_REQUESTED 주문 표시
+    final visibleOrders = widget.orders
+        .where((o) => o.status == 'PAID' || o.status == 'CANCEL_REQUESTED')
+        .toList();
     final isMobile = ResponsiveUtil.isMobile(context);
 
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.all(isMobile ? 12 : 16),
       child: Container(
-        constraints: BoxConstraints(maxWidth: isMobile ? double.infinity : 1024),
+        constraints: BoxConstraints(
+          maxWidth: isMobile ? double.infinity : 1024,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -3468,7 +3313,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                 ),
                 child: Text(
                   '• ${NoticeTexts.optionRefundBeforeDelivery}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF854D0E),
                   ),
@@ -3478,24 +3323,22 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
             const SizedBox(height: 16),
 
             // 테이블 (PC) / 카드 리스트 (모바일)
-            if (paidOrders.isEmpty)
+            if (visibleOrders.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 48),
                 child: Text(
                   '구매한 옵션 상품이 없습니다.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF6B7280),
-                  ),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
                 ),
               )
             else
               Flexible(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
                   child: isMobile
-                      ? _buildOrderCardList(paidOrders)
-                      : _buildOrderTableList(paidOrders),
+                      ? _buildOrderCardList(visibleOrders)
+                      : _buildOrderTableList(visibleOrders),
                 ),
               ),
             const SizedBox(height: 24),
@@ -3510,11 +3353,11 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
   Color _getDeliveryStatusBadgeColor(String? status) {
     switch (status?.toUpperCase()) {
       case 'PENDING':
-        return const Color(0xFFF3F4F6); // gray-100
+        return const Color(0xFFF3F4F6);
       case 'IN_TRANSIT':
-        return const Color(0xFFDBEAFE); // blue-100
+        return const Color(0xFFDBEAFE);
       case 'DELIVERED':
-        return const Color(0xFFDCFCE7); // green-100
+        return const Color(0xFFDCFCE7);
       default:
         return const Color(0xFFF3F4F6);
     }
@@ -3523,11 +3366,11 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
   Color _getDeliveryStatusTextColor(String? status) {
     switch (status?.toUpperCase()) {
       case 'PENDING':
-        return const Color(0xFF1F2937); // gray-800
+        return const Color(0xFF1F2937);
       case 'IN_TRANSIT':
-        return const Color(0xFF1E40AF); // blue-800
+        return const Color(0xFF1E40AF);
       case 'DELIVERED':
-        return const Color(0xFF166534); // green-800
+        return const Color(0xFF166534);
       default:
         return const Color(0xFF1F2937);
     }
@@ -3536,14 +3379,61 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
   Color _getDeliveryStatusBorderColor(String? status) {
     switch (status?.toUpperCase()) {
       case 'PENDING':
-        return const Color(0xFFD1D5DB); // gray-300
+        return const Color(0xFFD1D5DB);
       case 'IN_TRANSIT':
-        return const Color(0xFF93C5FD); // blue-300
+        return const Color(0xFF93C5FD);
       case 'DELIVERED':
-        return const Color(0xFF86EFAC); // green-300
+        return const Color(0xFF86EFAC);
       default:
         return const Color(0xFFD1D5DB);
     }
+  }
+
+  /// 주문 상태 뱃지 위젯
+  Widget _buildOrderStatusBadge(RentalOrder order) {
+    if (_cancelledOrderIds.contains(order.id)) {
+      return _buildBadge('환불 완료', const Color(0xFFF3F4F6),
+          const Color(0xFF374151), const Color(0xFFD1D5DB));
+    }
+    if (_cancelRequestedOrderIds.contains(order.id) ||
+        order.status == 'CANCEL_REQUESTED') {
+      return _buildBadge('취소 요청 중', const Color(0xFFFEF3C7),
+          const Color(0xFFA16207), const Color(0xFFFCD34D));
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildBadge(
+      String text, Color bgColor, Color textColor, Color borderColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(9999),
+        border: Border.all(color: borderColor),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  /// 아이템 상태 뱃지
+  Widget _buildItemStatusBadge(RentalOrderItemDetail item) {
+    if (item.status == 'REFUNDED') {
+      return _buildBadge('환불완료', const Color(0xFFF3F4F6),
+          const Color(0xFF374151), const Color(0xFFD1D5DB));
+    }
+    if (item.status == 'CANCELLED') {
+      return _buildBadge('취소됨', const Color(0xFFF3F4F6),
+          const Color(0xFF374151), const Color(0xFFD1D5DB));
+    }
+    return const SizedBox.shrink();
   }
 
   // ── PC 테이블 (주문별 카드 + 내부 테이블) ──
@@ -3551,8 +3441,16 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
   Widget _buildOrderTableList(List<RentalOrder> orders) {
     return Column(
       children: orders.map((order) {
-        final refundCalc = _getOrderSelectedRefundAmount(order);
+        final refundCalc = _getOrderRefundCalc(order);
         final deliveryStatus = order.deliveryStatus;
+        final canCancel = _canCancelOrder(order);
+        final disabledReason = _getCancelDisabledReason(order);
+        final hasActiveItems =
+            order.items.any((item) => item.status == 'ACTIVE');
+        final isAlreadyCancelledOrRequested =
+            _cancelledOrderIds.contains(order.id) ||
+                _cancelRequestedOrderIds.contains(order.id) ||
+                order.status == 'CANCEL_REQUESTED';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 24),
@@ -3563,14 +3461,16 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
-              // 주문 정보 헤더 (bg-gray-50)
+              // 주문 정보 헤더
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: const BoxDecoration(
                   color: Color(0xFFF9FAFB),
-                  border: Border(
-                    bottom: BorderSide(color: Color(0xFFD1D5DB)),
-                  ),
+                  border:
+                      Border(bottom: BorderSide(color: Color(0xFFD1D5DB))),
                 ),
                 child: Row(
                   children: [
@@ -3597,21 +3497,30 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                     ),
                     const SizedBox(width: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: _getDeliveryStatusBadgeColor(deliveryStatus),
                         borderRadius: BorderRadius.circular(9999),
-                        border: Border.all(color: _getDeliveryStatusBorderColor(deliveryStatus)),
+                        border: Border.all(
+                          color:
+                              _getDeliveryStatusBorderColor(deliveryStatus),
+                        ),
                       ),
                       child: Text(
                         _getDeliveryStatusText(deliveryStatus),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: _getDeliveryStatusTextColor(deliveryStatus),
+                          color:
+                              _getDeliveryStatusTextColor(deliveryStatus),
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    _buildOrderStatusBadge(order),
                   ],
                 ),
               ),
@@ -3619,11 +3528,10 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
               // 상품 테이블
               Table(
                 columnWidths: const {
-                  0: FlexColumnWidth(5),  // 체크박스
-                  1: FlexColumnWidth(55), // 상품정보
-                  2: FlexColumnWidth(15), // 수량
-                  3: FlexColumnWidth(15), // 상품금액
-                  4: FlexColumnWidth(10), // 상태
+                  0: FlexColumnWidth(60), // 상품정보
+                  1: FlexColumnWidth(15), // 수량
+                  2: FlexColumnWidth(15), // 상품금액
+                  3: FlexColumnWidth(10), // 상태
                 },
                 children: [
                   // 테이블 헤더
@@ -3635,23 +3543,18 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                       ),
                     ),
                     children: [
-                      _buildTableHeaderCell('', align: TextAlign.center),
                       _buildTableHeaderCell('상품정보'),
                       _buildTableHeaderCell('수량', align: TextAlign.center),
-                      _buildTableHeaderCell('상품금액', align: TextAlign.right),
+                      _buildTableHeaderCell('상품금액',
+                          align: TextAlign.right),
                       _buildTableHeaderCell('상태', align: TextAlign.center),
                     ],
                   ),
                   // 아이템 행
-                  ...order.items.asMap().entries.map((entry) {
-                    final idx = entry.key;
-                    final item = entry.value;
-                    final itemKey = '${order.id}-$idx';
-                    final isItemRefunded = _refundedItems.contains(itemKey) || item.status == 'REFUNDED';
-                    final isItemRefundRequested = _refundRequestedItems.contains(itemKey) || item.status == 'CANCELLED';
-                    final isCheckboxDisabled = isItemRefunded || isItemRefundRequested;
-                    final isChecked = _selectedItems.contains(itemKey);
+                  ...order.items.map((item) {
                     final itemAmount = item.price * item.quantity;
+                    final isItemInactive = item.status == 'REFUNDED' ||
+                        item.status == 'CANCELLED';
 
                     return TableRow(
                       decoration: const BoxDecoration(
@@ -3660,35 +3563,15 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                         ),
                       ),
                       children: [
-                        // 체크박스
+                        // 상품정보
                         TableCell(
-                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          verticalAlignment:
+                              TableCellVerticalAlignment.middle,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            child: Center(
-                              child: SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: Checkbox(
-                                  value: isChecked,
-                                  onChanged: isCheckboxDisabled
-                                      ? null
-                                      : (_) => _toggleItemSelection(itemKey),
-                                  activeColor: const Color(0xFF2563EB),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  side: const BorderSide(color: Color(0xFFD1D5DB)),
-                                ),
-                              ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
                             ),
-                          ),
-                        ),
-                        // 상품정보 + 환불 상태 뱃지
-                        TableCell(
-                          verticalAlignment: TableCellVerticalAlignment.middle,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -3697,50 +3580,28 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                                     Flexible(
                                       child: Text(
                                         item.name,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
-                                          color: Color(0xFF111827),
+                                          color: isItemInactive
+                                              ? const Color(0xFF9CA3AF)
+                                              : const Color(0xFF111827),
                                         ),
                                       ),
                                     ),
-                                    if (isItemRefunded) ...[
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFF3F4F6),
-                                          borderRadius: BorderRadius.circular(9999),
-                                          border: Border.all(color: const Color(0xFFD1D5DB)),
-                                        ),
-                                        child: const Text(
-                                          '완료',
-                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151)),
-                                        ),
-                                      ),
-                                    ],
-                                    if (isItemRefundRequested) ...[
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFEF3C7),
-                                          borderRadius: BorderRadius.circular(9999),
-                                          border: Border.all(color: const Color(0xFFFCD34D)),
-                                        ),
-                                        child: const Text(
-                                          '요청 중',
-                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFA16207)),
-                                        ),
-                                      ),
-                                    ],
+                                    const SizedBox(width: 8),
+                                    _buildItemStatusBadge(item),
                                   ],
                                 ),
-                                if (item.description != null && item.description!.isNotEmpty) ...[
+                                if (item.description != null &&
+                                    item.description!.isNotEmpty) ...[
                                   const SizedBox(height: 4),
                                   Text(
                                     item.description!,
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF6B7280),
+                                    ),
                                   ),
                                 ],
                               ],
@@ -3749,44 +3610,70 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                         ),
                         // 수량
                         TableCell(
-                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          verticalAlignment:
+                              TableCellVerticalAlignment.middle,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
                             child: Text(
                               '${item.quantity}개',
                               textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isItemInactive
+                                    ? const Color(0xFF9CA3AF)
+                                    : const Color(0xFF111827),
+                              ),
                             ),
                           ),
                         ),
                         // 상품금액
                         TableCell(
-                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          verticalAlignment:
+                              TableCellVerticalAlignment.middle,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
                             child: Text(
                               '${FormatUtils.formatCurrency(itemAmount)}원',
                               textAlign: TextAlign.right,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isItemInactive
+                                    ? const Color(0xFF9CA3AF)
+                                    : const Color(0xFF111827),
+                              ),
                             ),
                           ),
                         ),
                         // 상태
                         TableCell(
-                          verticalAlignment: TableCellVerticalAlignment.middle,
+                          verticalAlignment:
+                              TableCellVerticalAlignment.middle,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
                             child: Text(
-                              isItemRefunded ? '완료' : isItemRefundRequested ? '요청 중' : '-',
+                              item.status == 'REFUNDED'
+                                  ? '환불완료'
+                                  : item.status == 'CANCELLED'
+                                      ? '취소됨'
+                                      : '-',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: isItemRefunded
+                                color: isItemInactive
                                     ? const Color(0xFF374151)
-                                    : isItemRefundRequested
-                                        ? const Color(0xFFA16207)
-                                        : const Color(0xFF9CA3AF),
+                                    : const Color(0xFF9CA3AF),
                               ),
                             ),
                           ),
@@ -3797,66 +3684,125 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                 ],
               ),
 
-              // 환불 금액 계산 + 환불 버튼 (체크한 상품이 있을 때만)
-              if (refundCalc.total > 0)
+              // 환불 금액 + 버튼 푸터
+              if (hasActiveItems && !isAlreadyCancelledOrRequested)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFEFF6FF), // blue-50
+                    color: Color(0xFFEFF6FF),
                     border: Border(
-                      top: BorderSide(color: Color(0xFF93C5FD), width: 2), // blue-300
+                      top: BorderSide(color: Color(0xFF93C5FD), width: 2),
                     ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('금액 합계', style: TextStyle(fontSize: 14, color: Color(0xFF374151))),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${FormatUtils.formatCurrency(refundCalc.total)}원',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
-                      ),
-                      if (refundCalc.shippingFee > 0) ...[
-                        const SizedBox(width: 8),
-                        const Text('-', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
+                      if (disabledReason != null) ...[
+                        Text(
+                          disabledReason,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFFDC2626),
+                          ),
+                        ),
+                      ] else ...[
+                        const Text(
+                          '환불 금액',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF374151),
+                          ),
+                        ),
                         const SizedBox(width: 8),
                         Text(
-                          '${FormatUtils.formatCurrency(refundCalc.shippingFee)}원',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+                          '${FormatUtils.formatCurrency(refundCalc.total)}원',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF111827),
+                          ),
                         ),
-                        const SizedBox(width: 4),
-                        const Text('(왕복배송비)', style: TextStyle(fontSize: 12, color: Color(0xFFDC2626))),
-                      ],
-                      const SizedBox(width: 8),
-                      const Text('=', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
-                      const SizedBox(width: 8),
-                      const Text('환불 받을 금액', style: TextStyle(fontSize: 14, color: Color(0xFF374151))),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${FormatUtils.formatCurrency(refundCalc.finalAmount)}원',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
-                      ),
-                      const SizedBox(width: 16),
-                      Builder(builder: (context) {
-                        final isEnabled = !_isProcessing && refundCalc.finalAmount > 0;
-                        return ElevatedButton(
-                          onPressed: isEnabled ? () => _handleOrderRefund(order) : null,
+                        if (refundCalc.shippingFee > 0) ...[
+                          const SizedBox(width: 8),
+                          const Text(
+                            '-',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${FormatUtils.formatCurrency(refundCalc.shippingFee)}원',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFDC2626),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            '(왕복배송비)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFDC2626),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 8),
+                        const Text(
+                          '=',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${FormatUtils.formatCurrency(refundCalc.finalAmount)}원',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFDC2626),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          onPressed: canCancel && !_isProcessing
+                              ? () => _handleOrderRefund(order)
+                              : null,
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                            backgroundColor: isEnabled ? const Color(0xFF2563EB) : const Color(0xFFE5E7EB),
-                            foregroundColor: isEnabled ? Colors.white : const Color(0xFF9CA3AF),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 6,
+                            ),
+                            backgroundColor: canCancel
+                                ? const Color(0xFF2563EB)
+                                : const Color(0xFFE5E7EB),
+                            foregroundColor: canCancel
+                                ? Colors.white
+                                : const Color(0xFF9CA3AF),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                             elevation: 0,
                           ),
                           child: Text(
-                            order.deliveryStatus?.toUpperCase() == 'DELIVERED' ? '환불 요청' : '환불하기',
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            widget.contract.status ==
+                                    ContractStatus.inProgress
+                                ? '취소 요청'
+                                : '주문 취소',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        );
-                      }),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -3867,7 +3813,10 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
     );
   }
 
-  Widget _buildTableHeaderCell(String text, {TextAlign align = TextAlign.left}) {
+  Widget _buildTableHeaderCell(
+    String text, {
+    TextAlign align = TextAlign.left,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Text(
@@ -3888,7 +3837,15 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
     return Column(
       children: orders.map((order) {
         final deliveryStatus = order.deliveryStatus;
-        final refundCalc = _getOrderSelectedRefundAmount(order);
+        final refundCalc = _getOrderRefundCalc(order);
+        final canCancel = _canCancelOrder(order);
+        final disabledReason = _getCancelDisabledReason(order);
+        final hasActiveItems =
+            order.items.any((item) => item.status == 'ACTIVE');
+        final isAlreadyCancelledOrRequested =
+            _cancelledOrderIds.contains(order.id) ||
+                _cancelRequestedOrderIds.contains(order.id) ||
+                order.status == 'CANCEL_REQUESTED';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -3909,12 +3866,17 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
             children: [
               // 주문일자 + 주문번호 + 배송상태 뱃지
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: const BoxDecoration(
                   color: Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(8)),
                   border: Border(
-                    bottom: BorderSide(color: Color(0xFFD1D5DB), width: 2),
+                    bottom:
+                        BorderSide(color: Color(0xFFD1D5DB), width: 2),
                   ),
                 ),
                 child: Column(
@@ -3933,202 +3895,232 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                       children: [
                         Text(
                           order.orderId,
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: _getDeliveryStatusBadgeColor(deliveryStatus),
+                            color: _getDeliveryStatusBadgeColor(
+                                deliveryStatus),
                             borderRadius: BorderRadius.circular(9999),
-                            border: Border.all(color: _getDeliveryStatusBorderColor(deliveryStatus)),
+                            border: Border.all(
+                              color: _getDeliveryStatusBorderColor(
+                                deliveryStatus,
+                              ),
+                            ),
                           ),
                           child: Text(
                             _getDeliveryStatusText(deliveryStatus),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: _getDeliveryStatusTextColor(deliveryStatus),
+                              color: _getDeliveryStatusTextColor(
+                                deliveryStatus,
+                              ),
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        _buildOrderStatusBadge(order),
                       ],
                     ),
                   ],
                 ),
               ),
 
-              // 상품 목록 (체크박스 포함)
+              // 상품 목록
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // 아이템별 체크박스 카드
-                    ...order.items.asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final item = entry.value;
-                      final itemKey = '${order.id}-$idx';
-                      final isItemRefunded = _refundedItems.contains(itemKey) || item.status == 'REFUNDED';
-                      final isItemRefundRequested = _refundRequestedItems.contains(itemKey) || item.status == 'CANCELLED';
-                      final isCheckboxDisabled = isItemRefunded || isItemRefundRequested;
-                      final isChecked = _selectedItems.contains(itemKey);
+                    // 아이템별 카드
+                    ...order.items.map((item) {
                       final itemAmount = item.price * item.quantity;
+                      final isItemInactive = item.status == 'REFUNDED' ||
+                          item.status == 'CANCELLED';
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                          border: Border.all(
+                              color: const Color(0xFFE5E7EB)),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: InkWell(
-                          onTap: isCheckboxDisabled ? null : () => _toggleItemSelection(itemKey),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 체크박스
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: Checkbox(
-                                  value: isChecked,
-                                  onChanged: isCheckboxDisabled
-                                      ? null
-                                      : (_) => _toggleItemSelection(itemKey),
-                                  activeColor: const Color(0xFF2563EB),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 상품명 + 상태 뱃지
+                            Wrap(
+                              spacing: 8,
+                              crossAxisAlignment:
+                                  WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  item.name,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: isItemInactive
+                                        ? const Color(0xFF9CA3AF)
+                                        : const Color(0xFF111827),
                                   ),
-                                  side: const BorderSide(color: Color(0xFFD1D5DB)),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              // 상품 정보
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // 상품명 + 환불 상태 뱃지
-                                    Wrap(
-                                      spacing: 8,
-                                      crossAxisAlignment: WrapCrossAlignment.center,
-                                      children: [
-                                        Text(
-                                          item.name,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF111827),
-                                          ),
-                                        ),
-                                        if (isItemRefunded)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFF3F4F6),
-                                              borderRadius: BorderRadius.circular(9999),
-                                              border: Border.all(color: const Color(0xFFD1D5DB)),
-                                            ),
-                                            child: const Text(
-                                              '완료',
-                                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151)),
-                                            ),
-                                          ),
-                                        if (isItemRefundRequested)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFFEF3C7),
-                                              borderRadius: BorderRadius.circular(9999),
-                                              border: Border.all(color: const Color(0xFFFCD34D)),
-                                            ),
-                                            child: const Text(
-                                              '요청 중',
-                                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFA16207)),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    if (item.description != null && item.description!.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        item.description!,
-                                        style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                                      ),
-                                    ],
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      '${FormatUtils.formatCurrency(itemAmount)}원 · ${item.quantity}개',
-                                      style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563)),
-                                    ),
-                                  ],
+                                _buildItemStatusBadge(item),
+                              ],
+                            ),
+                            if (item.description != null &&
+                                item.description!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                item.description!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF6B7280),
                                 ),
                               ),
                             ],
-                          ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${FormatUtils.formatCurrency(itemAmount)}원 · ${item.quantity}개',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isItemInactive
+                                    ? const Color(0xFF9CA3AF)
+                                    : const Color(0xFF4B5563),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }),
 
-                    // 환불 금액 요약 (체크한 상품이 있을 때만)
-                    if (refundCalc.total > 0) ...[
+                    // 환불 금액 요약 + 버튼
+                    if (hasActiveItems && !isAlreadyCancelledOrRequested) ...[
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEFF6FF),
-                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                          border: Border.all(
+                              color: const Color(0xFFBFDBFE)),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
                           children: [
-                            // 금액 계산
-                            Wrap(
-                              alignment: WrapAlignment.center,
-                              spacing: 8,
-                              runSpacing: 4,
-                              children: [
-                                Text(
-                                  '${FormatUtils.formatCurrency(refundCalc.total)}원',
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                            if (disabledReason != null) ...[
+                              Text(
+                                disabledReason,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFFDC2626),
                                 ),
-                                if (refundCalc.shippingFee > 0) ...[
-                                  const Text('-', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
+                                textAlign: TextAlign.center,
+                              ),
+                            ] else ...[
+                              // 금액 계산
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 8,
+                                runSpacing: 4,
+                                children: [
                                   Text(
-                                    '${FormatUtils.formatCurrency(refundCalc.shippingFee)}원',
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+                                    '${FormatUtils.formatCurrency(refundCalc.total)}원',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF111827),
+                                    ),
                                   ),
-                                  const Text('(왕복배송비)', style: TextStyle(fontSize: 12, color: Color(0xFFDC2626))),
+                                  if (refundCalc.shippingFee > 0) ...[
+                                    const Text(
+                                      '-',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF6B7280),
+                                      ),
+                                    ),
+                                    Text(
+                                      '${FormatUtils.formatCurrency(refundCalc.shippingFee)}원',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                    const Text(
+                                      '(왕복배송비)',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                  ],
+                                  const Text(
+                                    '=',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF6B7280),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${FormatUtils.formatCurrency(refundCalc.finalAmount)}원',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFDC2626),
+                                    ),
+                                  ),
                                 ],
-                                const Text('=', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
-                                const Text('환불 받을 금액', style: TextStyle(fontSize: 14, color: Color(0xFF374151))),
-                                Text(
-                                  '${FormatUtils.formatCurrency(refundCalc.finalAmount)}원',
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // 환불 버튼
-                            Builder(builder: (context) {
-                              final isEnabled = !_isProcessing && refundCalc.finalAmount > 0;
-                              return ElevatedButton(
-                                onPressed: isEnabled ? () => _handleOrderRefund(order) : null,
+                              ),
+                              const SizedBox(height: 12),
+                              // 취소 버튼
+                              ElevatedButton(
+                                onPressed:
+                                    canCancel && !_isProcessing
+                                        ? () =>
+                                            _handleOrderRefund(order)
+                                        : null,
                                 style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                                  backgroundColor: isEnabled ? const Color(0xFF2563EB) : const Color(0xFFE5E7EB),
-                                  foregroundColor: isEnabled ? Colors.white : const Color(0xFF9CA3AF),
+                                  padding:
+                                      const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 8,
+                                  ),
+                                  backgroundColor: canCancel
+                                      ? const Color(0xFF2563EB)
+                                      : const Color(0xFFE5E7EB),
+                                  foregroundColor: canCancel
+                                      ? Colors.white
+                                      : const Color(0xFF9CA3AF),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius:
+                                        BorderRadius.circular(8),
                                   ),
                                   elevation: 0,
                                 ),
                                 child: Text(
-                                  order.deliveryStatus?.toUpperCase() == 'DELIVERED' ? '환불 요청' : '환불하기',
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                  widget.contract.status ==
+                                          ContractStatus.inProgress
+                                      ? '취소 요청'
+                                      : '주문 취소',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              );
-                            }),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -4146,50 +4138,36 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
   // ── 환불 처리 로직 ──
 
   Future<void> _handleOrderRefund(RentalOrder order) async {
-    // 체크한 아이템들만 추출
-    final checkedEntries = order.items.asMap().entries
-        .where((e) => _selectedItems.contains('${order.id}-${e.key}'))
-        .toList();
-
-    if (checkedEntries.isEmpty) {
-      await showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('알림'),
-          content: const Text('환불할 상품을 선택해주세요.'),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
-              child: const Text('확인', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    final refundCalc = _getOrderSelectedRefundAmount(order);
-    final deliveryStatus = order.deliveryStatus?.toUpperCase() ?? '';
-    final isDelivered = deliveryStatus == 'DELIVERED';
+    final refundCalc = _getOrderRefundCalc(order);
+    final isInProgress =
+        widget.contract.status == ContractStatus.inProgress;
 
     // 확인 메시지 구성
-    final itemNames = checkedEntries.map((e) => e.value.name).join(', ');
     String confirmMsg;
-    if (isDelivered) {
-      confirmMsg = refundCalc.shippingFee > 0
-          ? '선택한 상품($itemNames)을 환불 요청하시겠습니까?\n왕복 배송비 ${FormatUtils.formatCurrency(refundCalc.shippingFee)}원을 차감한 ${FormatUtils.formatCurrency(refundCalc.finalAmount)}원이 환불됩니다.\n관리자 승인 후 처리됩니다.'
-          : '선택한 상품($itemNames)을 환불 요청하시겠습니까?\n${FormatUtils.formatCurrency(refundCalc.finalAmount)}원이 환불됩니다.\n관리자 승인 후 처리됩니다.';
+    String confirmTitle;
+
+    if (isInProgress) {
+      confirmTitle = '취소 요청';
+      confirmMsg = '이 주문의 취소를 요청하시겠습니까?\n관리자 확인 후 처리됩니다.';
+      if (refundCalc.shippingFee > 0) {
+        confirmMsg +=
+            '\n\n왕복 배송비 ${FormatUtils.formatCurrency(refundCalc.shippingFee)}원이 차감될 수 있습니다.';
+      }
     } else {
-      confirmMsg = refundCalc.shippingFee > 0
-          ? '선택한 상품을 환불하시겠습니까?\n왕복 배송비 ${FormatUtils.formatCurrency(refundCalc.shippingFee)}원을 차감한 ${FormatUtils.formatCurrency(refundCalc.finalAmount)}원이 환불됩니다.'
-          : '선택한 상품을 환불하시겠습니까?\n${FormatUtils.formatCurrency(refundCalc.finalAmount)}원이 환불됩니다.';
+      confirmTitle = '주문 취소';
+      if (refundCalc.shippingFee > 0) {
+        confirmMsg =
+            '이 주문을 취소하시겠습니까?\n왕복 배송비 ${FormatUtils.formatCurrency(refundCalc.shippingFee)}원을 차감한 ${FormatUtils.formatCurrency(refundCalc.finalAmount)}원이 환불됩니다.';
+      } else {
+        confirmMsg =
+            '이 주문을 취소하시겠습니까?\n${FormatUtils.formatCurrency(refundCalc.finalAmount)}원이 환불됩니다.';
+      }
     }
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isDelivered ? '환불 요청' : '환불 확인'),
+        title: Text(confirmTitle),
         content: Text(confirmMsg),
         actions: [
           TextButton(
@@ -4198,9 +4176,11 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+            ),
             child: Text(
-              isDelivered ? '환불 요청' : '환불하기',
+              isInProgress ? '취소 요청' : '주문 취소',
               style: const TextStyle(color: Colors.white),
             ),
           ),
@@ -4210,47 +4190,20 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
 
     if (confirmed != true) return;
 
-    if (isDelivered) {
-      // 배송 완료 → 환불 요청 (관리자 승인 필요)
-      setState(() {
-        for (final entry in checkedEntries) {
-          final itemKey = '${order.id}-${entry.key}';
-          _refundRequestedItems.add(itemKey);
-          _selectedItems.remove(itemKey);
-        }
-      });
+    setState(() => _isProcessing = true);
 
-      if (!mounted) return;
-      await showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('환불 요청 완료'),
-          content: const Text('환불 요청이 제출되었습니다.\n관리자 승인 후 처리됩니다.'),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
-              child: const Text('확인', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      );
-    } else {
-      // 배송 전/배송중 → 즉시 환불 처리
-      setState(() => _isProcessing = true);
+    try {
+      final result =
+          await widget.onRefund(order.id, '고객 요청 환불');
 
-      try {
-        for (final entry in checkedEntries) {
-          final item = entry.value;
-          await widget.onRefund(order.id, item.id, '고객 요청 환불');
-        }
+      // 응답 분기
+      final refundStatus = result['refundStatus']?.toString() ?? '';
+      final orderStatus = result['status']?.toString() ?? '';
 
+      if (refundStatus == 'COMPLETED') {
+        // 즉시 환불 완료
         setState(() {
-          for (final entry in checkedEntries) {
-            final itemKey = '${order.id}-${entry.key}';
-            _refundedItems.add(itemKey);
-            _selectedItems.remove(itemKey);
-          }
+          _cancelledOrderIds.add(order.id);
           _isProcessing = false;
         });
 
@@ -4259,34 +4212,73 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('환불 완료'),
-            content: const Text('환불이 완료되었습니다.\n영업일 기준 3-5일 내 입금됩니다.'),
+            content: const Text(
+                '환불이 완료되었습니다.\n영업일 기준 3-5일 내 입금됩니다.'),
             actions: [
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
-                child: const Text('확인', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                ),
+                child: const Text('확인',
+                    style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
         );
-      } catch (e) {
-        setState(() => _isProcessing = false);
+      } else if (orderStatus == 'CANCEL_REQUESTED') {
+        // 취소 요청 접수
+        setState(() {
+          _cancelRequestedOrderIds.add(order.id);
+          _isProcessing = false;
+        });
+
         if (!mounted) return;
         await showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('환불 오류'),
-            content: Text('환불 처리 중 오류가 발생했습니다.\n$e'),
+            title: const Text('취소 요청 접수'),
+            content: const Text(
+                '취소 요청이 접수되었습니다.\n관리자 확인 후 처리됩니다.'),
             actions: [
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
-                child: const Text('확인', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                ),
+                child: const Text('확인',
+                    style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
         );
+      } else {
+        // 기타 성공 응답 (안전장치)
+        setState(() {
+          _cancelledOrderIds.add(order.id);
+          _isProcessing = false;
+        });
       }
+    } catch (e) {
+      setState(() => _isProcessing = false);
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('오류'),
+          content: Text('처리 중 오류가 발생했습니다.\n$e'),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+              ),
+              child:
+                  const Text('확인', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
     }
   }
 }

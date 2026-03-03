@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'contract.dart';
 import 'payment_history.dart';
 
 /// 계약 상세 정보 모델 (상세 페이지용)
@@ -66,11 +67,27 @@ class ContractDetail {
   // 퇴실 확인 정보
   final String? guestCheckoutConfirmedAt;
   final String? hostCheckoutConfirmedAt;
-  final String? depositStatus;
+  final DepositStatus? depositStatus;
+
+  // 퇴실 상세 정보 (API v2)
+  final String? checkoutStatus; // 퇴실 세부 상태 (NOT_STARTED, GUEST_COMPLETED, HOST_CONFIRMED, HOST_PENDING, AGREEMENT_SUBMITTED)
+  final String? checkoutStatusLabel; // 퇴실 상태 라벨 (서버 제공)
+  final int? depositDeduction; // 보증금 차감 금액
+  final String? deductionReason; // 차감 사유
+  final int? refundableDeposit; // 환급 가능 보증금
+  final String? checkoutRequestedAt; // 퇴실 요청 시각
+  final DepositAgreement? depositAgreement; // 보증금 합의 정보
 
   // 채팅 읽기 전용 정보
   final bool isReadOnly;
   final String? readOnlyReason;
+
+  // 방 입실/퇴실 시간
+  final String? roomCheckInTime;
+  final String? roomCheckoutTime;
+
+  // 취소 요청 여부 (IN_PROGRESS 상태에서 1회 제한)
+  final bool cancellationRequested;
 
   // 기타
   final bool isEzCleaning;
@@ -115,8 +132,18 @@ class ContractDetail {
     this.guestCheckoutConfirmedAt,
     this.hostCheckoutConfirmedAt,
     this.depositStatus,
+    this.checkoutStatus,
+    this.checkoutStatusLabel,
+    this.depositDeduction,
+    this.deductionReason,
+    this.refundableDeposit,
+    this.checkoutRequestedAt,
+    this.depositAgreement,
     this.isReadOnly = false,
     this.readOnlyReason,
+    this.roomCheckInTime,
+    this.roomCheckoutTime,
+    this.cancellationRequested = false,
     required this.isEzCleaning,
   });
 
@@ -246,12 +273,70 @@ class ContractDetail {
       hostCheckoutConfirmedAt: json['hostCheckoutConfirmedAt'] != null
           ? parseDateField(json['hostCheckoutConfirmedAt'])
           : null,
-      depositStatus: json['depositStatus'] as String?,
+      depositStatus: DepositStatus.fromString(json['depositStatus'] as String?),
+      // 퇴실 상세 정보 (API v2)
+      checkoutStatus: json['checkoutStatus'] as String?,
+      checkoutStatusLabel: json['checkoutStatusLabel'] as String?,
+      depositDeduction: json['depositDeduction'] as int?,
+      deductionReason: json['deductionReason'] as String?,
+      refundableDeposit: json['refundableDeposit'] as int?,
+      checkoutRequestedAt: json['checkoutRequestedAt'] != null
+          ? parseDateField(json['checkoutRequestedAt'])
+          : null,
+      depositAgreement: json['depositAgreement'] != null
+          ? DepositAgreement.fromJson(json['depositAgreement'] as Map<String, dynamic>)
+          : null,
       // 채팅 읽기 전용
       isReadOnly: json['isReadOnly'] as bool? ?? false,
       readOnlyReason: json['readOnlyReason'] as String?,
+      // 방 입실/퇴실 시간
+      roomCheckInTime: room?['checkInTime'] as String? ?? json['roomCheckInTime'] as String?,
+      roomCheckoutTime: room?['checkoutTime'] as String? ?? json['roomCheckoutTime'] as String?,
+      // 취소 요청 여부
+      cancellationRequested: json['cancellationRequested'] as bool? ?? false,
       // 기타
       isEzCleaning: json['isEzCleaning'] as bool? ?? false,
+    );
+  }
+
+  /// ContractDetail → Contract 변환 (RefundCalculationModal 등에서 사용)
+  Contract toContract() {
+    return Contract(
+      id: id,
+      roomId: roomId,
+      hostId: 0, // ContractDetail에는 hostId가 없음
+      guestId: 0, // ContractDetail에는 guestId가 없음
+      checkInDate: DateTime.tryParse(checkInDate) ?? DateTime.now(),
+      checkOutDate: DateTime.tryParse(checkOutDate) ?? DateTime.now(),
+      totalDays: totalDays,
+      rentalFee: rentalFee,
+      maintenanceFee: maintenanceFee,
+      cleaningFee: cleaningFee,
+      rentalItemsFee: rentalItemsFee,
+      platformFee: platformFee,
+      discountAmount: 0,
+      subtotal: finalTotalAmount,
+      totalUsageFee: finalTotalAmount,
+      deposit: deposit,
+      finalTotalAmount: finalTotalAmount,
+      rentalItems: rentalItems
+          .map((item) => RentalItem(
+                id: item.id.toString(),
+                name: item.name,
+                description: item.description,
+                price: item.price,
+                quantity: item.quantity,
+                deliveryStatus: DeliveryStatus.fromString(
+                    item.deliveryStatus ?? 'PENDING'),
+              ))
+          .toList(),
+      installmentMonths: 0,
+      termsAgreed: const {},
+      status: ContractStatus.fromString(status),
+      refundPolicy: refundPolicy,
+      isEzCleaning: isEzCleaning,
+      paidAt: paidAt != null ? DateTime.tryParse(paidAt!) : null,
+      createdAt: DateTime.tryParse(createdAt) ?? DateTime.now(),
     );
   }
 
@@ -294,9 +379,19 @@ class ContractDetail {
       'createdAt': createdAt,
       if (guestCheckoutConfirmedAt != null) 'guestCheckoutConfirmedAt': guestCheckoutConfirmedAt,
       if (hostCheckoutConfirmedAt != null) 'hostCheckoutConfirmedAt': hostCheckoutConfirmedAt,
-      if (depositStatus != null) 'depositStatus': depositStatus,
+      if (depositStatus != null) 'depositStatus': depositStatus!.value,
+      if (checkoutStatus != null) 'checkoutStatus': checkoutStatus,
+      if (checkoutStatusLabel != null) 'checkoutStatusLabel': checkoutStatusLabel,
+      if (depositDeduction != null) 'depositDeduction': depositDeduction,
+      if (deductionReason != null) 'deductionReason': deductionReason,
+      if (refundableDeposit != null) 'refundableDeposit': refundableDeposit,
+      if (checkoutRequestedAt != null) 'checkoutRequestedAt': checkoutRequestedAt,
+      if (depositAgreement != null) 'depositAgreement': depositAgreement!.toJson(),
       'isReadOnly': isReadOnly,
       if (readOnlyReason != null) 'readOnlyReason': readOnlyReason,
+      if (roomCheckInTime != null) 'roomCheckInTime': roomCheckInTime,
+      if (roomCheckoutTime != null) 'roomCheckoutTime': roomCheckoutTime,
+      'cancellationRequested': cancellationRequested,
       'isEzCleaning': isEzCleaning,
     };
   }
@@ -316,6 +411,74 @@ class ContractDetail {
       }
     }
     return null;
+  }
+}
+
+/// 보증금 합의 정보
+class DepositAgreement {
+  final int deductAmount; // 차감 금액
+  final String agreementText; // 합의 내용
+  final String? holdReason; // 보류 사유
+  final String? status; // 합의 상태 (SUBMITTED, ACCEPTED 등)
+  final String? statusLabel; // 상태 라벨 (서버 제공)
+  final String? submittedAt; // 제출 시각
+  final String? acceptedAt; // 게스트 동의 시각
+  final int? refundableAmount; // 환급 가능 금액
+  final int? deposit; // 보증금 총액
+  final String? holdApprovedAt; // 관리자 보류 승인 시각 (정책 7.9.1: 합의 데드라인 기준)
+
+  const DepositAgreement({
+    required this.deductAmount,
+    required this.agreementText,
+    this.holdReason,
+    this.status,
+    this.statusLabel,
+    this.submittedAt,
+    this.acceptedAt,
+    this.refundableAmount,
+    this.deposit,
+    this.holdApprovedAt,
+  });
+
+  /// 합의 데드라인 계산 (정책 7.9.1)
+  ///
+  /// 기준: 관리자 승인 시점 + (24h × 10) = 승인 시점 + 10일
+  /// holdApprovedAt이 없으면 null 반환 (프론트에서 데드라인 표시 불가)
+  DateTime? get agreementDeadline {
+    if (holdApprovedAt == null) return null;
+    final approvedAt = DateTime.tryParse(holdApprovedAt!);
+    if (approvedAt == null) return null;
+    return approvedAt.add(const Duration(days: 10));
+  }
+
+  factory DepositAgreement.fromJson(Map<String, dynamic> json) {
+    return DepositAgreement(
+      deductAmount: json['deductAmount'] as int? ?? 0,
+      agreementText: json['agreementText'] as String? ?? '',
+      holdReason: json['holdReason'] as String?,
+      status: json['status'] as String?,
+      statusLabel: json['statusLabel'] as String?,
+      submittedAt: json['submittedAt'] as String?,
+      acceptedAt: json['acceptedAt'] as String?,
+      refundableAmount: json['refundableAmount'] as int?,
+      deposit: json['deposit'] as int?,
+      holdApprovedAt: json['holdApprovedAt'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'deductAmount': deductAmount,
+      'agreementText': agreementText,
+      if (holdReason != null) 'holdReason': holdReason,
+      if (status != null) 'status': status,
+      if (statusLabel != null) 'statusLabel': statusLabel,
+      if (submittedAt != null) 'submittedAt': submittedAt,
+      if (acceptedAt != null) 'acceptedAt': acceptedAt,
+      if (refundableAmount != null) 'refundableAmount': refundableAmount,
+      if (deposit != null) 'deposit': deposit,
+      if (holdApprovedAt != null) 'holdApprovedAt': holdApprovedAt,
+    };
   }
 }
 

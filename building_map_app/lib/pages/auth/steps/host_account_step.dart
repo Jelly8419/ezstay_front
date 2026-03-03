@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../config/api_config.dart';
+import '../../../constants/bank_constants.dart';
 import '../../../services/token_service.dart';
 
 /// 호스트 정산계좌 입력 + 약관동의 단계
@@ -60,32 +61,8 @@ class _HostAccountStepState extends State<HostAccountStep> {
   bool _isVerifying = false;
   bool _isRegistering = false;
 
-  // 은행 목록
-  static const List<String> _banks = [
-    '국민은행',
-    '신한은행',
-    '우리은행',
-    '하나은행',
-    'KB국민은행',
-    '기업은행',
-    '농협은행',
-    '카카오뱅크',
-    '토스뱅크',
-    '새마을금고',
-    '신협',
-    '우체국예금보험',
-    '경남은행',
-    '광주은행',
-    '대구은행',
-    '부산은행',
-    '수협은행',
-    '전북은행',
-    '제주은행',
-    '산업은행',
-    '수출입은행',
-    'SC제일은행',
-    '씨티은행',
-  ];
+  // 은행 목록 (BankConstants에서 가져옴)
+  static List<String> get _banks => BankConstants.banks;
 
   // 색상 정의
   static const primaryBlack = Color(0xFF000000);
@@ -191,32 +168,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
 
   /// 은행명을 은행코드로 변환
   String _getBankCode(String bankName) {
-    const bankCodes = {
-      '국민은행': '004',
-      '신한은행': '088',
-      '우리은행': '020',
-      '하나은행': '081',
-      'KB국민은행': '004',
-      '기업은행': '003',
-      '농협은행': '011',
-      '카카오뱅크': '090',
-      '토스뱅크': '092',
-      '새마을금고': '045',
-      '신협': '048',
-      '우체국예금보험': '071',
-      '경남은행': '039',
-      '광주은행': '034',
-      '대구은행': '031',
-      '부산은행': '032',
-      '수협은행': '007',
-      '전북은행': '037',
-      '제주은행': '035',
-      '산업은행': '002',
-      '수출입은행': '008',
-      'SC제일은행': '023',
-      '씨티은행': '027',
-    };
-    return bankCodes[bankName] ?? '004';
+    return BankConstants.getBankCode(bankName);
   }
 
   /// 회원가입 완료 (호스트) 또는 게스트→호스트 전환

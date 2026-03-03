@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -656,6 +657,477 @@ class GuestPreparationModal extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 4. 보증금 합의 내용 제출 모달
+class DepositAgreementModal extends StatefulWidget {
+  final VoidCallback onClose;
+  final Function(int deductAmount, String agreementText) onConfirm;
+  final int depositAmount; // 보증금 총액
+  final DateTime checkOutDate; // 퇴실일
+  final String? roomCheckoutTime; // 퇴실 시간 (HH:mm)
+  final DateTime? agreementDeadline; // 합의 데드라인 (정책 7.9.1: 관리자 승인 시점 + 10일)
+
+  const DepositAgreementModal({
+    super.key,
+    required this.onClose,
+    required this.onConfirm,
+    required this.depositAmount,
+    required this.checkOutDate,
+    this.roomCheckoutTime,
+    this.agreementDeadline,
+  });
+
+  @override
+  State<DepositAgreementModal> createState() => _DepositAgreementModalState();
+}
+
+class _DepositAgreementModalState extends State<DepositAgreementModal> {
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _agreementTextController =
+      TextEditingController();
+  bool _isSubmitting = false;
+  String? _amountError;
+
+  /// 데드라인 (정책 7.9.1): 관리자 승인 시점 + 10일
+  /// agreementDeadline이 없으면 퇴실시간 + 10일로 폴백 (서버 미지원 시)
+  DateTime get _deadline {
+    if (widget.agreementDeadline != null) {
+      return widget.agreementDeadline!;
+    }
+    // 폴백: 퇴실시간 + 10일
+    final checkoutTime = widget.roomCheckoutTime ?? '11:00';
+    final parts = checkoutTime.split(':');
+    final hour = int.tryParse(parts[0]) ?? 11;
+    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+    return DateTime(
+      widget.checkOutDate.year,
+      widget.checkOutDate.month,
+      widget.checkOutDate.day,
+      hour,
+      minute,
+    ).add(const Duration(days: 10));
+  }
+
+  bool get _isDeadlinePassed => DateTime.now().isAfter(_deadline);
+
+  String get _remainingTimeText {
+    final remaining = _deadline.difference(DateTime.now());
+    if (remaining.isNegative) return '기한 초과';
+    if (remaining.inDays > 0) return '${remaining.inDays}일 ${remaining.inHours % 24}시간 남음';
+    if (remaining.inHours > 0) return '${remaining.inHours}시간 ${remaining.inMinutes % 60}분 남음';
+    return '${remaining.inMinutes}분 남음';
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _agreementTextController.dispose();
+    super.dispose();
+  }
+
+  void _setFullDeduction() {
+    _amountController.text = widget.depositAmount.toString();
+    _validateAmount(widget.depositAmount.toString());
+  }
+
+  void _setNoDeduction() {
+    _amountController.text = '0';
+    _validateAmount('0');
+  }
+
+  void _validateAmount(String value) {
+    setState(() {
+      if (value.isEmpty) {
+        _amountError = null;
+        return;
+      }
+      final amount = int.tryParse(value);
+      if (amount == null) {
+        _amountError = '숫자를 입력해주세요.';
+      } else if (amount < 0) {
+        _amountError = '0 이상의 금액을 입력해주세요.';
+      } else if (amount > widget.depositAmount) {
+        _amountError = '보증금(${_formatCurrency(widget.depositAmount)}원)을 초과할 수 없습니다.';
+      } else {
+        _amountError = null;
+      }
+    });
+  }
+
+  String _formatCurrency(int amount) {
+    final str = amount.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && (str.length - i) % 3 == 0) buffer.write(',');
+      buffer.write(str[i]);
+    }
+    return buffer.toString();
+  }
+
+  void _handleConfirm() {
+    final amountText = _amountController.text.trim();
+    final agreementText = _agreementTextController.text.trim();
+
+    if (amountText.isEmpty) {
+      setState(() => _amountError = '차감 금액을 입력해주세요.');
+      return;
+    }
+
+    final amount = int.tryParse(amountText);
+    if (amount == null || amount < 0 || amount > widget.depositAmount) {
+      setState(() => _amountError = '올바른 금액을 입력해주세요.');
+      return;
+    }
+
+    if (agreementText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('합의 내용을 입력해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (agreementText.length < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('합의 내용은 최소 10자 이상 입력해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_isDeadlinePassed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('제출 기한이 초과되었습니다. 보증금이 게스트에게 자동 반환됩니다.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    widget.onConfirm(amount, agreementText);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 520),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          boxShadow: AppShadows.modal,
+        ),
+        child: SingleChildScrollView(
+          padding: AppSpacing.paddingXl,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 헤더
+              Row(
+                children: [
+                  Icon(Icons.handshake_outlined,
+                      color: const Color(0xFFF97316), size: 24),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      '보증금 합의 내용 제출',
+                      style: AppTextStyles.headingMedium,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: widget.onClose,
+                    icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              SizedBox(height: AppSpacing.md),
+
+              // 데드라인 안내
+              Container(
+                padding: AppSpacing.paddingMd,
+                decoration: BoxDecoration(
+                  color: _isDeadlinePassed
+                      ? Colors.red.shade50
+                      : const Color(0xFFFFF7ED),
+                  border: Border.all(
+                    color: _isDeadlinePassed
+                        ? Colors.red.shade300
+                        : const Color(0xFFFED7AA),
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          _isDeadlinePassed
+                              ? Icons.error_outline
+                              : Icons.timer_outlined,
+                          size: 18,
+                          color: _isDeadlinePassed
+                              ? Colors.red.shade700
+                              : const Color(0xFFF97316),
+                        ),
+                        SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            _isDeadlinePassed
+                                ? '제출 기한이 초과되었습니다'
+                                : '제출 기한: $_remainingTimeText',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: _isDeadlinePassed
+                                  ? Colors.red.shade700
+                                  : const Color(0xFFC2410C),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppSpacing.xs),
+                    Text(
+                      _isDeadlinePassed
+                          ? '합의 기한이 경과하여 보증금이 게스트에게 전액 자동 반환됩니다.'
+                          : '• 관리자 승인일로부터 10일 이내에 합의 내용을 제출해야 합니다.\n'
+                              '• 기한 내 미제출 시 보증금이 게스트에게 전액 자동 반환됩니다.\n'
+                              '• 게스트가 합의에 동의하면 차감 금액이 정산됩니다.',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: _isDeadlinePassed
+                            ? Colors.red.shade600
+                            : const Color(0xFF9A3412),
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: AppSpacing.md),
+
+              // 보증금 정보
+              Container(
+                padding: AppSpacing.paddingMd,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '보증금 총액',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      '${_formatCurrency(widget.depositAmount)}원',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: AppSpacing.md),
+
+              // 차감 금액 입력
+              Text(
+                '차감 금액',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _amountController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: _validateAmount,
+                      decoration: InputDecoration(
+                        hintText: '차감할 금액을 입력하세요',
+                        hintStyle:
+                            TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                        suffixText: '원',
+                        errorText: _amountError,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide:
+                              BorderSide(color: AppColors.primary500, width: 2),
+                        ),
+                        contentPadding: AppSpacing.paddingMd,
+                      ),
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: AppSpacing.sm),
+
+              // 퀵 버튼
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isDeadlinePassed ? null : _setFullDeduction,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        side: BorderSide(color: const Color(0xFFFED7AA)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                      ),
+                      child: Text(
+                        '전액 차감',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: const Color(0xFFF97316),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isDeadlinePassed ? null : _setNoDeduction,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        side: BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                      ),
+                      child: Text(
+                        '차감 없음',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: AppSpacing.md),
+
+              // 합의 내용 입력
+              Text(
+                '합의 내용',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: AppSpacing.xs),
+              TextField(
+                controller: _agreementTextController,
+                maxLines: 5,
+                maxLength: 1000,
+                decoration: InputDecoration(
+                  hintText:
+                      '게스트와 합의한 내용을 상세히 작성해주세요.\n'
+                      '예: 벽지 파손으로 인한 복구 비용 50,000원 차감에 합의하였습니다.',
+                  hintStyle:
+                      TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide:
+                        BorderSide(color: AppColors.primary500, width: 2),
+                  ),
+                  contentPadding: AppSpacing.paddingMd,
+                ),
+                style: AppTextStyles.bodyMedium,
+              ),
+              SizedBox(height: AppSpacing.md),
+
+              // 버튼
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isSubmitting ? null : widget.onClose,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: AppColors.border, width: 2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      child: Text(
+                        '취소',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed:
+                          (_isSubmitting || _isDeadlinePassed) ? null : _handleConfirm,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: const Color(0xFFF97316),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        disabledBackgroundColor: Colors.grey.shade300,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              '합의 내용 제출',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

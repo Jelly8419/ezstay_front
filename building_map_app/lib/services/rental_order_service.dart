@@ -235,22 +235,23 @@ class RentalOrderService {
     throw Exception('주문 취소에 실패했습니다.');
   }
 
-  // ========== 8. 개별 아이템 취소 (환불) ==========
+  // ========== 8. 주문 취소 (환불) ==========
 
-  /// 결제된 렌탈 아이템 취소 (환불)
+  /// 렌탈 주문 전체 취소 (환불)
   ///
-  /// POST /api/rental-orders/:rentalOrderId/items/:itemId/cancel
-  Future<Map<String, dynamic>> cancelItem({
+  /// POST /api/rental-orders/:rentalOrderId/cancel
+  /// - 임대중 이전: 즉시 취소 (refundStatus: "COMPLETED")
+  /// - 임대중: 취소 요청 (status: "CANCEL_REQUESTED")
+  Future<Map<String, dynamic>> cancelOrder({
     required int rentalOrderId,
-    required int itemId,
-    required String reason,
+    String reason = '',
   }) async {
     final token = await _getToken();
     final url = Uri.parse(
-      '${ApiConfig.baseUrl}/api/rental-orders/$rentalOrderId/items/$itemId/cancel',
+      '${ApiConfig.baseUrl}/api/rental-orders/$rentalOrderId/cancel',
     );
 
-    final body = {'reason': reason};
+    final body = reason.isNotEmpty ? {'reason': reason} : <String, dynamic>{};
 
     final response = await http
         .post(
@@ -268,7 +269,7 @@ class RentalOrderService {
       throw Exception('예상하지 못한 응답 형식입니다.');
     }
     _handleErrorResponse(response);
-    throw Exception('아이템 취소에 실패했습니다.');
+    throw Exception('주문 취소에 실패했습니다.');
   }
 
   // ========== 헬퍼 메서드 ==========

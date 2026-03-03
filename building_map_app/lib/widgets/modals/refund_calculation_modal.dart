@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/notice_texts.dart';
 import '../../models/contract.dart';
+import '../../models/contract_detail.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -18,12 +19,17 @@ class RefundCalculationModal extends StatefulWidget {
   final VoidCallback onClose;
   final Function(double? additionalPayment) onConfirm;
 
+  /// 계약 시점의 환불 정책 스냅샷 (서버에서 제공)
+  /// null이면 contract.refundPolicy 문자열 기반 폴백 사용
+  final RefundPolicySnapshot? refundPolicySnapshot;
+
   const RefundCalculationModal({
     super.key,
     required this.contract,
     this.isHost = false,
     required this.onClose,
     required this.onConfirm,
+    this.refundPolicySnapshot,
   });
 
   @override
@@ -65,46 +71,93 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
     return (diff.inHours / 24).ceil();
   }
 
-  /// 환불 정책 가져오기 (임시로 'moderate' 사용, 실제로는 room.refundPolicy 또는 API에서 가져와야 함)
+  /// 환불 정책 가져오기
   String _getRefundPolicy() {
-    // TODO: Room 모델에 refundPolicy 필드 추가 후 widget.contract.room?.refundPolicy 사용
-    return 'moderate'; // 임시 기본값
+    return widget.contract.refundPolicy;
   }
 
-  /// 환불율 계산 (0, 50, 90, 100)
-  int _getRefundRate() {
-    if (_isPaidToday()) {
-      return 90; // 결제 당일 특별 규정
+  /// 호스트 환불 정책 기준 환불율 계산 (임대료에 적용)
+  ///
+  /// RefundPolicySnapshot이 있으면 스냅샷 기반, 없으면 refundPolicy 문자열 폴백
+  int _getPolicyRefundRate() {
+    final snapshot = widget.refundPolicySnapshot;
+    final daysLeft = _getDaysUntilCheckIn();
+
+    // 1순위: 서버 스냅샷 기반 환불율
+    if (snapshot != null && snapshot.rules.isNotEmpty) {
+      for (final rule in snapshot.rules) {
+        if (rule.isSameDayCancellation) continue; // 결제 당일 규칙은 별도 처리
+        final min = rule.daysBeforeMin;
+        final max = rule.daysBeforeMax;
+        // daysBeforeMin ~ daysBeforeMax 범위 매칭
+        if (min != null && max != null) {
+          if (daysLeft >= min && daysLeft <= max) return rule.refundRate;
+        } else if (min != null) {
+          if (daysLeft >= min) return rule.refundRate;
+        } else if (max != null) {
+          if (daysLeft <= max) return rule.refundRate;
+        }
+      }
+      return 0;
     }
 
-    final daysLeft = _getDaysUntilCheckIn();
+    // 2순위: refundPolicy 문자열 기반 폴백
     final policy = _getRefundPolicy();
-
     switch (policy) {
       case 'flexible':
         if (daysLeft >= 7) return 100;
         if (daysLeft >= 3) return 50;
         return 0;
-
       case 'moderate':
         if (daysLeft >= 14) return 100;
         if (daysLeft >= 7) return 50;
         return 0;
-
       case 'strict':
         if (daysLeft >= 30) return 100;
         if (daysLeft >= 14) return 50;
         return 0;
-
       default:
         return 0;
     }
   }
 
+  /// 무료 취소 기간(환불율 100%) 여부
+  bool _isInFreeCancellationPeriod() {
+    return _getPolicyRefundRate() == 100;
+  }
+
+  /// 최종 환불율 계산 (결제 당일 상위 정책 반영)
+  ///
+  /// 정책 우선순위:
+  /// 1. 결제 당일 + 무료 취소 기간 → 100% 전액 환불
+  /// 2. 결제 당일 + 무료 취소 기간 아님 → 90% (임대료 10% 위약금)
+  /// 3. 결제 당일 아님 → 호스트 환불 정책대로
+  int _getRefundRate() {
+    if (_isPaidToday()) {
+      if (_isInFreeCancellationPeriod()) {
+        return 100; // 무료 취소 기간이면 100% 전액 환불 우선
+      }
+      return 90; // 무료 취소 기간 아니면 결제 당일 특별 규정 (10% 위약금)
+    }
+    return _getPolicyRefundRate();
+  }
+
   /// 환불 정책 설명
   String _getPolicyDescription() {
-    final policy = _getRefundPolicy();
+    // 스냅샷이 있으면 스냅샷의 rules에서 설명 생성
+    final snapshot = widget.refundPolicySnapshot;
+    if (snapshot != null && snapshot.rules.isNotEmpty) {
+      final descriptions = snapshot.rules
+          .where((r) => !r.isSameDayCancellation && r.description.isNotEmpty)
+          .map((r) => r.description)
+          .toList();
+      if (descriptions.isNotEmpty) {
+        return descriptions.join(' / ');
+      }
+    }
 
+    // 폴백: refundPolicy 문자열 기반
+    final policy = _getRefundPolicy();
     switch (policy) {
       case 'flexible':
         return '입주 7일 전: 100% / 3일 전: 50% / 3일 미만: 환불 불가';
@@ -137,8 +190,25 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
 
   /// 환불 금액 계산
   Map<String, double> _calculateRefund() {
+    if (widget.isHost) {
+      return _calculateHostFaultRefund();
+    }
+    return _calculateGuestFaultRefund();
+  }
+
+  /// 게스트 귀책 취소 환불 계산
+  ///
+  /// 정책 기준:
+  /// - 보증금: 100% 환불
+  /// - 관리비: 100% 환불
+  /// - 청소비: 100% 환불
+  /// - 임대료: 환불율 적용
+  /// - 게스트 서비스 수수료:
+  ///   - 무료 취소 기간 (refundRate == 100): 전액 환불
+  ///   - 그 외 (결제 당일 포함): 환불 안 됨
+  /// - 위약금 = 임대료에만 부과 (수수료는 위약금 대상 아님)
+  Map<String, double> _calculateGuestFaultRefund() {
     final refundRate = _getRefundRate();
-    final isPaidTodayFlag = _isPaidToday();
 
     double rentalRefund = 0;
     double platformFeeRefund = 0;
@@ -148,56 +218,24 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
 
     // 전체 취소인 경우만 방 요금 환불
     if (_refundType == 'all') {
-      if (isPaidTodayFlag) {
-        rentalRefund = widget.contract.rentalFee * 0.9;
-        platformFeeRefund = widget.contract.platformFee * 0.9;
+      // 임대료 환불 = 임대료 × (환불율 / 100)
+      rentalRefund = (widget.contract.rentalFee * (refundRate / 100)).floorToDouble();
+
+      // 게스트 서비스 수수료: 무료 취소 기간(100%)에만 전액 환불, 그 외 0원
+      if (refundRate == 100) {
+        platformFeeRefund = widget.contract.platformFee.toDouble();
       } else {
-        rentalRefund = widget.contract.rentalFee * (refundRate / 100);
-        platformFeeRefund = 0; // 결제 당일 이후에는 계약수수료 환불 안 됨
+        platformFeeRefund = 0;
       }
+
+      // 관리비, 청소비, 보증금은 항상 전액 환불
       maintenanceRefund = widget.contract.maintenanceFee.toDouble();
       cleaningRefund = widget.contract.cleaningFee.toDouble();
       depositRefund = widget.contract.deposit.toDouble();
     }
 
     // 옵션 상품 환불 계산
-    double optionsRefund = 0;
-    double shippingFee = 0;
-    final items = widget.contract.rentalItems ?? [];
-
-    if (_refundType == 'all') {
-      // 전체 취소 시 모든 옵션 환불 (배송 완료 제외)
-      for (final item in items) {
-        if (item.deliveryStatus != DeliveryStatus.delivered) {
-          optionsRefund += (item.price * item.quantity).toDouble();
-        }
-      }
-
-      // 배송 중인 옵션이 있으면 왕복 배송비 차감
-      if (items.any(
-        (item) => item.deliveryStatus == DeliveryStatus.inTransit,
-      )) {
-        shippingFee = 7000;
-      }
-    } else {
-      // 옵션만 환불
-      for (final item in items) {
-        final refundQty = _selectedOptions[item.id] ?? 0;
-        if (refundQty > 0 && item.deliveryStatus != DeliveryStatus.delivered) {
-          optionsRefund += (item.price * refundQty).toDouble();
-        }
-      }
-
-      // 배송 중인 옵션이 선택되어 있으면 배송비 차감
-      final hasInTransitOptions = items.any(
-        (item) =>
-            item.deliveryStatus == DeliveryStatus.inTransit &&
-            (_selectedOptions[item.id] ?? 0) > 0,
-      );
-      if (hasInTransitOptions) {
-        shippingFee = 7000;
-      }
-    }
+    final optionsResult = _calculateOptionsRefund();
 
     final totalRefund =
         rentalRefund +
@@ -205,13 +243,11 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
         maintenanceRefund +
         cleaningRefund +
         depositRefund +
-        optionsRefund -
-        shippingFee;
+        optionsResult['optionsRefund']! -
+        optionsResult['shippingFee']!;
 
-    final penalty =
-        widget.contract.rentalFee -
-        rentalRefund +
-        (widget.contract.platformFee - platformFeeRefund);
+    // 위약금 = 임대료 미환불분만 (수수료는 위약금 대상 아님)
+    final penalty = (widget.contract.rentalFee - rentalRefund).toDouble();
 
     return {
       'rentalRefund': rentalRefund,
@@ -219,10 +255,117 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
       'maintenanceRefund': maintenanceRefund,
       'cleaningRefund': cleaningRefund,
       'depositRefund': depositRefund,
-      'optionsRefund': optionsRefund,
-      'shippingFee': shippingFee,
+      'optionsRefund': optionsResult['optionsRefund']!,
+      'shippingFee': optionsResult['shippingFee']!,
       'totalRefund': totalRefund,
       'penalty': penalty,
+    };
+  }
+
+  /// 호스트 귀책 취소 환불 계산
+  ///
+  /// 정책:
+  /// - 게스트: 결제 금액 100% 전액 환불 (수수료 포함)
+  /// - 호스트 위약금:
+  ///   - 무료 취소 기한 내: 0원
+  ///   - 위약금 기간 내: 임대료 × 비환불율 + 게스트 수수료 보전
+  Map<String, double> _calculateHostFaultRefund() {
+    final refundRate = _getRefundRate();
+
+    // 게스트는 전액 환불
+    final guestTotalRefund = widget.contract.finalTotalAmount.toDouble();
+
+    double rentalPenalty = 0;
+    double guestFeeCompensation = 0;
+
+    // 무료 취소 기한(100%) 내에는 호스트 위약금 0원
+    if (refundRate < 100) {
+      // 임대료 비환불분 (게스트 귀책이었다면 환불 안 됐을 금액)
+      rentalPenalty = (widget.contract.rentalFee * ((100 - refundRate) / 100)).floorToDouble();
+      // 게스트 수수료 보전 (호스트 귀책이므로 게스트 수수료를 호스트가 보전)
+      guestFeeCompensation = widget.contract.platformFee.toDouble();
+    }
+
+    final hostPenalty = rentalPenalty + guestFeeCompensation;
+
+    return {
+      'guestTotalRefund': guestTotalRefund,
+      'rentalPenalty': rentalPenalty,
+      'guestFeeCompensation': guestFeeCompensation,
+      'hostPenalty': hostPenalty,
+      // 기존 키 호환 (build에서 사용)
+      'totalRefund': guestTotalRefund,
+      'penalty': hostPenalty,
+    };
+  }
+
+  /// 옵션 환불 가능 여부 (7일 이내 체크)
+  ///
+  /// 정책: 임대 시작 후 7일 이내에만 옵션 환불 요청 가능
+  bool _isOptionRefundAvailable() {
+    final checkIn = widget.contract.checkInDate;
+    final now = DateTime.now();
+
+    // 입주 전이면 항상 환불 가능
+    if (now.isBefore(checkIn)) return true;
+
+    // 입주 후 7일 이내인지 확인
+    final daysSinceCheckIn = now.difference(checkIn).inDays;
+    return daysSinceCheckIn <= 7;
+  }
+
+  /// 옵션 상품 환불 계산 (공통)
+  ///
+  /// 정책:
+  /// - 배송 전 (pending): 전액 환불
+  /// - 배송 중 (inTransit): 전액 환불 + 배송비 차감
+  /// - 배송 완료 (delivered): 환불 가능 + 배송비 차감
+  /// - 임대 시작 후 7일 이내에만 환불 요청 가능
+  Map<String, double> _calculateOptionsRefund() {
+    double optionsRefund = 0;
+    double shippingFee = 0;
+    final items = widget.contract.rentalItems ?? [];
+
+    // 7일 기한 초과 시 옵션 환불 불가
+    if (!_isOptionRefundAvailable()) {
+      return {'optionsRefund': 0, 'shippingFee': 0};
+    }
+
+    if (_refundType == 'all') {
+      // 모든 옵션 상품 환불 (배송 상태 무관하게 환불 가능)
+      for (final item in items) {
+        optionsRefund += (item.price * item.quantity).toDouble();
+      }
+      // 배송 시작 이후(배송 중 또는 배송 완료) 상품이 있으면 배송비 차감
+      if (items.any(
+        (item) =>
+            item.deliveryStatus == DeliveryStatus.inTransit ||
+            item.deliveryStatus == DeliveryStatus.delivered,
+      )) {
+        shippingFee = 7000;
+      }
+    } else {
+      for (final item in items) {
+        final refundQty = _selectedOptions[item.id] ?? 0;
+        if (refundQty > 0) {
+          optionsRefund += (item.price * refundQty).toDouble();
+        }
+      }
+      // 환불 대상 중 배송 시작 이후 상품이 있으면 배송비 차감
+      final hasShippedOptions = items.any(
+        (item) =>
+            (item.deliveryStatus == DeliveryStatus.inTransit ||
+                item.deliveryStatus == DeliveryStatus.delivered) &&
+            (_selectedOptions[item.id] ?? 0) > 0,
+      );
+      if (hasShippedOptions) {
+        shippingFee = 7000;
+      }
+    }
+
+    return {
+      'optionsRefund': optionsRefund,
+      'shippingFee': shippingFee,
     };
   }
 
@@ -251,6 +394,18 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
   void _handleConfirmClick() {
     final refund = _calculateRefund();
     final totalRefund = refund['totalRefund'] ?? 0;
+
+    // 호스트 귀책 취소: 위약금 결제 금액을 additionalPayment로 전달
+    if (widget.isHost) {
+      final hostPenalty = refund['hostPenalty'] ?? refund['penalty'] ?? 0;
+      if (hostPenalty > 0) {
+        widget.onConfirm(hostPenalty);
+      } else {
+        // 무료 취소 기간이면 위약금 0원 → 바로 취소
+        widget.onConfirm(null);
+      }
+      return;
+    }
 
     // 옵션 상품만 환불이고 총 환불 금액이 마이너스인 경우
     if (_refundType == 'options_only' && totalRefund < 0) {
@@ -391,6 +546,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
   Widget _buildRefundPolicyInfo() {
     final policyNames = {'flexible': '유연', 'moderate': '보통', 'strict': '엄격'};
     final policy = _getRefundPolicy();
+    final snapshot = widget.refundPolicySnapshot;
 
     return Container(
       padding: AppSpacing.paddingMd,
@@ -419,7 +575,7 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Text(
-                  policyNames[policy] ?? '보통',
+                  snapshot?.displayName ?? policyNames[policy] ?? '보통',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -513,7 +669,8 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
             isDisabled: refundRate == 0,
             additionalContent:
                 _refundType == 'all' &&
-                    overallDeliveryStatus == DeliveryStatus.inTransit
+                    (overallDeliveryStatus == DeliveryStatus.inTransit ||
+                        overallDeliveryStatus == DeliveryStatus.delivered)
                 ? Padding(
                     padding: EdgeInsets.only(top: AppSpacing.sm),
                     child: Container(
@@ -706,8 +863,39 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
             ),
             SizedBox(height: AppSpacing.sm),
 
-            // 배송 안내
-            if (overallDeliveryStatus == DeliveryStatus.inTransit)
+            // 7일 기한 초과 안내
+            if (!_isOptionRefundAvailable())
+              Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Container(
+                  padding: AppSpacing.paddingSm,
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber, size: 16, color: Colors.red[600]),
+                      SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          '임대 시작 후 7일이 경과하여 옵션 환불이 불가합니다.',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Colors.red[700],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // 배송 안내 (배송 시작 이후 상품이 있을 때)
+            if (_isOptionRefundAvailable() &&
+                (overallDeliveryStatus == DeliveryStatus.inTransit ||
+                    overallDeliveryStatus == DeliveryStatus.delivered))
               Padding(
                 padding: EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Row(
@@ -781,8 +969,8 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
             ),
           ),
 
-          // 환불 수량 조절 (배송 완료가 아닐 때만)
-          if (item.deliveryStatus != DeliveryStatus.delivered) ...[
+          // 환불 수량 조절 (7일 이내이면 배송 상태 무관하게 환불 가능)
+          if (_isOptionRefundAvailable()) ...[
             SizedBox(height: AppSpacing.xs),
             Container(
               padding: EdgeInsets.only(top: AppSpacing.xs),
@@ -907,18 +1095,36 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
               fontSize: 12,
             ),
           ),
-          if (isPaidTodayFlag)
+          if (isPaidTodayFlag && refundRate == 100)
             Text(
-              '• 결제 당일이므로 특별 규정이 적용됩니다. (10% 위약금)',
+              '• 결제 당일이며 무료 취소 기간이므로 전액 환불됩니다.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: Colors.green[700],
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            )
+          else if (isPaidTodayFlag)
+            Text(
+              '• 결제 당일이므로 특별 규정이 적용됩니다. (임대료 10% 위약금, 수수료 미환불)',
               style: AppTextStyles.bodySmall.copyWith(
                 color: Colors.yellow[900],
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
             )
+          else if (refundRate == 100)
+            Text(
+              '• 무료 취소 기간입니다. (수수료 포함 전액 환불)',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: Colors.green[700],
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            )
           else
             Text(
-              '• 환불율: $refundRate%',
+              '• 환불율: $refundRate% (수수료 미환불)',
               style: AppTextStyles.bodySmall.copyWith(
                 color: Colors.yellow[800],
                 fontSize: 12,
@@ -1076,82 +1282,150 @@ class _RefundCalculationModalState extends State<RefundCalculationModal> {
     );
   }
 
-  /// 위약금 섹션 (호스트)
+  /// 위약금 섹션 (호스트 귀책 취소)
+  ///
+  /// 정책:
+  /// - 게스트: 결제 금액 100% 전액 환불
+  /// - 호스트 결제: 임대료 위약금(비환불분) + 게스트 수수료 보전
   Widget _buildPenaltySection(Map<String, double> refund) {
-    return Container(
-      padding: AppSpacing.paddingMd,
-      decoration: BoxDecoration(
-        color: Colors.red[50],
-        border: Border.all(color: Colors.red[200]!, width: 2),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '결제할 위약금',
-            style: AppTextStyles.bodySmall.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.red[900],
-            ),
-          ),
-          SizedBox(height: AppSpacing.sm),
+    final rentalPenalty = refund['rentalPenalty'] ?? 0;
+    final guestFeeCompensation = refund['guestFeeCompensation'] ?? 0;
+    final hostPenalty = refund['hostPenalty'] ?? refund['penalty'] ?? 0;
+    final guestTotalRefund = refund['guestTotalRefund'] ??
+        widget.contract.finalTotalAmount.toDouble();
 
-          _buildPenaltyRow(
-            '임대료 위약금',
-            widget.contract.rentalFee - refund['rentalRefund']!,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 게스트 환불 안내
+        Container(
+          padding: AppSpacing.paddingMd,
+          decoration: BoxDecoration(
+            color: Colors.green[50],
+            border: Border.all(color: Colors.green[200]!),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
-          _buildPenaltyRow(
-            '계약수수료 위약금',
-            widget.contract.platformFee - refund['platformFeeRefund']!,
-          ),
-
-          Container(
-            padding: EdgeInsets.only(top: AppSpacing.xs),
-            margin: EdgeInsets.only(top: AppSpacing.xs),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Colors.red[300]!, width: 2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '게스트 환불 금액',
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[900],
+                ),
               ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '총 위약금',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red[900],
+              SizedBox(height: AppSpacing.xs),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '결제 금액 전액 환불',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Colors.green[800],
+                    ),
+                  ),
+                  Text(
+                    '${FormatUtils.formatCurrency(guestTotalRefund)}원',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: Colors.green[700],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: AppSpacing.xs),
+              Text(
+                '호스트 귀책 취소이므로 게스트에게 수수료 포함 전액 환불됩니다.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Colors.green[700],
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: AppSpacing.md),
+
+        // 호스트 위약금
+        Container(
+          padding: AppSpacing.paddingMd,
+          decoration: BoxDecoration(
+            color: Colors.red[50],
+            border: Border.all(color: Colors.red[200]!, width: 2),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '호스트 결제할 위약금',
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red[900],
+                ),
+              ),
+              SizedBox(height: AppSpacing.sm),
+
+              _buildPenaltyRow(
+                '임대료 위약금',
+                rentalPenalty,
+              ),
+              _buildPenaltyRow(
+                '게스트 수수료 보전',
+                guestFeeCompensation,
+              ),
+
+              Container(
+                padding: EdgeInsets.only(top: AppSpacing.xs),
+                margin: EdgeInsets.only(top: AppSpacing.xs),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: Colors.red[300]!, width: 2),
                   ),
                 ),
-                Text(
-                  '${FormatUtils.formatCurrency(refund['penalty']!)}원',
-                  style: AppTextStyles.headingSmall.copyWith(
-                    color: Colors.red[600],
-                    fontWeight: FontWeight.bold,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '총 위약금',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red[900],
+                      ),
+                    ),
+                    Text(
+                      '${FormatUtils.formatCurrency(hostPenalty)}원',
+                      style: AppTextStyles.headingSmall.copyWith(
+                        color: Colors.red[600],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: AppSpacing.sm),
+              Container(
+                padding: AppSpacing.paddingSm,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Text(
+                  '위약금 결제 후 계약이 취소되며, 게스트에게 결제 금액이 전액 환불됩니다. '
+                  '해당 기간은 다시 임대 가능 상태로 변경됩니다.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: AppSpacing.sm),
-          Container(
-            padding: AppSpacing.paddingSm,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Text(
-              '위약금 결제 후 계약이 취소되며, 해당 기간이 다시 임대 가능 상태로 변경됩니다.',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 12,
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

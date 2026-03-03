@@ -115,6 +115,107 @@ class PaymentService {
     }
   }
 
+  /// 호스트 위약금 결제 정보 조회
+  ///
+  /// 호스트 귀책 취소 시 호스트가 결제해야 할 위약금 정보를 조회합니다.
+  /// 호스트 부담금 = (임대료 × 위약률) + 게스트 서비스 수수료
+  Future<Map<String, dynamic>> getHostPenaltyPaymentInfo(int contractId) async {
+    final accessToken = await _authService.getAccessToken();
+
+    if (accessToken == null) {
+      throw Exception('로그인이 필요합니다.');
+    }
+
+    debugPrint('📡 [PaymentService] 호스트 위약금 결제 정보 요청: contractId=$contractId');
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/contracts/$contractId/host-penalty-info'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      debugPrint('📥 [PaymentService] 응답: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        debugPrint('✅ [PaymentService] 호스트 위약금 정보 조회 성공');
+        return data['data'] as Map<String, dynamic>;
+      } else if (response.statusCode == 404) {
+        throw Exception('계약을 찾을 수 없습니다.');
+      } else if (response.statusCode == 403) {
+        throw Exception('권한이 없습니다.');
+      } else {
+        final error = jsonDecode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '위약금 정보 조회 실패');
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버 오류가 발생했습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    }
+  }
+
+  /// 호스트 위약금 결제 승인
+  ///
+  /// 호스트 귀책 취소 확정을 위한 위약금 결제를 승인합니다.
+  /// 결제 완료 후: 게스트 PG 전액 환불 + 게스트 보전 지급이 처리됩니다.
+  Future<Map<String, dynamic>> confirmHostPenaltyPayment({
+    required int contractId,
+    required String paymentKey,
+    required String orderId,
+    required int amount,
+  }) async {
+    final accessToken = await _authService.getAccessToken();
+
+    if (accessToken == null) {
+      throw Exception('로그인이 필요합니다.');
+    }
+
+    debugPrint('📡 [PaymentService] 호스트 위약금 결제 승인 요청');
+    debugPrint('  - contractId: $contractId');
+    debugPrint('  - amount: $amount');
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/contracts/$contractId/confirm-host-penalty'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'paymentKey': paymentKey,
+          'orderId': orderId,
+          'amount': amount,
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      debugPrint('📥 [PaymentService] 응답: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        debugPrint('✅ [PaymentService] 호스트 위약금 결제 승인 성공');
+        return data['data'] as Map<String, dynamic>;
+      } else if (response.statusCode == 400) {
+        final error = jsonDecode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '잘못된 결제 정보입니다.');
+      } else {
+        final error = jsonDecode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '위약금 결제 승인 실패');
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버 오류가 발생했습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    }
+  }
+
   /// Mock 결제 승인 (테스트용)
   ///
   /// 실제 결제 없이 백엔드에서 결제 완료 처리합니다.
