@@ -5,7 +5,9 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../models/user_profile.dart';
+import '../../models/bank_account.dart';
 import '../../services/user_profile_service.dart';
+import '../../services/refund_account_service.dart';
 import '../../services/auth_service.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
@@ -24,6 +26,7 @@ class GuestMyPage extends StatefulWidget {
 
 class _GuestMyPageState extends State<GuestMyPage> {
   final UserProfileService _userProfileService = UserProfileService();
+  final RefundAccountService _refundAccountService = RefundAccountService();
 
   // 로딩 상태
   bool _isLoading = true;
@@ -31,6 +34,9 @@ class _GuestMyPageState extends State<GuestMyPage> {
 
   // 사용자 정보
   UserProfile? _userProfile;
+
+  // 환급 계좌 정보
+  BankAccount? _refundAccount;
 
   // 비밀번호 변경 상태
   bool _isEditingPassword = false;
@@ -58,7 +64,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
     super.dispose();
   }
 
-  /// 사용자 프로필 로드
+  /// 사용자 프로필 및 환급 계좌 로드
   Future<void> _loadUserProfile() async {
     setState(() {
       _isLoading = true;
@@ -68,17 +74,32 @@ class _GuestMyPageState extends State<GuestMyPage> {
     try {
       final profile = await _userProfileService.getUserProfile();
 
-      if (profile != null) {
-        setState(() {
-          _userProfile = profile;
-          _isLoading = false;
-        });
-      } else {
+      if (profile == null) {
         setState(() {
           _errorMessage = '사용자 정보를 불러올 수 없습니다.';
           _isLoading = false;
         });
+        return;
       }
+
+      // 환급 계좌 로드 (실패해도 무시 - 페이지는 표시됨)
+      BankAccount? refundAccount;
+      try {
+        refundAccount = await _refundAccountService.getRefundAccount();
+        if (refundAccount != null) {
+          debugPrint('✅ [GuestMyPage] 환급 계좌 로드 성공: ${refundAccount.bankName}');
+        } else {
+          debugPrint('ℹ️ [GuestMyPage] 환급 계좌 미등록');
+        }
+      } catch (e) {
+        debugPrint('⚠️ [GuestMyPage] 환급 계좌 로드 실패 (무시): $e');
+      }
+
+      setState(() {
+        _userProfile = profile;
+        _refundAccount = refundAccount;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -170,10 +191,22 @@ class _GuestMyPageState extends State<GuestMyPage> {
 
   /// 연락처 변경 (본인인증 SDK 호출)
   void _handlePhoneChange() {
-    // TODO: 외부 본인인증 SDK 호출 (PASS, NICE 등)
     debugPrint('📱 [GuestMyPage] 본인인증 SDK 호출');
-
     _showInfoDialog('준비 중입니다', '본인인증 기능은 준비 중입니다.');
+  }
+
+  // ──────────────────────────────────────────────
+  // 환급 계좌 관련 핸들러
+  // ──────────────────────────────────────────────
+
+  /// 환급 계좌 등록/수정 페이지로 이동
+  void _handleRefundAccountEdit() async {
+    final result = await context.push<BankAccount>('/guest/my-page/refund-account');
+    if (result != null && mounted) {
+      setState(() {
+        _refundAccount = result;
+      });
+    }
   }
 
   /// 회원 탈퇴
@@ -338,7 +371,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // React: min-h-screen bg-gray-50
       backgroundColor: AppColors.gray50,
       appBar: _buildAppBar(),
       body: _isLoading
@@ -356,8 +388,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
     final isMobile = ResponsiveUtil.isMobile(context);
 
     if (isMobile) {
-      // 모바일: PageHeader 스타일
-      // React: <PageHeader title="내 정보" onBack={onBack} />
       return AppBar(
         title: const Text('내 정보'),
         backgroundColor: AppColors.surface,
@@ -380,7 +410,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
         centerTitle: true,
       );
     } else {
-      // 데스크톱/태블릿: AppGNB
       return const AppGNB();
     }
   }
@@ -413,7 +442,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
   }
 
   /// 메인 컨텐츠
-  // React: <div className="max-w-4xl mx-auto px-4 py-6">
   Widget _buildContent() {
     return SingleChildScrollView(
       child: Column(
@@ -436,6 +464,11 @@ class _GuestMyPageState extends State<GuestMyPage> {
 
                   SizedBox(height: AppSpacing.xl),
 
+                  // 환급 계좌 카드
+                  _buildRefundAccountSection(),
+
+                  SizedBox(height: AppSpacing.xl),
+
                   // 회원 탈퇴 버튼
                   _buildWithdrawalButton(),
                 ],
@@ -453,7 +486,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
     return Text(
       '내 정보',
       style: AppTextStyles.headingLarge.copyWith(
-        fontSize: 24, // text-2xl
+        fontSize: 24,
         fontWeight: FontWeight.bold,
         color: AppColors.gray900,
       ),
@@ -461,31 +494,26 @@ class _GuestMyPageState extends State<GuestMyPage> {
   }
 
   /// 프로필 정보 카드
-  /// React: <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
   Widget _buildProfileCard() {
     return Container(
-      padding: AppSpacing.paddingLg, // p-6
+      padding: AppSpacing.paddingLg,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg), // rounded-xl
-        boxShadow: AppShadows.cardDefault, // shadow-sm
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.cardDefault,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 섹션 제목
-          // React: <h3 className="font-bold text-lg mb-4">프로필 정보</h3>
           Text(
             '프로필 정보',
             style: AppTextStyles.headingMedium.copyWith(
-              fontSize: 18, // text-lg
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
 
-          SizedBox(height: AppSpacing.lg), // mb-4
-          // 필드들
-          // React: <div className="space-y-4">
+          SizedBox(height: AppSpacing.lg),
           Column(
             children: [
               _buildProfileField(
@@ -506,45 +534,190 @@ class _GuestMyPageState extends State<GuestMyPage> {
     );
   }
 
-  /// 프로필 필드 (공통) - 아이콘 제거됨
-  /// React: <div className="flex items-center gap-3 py-3 border-b border-gray-100">
+  // ──────────────────────────────────────────────
+  // 환급 계좌 카드 UI (호스트 마이페이지 패턴)
+  // ──────────────────────────────────────────────
+
+  /// 환급 계좌 카드
+  Widget _buildRefundAccountSection() {
+    // 계좌 미등록 시 안내 카드 표시
+    if (_refundAccount == null) {
+      return _buildNoRefundAccountCard();
+    }
+
+    return Container(
+      padding: AppSpacing.paddingLg,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.cardDefault,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '계좌 정보',
+            style: AppTextStyles.headingMedium.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          SizedBox(height: AppSpacing.lg),
+
+          // 계좌 필드들
+          Column(
+            children: [
+              _buildProfileField(
+                label: '은행명',
+                value: _refundAccount!.bankName,
+              ),
+              _buildProfileField(
+                label: '계좌번호',
+                value: _refundAccount!.accountNumber,
+              ),
+              _buildProfileField(
+                label: '예금주',
+                value: _refundAccount!.accountHolder,
+              ),
+            ],
+          ),
+
+          SizedBox(height: AppSpacing.lg),
+
+          // 계좌 정보 수정 버튼
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _handleRefundAccountEdit,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary500,
+                side: BorderSide(
+                  color: AppColors.primary500,
+                  width: 2,
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+              ),
+              child: Text(
+                '계좌 정보 수정',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.primary500,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 환급 계좌 미등록 안내 카드
+  Widget _buildNoRefundAccountCard() {
+    return Container(
+      padding: AppSpacing.paddingLg,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.cardDefault,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '계좌 정보',
+            style: AppTextStyles.headingMedium.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          SizedBox(height: AppSpacing.lg),
+
+          Center(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.account_balance_outlined,
+                  size: 64,
+                  color: AppColors.neutral400,
+                ),
+                SizedBox(height: AppSpacing.md),
+                Text(
+                  '등록된 환급 계좌가 없습니다',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _handleRefundAccountEdit,
+                    icon: const Icon(Icons.add),
+                    label: const Text('환급 계좌 등록하기'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary500,
+                      foregroundColor: AppColors.neutral0,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.md,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  // 프로필 필드 위젯들
+  // ──────────────────────────────────────────────
+
+  /// 프로필 필드 (공통)
   Widget _buildProfileField({
     required String label,
     required String value,
     Widget? trailing,
   }) {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.md), // py-3
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.gray200), // border-gray-100
+          bottom: BorderSide(color: AppColors.gray200),
         ),
       ),
       child: Row(
         children: [
-          // 레이블 & 값
-          // React: <div className="flex-1">
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 레이블
-                // React: <div className="text-sm text-gray-500">이름</div>
                 Text(
                   label,
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary, // text-gray-500
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 4),
-
-                // 값
-                // React: <div className="font-medium text-gray-900">{user.name}</div>
                 Text(
                   value,
                   style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600, // font-medium
-                    color: AppColors.gray900, // text-gray-900
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.gray900,
                   ),
                 ),
               ],
@@ -634,7 +807,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
         ),
         const SizedBox(height: 4),
 
-        // 닉네임 입력
         CustomTextField(
           controller: _nicknameController,
           hint: '닉네임을 입력해주세요',
@@ -643,7 +815,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
 
         const SizedBox(height: 4),
 
-        // 안내 문구
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
@@ -657,10 +828,8 @@ class _GuestMyPageState extends State<GuestMyPage> {
 
         SizedBox(height: AppSpacing.sm),
 
-        // 버튼 그룹
         Row(
           children: [
-            // 취소 버튼
             Expanded(
               child: OutlinedButton(
                 onPressed: _cancelNicknameEdit,
@@ -686,7 +855,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
 
             SizedBox(width: AppSpacing.sm),
 
-            // 변경 버튼
             Expanded(
               child: ElevatedButton(
                 onPressed: canSubmit ? _handleNicknameChange : null,
@@ -722,7 +890,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
       trailing: TextButton(
         onPressed: _handlePhoneChange,
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary500, // text-blue-600
+          foregroundColor: AppColors.primary500,
           padding: EdgeInsets.zero,
         ),
         child: Text(
@@ -736,17 +904,16 @@ class _GuestMyPageState extends State<GuestMyPage> {
     );
   }
 
-  /// 비밀번호 필드 (토글) - 아이콘 제거됨
+  /// 비밀번호 필드 (토글)
   Widget _buildPasswordField() {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.md), // py-3
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.gray200)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 편집 모드 분기
           _isEditingPassword
               ? _buildPasswordEditForm()
               : _buildPasswordDisplay(),
@@ -755,7 +922,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
     );
   }
 
-  /// 비밀번호 표시 (편집 모드 OFF) - 아이콘 제거됨
+  /// 비밀번호 표시 (편집 모드 OFF)
   Widget _buildPasswordDisplay() {
     return Row(
       children: [
@@ -763,7 +930,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 레이블
               Text(
                 '비밀번호',
                 style: AppTextStyles.bodySmall.copyWith(
@@ -771,7 +937,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
                 ),
               ),
               const SizedBox(height: 4),
-              // 마스킹된 비밀번호
               Text(
                 '••••••••',
                 style: AppTextStyles.bodyLarge.copyWith(
@@ -783,7 +948,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
           ),
         ),
 
-        // 변경 버튼
         TextButton(
           onPressed: () => setState(() => _isEditingPassword = true),
           style: TextButton.styleFrom(
@@ -812,34 +976,30 @@ class _GuestMyPageState extends State<GuestMyPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 현재 비밀번호 입력
         CustomTextField(
           controller: _currentPasswordController,
           hint: '현재 비밀번호',
           obscureText: true,
-          onChanged: (_) => setState(() {}), // 버튼 활성화 상태 업데이트
+          onChanged: (_) => setState(() {}),
         ),
 
         SizedBox(height: AppSpacing.sm),
 
-        // 새 비밀번호 입력
-        // React: <input type="password" placeholder="새 비밀번호" />
         CustomTextField(
           controller: _newPasswordController,
           hint: '새 비밀번호',
           obscureText: true,
-          onChanged: (_) => setState(() {}), // 버튼 활성화 상태 업데이트
+          onChanged: (_) => setState(() {}),
         ),
 
         const SizedBox(height: 4),
 
-        // 안내 문구
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
             PasswordValidator.policyDescription,
             style: AppTextStyles.bodySmall.copyWith(
-              fontSize: 12, // text-xs
+              fontSize: 12,
               color: AppColors.textSecondary,
             ),
           ),
@@ -847,38 +1007,33 @@ class _GuestMyPageState extends State<GuestMyPage> {
 
         SizedBox(height: AppSpacing.sm),
 
-        // 비밀번호 확인 입력
         CustomTextField(
           controller: _confirmPasswordController,
           hint: '새 비밀번호 확인',
           obscureText: true,
-          onChanged: (_) => setState(() {}), // 버튼 활성화 상태 업데이트
+          onChanged: (_) => setState(() {}),
         ),
 
         SizedBox(height: AppSpacing.sm),
 
-        // 버튼 그룹
-        // React: <div className="flex gap-2 pt-2">
         Row(
           children: [
-            // 취소 버튼
-            // React: <button className="flex-1 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg ...">취소</button>
             Expanded(
               child: OutlinedButton(
                 onPressed: _cancelPasswordEdit,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textPrimary,
                   side: BorderSide(
-                    color: AppColors.border, // border-gray-300
+                    color: AppColors.border,
                     width: 2,
                   ),
                   padding: EdgeInsets.symmetric(
                     vertical: AppSpacing.sm,
-                  ), // py-2
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(
                       AppRadius.md,
-                    ), // rounded-lg
+                    ),
                   ),
                 ),
                 child: Text(
@@ -890,16 +1045,14 @@ class _GuestMyPageState extends State<GuestMyPage> {
               ),
             ),
 
-            SizedBox(width: AppSpacing.sm), // gap-2
-            // 변경 버튼
-            // React: <button className="flex-1 py-2 bg-blue-600 text-white rounded-lg ... disabled:bg-gray-300">변경</button>
+            SizedBox(width: AppSpacing.sm),
             Expanded(
               child: ElevatedButton(
                 onPressed: canSubmit ? _handlePasswordChange : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary500, // bg-blue-600
+                  backgroundColor: AppColors.primary500,
                   disabledBackgroundColor:
-                      AppColors.gray300, // disabled:bg-gray-300
+                      AppColors.gray300,
                   foregroundColor: AppColors.neutral0,
                   padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                   shape: RoundedRectangleBorder(
@@ -922,21 +1075,20 @@ class _GuestMyPageState extends State<GuestMyPage> {
   }
 
   /// 회원 탈퇴 버튼
-  /// React: <div className="text-right"><button className="text-sm text-gray-500 hover:text-gray-700 underline">회원 탈퇴</button></div>
   Widget _buildWithdrawalButton() {
     return Align(
-      alignment: Alignment.centerRight, // text-right
+      alignment: Alignment.centerRight,
       child: TextButton(
         onPressed: _handleWithdrawal,
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.textSecondary, // text-gray-500
+          foregroundColor: AppColors.textSecondary,
           padding: EdgeInsets.zero,
         ),
         child: Text(
           '회원 탈퇴',
           style: AppTextStyles.bodySmall.copyWith(
             color: AppColors.textSecondary,
-            decoration: TextDecoration.underline, // underline
+            decoration: TextDecoration.underline,
           ),
         ),
       ),

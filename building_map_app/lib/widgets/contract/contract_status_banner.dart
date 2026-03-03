@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../models/contract.dart' show DepositStatus;
 import '../../models/contract_detail.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -58,10 +59,37 @@ class _ContractStatusBannerState extends State<ContractStatusBanner> {
     DateTime? deadline;
 
     if (status == 'APPROVED' && widget.contract.approvedAt != null) {
-      // 결제 기한: 승인 시각 + 24시간
+      // 결제 기한: 기본 승인 시각 + 24시간
       final approvedAt = DateTime.tryParse(widget.contract.approvedAt!);
       if (approvedAt != null) {
-        deadline = approvedAt.add(const Duration(hours: 24));
+        final defaultDeadline = approvedAt.add(const Duration(hours: 24));
+
+        // 정책 3.14.2: 승인 시점이 입주일 또는 다음날 입주일인 경우,
+        // 입주일 입실 시간에 자동 마감 처리
+        final checkInDate = DateTime.tryParse(widget.contract.checkInDate);
+        if (checkInDate != null) {
+          final approvedDateOnly = DateTime(approvedAt.year, approvedAt.month, approvedAt.day);
+          final checkInDateOnly = DateTime(checkInDate.year, checkInDate.month, checkInDate.day);
+          final daysDiff = checkInDateOnly.difference(approvedDateOnly).inDays;
+
+          if (daysDiff <= 1 && daysDiff >= 0) {
+            // 입주일이 오늘 또는 내일 → 입주일 입실시간이 마감
+            final checkInTimeStr = widget.contract.roomCheckInTime ?? '15:00';
+            final timeParts = checkInTimeStr.split(':');
+            final checkInHour = int.tryParse(timeParts[0]) ?? 15;
+            final checkInMinute = timeParts.length > 1 ? (int.tryParse(timeParts[1]) ?? 0) : 0;
+            final checkInDeadline = DateTime(
+              checkInDate.year, checkInDate.month, checkInDate.day,
+              checkInHour, checkInMinute,
+            );
+            // 입실시간 마감과 기본 24h 마감 중 더 이른 것 적용
+            deadline = checkInDeadline.isBefore(defaultDeadline) ? checkInDeadline : defaultDeadline;
+          } else {
+            deadline = defaultDeadline;
+          }
+        } else {
+          deadline = defaultDeadline;
+        }
       }
     } else if (status == 'PENDING_APPROVAL') {
       // 승인 기한: 요청 시각 + 72시간
@@ -222,6 +250,19 @@ class _ContractStatusBannerState extends State<ContractStatusBanner> {
 
       case 'IN_PROGRESS':
         final checkOut = widget.contract.checkOutDate;
+        // 정책 7.12: 관리자 강제 반환보류 시 경고 표시
+        if (widget.contract.depositStatus == DepositStatus.returnHold) {
+          return _BannerConfig(
+            icon: Icons.warning_amber,
+            title: '보증금 반환이 보류 중입니다',
+            subtitle: '퇴실일: $checkOut · 관리자 또는 호스트에 의해 보증금 반환이 보류되었습니다',
+            bgColor: const Color(0xFFFFF7ED), // orange-50
+            borderColor: const Color(0xFFFED7AA), // orange-200
+            iconColor: const Color(0xFFF97316), // orange-500
+            textColor: const Color(0xFF9A3412), // orange-800
+            showTimer: false,
+          );
+        }
         return _BannerConfig(
           icon: Icons.home,
           title: '현재 임대 중입니다',
@@ -237,11 +278,17 @@ class _ContractStatusBannerState extends State<ContractStatusBanner> {
         return _BannerConfig(
           icon: Icons.verified,
           title: '계약이 정상 종료되었습니다',
-          subtitle: widget.contract.depositStatus == 'RETURNED'
+          subtitle: widget.contract.depositStatus == DepositStatus.returned
               ? '보증금이 반환되었습니다'
-              : widget.contract.depositStatus == 'RETURN_PENDING'
+              : widget.contract.depositStatus == DepositStatus.returnPending
                   ? '보증금 반환이 진행 중입니다'
-                  : null,
+                  : widget.contract.depositStatus == DepositStatus.deductionConfirmed
+                      ? '보증금 차감이 확정되었습니다'
+                      : widget.contract.depositStatus == DepositStatus.returnConfirmed
+                          ? '보증금 반환이 확정되었습니다'
+                          : widget.contract.depositStatus == DepositStatus.returnHold
+                              ? '보증금 반환이 보류 중입니다'
+                              : null,
           bgColor: AppColors.gray50,
           borderColor: AppColors.gray200,
           iconColor: AppColors.gray600,

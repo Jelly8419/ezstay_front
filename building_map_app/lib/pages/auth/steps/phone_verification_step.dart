@@ -446,10 +446,11 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
     );
   }
 
-  void _showSuccessDialog(String message) {
+  void _showSuccessDialog(String message, {VoidCallback? onConfirm}) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: backgroundWhite,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
@@ -470,7 +471,10 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              onConfirm?.call();
+            },
             child: Text(
               '확인',
               style: TextStyle(
@@ -641,11 +645,8 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
           _isRegistering = false;
         });
 
-        // 성공 다이얼로그 표시
-        _showSuccessDialog('회원가입이 완료되었습니다!');
-
-        // 다이얼로그 닫힌 후 자동 로그인 및 홈 화면 이동 (onNext 콜백에서 처리)
-        Future.delayed(const Duration(milliseconds: 500), () {
+        // 성공 다이얼로그 표시 → 확인 누르면 홈으로 이동
+        _showSuccessDialog('회원가입이 완료되었습니다!', onConfirm: () {
           if (mounted) {
             widget.onNext();
           }

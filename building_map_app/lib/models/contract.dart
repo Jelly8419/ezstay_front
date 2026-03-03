@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 /// 계약 상태
@@ -35,7 +36,9 @@ enum CheckoutStatus {
   notStarted('NOT_STARTED', '퇴실 전'),
   guestCompleted('GUEST_COMPLETED', '게스트 퇴실 완료'),
   hostConfirmed('HOST_CONFIRMED', '호스트 확인 완료'),
-  hostPending('HOST_PENDING', '호스트 확인 보류');
+  hostPending('HOST_PENDING', '호스트 확인 보류'),
+  agreementSubmitted('AGREEMENT_SUBMITTED', '합의 내용 제출'),
+  autoReturned('AUTO_RETURNED', '보증금 전액 반환');
 
   final String value;
   final String label;
@@ -49,6 +52,40 @@ enum CheckoutStatus {
       orElse: () {
         debugPrint('⚠️ [CHECKOUT_STATUS] Unknown status: $value, defaulting to notStarted');
         return CheckoutStatus.notStarted;
+      },
+    );
+  }
+}
+
+/// 보증금 프로세스 상태
+///
+/// 정책 7.4:
+/// - HELD: 결제 완료 후 계약 진행 중 (보관중)
+/// - RETURN_PENDING: 계약 종료 후, 퇴실 확인 전 (반환대기)
+/// - RETURNED: 보증금 환불 실행 완료 (반환완료)
+/// - RETURN_HOLD: 호스트 보류 신청 → 관리자 승인 후 합의 대기 (반환보류)
+/// - DEDUCTION_CONFIRMED: 합의에 따라 차감 금액 확정 (차감확정)
+/// - RETURN_CONFIRMED: 반환 금액 확정, 환불 실행 대상 (반환확정)
+enum DepositStatus {
+  held('HELD', '보관중'),
+  returnPending('RETURN_PENDING', '반환대기'),
+  returned('RETURNED', '반환완료'),
+  returnHold('RETURN_HOLD', '반환보류'),
+  deductionConfirmed('DEDUCTION_CONFIRMED', '차감확정'),
+  returnConfirmed('RETURN_CONFIRMED', '반환확정');
+
+  final String value;
+  final String label;
+
+  const DepositStatus(this.value, this.label);
+
+  static DepositStatus? fromString(String? value) {
+    if (value == null) return null;
+    return DepositStatus.values.firstWhere(
+      (status) => status.value == value,
+      orElse: () {
+        debugPrint('⚠️ [DEPOSIT_STATUS] Unknown status: $value, defaulting to held');
+        return DepositStatus.held;
       },
     );
   }
@@ -128,7 +165,13 @@ class ContractListItem {
 
   // 퇴실 정보
   final CheckoutStatus? checkoutStatus; // 퇴실 상태
+  final String? checkoutStatusLabel; // 퇴실 상태 라벨 (서버 제공)
   final String? roomCheckoutTime; // 퇴실 시간
+  final bool? checkoutRequested; // 퇴실 요청 여부
+  final bool? hostCheckedOut; // 호스트 퇴실 확인 여부
+  final DepositStatus? depositStatus; // 보증금 프로세스 상태 (정책 7.4)
+  final String? agreementDeadline; // 합의 데드라인 ISO8601 (정책 7.9.1: 관리자 승인 시점 + 10일)
+  final bool? cancellationRequested; // 취소 요청 여부 (1회 제한)
 
   // 방 정보
   final int roomId;
@@ -175,7 +218,13 @@ class ContractListItem {
     this.hostEarnings,
     this.isEzCleaning,
     this.checkoutStatus,
+    this.checkoutStatusLabel,
     this.roomCheckoutTime,
+    this.checkoutRequested,
+    this.hostCheckedOut,
+    this.depositStatus,
+    this.agreementDeadline,
+    this.cancellationRequested,
     required this.roomId,
     required this.roomName,
     required this.roomAddress,
@@ -224,19 +273,25 @@ class ContractListItem {
       isEzCleaning: json['isEzCleaning'] as bool?,
       // 퇴실 정보
       checkoutStatus: CheckoutStatus.fromString(json['checkoutStatus'] as String?),
+      checkoutStatusLabel: json['checkoutStatusLabel'] as String?,
       roomCheckoutTime: json['roomCheckoutTime'] as String?,
+      checkoutRequested: json['checkoutRequested'] as bool?,
+      hostCheckedOut: json['hostCheckedOut'] as bool?,
+      depositStatus: DepositStatus.fromString(json['depositStatus'] as String?),
+      agreementDeadline: json['agreementDeadline'] as String?,
+      cancellationRequested: json['cancellationRequested'] as bool?,
       // 방 정보 - 백엔드 필드명: roomName, thumbnailUrl
       roomId: room['id'],
-      roomName: room['roomName'] ?? room['name'],
-      roomAddress: room['address'],
-      roomArea: double.parse(room['area'].toString()),
-      buildingType: room['buildingType'],
+      roomName: room['roomName'] ?? room['name'] ?? '',
+      roomAddress: room['address'] ?? '',
+      roomArea: double.parse((room['area'] ?? 0).toString()),
+      buildingType: room['buildingType'] ?? '',
       roomThumbnail: room['thumbnailUrl'] ?? room['thumbnail'],
       // 상대방 정보 - 백엔드 필드명: phoneNumber
       partnerId: partner['id'],
-      partnerName: partner['name'],
+      partnerName: partner['name'] ?? '',
       partnerNickname: partner['nickname'],
-      partnerPhone: partner['phoneNumber'] ?? partner['phone'],
+      partnerPhone: partner['phoneNumber'] ?? partner['phone'] ?? '',
       partnerEmail: partner['email'],
       createdAt: DateTime.parse(json['createdAt']),
     );
@@ -286,6 +341,10 @@ class Contract {
 
   // 계약 상태
   final ContractStatus status;
+
+  // 환불 정책 및 EZ서비스
+  final String refundPolicy; // 'flexible' | 'moderate' | 'strict'
+  final bool isEzCleaning; // EZ청소 서비스 여부
 
   // 퇴실 정보
   final CheckoutStatus? checkoutStatus;
@@ -337,6 +396,8 @@ class Contract {
     required this.termsAgreed,
     this.pricingSnapshot,
     required this.status,
+    this.refundPolicy = 'moderate',
+    this.isEzCleaning = false,
     this.checkoutStatus,
     this.roomCheckoutTime,
     this.approvedAt,
@@ -394,6 +455,8 @@ class Contract {
       termsAgreed: (json['termsAgreed'] as Map<String, dynamic>?) ?? {},
       pricingSnapshot: json['pricingSnapshot'] as Map<String, dynamic>?,
       status: ContractStatus.fromString(json['status'] as String),
+      refundPolicy: json['refundPolicy'] as String? ?? 'moderate',
+      isEzCleaning: json['isEzCleaning'] as bool? ?? false,
       checkoutStatus: CheckoutStatus.fromString(json['checkoutStatus'] as String?),
       roomCheckoutTime: json['roomCheckoutTime'] as String?,
       approvedAt: json['approvedAt'] != null ? DateTime.parse(json['approvedAt'] as String) : null,
@@ -771,6 +834,19 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
       }
 
       return items.isEmpty ? null : items;
+    }
+
+    // String 형식인 경우 (JSON string으로 저장된 경우)
+    if (rentalItemsJson is String) {
+      try {
+        final decoded = json.decode(rentalItemsJson);
+        if (decoded is List) {
+          return _parseRentalItems(decoded);
+        }
+      } catch (_) {
+        debugPrint('⚠️ [PARSE_ERROR] Failed to decode rentalItems string: $rentalItemsJson');
+      }
+      return null;
     }
 
     // 예상치 못한 형식

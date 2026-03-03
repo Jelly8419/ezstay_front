@@ -15,6 +15,8 @@ import '../pages/auth/mode_selection_page.dart' deferred as mode_selection;
 import '../pages/auth/register_flow_page.dart' deferred as register_flow;
 import '../pages/guest/room_detail_page.dart' deferred as room_detail;
 import '../pages/guest/guest_my_page.dart' deferred as guest_my_page;
+import '../pages/guest/guest_refund_account_page.dart'
+    deferred as guest_refund_account;
 import '../pages/host/host_home_page.dart' deferred as host_home;
 import '../pages/host/host_account_setup_standalone_page.dart'
     deferred as host_account_setup_standalone;
@@ -864,6 +866,17 @@ class AppRouter {
             guest_my_page.loadLibrary,
             () => guest_my_page.GuestMyPage(),
           ),
+          routes: [
+            // 게스트 환급 계좌 등록/수정 페이지
+            GoRoute(
+              path: 'refund-account',
+              name: 'guest-refund-account',
+              builder: (context, state) => _deferredWidget(
+                guest_refund_account.loadLibrary,
+                () => guest_refund_account.GuestRefundAccountPage(),
+              ),
+            ),
+          ],
         ),
         // 호스트 마이페이지 (모바일: 커스텀 AppBar, 데스크톱: AppGNB)
         GoRoute(

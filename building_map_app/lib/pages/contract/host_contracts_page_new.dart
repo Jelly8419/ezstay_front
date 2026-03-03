@@ -6,6 +6,8 @@ import '../../models/contract.dart';
 import '../../services/contract_service.dart';
 import '../../widgets/modals/guest_preparation_modal.dart';
 import '../../widgets/modals/host_contract_rejection_modal.dart';
+import '../../widgets/modals/host_contract_modals.dart' show DepositAgreementModal, RequestCancellationModal;
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/common/app_footer.dart';
 
@@ -34,6 +36,14 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
   // 게스트 입주 준비 모달 상태
   bool _showGuestPreparationModal = false;
   int? _selectedContractIdForApproval;
+
+  // 취소 요청 모달 상태
+  bool _showCancellationModal = false;
+  int? _selectedContractIdForCancellation;
+
+  // 보증금 합의 모달 상태
+  bool _showDepositAgreementModal = false;
+  ContractListItem? _selectedContractForAgreement;
 
   @override
   void initState() {
@@ -223,6 +233,36 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                 });
               },
               onConfirm: _submitApproval,
+            ),
+
+          // 취소 요청 모달
+          if (_showCancellationModal &&
+              _selectedContractIdForCancellation != null)
+            RequestCancellationModal(
+              onClose: () {
+                setState(() {
+                  _showCancellationModal = false;
+                  _selectedContractIdForCancellation = null;
+                });
+              },
+              onConfirm: (reason) => _submitCancellationRequest(reason),
+            ),
+
+          // 보증금 합의 모달
+          if (_showDepositAgreementModal &&
+              _selectedContractForAgreement != null)
+            DepositAgreementModal(
+              onClose: () {
+                setState(() {
+                  _showDepositAgreementModal = false;
+                  _selectedContractForAgreement = null;
+                });
+              },
+              onConfirm: (deductAmount, agreementText) =>
+                  _submitDepositAgreement(deductAmount, agreementText),
+              depositAmount: _selectedContractForAgreement!.deposit ?? 300000,
+              checkOutDate: _selectedContractForAgreement!.checkOutDate,
+              roomCheckoutTime: _selectedContractForAgreement!.roomCheckoutTime,
             ),
         ],
       ),
@@ -736,6 +776,141 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
             const SizedBox(height: 16),
             _buildActionButtons(contract.id),
           ],
+
+          // PAYMENT_COMPLETED: 계약 취소 버튼
+          if (contract.status == ContractStatus.paymentCompleted) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => _handleCancelByHost(contract.id),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: const BorderSide(color: Color(0xFFDC2626)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  '계약 취소',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          // IN_PROGRESS + 퇴실 전(NOT_STARTED/null): 취소 요청 (항상) + 퇴실 확인 (퇴실 시간 도래 시만)
+          if (contract.status == ContractStatus.inProgress &&
+              (contract.checkoutStatus == null ||
+               contract.checkoutStatus == CheckoutStatus.notStarted)) ...[
+            const SizedBox(height: 16),
+            Builder(
+              builder: (context) {
+                // 퇴실 시간 도래 여부 판단
+                final now = DateTime.now();
+                final checkOutDate = contract.checkOutDate;
+                final checkoutTimeStr = contract.roomCheckoutTime ?? '11:00';
+                final timeParts = checkoutTimeStr.split(':');
+                final checkoutHour = int.tryParse(timeParts[0]) ?? 11;
+                final checkoutMinute = timeParts.length > 1 ? (int.tryParse(timeParts[1]) ?? 0) : 0;
+                final checkoutDateTime = DateTime(
+                  checkOutDate.year, checkOutDate.month, checkOutDate.day,
+                  checkoutHour, checkoutMinute,
+                );
+                final isCheckoutTimeReached = now.isAfter(checkoutDateTime);
+                final isCheckoutRequested = contract.checkoutRequested == true;
+
+                if (isCheckoutTimeReached || isCheckoutRequested) {
+                  // 퇴실 시간 도래: 퇴실 확인 + 취소 요청 둘 다 표시
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _handleRequestCheckout(contract.id),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            backgroundColor: const Color(0xFF2563EB),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            '퇴실 확인',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: contract.cancellationRequested == true
+                              ? null
+                              : () => _handleRequestCancellation(contract.id),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: BorderSide(
+                              color: contract.cancellationRequested == true
+                                  ? AppColors.gray300
+                                  : const Color(0xFFF97316),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            contract.cancellationRequested == true ? '취소 요청됨' : '취소 요청',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: contract.cancellationRequested == true
+                                  ? AppColors.gray300
+                                  : const Color(0xFFF97316),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  // 퇴실 시간 미도래: 취소 요청만 표시
+                  return SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: contract.cancellationRequested == true
+                          ? null
+                          : () => _handleRequestCancellation(contract.id),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(
+                          color: contract.cancellationRequested == true
+                              ? AppColors.gray300
+                              : const Color(0xFFF97316),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        contract.cancellationRequested == true ? '취소 요청됨' : '취소 요청',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: contract.cancellationRequested == true
+                              ? AppColors.gray300
+                              : const Color(0xFFF97316),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
         ],
       ),
     );
@@ -944,6 +1119,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
   Widget _buildGuestMessage(String message) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFF9FAFB),
@@ -1187,15 +1363,15 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       children: [
         ElevatedButton.icon(
           onPressed: () => _handleApprove(contractId),
-          icon: const Icon(Icons.check, size: 16),
+          icon: const Icon(Icons.check, size: 16, color: Colors.white),
           label: Text(
             '승인하기',
-            style: AppTextStyles.labelLarge,
+            style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF2563EB),
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -1214,7 +1390,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
             backgroundColor: Colors.white,
             foregroundColor: const Color(0xFF6B7280),
             side: const BorderSide(color: Color(0xFFD1D5DB), width: 2),
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -1226,8 +1402,9 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
   /// 호스트 퇴실 관련 섹션
   Widget _buildHostCheckoutSection(ContractListItem contract) {
-    // IN_PROGRESS 상태에서 checkoutStatus별 UI
-    if (contract.status == ContractStatus.inProgress) {
+    // IN_PROGRESS 또는 COMPLETED 상태에서 checkoutStatus별 UI
+    if (contract.status == ContractStatus.inProgress ||
+        contract.status == ContractStatus.completed) {
       final checkoutStatus = contract.checkoutStatus;
 
       // GUEST_COMPLETED: 게스트 퇴실 완료 → 호스트 확인/보류 버튼
@@ -1343,34 +1520,129 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         );
       }
 
-      // HOST_PENDING: 호스트 확인 보류
+      // HOST_PENDING: 호스트 확인 보류 + 합의 내용 제출 버튼
       if (checkoutStatus == CheckoutStatus.hostPending) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED), // orange-50
+                  border: Border.all(color: const Color(0xFFFED7AA)), // orange-200
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '⚠️ 퇴실 확인이 보류되었습니다.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF9A3412), // orange-800
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '관리자가 확인 중입니다. 게스트와 합의가 되었다면 합의 내용을 제출해주세요.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF9A3412),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => _handleDepositAgreement(contract),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: const Color(0xFFF97316), // orange-500
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    '합의 내용 제출',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // AGREEMENT_SUBMITTED: 합의 내용 제출 완료
+      if (checkoutStatus == CheckoutStatus.agreementSubmitted) {
         return Padding(
           padding: const EdgeInsets.only(top: 16),
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF7ED), // orange-50
-              border: Border.all(color: const Color(0xFFFED7AA)), // orange-200
+              color: const Color(0xFFEFF6FF), // blue-50
+              border: Border.all(color: const Color(0xFFBFDBFE)), // blue-200
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '⚠️ 퇴실 확인이 보류되었습니다.',
+                  '합의 내용이 제출되었습니다.',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF9A3412), // orange-800
+                    color: Color(0xFF1E40AF), // blue-800
                   ),
                 ),
                 SizedBox(height: 4),
                 Text(
-                  '관리자가 확인 중입니다.',
+                  '게스트 확인을 기다리고 있습니다.',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF9A3412),
+                    color: Color(0xFF1E40AF),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // AUTO_RETURNED: 보증금 전액 반환 완료
+      if (checkoutStatus == CheckoutStatus.autoReturned) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFDCFCE7), // green-100
+              border: Border.all(color: const Color(0xFFBBF7D0)), // green-200
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '보증금 전액 반환 완료',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF166534), // green-800
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '합의 기한이 경과하여 보증금이 게스트에게 전액 반환되었습니다.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF166534),
                   ),
                 ),
               ],
@@ -1405,6 +1677,184 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
     }
 
     return const SizedBox.shrink();
+  }
+
+  /// PAYMENT_COMPLETED 상태에서 호스트 계약 취소
+  Future<void> _handleCancelByHost(int contractId) async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => _CancelByHostDialog(),
+    );
+
+    if (reason == null || reason.isEmpty) return;
+
+    try {
+      await _contractService.cancelByHost(contractId, reason);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('계약이 취소되었습니다.'),
+            backgroundColor: Color(0xFFF97316),
+          ),
+        );
+        _loadContracts();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('계약 취소 실패: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  /// IN_PROGRESS 상태에서 퇴실 확인 요청 (호스트 주도)
+  Future<void> _handleRequestCheckout(int contractId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('퇴실 확인'),
+        content: const Text(
+          '퇴실을 확인하시겠습니까?\n계약이 종료되며 보증금 환급 절차가 진행됩니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _contractService.requestCheckout(contractId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('퇴실 확인이 완료되었습니다.'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+        _loadContracts();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('퇴실 확인 실패: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  /// IN_PROGRESS 상태에서 취소 요청 (관리자 승인 필요)
+  void _handleRequestCancellation(int contractId) {
+    setState(() {
+      _selectedContractIdForCancellation = contractId;
+      _showCancellationModal = true;
+    });
+  }
+
+  /// 취소 요청 API 호출 (RequestCancellationModal 콜백)
+  Future<void> _submitCancellationRequest(String reason) async {
+    if (_selectedContractIdForCancellation == null) return;
+
+    setState(() {
+      _showCancellationModal = false;
+    });
+
+    try {
+      await _contractService.requestCancellation(
+        _selectedContractIdForCancellation!,
+        reason,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('취소 요청이 접수되었습니다. 관리자 승인 후 처리됩니다.'),
+          backgroundColor: Color(0xFFF97316),
+        ),
+      );
+
+      await _loadContracts();
+
+      setState(() {
+        _selectedContractIdForCancellation = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('취소 요청 실패: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
+  }
+
+  /// 보증금 합의 내용 제출 (DepositAgreementModal 콜백)
+  Future<void> _submitDepositAgreement(int deductAmount, String agreementText) async {
+    if (_selectedContractForAgreement == null) return;
+
+    setState(() {
+      _showDepositAgreementModal = false;
+    });
+
+    try {
+      await _contractService.submitDepositAgreement(
+        _selectedContractForAgreement!.id,
+        deductAmount: deductAmount,
+        agreementText: agreementText,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('합의 내용이 제출되었습니다. 게스트 확인을 기다립니다.'),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+
+      await _loadContracts();
+
+      setState(() {
+        _selectedContractForAgreement = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('합의 내용 제출 실패: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
+  }
+
+  /// 합의 내용 제출 모달 표시
+  void _handleDepositAgreement(ContractListItem contract) {
+    setState(() {
+      _selectedContractForAgreement = contract;
+      _showDepositAgreementModal = true;
+    });
   }
 
   /// 호스트 퇴실 확인
@@ -1698,6 +2148,117 @@ class _CheckoutPendingDialogState extends State<_CheckoutPendingDialog> {
                     ),
                     child: const Text(
                       '보류하기',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 호스트 계약 취소 사유 입력 다이얼로그
+class _CancelByHostDialog extends StatefulWidget {
+  @override
+  State<_CancelByHostDialog> createState() => _CancelByHostDialogState();
+}
+
+class _CancelByHostDialogState extends State<_CancelByHostDialog> {
+  final TextEditingController _reasonController = TextEditingController();
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 448),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '계약 취소',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF111827),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '계약 취소 사유를 입력해주세요. 위약금이 발생할 수 있습니다.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6B7280),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _reasonController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: '취소 사유를 입력하세요...',
+                  hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFDC2626), width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text(
+                      '취소',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      final reason = _reasonController.text.trim();
+                      if (reason.isNotEmpty) {
+                        Navigator.of(context).pop(reason);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      '취소하기',
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                   ),

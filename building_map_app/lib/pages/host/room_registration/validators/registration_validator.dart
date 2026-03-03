@@ -131,12 +131,25 @@ class RegistrationValidator {
       }
     }
 
+    // 관리비 (선택사항이므로 값이 있을 때만 검증)
+    final dailyMaintenance = formData['dailyMaintenanceFee'] as String?;
+    if (dailyMaintenance != null && dailyMaintenance.isNotEmpty) {
+      final maintenanceValue = int.tryParse(dailyMaintenance);
+      if (maintenanceValue == null || maintenanceValue < 0) {
+        errors.add('올바른 관리비를 입력해주세요');
+      } else if (maintenanceValue > 0 && maintenanceValue % 1000 != 0) {
+        errors.add('관리비는 천원 단위로 입력해주세요');
+      }
+    }
+
     // 청소비 (선택사항이므로 값이 있을 때만 검증)
     final cleaningFee = formData['cleaningFee'] as String?;
     if (cleaningFee != null && cleaningFee.isNotEmpty) {
       final cleaningFeeValue = int.tryParse(cleaningFee);
       if (cleaningFeeValue == null || cleaningFeeValue < 0) {
         errors.add('올바른 청소비를 입력해주세요');
+      } else if (cleaningFeeValue > 0 && cleaningFeeValue % 1000 != 0) {
+        errors.add('청소비는 천원 단위로 입력해주세요');
       }
     }
 

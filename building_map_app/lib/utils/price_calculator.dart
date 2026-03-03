@@ -12,7 +12,7 @@ class PriceBreakdown {
   final int rentalItemsFee; // 렌탈 아이템 총 비용
   final int longTermDiscount; // 장기 계약 할인
   final int quickMoveInDiscount; // 빠른 입주 할인
-  final int contractFee; // 계약 수수료 (총액의 10%)
+  final int contractFee; // 계약 수수료 (9.9%)
 
   const PriceBreakdown({
     required this.baseRent,
