@@ -159,6 +159,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             di: _state.di,
             birth: _state.birth,
             gender: _state.gender,
+            isSocialLogin: true, // 소셜 로그인 (카카오)
             onNext: () async {
               // 회원가입 성공 - 자동 로그인 후 홈 화면으로 이동
               if (!mounted) return;

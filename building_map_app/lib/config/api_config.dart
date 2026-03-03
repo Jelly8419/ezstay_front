@@ -56,6 +56,12 @@ class ApiConfig {
   static String get authResetPasswordUrl =>
       '$baseUrl/api/auth/reset-password';
 
+  /// 소셜 로그인 사용자 본인인증 API 엔드포인트
+  static String get guestVerificationUrl =>
+      '$baseUrl/api/user/guest/verification';
+  static String get hostVerificationUrl =>
+      '$baseUrl/api/user/host/verification';
+
   /// KMC 본인인증 API 엔드포인트
   static String get kmcRequestUrl => '$baseUrl/api/auth/kmc/request';
   static String get kmcVerifyUrl => '$baseUrl/api/auth/kmc/verify';
