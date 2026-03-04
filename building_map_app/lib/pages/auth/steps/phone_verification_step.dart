@@ -555,10 +555,11 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
 
         debugPrint('✅ [REGISTER] 저장된 JWT 토큰 확인 완료');
 
-        // 소셜 로그인 사용자도 본인인증+약관 데이터를 백엔드에 전송
+        // 소셜 로그인 게스트: 본인인증+약관 데이터를 전용 API로 전송
         if (!widget.isPhoneVerificationOnly) {
-          debugPrint('📝 [REGISTER] 소셜 로그인 사용자: 본인인증+약관 정보 등록 API 호출');
-          final registerBody = {
+          debugPrint(
+              '📝 [VERIFY] 소셜 로그인 게스트: 본인인증 저장 API 호출');
+          final verifyBody = {
             'name': _nameController.text,
             'phoneNumber': _phoneController.text,
             if (_verifiedBirth != null) 'birth': _verifiedBirth,
@@ -571,46 +572,46 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
               'age_confirmed': true,
             },
           };
-          debugPrint('📦 [REGISTER] 요청 데이터: $registerBody');
-          final registerResponse = await http
+          debugPrint('📦 [VERIFY] 요청 데이터: $verifyBody');
+          final verifyResponse = await http
               .post(
-                Uri.parse(ApiConfig.authRegisterUrl),
+                Uri.parse(ApiConfig.guestVerificationUrl),
                 headers: {
                   'Content-Type': 'application/json',
                   'Authorization': 'Bearer $accessToken',
                 },
-                body: json.encode(registerBody),
+                body: json.encode(verifyBody),
               )
               .timeout(ApiConfig.timeout);
 
           debugPrint(
-              '📡 [REGISTER] 응답 상태: ${registerResponse.statusCode}');
-          debugPrint('📄 [REGISTER] 응답 내용: ${registerResponse.body}');
+              '📡 [VERIFY] 응답 상태: ${verifyResponse.statusCode}');
+          debugPrint('📄 [VERIFY] 응답 내용: ${verifyResponse.body}');
 
-          if (registerResponse.statusCode != 200 &&
-              registerResponse.statusCode != 201) {
-            final data = json.decode(registerResponse.body);
-            final message = data['message'] ?? '회원가입 정보 등록에 실패했습니다';
+          if (verifyResponse.statusCode != 200 &&
+              verifyResponse.statusCode != 201) {
+            final data = json.decode(verifyResponse.body);
+            final message = data['message'] ?? '본인인증 정보 저장에 실패했습니다';
             throw Exception(message);
           }
 
-          final registerData = json.decode(registerResponse.body);
-          if (registerData['success'] != true) {
+          final verifyData = json.decode(verifyResponse.body);
+          if (verifyData['success'] != true) {
             final message =
-                registerData['message'] ?? '회원가입 정보 등록에 실패했습니다';
+                verifyData['message'] ?? '본인인증 정보 저장에 실패했습니다';
             throw Exception(message);
           }
 
           // 응답에 새 토큰이 있으면 갱신
-          if (registerData['data'] != null &&
-              registerData['data']['accessToken'] != null) {
-            accessToken = registerData['data']['accessToken'];
-            refreshToken = registerData['data']['refreshToken'];
+          if (verifyData['data'] != null &&
+              verifyData['data']['accessToken'] != null) {
+            accessToken = verifyData['data']['accessToken'];
+            refreshToken = verifyData['data']['refreshToken'];
             await TokenService.saveTokens(accessToken!, refreshToken);
-            debugPrint('✅ [REGISTER] 토큰 갱신 완료');
+            debugPrint('✅ [VERIFY] 토큰 갱신 완료');
           }
 
-          debugPrint('✅ [REGISTER] 소셜 로그인 사용자 정보 등록 완료');
+          debugPrint('✅ [VERIFY] 소셜 로그인 게스트 본인인증 저장 완료');
         }
       } else {
         // 일반 회원가입: Step 1, 2 진행

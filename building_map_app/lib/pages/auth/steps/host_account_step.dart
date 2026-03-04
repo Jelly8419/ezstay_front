@@ -28,6 +28,7 @@ class HostAccountStep extends StatefulWidget {
   final String? gender;
   final Function() onNext;
   final bool isStandaloneMode; // true: 게스트→호스트 전환, false: 회원가입
+  final bool isSocialLogin; // true: 소셜 로그인 (카카오 등)
 
   const HostAccountStep({
     super.key,
@@ -40,6 +41,7 @@ class HostAccountStep extends StatefulWidget {
     this.gender,
     required this.onNext,
     this.isStandaloneMode = false,
+    this.isSocialLogin = false,
   });
 
   @override
@@ -192,8 +194,11 @@ class _HostAccountStepState extends State<HostAccountStep> {
       if (widget.isStandaloneMode) {
         // === Standalone 모드: 게스트→호스트 전환 ===
         await _upgradeToHost();
+      } else if (widget.isSocialLogin) {
+        // === 소셜 로그인 호스트: 본인인증+계좌 저장 ===
+        await _verifySocialHost();
       } else {
-        // === 회원가입 모드: 전체 플로우 ===
+        // === 이메일 회원가입 모드: 전체 플로우 ===
         await _registerAsHost();
       }
     } catch (e) {
@@ -261,7 +266,75 @@ class _HostAccountStepState extends State<HostAccountStep> {
     widget.onNext();
   }
 
-  /// 호스트 회원가입 (기존 플로우)
+  /// 소셜 로그인 호스트: 본인인증+계좌+약관 저장
+  /// POST /api/user/host/verification (로그인 토큰 필요)
+  Future<void> _verifySocialHost() async {
+    debugPrint('📝 [VERIFY] 소셜 로그인 호스트: 본인인증+계좌 저장 API 호출');
+
+    final token = await TokenService.getAccessToken(skipExpiryCheck: true);
+    if (token == null) {
+      throw Exception('저장된 JWT 토큰을 찾을 수 없습니다. 다시 로그인해주세요.');
+    }
+
+    final verifyBody = {
+      'name': widget.realName,
+      'phoneNumber': widget.phoneNumber,
+      if (widget.birth != null) 'birth': widget.birth,
+      if (widget.gender != null) 'gender': widget.gender,
+      if (widget.di != null) 'di': widget.di,
+      'bank_code': _getBankCode(_selectedBank!),
+      'account_num': _accountController.text,
+      'account_holder_name': _accountHolderController.text,
+      'terms': {
+        'service_terms': _agreeTerms,
+        'privacy_policy': _agreeTerms,
+        'marketing_consent': _agreeMarketing,
+        'age_confirmed': true,
+      },
+    };
+    debugPrint('📦 [VERIFY] 요청 데이터: $verifyBody');
+
+    final response = await http
+        .post(
+          Uri.parse(ApiConfig.hostVerificationUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode(verifyBody),
+        )
+        .timeout(ApiConfig.timeout);
+
+    debugPrint('📡 [VERIFY] 응답 상태: ${response.statusCode}');
+    debugPrint('📄 [VERIFY] 응답 내용: ${response.body}');
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final data = jsonDecode(response.body);
+      final message = data['message'] ?? '본인인증 정보 저장에 실패했습니다';
+      throw Exception(message);
+    }
+
+    final responseData = jsonDecode(response.body);
+    if (responseData['success'] != true) {
+      final message = responseData['message'] ?? '본인인증 정보 저장에 실패했습니다';
+      throw Exception(message);
+    }
+
+    // 응답에 새 토큰이 있으면 갱신
+    if (responseData['data'] != null &&
+        responseData['data']['accessToken'] != null) {
+      await TokenService.saveTokens(
+        responseData['data']['accessToken'],
+        responseData['data']['refreshToken'],
+      );
+      debugPrint('✅ [VERIFY] 토큰 갱신 완료');
+    }
+
+    debugPrint('✅ [VERIFY] 소셜 로그인 호스트 본인인증+계좌 저장 완료');
+    widget.onNext();
+  }
+
+  /// 이메일 호스트 회원가입 (기존 플로우)
   Future<void> _registerAsHost() async {
     // 필수 파라미터 검증
     if (widget.email == null ||
