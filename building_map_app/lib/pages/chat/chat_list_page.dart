@@ -140,6 +140,8 @@ class _ChatListPageState extends State<ChatListPage> {
     setState(() {
       _selectedChatId = firebaseChatRoomId;
     });
+    // 서버 읽음 처리 (알림톡 차단용, fire-and-forget)
+    _chatService.markAsReadOnServer(firebaseChatRoomId);
     // URL 업데이트 (go 사용 - 페이지 재빌드 없이 URL만 변경)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -525,6 +527,9 @@ class _ChatListPageState extends State<ChatListPage> {
           text: text,
         );
       }
+
+      // 알림톡 요청 (fire-and-forget)
+      _chatService.notifyChatMessage(chatRoomId);
     } catch (e) {
       debugPrint('❌ [CHAT_LIST] 메시지 전송 실패: $e');
       if (mounted) {

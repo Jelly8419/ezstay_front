@@ -103,6 +103,12 @@ class ApiConfig {
   static String get inquiriesUrl => '$baseUrl/api/support/inquiries';
   static String inquiryDetailUrl(int inquiryId) => '$inquiriesUrl/$inquiryId';
 
+  /// 채팅 알림 API 엔드포인트
+  static String chatNotifyUrl(String chatRoomId) =>
+      '$baseUrl/api/chats/rooms/$chatRoomId/notify';
+  static String chatReadUrl(String chatRoomId) =>
+      '$baseUrl/api/chats/rooms/$chatRoomId/read';
+
   /// 환급 계좌 API 엔드포인트
   static String get refundAccountUrl => '$baseUrl/api/account/refund';
   static String get refundAccountVerifyUrl =>

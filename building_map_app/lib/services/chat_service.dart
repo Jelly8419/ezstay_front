@@ -140,6 +140,39 @@ class ChatService {
   }
 
   // ============================================
+  // 1-1. 백엔드 API - 채팅 알림톡 (ALIGO)
+  // ============================================
+
+  /// 채팅 메시지 알림 요청 (fire-and-forget)
+  /// 메시지 전송 직후 호출 → 백엔드가 상대방 읽음 여부/5분 중복 체크 후 알림톡 발송
+  Future<void> notifyChatMessage(String chatRoomId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final url = Uri.parse(ApiConfig.chatNotifyUrl(chatRoomId));
+      await _apiClient.post(url, headers: headers);
+      debugPrint('🔔 [CHAT] 알림 요청 완료: $chatRoomId');
+    } catch (e) {
+      // fire-and-forget: 실패해도 무시
+      debugPrint('⚠️ [CHAT] 알림 요청 실패 (무시): $e');
+    }
+  }
+
+  /// 채팅방 읽음 처리 (백엔드 API)
+  /// 채팅방 진입 시 / 포그라운드 복귀 시 / heartbeat로 호출
+  /// 백엔드에서 Redis에 읽음 시간 기록 → 상대방 알림 차단 판단에 사용
+  Future<void> markAsReadOnServer(String chatRoomId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final url = Uri.parse(ApiConfig.chatReadUrl(chatRoomId));
+      await _apiClient.post(url, headers: headers);
+      debugPrint('👁️ [CHAT] 서버 읽음 처리 완료: $chatRoomId');
+    } catch (e) {
+      // 실패해도 무시 (최악의 경우 알림이 한 번 더 갈 뿐)
+      debugPrint('⚠️ [CHAT] 서버 읽음 처리 실패 (무시): $e');
+    }
+  }
+
+  // ============================================
   // 2. Firestore - 실시간 메시지
   // ============================================
 

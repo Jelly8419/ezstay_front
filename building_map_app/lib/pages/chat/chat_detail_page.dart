@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -37,6 +38,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   int? _currentUserId;  // 현재 사용자 ID 저장
   bool _isLoading = true;
   String? _error;
+  Timer? _readHeartbeatTimer;  // 30초 heartbeat 타이머
 
   @override
   void initState() {
@@ -46,6 +48,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   @override
   void dispose() {
+    _readHeartbeatTimer?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     _isSendingNotifier.dispose();
@@ -75,13 +78,17 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       // 4. 채팅방 정보 로드
       final chatRoom = await _chatService.getChatRoomDetail(widget.chatRoomId);
 
-      // 4. 읽음 처리
+      // 4. Firestore 읽음 처리
       if (_currentUserId != null) {
         await _chatService.markAsRead(
           chatRoomId: widget.chatRoomId,
           userId: _currentUserId!,
         );
       }
+
+      // 5. 서버 읽음 처리 + 30초 heartbeat 시작 (알림톡 차단용)
+      _chatService.markAsReadOnServer(widget.chatRoomId);
+      _startReadHeartbeat();
 
       setState(() {
         _chatRoom = chatRoom;
@@ -94,6 +101,15 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       });
       debugPrint('❌ [CHAT_DETAIL] 초기화 실패: $e');
     }
+  }
+
+  /// 30초 heartbeat 시작 (채팅방에 머무는 동안 상대방 알림 차단)
+  void _startReadHeartbeat() {
+    _readHeartbeatTimer?.cancel();
+    _readHeartbeatTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _chatService.markAsReadOnServer(widget.chatRoomId),
+    );
   }
 
   /// 메시지 전송
@@ -114,6 +130,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         senderId: _currentUserId!,
         text: text,
       );
+
+      // 알림톡 요청 (fire-and-forget)
+      _chatService.notifyChatMessage(widget.chatRoomId);
 
       _messageController.clear();
 
