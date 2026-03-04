@@ -561,7 +561,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
               '📝 [VERIFY] 소셜 로그인 게스트: 본인인증 저장 API 호출');
           final verifyBody = {
             'name': _nameController.text,
-            'phoneNumber': _phoneController.text,
+            'phone_number': _phoneController.text,
             if (_verifiedBirth != null) 'birth': _verifiedBirth,
             if (_verifiedGender != null) 'gender': _verifiedGender,
             if (_verifiedDi != null) 'di': _verifiedDi,
@@ -622,7 +622,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
           'password': widget.password,
           'user_mode': widget.mode == UserMode.guest ? 'guest' : 'host',
           'name': _nameController.text,
-          'phoneNumber': _phoneController.text,
+          'phone_number': _phoneController.text,
           if (_verifiedBirth != null) 'birth': _verifiedBirth,
           if (_verifiedGender != null) 'gender': _verifiedGender,
           if (_verifiedDi != null) 'di': _verifiedDi,

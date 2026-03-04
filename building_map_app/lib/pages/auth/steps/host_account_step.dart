@@ -278,7 +278,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
 
     final verifyBody = {
       'name': widget.realName,
-      'phoneNumber': widget.phoneNumber,
+      'phone_number': widget.phoneNumber,
       if (widget.birth != null) 'birth': widget.birth,
       if (widget.gender != null) 'gender': widget.gender,
       if (widget.di != null) 'di': widget.di,
@@ -351,7 +351,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
       'password': widget.password,
       'user_mode': 'host',
       'name': widget.realName,
-      'phoneNumber': widget.phoneNumber,
+      'phone_number': widget.phoneNumber,
       if (widget.birth != null) 'birth': widget.birth,
       if (widget.gender != null) 'gender': widget.gender,
       if (widget.di != null) 'di': widget.di,
