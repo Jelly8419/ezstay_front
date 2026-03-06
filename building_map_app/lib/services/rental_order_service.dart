@@ -520,13 +520,14 @@ class AvailableRentalItem {
   });
 
   factory AvailableRentalItem.fromJson(Map<String, dynamic> json) {
+    final stock = json['availableStock'] ?? json['availableQuantity'] ?? 0;
     return AvailableRentalItem(
       id: json['id'],
       name: json['name'] ?? '',
       description: json['description'],
       price: _parsePrice(json['price']),
       imageUrl: json['imageUrl'],
-      availableStock: json['availableStock'] ?? 0,
+      availableStock: stock is int ? stock : int.tryParse(stock.toString()) ?? 0,
     );
   }
 

@@ -282,37 +282,82 @@ class _NotificationPageState extends State<NotificationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // React: bg-gray-50
-      backgroundColor: AppColors.gray50,
-      appBar: AppBar(
-        // React: <PageHeader title="알림" onBack={onBack} />
-        title: const Text(
-          '알림',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.gray900,
+    return ColoredBox(
+      color: AppColors.gray50,
+      child: Column(
+        children: [
+          // 헤더
+          _buildHeader(),
+          // 콘텐츠
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildBody(),
           ),
-        ),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.gray900),
-          onPressed: () => context.pop(),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: AppColors.gray200,
-            height: 1,
-          ),
+        ],
+      ),
+    );
+  }
+
+  /// 페이지 헤더
+  /// 데스크톱: 좌측 타이틀만
+  /// 모바일: 뒤로가기 버튼 + 중앙 타이틀
+  Widget _buildHeader() {
+    final isDesktop = MediaQuery.of(context).size.width >= 1024;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          bottom: BorderSide(color: AppColors.gray200, width: 1),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildBody(),
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktop ? 24 : 4,
+        vertical: isDesktop ? 16 : 0,
+      ),
+      child: isDesktop
+          ? const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '알림',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.gray900,
+                ),
+              ),
+            )
+          : SizedBox(
+              height: 56,
+              child: Row(
+                children: [
+                  // 뒤로가기 버튼 (좌측)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new,
+                      color: AppColors.gray900,
+                      size: 20,
+                    ),
+                    onPressed: () => context.pop(),
+                  ),
+                  // 중앙 타이틀
+                  const Expanded(
+                    child: Text(
+                      '알림',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.gray900,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  // 우측 대칭 공간 (48px = IconButton 기본 크기)
+                  const SizedBox(width: 48),
+                ],
+              ),
+            ),
     );
   }
 

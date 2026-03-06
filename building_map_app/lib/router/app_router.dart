@@ -57,6 +57,7 @@ import '../pages/legal/terms_of_service_page.dart' deferred as terms_of_service;
 import '../pages/legal/privacy_policy_page.dart' deferred as privacy_policy;
 import '../pages/auth/reset_password_page.dart' deferred as reset_password;
 import '../pages/auth/kmc_callback_page.dart' deferred as kmc_callback;
+import '../pages/error_page.dart';
 
 
 class AppRouter {
@@ -235,6 +236,7 @@ class AppRouter {
       initialLocation: '/',
       debugLogDiagnostics: true,
       refreshListenable: authService,
+      errorBuilder: (context, state) => const ErrorPage(),
       redirect: (BuildContext context, GoRouterState state) {
         final isInitialized = authService.isInitialized;
         final isLoggedIn = authService.isLoggedIn;
@@ -534,6 +536,15 @@ class AppRouter {
               builder: (context, state) => _deferredShellWidget(
                 privacy_policy.loadLibrary,
                 () => privacy_policy.PrivacyPolicyPage(),
+              ),
+            ),
+            // 알림 페이지 (GNB 포함)
+            GoRoute(
+              path: '/notifications',
+              name: 'notifications',
+              builder: (context, state) => _deferredShellWidget(
+                notification_page.loadLibrary,
+                () => notification_page.NotificationPage(),
               ),
             ),
             // 고객센터
@@ -926,15 +937,7 @@ class AppRouter {
           name: 'map',
           builder: (context, state) => const MapScreen(),
         ),
-        // 알림 페이지 (커스텀 AppBar)
-        GoRoute(
-          path: '/notifications',
-          name: 'notifications',
-          builder: (context, state) => _deferredWidget(
-            notification_page.loadLibrary,
-            () => notification_page.NotificationPage(),
-          ),
-        ),
+        // 알림 페이지는 ShellRoute(GNB)로 이동됨
         // 채팅 상세 (커스텀 AppBar)
         GoRoute(
           path: '/chat-detail',
