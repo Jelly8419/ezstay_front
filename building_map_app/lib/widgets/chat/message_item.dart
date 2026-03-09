@@ -196,7 +196,7 @@ class MessageItem extends StatelessWidget {
                       // 이미지 (있는 경우)
                       if (message.imageUrl != null) ...[
                         if (message.text.isNotEmpty) const SizedBox(height: 8),
-                        _buildChatImage(message.imageUrl!),
+                        _buildChatImage(context, message.imageUrl!),
                       ],
                     ],
                   ),
@@ -273,7 +273,7 @@ class MessageItem extends StatelessWidget {
                     // 이미지 (있는 경우)
                     if (message.imageUrl != null) ...[
                       if (message.text.isNotEmpty) const SizedBox(height: 8),
-                      _buildChatImage(message.imageUrl!),
+                      _buildChatImage(context, message.imageUrl!),
                     ],
                   ],
                 ),
@@ -297,51 +297,145 @@ class MessageItem extends StatelessWidget {
   }
 
   /// 채팅 이미지 위젯 (웹 CORS 호환)
-  Widget _buildChatImage(String imageUrl) {
+  Widget _buildChatImage(BuildContext context, String imageUrl) {
     final url = ContractUtils.getFullImageUrl(imageUrl);
     debugPrint('🖼️ [CHAT] 이미지 로딩: $url');
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 320),
-        child: Image.network(
-          url,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              width: 200,
-              height: 150,
-              color: AppColors.neutral200,
-              child: const Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            debugPrint('❌ [CHAT] 이미지 로딩 실패: $error');
-            debugPrint('❌ [CHAT] URL: $url');
-            return Container(
-              width: 200,
-              height: 150,
-              color: AppColors.neutral200,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.broken_image, color: AppColors.neutral500),
-                  const SizedBox(height: 4),
-                  Text(
-                    '이미지 로딩 실패',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.neutral500,
+    return GestureDetector(
+      onTap: () => _showFullScreenImage(context, url),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320),
+          child: Image.network(
+            url,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                width: 200,
+                height: 150,
+                color: AppColors.neutral200,
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('❌ [CHAT] 이미지 로딩 실패: $error');
+              debugPrint('❌ [CHAT] URL: $url');
+              return Container(
+                width: 200,
+                height: 150,
+                color: AppColors.neutral200,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.broken_image, color: AppColors.neutral500),
+                    const SizedBox(height: 4),
+                    Text(
+                      '이미지 로딩 실패',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.neutral500,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                ),
+              );
+            },
+          ),
         ),
+      ),
+    );
+  }
+
+  /// 이미지 전체 화면 보기
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (context, _, __) => _FullScreenImageViewer(imageUrl: imageUrl),
+        transitionsBuilder: (context, animation, _, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+}
+
+/// 전체 화면 이미지 뷰어
+class _FullScreenImageViewer extends StatefulWidget {
+  final String imageUrl;
+
+  const _FullScreenImageViewer({required this.imageUrl});
+
+  @override
+  State<_FullScreenImageViewer> createState() => _FullScreenImageViewerState();
+}
+
+class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
+  final TransformationController _transformController = TransformationController();
+
+  @override
+  void dispose() {
+    _transformController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black.withValues(alpha: 0.9),
+      body: Stack(
+        children: [
+          // 이미지 (핀치 줌 + 더블탭 줌)
+          Center(
+            child: InteractiveViewer(
+              transformationController: _transformController,
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.network(
+                widget.imageUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                      const SizedBox(height: 8),
+                      Text(
+                        '이미지를 불러올 수 없습니다',
+                        style: AppTextStyles.bodyMedium.copyWith(color: Colors.white54),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+          // 닫기 버튼
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            right: 8,
+            child: IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close, color: Colors.white, size: 28),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.black45,
+                shape: const CircleBorder(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
