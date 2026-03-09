@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "c:\\study\\ezstay_front\\building_map_app\\lib\\shared\\widgets"
+    ]
+  }
+}

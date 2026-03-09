@@ -1,0 +1,160 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import '../config/api_config.dart';
+import 'api_client.dart';
+import 'token_service.dart';
+
+/// 영수증 발급 설정 서비스 (호스트 전용)
+/// Backend API: /api/host/receipt
+class ReceiptService {
+  final ApiClient _apiClient = ApiClient();
+
+  /// 영수증 설정 조회
+  /// GET /api/host/receipt
+  ///
+  /// 반환:
+  /// - Map<String, dynamic>: 영수증 설정 정보
+  /// - null: 설정 없음 (404)
+  ///
+  /// 예외:
+  /// - Exception: 서버 에러 또는 네트워크 에러
+  Future<Map<String, dynamic>?> getReceipt() async {
+    try {
+      debugPrint('🧾 [ReceiptService] 영수증 설정 조회 시작');
+
+      final accessToken = await TokenService.getValidAccessToken();
+      if (accessToken == null) {
+        throw Exception('로그인이 필요합니다.');
+      }
+
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/host/receipt');
+      final response = await _apiClient.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response == null) {
+        throw Exception('네트워크 연결을 확인해주세요.');
+      }
+
+      debugPrint('🧾 [ReceiptService] 응답 상태: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true && data['data'] != null) {
+          final receiptData = data['data'] as Map<String, dynamic>;
+          debugPrint('✅ [ReceiptService] 영수증 설정 조회 성공');
+          return receiptData;
+        } else {
+          debugPrint('⚠️ [ReceiptService] 응답 형식 오류: $data');
+          throw Exception('영수증 정보를 불러올 수 없습니다.');
+        }
+      } else if (response.statusCode == 404) {
+        debugPrint('ℹ️ [ReceiptService] 영수증 설정 없음 (404)');
+        return null;
+      } else {
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['message'] ?? '영수증 정보 조회 실패';
+        debugPrint('❌ [ReceiptService] 에러: $errorMessage');
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      debugPrint('❌ [ReceiptService] 예외 발생: $e');
+      rethrow;
+    }
+  }
+
+  /// 영수증 설정 저장/수정 (Upsert)
+  /// PUT /api/host/receipt
+  ///
+  /// Request body:
+  /// - required: "yes" | "no"
+  /// - type: "personal" | "business" | "tax_invoice"
+  /// - number: 번호 (서버에서 숫자만 추출)
+  /// - businessName: 사업자명 (tax_invoice일 때 필수)
+  /// - repName: 대표자 이름 (tax_invoice일 때 필수)
+  /// - email: 이메일 (tax_invoice일 때 선택)
+  ///
+  /// Response 필드 매핑:
+  /// - required → receiptRequired
+  /// - type → receiptType
+  /// - number → receiptNumber
+  ///
+  /// 반환: Map<String, dynamic> 저장된 영수증 설정 정보
+  Future<Map<String, dynamic>> saveReceipt({
+    required String receiptRequired,
+    String? type,
+    String? number,
+    String? businessName,
+    String? repName,
+    String? email,
+  }) async {
+    try {
+      debugPrint('🧾 [ReceiptService] 영수증 설정 저장 시작');
+
+      final accessToken = await TokenService.getValidAccessToken();
+      if (accessToken == null) {
+        throw Exception('로그인이 필요합니다.');
+      }
+
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/host/receipt');
+      final body = <String, dynamic>{
+        'required': receiptRequired,
+      };
+
+      if (receiptRequired == 'yes') {
+        body['type'] = type;
+        body['number'] = number;
+        if (type == 'tax_invoice') {
+          body['businessName'] = businessName;
+          body['repName'] = repName;
+          if (email != null && email.isNotEmpty) {
+            body['email'] = email;
+          }
+        }
+      }
+
+      debugPrint('🧾 [ReceiptService] 요청 body: $body');
+
+      final response = await _apiClient.put(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(body),
+      );
+
+      if (response == null) {
+        throw Exception('네트워크 연결을 확인해주세요.');
+      }
+
+      debugPrint('🧾 [ReceiptService] 응답 상태: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true && data['data'] != null) {
+          final receiptData = data['data'] as Map<String, dynamic>;
+          debugPrint('✅ [ReceiptService] 영수증 설정 저장 성공');
+          return receiptData;
+        } else {
+          debugPrint('⚠️ [ReceiptService] 응답 형식 오류: $data');
+          throw Exception('영수증 정보를 저장할 수 없습니다.');
+        }
+      } else {
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['message'] ?? '영수증 정보 저장 실패';
+        debugPrint('❌ [ReceiptService] 에러: $errorMessage');
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      debugPrint('❌ [ReceiptService] 예외 발생: $e');
+      rethrow;
+    }
+  }
+}
