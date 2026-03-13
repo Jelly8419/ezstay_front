@@ -98,6 +98,7 @@ jobs:
 
           flutter build web --release \
             --base-href=/app/ \
+            --pwa-strategy=none \
             --dart-define=ENVIRONMENT=test \
             --dart-define=API_BASE_URL=${{ env.API_URL }} \
             --dart-define=KAKAO_REST_API_KEY=${{ env.KAKAO_REST_KEY }} \
