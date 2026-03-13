@@ -130,7 +130,11 @@ jobs:
           sed -i "s/flutter_bootstrap.js/flutter_bootstrap.js?v=${BUILD_VERSION}/g" index.html
 
           echo "Cache busting version: $BUILD_VERSION"
-
+      - name: Remove service worker
+        working-directory: ./building_map_app/build/web
+        run: |
+          rm -f flutter_service_worker.js
+          echo "Service worker removed"
       # ==========================================
       # 3. SSH 설정
       # ==========================================
