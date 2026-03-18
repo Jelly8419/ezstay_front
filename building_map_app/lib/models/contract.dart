@@ -113,24 +113,44 @@ enum DiscountType {
   }
 }
 
-/// 결제 수단
+/// 결제 수단 (PayTag PG 코드 기준)
 enum PaymentMethod {
-  creditCard('CREDIT_CARD', '신용카드'),
-  bankTransfer('BANK_TRANSFER', '계좌이체'),
-  virtualAccount('VIRTUAL_ACCOUNT', '가상계좌'),
-  easyPay('EASY_PAY', '간편결제'),
-  mobilePayment('MOBILE_PAYMENT', '휴대폰 결제');
+  // 주요 신용카드
+  bc('BC', '비씨카드'),
+  kb('KB', '국민카드'),
+  sh('SH', '신한카드'),
+  ss('SS', '삼성카드'),
+  hd('HD', '현대카드'),
+  lt('LT', '롯데카드'),
+  wr('WR', '우리카드'),
+  ka('KA', '하나카드'),
+  nh('NH', '농협카드'),
+
+  // 간편결제
+  kakaoPay('KAKAO', '카카오페이'),
+  naverPay('NAVER', '네이버페이'),
+  payco('PAYCO', '페이코'),
+
+  // 기타
+  virtualAccount('VBANK', '가상계좌');
 
   final String value;
   final String label;
 
   const PaymentMethod(this.value, this.label);
 
+  /// 신용카드 여부 (할부 가능)
+  bool get isCreditCard => !isEasyPay && this != virtualAccount;
+
+  /// 간편결제 여부 (할부 불가)
+  bool get isEasyPay =>
+      this == kakaoPay || this == naverPay || this == payco;
+
   static PaymentMethod? fromString(String? value) {
     if (value == null) return null;
     return PaymentMethod.values.firstWhere(
       (method) => method.value == value,
-      orElse: () => PaymentMethod.creditCard,
+      orElse: () => PaymentMethod.bc,
     );
   }
 }

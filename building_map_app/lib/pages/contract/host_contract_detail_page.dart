@@ -224,10 +224,11 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
 
       if (confirmed != true || !mounted) return;
 
-      // 3. Mock 결제 승인 (실제 PG 연동 시 교체)
+      // 3. 위약금 결제 승인 (PayTag PG)
+      // TODO: 실제 PayTag SDK 결제 플로우 연동 후 recvPayparam 전달
       await paymentService.confirmHostPenaltyPayment(
         contractId: widget.contractId,
-        paymentKey: paymentInfo['paymentKey'] ?? 'mock_key',
+        recvPayparam: paymentInfo['recvPayparam'] ?? 'mock_key',
         orderId: paymentInfo['orderId'] ?? '',
         amount: penaltyAmount,
       );

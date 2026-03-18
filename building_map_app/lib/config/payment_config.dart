@@ -1,7 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
 
-/// 토스페이먼츠 결제 설정
+/// PayTag PG 결제 설정
 ///
 /// 웹: JavaScript SDK 사용 (dart:js 바인딩)
 /// 모바일: WebView 기반 구현
@@ -11,30 +11,30 @@ import 'package:flutter/foundation.dart';
 /// 2. dotenv.env (런타임 .env 파일, 로컬 개발용)
 /// 3. 기본값 (폴백)
 class PaymentConfig {
-  /// 기본 테스트 클라이언트 키
-  static const String _defaultTestKey = 'test_ck_PBal2vxj81voBvwla6xG35RQgOAN';
+  /// 기본 테스트 shopcode
+  static const String _defaultTestShopcode = '1901110002';
 
-  /// 토스 클라이언트 키
+  /// PayTag Shopcode
   ///
-  /// 우선순위: --dart-define > .env > 기본 테스트 키
-  static String get clientKey {
+  /// 우선순위: --dart-define > .env > 기본 테스트 값
+  static String get shopcode {
     // 1순위: --dart-define으로 주입된 값 (빌드 시 고정)
-    const dartDefineKey = String.fromEnvironment('TOSS_CLIENT_KEY');
-    if (dartDefineKey.isNotEmpty) {
-      debugPrint('✅ [PaymentConfig] TOSS_CLIENT_KEY from --dart-define');
-      return dartDefineKey;
+    const dartDefineValue = String.fromEnvironment('PAYTAG_SHOPCODE');
+    if (dartDefineValue.isNotEmpty) {
+      debugPrint('✅ [PaymentConfig] PAYTAG_SHOPCODE from --dart-define');
+      return dartDefineValue;
     }
 
     // 2순위: .env 파일의 값 (런타임)
-    final dotenvKey = dotenv.env['TOSS_CLIENT_KEY'];
-    if (dotenvKey != null && dotenvKey.isNotEmpty) {
-      debugPrint('✅ [PaymentConfig] TOSS_CLIENT_KEY from .env');
-      return dotenvKey;
+    final dotenvValue = dotenv.env['PAYTAG_SHOPCODE'];
+    if (dotenvValue != null && dotenvValue.isNotEmpty) {
+      debugPrint('✅ [PaymentConfig] PAYTAG_SHOPCODE from .env');
+      return dotenvValue;
     }
 
-    // 3순위: 기본 테스트 키
-    debugPrint('⚠️ [PaymentConfig] TOSS_CLIENT_KEY 없음 → 기본 테스트 키 사용');
-    return _defaultTestKey;
+    // 3순위: 기본 테스트 값
+    debugPrint('⚠️ [PaymentConfig] PAYTAG_SHOPCODE 없음 → 기본 테스트 값 사용');
+    return _defaultTestShopcode;
   }
 
   /// 백엔드 API Base URL
@@ -78,6 +78,20 @@ class PaymentConfig {
     return false;
   }
 
+  /// PayTag 웹훅 URL (가상계좌 입금 확인용)
+  ///
+  /// 외부에서 접근 가능한 URL이어야 함 (localhost 불가)
+  /// 설정 안 되어 있으면 빈 문자열 반환 → SDK에 webhook_url 파라미터 생략
+  static String get webhookUrl {
+    const dartDefineValue = String.fromEnvironment('PAYTAG_WEBHOOK_URL');
+    if (dartDefineValue.isNotEmpty) return dartDefineValue;
+
+    final dotenvValue = dotenv.env['PAYTAG_WEBHOOK_URL'];
+    if (dotenvValue != null && dotenvValue.isNotEmpty) return dotenvValue;
+
+    return '';
+  }
+
   /// Mock 모드 사용 여부
   ///
   /// - 로컬/테스트 환경 (IS_PRODUCTION=false): Mock 모드 활성화
@@ -96,30 +110,6 @@ class PaymentConfig {
     }
 
     // 3순위: 프로덕션 여부로 자동 결정
-    // 프로덕션 → Mock 모드 비활성화 (실제 결제)
-    // 로컬/테스트 → Mock 모드 활성화
     return !isProduction;
-  }
-
-  /// 결제 성공 시 리다이렉트 URL
-  static String get successUrl {
-    if (kIsWeb) {
-      // 웹: 현재 도메인의 /payment/success로 리다이렉트
-      return '${Uri.base.origin}/payment/success';
-    } else {
-      // 모바일: 백엔드 URL 사용
-      return '$baseUrl/payment/success';
-    }
-  }
-
-  /// 결제 실패 시 리다이렉트 URL
-  static String get failUrl {
-    if (kIsWeb) {
-      // 웹: 현재 도메인의 /payment/fail로 리다이렉트
-      return '${Uri.base.origin}/payment/fail';
-    } else {
-      // 모바일: 백엔드 URL 사용
-      return '$baseUrl/payment/fail';
-    }
   }
 }

@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 
 /// 결제 서비스
 ///
-/// 토스페이먼츠 결제 관련 API 통신을 담당합니다.
+/// PayTag PG 결제 관련 API 통신을 담당합니다.
 class PaymentService {
   final String baseUrl = PaymentConfig.baseUrl;
   final AuthService _authService = AuthService();
@@ -58,12 +58,13 @@ class PaymentService {
 
   /// 결제 승인 (실제 결제)
   ///
-  /// 토스페이먼츠 결제 성공 후 백엔드에 결제 승인을 요청합니다.
+  /// PayTag SDK 콜백 결과를 백엔드에 전달하여 결제 승인을 요청합니다.
   Future<Map<String, dynamic>> confirmPayment({
     required int contractId,
-    required String paymentKey,
+    required String recvPayparam,
     required String orderId,
     required int amount,
+    String? payType,
   }) async {
     final accessToken = await _authService.getAccessToken();
 
@@ -73,9 +74,9 @@ class PaymentService {
 
     debugPrint('📡 [PaymentService] 결제 승인 요청');
     debugPrint('  - contractId: $contractId');
-    debugPrint('  - paymentKey: $paymentKey');
     debugPrint('  - orderId: $orderId');
     debugPrint('  - amount: $amount');
+    debugPrint('  - payType: $payType');
 
     try {
       final response = await http.post(
@@ -85,7 +86,8 @@ class PaymentService {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'paymentKey': paymentKey,
+          'recvPayparam': recvPayparam,
+          'payType': payType ?? 'CARD',
           'orderId': orderId,
           'amount': amount,
         }),
@@ -166,9 +168,10 @@ class PaymentService {
   /// 결제 완료 후: 게스트 PG 전액 환불 + 게스트 보전 지급이 처리됩니다.
   Future<Map<String, dynamic>> confirmHostPenaltyPayment({
     required int contractId,
-    required String paymentKey,
+    required String recvPayparam,
     required String orderId,
     required int amount,
+    String? payType,
   }) async {
     final accessToken = await _authService.getAccessToken();
 
@@ -188,7 +191,8 @@ class PaymentService {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'paymentKey': paymentKey,
+          'recvPayparam': recvPayparam,
+          'payType': payType ?? 'CARD',
           'orderId': orderId,
           'amount': amount,
         }),

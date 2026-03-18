@@ -6,7 +6,7 @@ import '../core/theme/app_text_styles.dart';
 import '../core/theme/app_spacing.dart';
 import '../utils/format_utils.dart';
 
-/// 결제 수단 선택 모달
+/// 결제 수단 선택 모달 (PayTag PG)
 class PaymentMethodModal extends StatefulWidget {
   final int totalAmount;
   final PaymentMethod? initialSelectedMethod;
@@ -28,12 +28,36 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  /// 신용카드 목록
+  static const _creditCards = [
+    PaymentMethod.bc,
+    PaymentMethod.kb,
+    PaymentMethod.sh,
+    PaymentMethod.ss,
+    PaymentMethod.hd,
+    PaymentMethod.lt,
+    PaymentMethod.wr,
+    PaymentMethod.ka,
+    PaymentMethod.nh,
+  ];
+
+  /// 간편결제 목록
+  static const _easyPays = [
+    PaymentMethod.kakaoPay,
+    PaymentMethod.naverPay,
+    PaymentMethod.payco,
+  ];
+
+  /// 기타 결제 목록
+  static const _others = [
+    PaymentMethod.virtualAccount,
+  ];
+
   @override
   void initState() {
     super.initState();
     _selectedMethod = widget.initialSelectedMethod;
 
-    // 애니메이션 설정
     _animationController = AnimationController(
       vsync: this,
       duration: AppDurations.modal,
@@ -73,7 +97,7 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
         position: _slideAnimation,
         child: Container(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
           ),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -91,10 +115,7 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 헤더
               _buildHeader(),
-
-              // 결제 수단 리스트
               Flexible(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -102,20 +123,156 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
                     vertical: 12,
                   ),
                   child: Column(
-                    children: PaymentMethod.values.map((method) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildPaymentCard(method),
-                      );
-                    }).toList(),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 신용카드 섹션
+                      _buildSectionTitle('신용카드', Icons.credit_card),
+                      const SizedBox(height: 8),
+                      _buildCardGrid(_creditCards),
+
+                      const SizedBox(height: 20),
+
+                      // 간편결제 섹션
+                      _buildSectionTitle('간편결제', Icons.smartphone),
+                      const SizedBox(height: 8),
+                      ..._easyPays.map((method) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _buildPaymentTile(method),
+                          )),
+
+                      const SizedBox(height: 20),
+
+                      // 기타 섹션
+                      _buildSectionTitle('기타', Icons.more_horiz),
+                      const SizedBox(height: 8),
+                      ..._others.map((method) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _buildPaymentTile(method),
+                          )),
+
+                      const SizedBox(height: 8),
+                    ],
                   ),
                 ),
               ),
-
-              // 하단 고정 버튼
               _buildBottomButton(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// 섹션 제목
+  Widget _buildSectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.textSecondary),
+        const SizedBox(width: 6),
+        Text(
+          title,
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 신용카드 그리드 (3열)
+  Widget _buildCardGrid(List<PaymentMethod> cards) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: cards.map((method) {
+        final isSelected = _selectedMethod == method;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedMethod = method),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: (MediaQuery.of(context).size.width - 40 - 16) / 3,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.primary500.withValues(alpha: 0.08)
+                  : Colors.white,
+              border: Border.all(
+                color: isSelected ? AppColors.primary500 : AppColors.border,
+                width: isSelected ? 2 : 1,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(
+                method.label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? AppColors.primary500 : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  /// 간편결제/기타 타일
+  Widget _buildPaymentTile(PaymentMethod method) {
+    final isSelected = _selectedMethod == method;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedMethod = method),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary500.withValues(alpha: 0.08)
+              : Colors.white,
+          border: Border.all(
+            color: isSelected ? AppColors.primary500 : AppColors.border,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              method.icon,
+              size: 22,
+              color: isSelected ? AppColors.primary500 : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    method.label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected
+                          ? AppColors.primary500
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    method.description,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle, color: AppColors.primary500, size: 24),
+          ],
         ),
       ),
     );
@@ -128,19 +285,13 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.border,
-            width: 1,
-          ),
+          bottom: BorderSide(color: AppColors.border, width: 1),
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '결제 수단 선택',
-            style: AppTextStyles.headingMedium,
-          ),
+          Text('결제 수단 선택', style: AppTextStyles.headingMedium),
           IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.close, size: 28),
@@ -149,103 +300,6 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
             constraints: const BoxConstraints(),
           ),
         ],
-      ),
-    );
-  }
-
-  /// 결제 수단 카드
-  Widget _buildPaymentCard(PaymentMethod method) {
-    final isSelected = _selectedMethod == method;
-
-    return AnimatedContainer(
-      duration: AppDurations.listItem,
-      curve: AppCurves.listItem,
-      decoration: BoxDecoration(
-        gradient: isSelected
-            ? LinearGradient(
-                colors: [
-                  AppColors.primary500.withValues(alpha: 0.08),
-                  Colors.white,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : null,
-        color: isSelected ? null : Colors.white,
-        border: Border.all(
-          color: isSelected ? AppColors.primary500 : AppColors.border,
-          width: isSelected ? 2 : 1,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: isSelected
-                ? AppColors.primary500.withValues(alpha: 0.2)
-                : Colors.black.withValues(alpha: 0.04),
-            blurRadius: isSelected ? 16 : 8,
-            offset: Offset(0, isSelected ? 4 : 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            setState(() => _selectedMethod = method);
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                // 아이콘
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary500.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    method.icon,
-                    color: AppColors.primary500,
-                    size: 24,
-                  ),
-                ),
-
-                const SizedBox(width: 16),
-
-                // 제목 + 설명
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        method.label,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        method.description,
-                        style: AppTextStyles.bodySmallSecondary,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 체크 아이콘 (선택 시)
-                if (isSelected)
-                  Icon(
-                    Icons.check_circle,
-                    color: AppColors.primary500,
-                    size: 28,
-                  ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -259,10 +313,7 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          top: BorderSide(
-            color: AppColors.border,
-            width: 1,
-          ),
+          top: BorderSide(color: AppColors.border, width: 1),
         ),
         boxShadow: [
           BoxShadow(
@@ -328,5 +379,4 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
       ),
     );
   }
-
 }

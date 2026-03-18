@@ -12,6 +12,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/payment_webview.dart';
+import '../../widgets/payment_method_modal.dart';
 // import '../../widgets/modals/refund_calculation_modal.dart'; // TODO: API로 전체 Contract 가져오기 후 사용
 import '../../widgets/modals/cancel_request_modal.dart';
 import '../../widgets/modals/deposit_agreement_review_modal.dart';
@@ -576,20 +577,31 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       '💳 [PAYMENT INFO] Retrieved for order: $orderId, amount: $amount',
     );
 
-    // 3단계: 토스페이먼츠 SDK 직접 호출
+    // 3단계: 결제수단 선택 모달
     if (!mounted) return;
+    final selectedMethod = await showModalBottomSheet<PaymentMethod>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => PaymentMethodModal(totalAmount: amount),
+    );
+
+    if (selectedMethod == null || !mounted) return;
+
+    // 4단계: PayTag SDK 호출
     await _processRentalPayment(
       contract: contract,
       rentalOrderId: orderResponse.rentalOrderId,
       orderId: orderId,
       amount: amount,
       orderName: orderName,
+      payType: selectedMethod.value,
       customerName: customerName,
       customerEmail: customerEmail,
     );
   }
 
-  /// 토스페이먼츠 렌탈 결제 처리
+  /// PayTag 렌탈 결제 처리
   ///
   /// 웹: JavaScript SDK로 결제창 호출 → /rental-payment/success로 리다이렉트
   /// 모바일: WebView로 결제창 표시 → 결과 처리
@@ -599,39 +611,58 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     required String orderId,
     required int amount,
     required String orderName,
+    required String payType,
     String? customerName,
     String? customerEmail,
   }) async {
     try {
       if (kIsWeb) {
-        // 웹: 토스페이먼츠 JavaScript SDK 직접 호출
+        // 웹: PayTag JavaScript SDK 직접 호출
         final paymentService = PaymentServiceUnified();
 
-        debugPrint('🌐 [RENTAL PAYMENT] Web - Calling Toss SDK');
+        debugPrint('🌐 [RENTAL PAYMENT] Web - Calling PayTag SDK');
         debugPrint('  - rentalOrderId: $rentalOrderId');
         debugPrint('  - orderId: $orderId');
         debugPrint('  - amount: $amount');
 
-        // 토스 SDK 호출 (렌탈 전용 successUrl/failUrl 사용)
-        await paymentService.requestRentalPayment(
+        // PayTag SDK 호출 (렌탈 결제)
+        final payResult = await paymentService.requestRentalPayment(
           rentalOrderId: rentalOrderId,
           orderId: orderId,
           amount: amount,
           orderName: orderName,
+          payType: payType,
           customerName: customerName,
           customerEmail: customerEmail,
         );
 
-        // 웹에서는 자동 리다이렉트됨 → /rental-payment/success 또는 /rental-payment/fail
-        // 여기서는 편집 모드만 해제
+        if (payResult != null) {
+          // 렌탈 결제 승인 (paymentKey 필드에 recv_payparam 전달 - API 호환)
+          await _rentalOrderService.confirmPayment(
+            rentalOrderId: rentalOrderId,
+            paymentKey: payResult['recvPayparam'] as String,
+            orderId: orderId,
+            amount: amount,
+          );
+
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('옵션 상품 결제가 완료되었습니다!'),
+              backgroundColor: Color(0xFF10B981),
+            ),
+          );
+        }
+
         setState(() {
           _editingContractId = null;
           _modifiedOptions.remove(contract.id);
         });
+        _loadContracts();
       } else {
-        // 모바일: WebView로 결제 진행 (기존 로직)
-        // 결제 페이지 URL 생성 (백엔드에서 토스 결제창 URL 생성 필요)
-        // 현재는 웹 전용이므로 에러 표시
+        // 모바일: 현재 웹 전용
+        // TODO: 모바일 PayTag WebView 렌탈 결제 구현
         throw Exception('모바일에서는 아직 렌탈 추가 결제가 지원되지 않습니다.');
       }
     } catch (e) {
@@ -2639,14 +2670,27 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
       if (!mounted) return;
 
-      // 웹: 토스 페이먼츠로 결제
+      // 웹: PayTag로 결제
       if (kIsWeb) {
+        // 결제수단 선택 모달
+        final selectedMethod = await showModalBottomSheet<PaymentMethod>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => PaymentMethodModal(
+            totalAmount: paymentInfo['amount'] as int,
+          ),
+        );
+
+        if (selectedMethod == null || !mounted) return;
+
         final paymentService = PaymentServiceUnified();
         await paymentService.requestRentalPayment(
           rentalOrderId: orderResponse.rentalOrderId,
           orderId: paymentInfo['orderId'] as String,
           amount: paymentInfo['amount'] as int,
           orderName: paymentInfo['orderName'] as String,
+          payType: selectedMethod.value,
           customerName: paymentInfo['customerName'] as String?,
           customerEmail: paymentInfo['customerEmail'] as String?,
         );
@@ -2684,8 +2728,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
   /// 결제 처리
   ///
-  /// 토스페이먼츠 SDK가 자체적으로 결제수단 선택 UI를 제공하므로
-  /// 별도의 결제수단 선택 모달 없이 바로 결제를 요청합니다.
+  /// 결제수단 선택 모달을 먼저 표시한 후, 선택된 payType으로 PayTag SDK를 호출합니다.
   Future<void> _handlePayment(ContractListItem contract) async {
     try {
       // 1. PaymentServiceUnified 인스턴스 생성
@@ -2698,13 +2741,40 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
       // 3. 플랫폼별 결제 처리
       if (kIsWeb) {
-        // 웹: JavaScript SDK로 결제창 호출
-        // 토스 SDK가 자체적으로 결제수단 선택 UI를 제공함
-        await paymentService.requestPayment(
-          contractId: contract.id,
-          paymentInfo: paymentInfo,
+        // 3-1. 결제수단 선택 모달 표시
+        final selectedMethod = await showModalBottomSheet<PaymentMethod>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => PaymentMethodModal(
+            totalAmount: paymentInfo['amount'] as int,
+          ),
         );
-        // 이후 /payment/success 또는 /payment/fail로 자동 리다이렉트됨
+
+        if (selectedMethod == null || !mounted) return;
+
+        // 3-2. 선택된 payType으로 PayTag SDK 호출
+        final enrichedPaymentInfo = Map<String, dynamic>.from(paymentInfo)
+          ..['payType'] = selectedMethod.value;
+
+        final result = await paymentService.requestPayment(
+          contractId: contract.id,
+          paymentInfo: enrichedPaymentInfo,
+        );
+
+        if (!mounted) return;
+
+        if (selectedMethod == PaymentMethod.virtualAccount && result != null) {
+          _showVbankInfoDialog(result);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('결제가 완료되었습니다!'),
+              backgroundColor: Color(0xFF10B981),
+            ),
+          );
+        }
+        _loadContracts();
       } else {
         // 모바일: WebView로 결제창 표시
         final result = await Navigator.push<Map<String, dynamic>>(
@@ -2723,9 +2793,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           // 결제 승인 처리
           await paymentService.confirmPayment(
             contractId: contract.id,
-            paymentKey: result['paymentKey'] as String,
+            recvPayparam: result['recvPayparam'] as String,
             orderId: result['orderId'] as String,
             amount: result['amount'] as int,
+            payType: result['payType'] as String?,
           );
 
           if (!mounted) return;
@@ -2753,6 +2824,116 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         ),
       );
     }
+  }
+
+  /// 가상계좌 입금 안내 다이얼로그
+  void _showVbankInfoDialog(Map<String, dynamic> result) {
+    final payment = result['payment'] as Map<String, dynamic>? ?? {};
+    final vbankNo = payment['vbankNo'] as String? ?? '-';
+    final vbankOwner = payment['vbankOwner'] as String? ?? '-';
+    final vbankCode = payment['vbankCode'] as String? ?? '';
+    final depositDeadline = result['depositDeadline'] as String? ??
+        payment['depositDeadline'] as String? ?? '';
+    final totalAmount = payment['totalAmount'] as int? ?? 0;
+
+    String deadlineText = '-';
+    if (depositDeadline.isNotEmpty) {
+      try {
+        final dt = DateTime.parse(depositDeadline).toLocal();
+        deadlineText =
+            '${dt.year}.${dt.month.toString().padLeft(2, '0')}.${dt.day.toString().padLeft(2, '0')} '
+            '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}까지';
+      } catch (_) {
+        deadlineText = depositDeadline;
+      }
+    }
+
+    const bankNames = {
+      '004': 'KB국민은행', '011': 'NH농협은행', '020': '우리은행',
+      '023': 'SC제일은행', '027': '한국씨티은행', '031': '대구은행',
+      '032': '부산은행', '034': '광주은행', '035': '제주은행',
+      '037': '전북은행', '039': '경남은행', '045': '새마을금고',
+      '048': '신협', '071': '우체국', '081': '하나은행',
+      '088': '신한은행', '089': 'K뱅크', '090': '카카오뱅크',
+      '092': '토스뱅크',
+    };
+    final bankName = bankNames[vbankCode] ?? '은행($vbankCode)';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.account_balance, color: Color(0xFF2196F3), size: 28),
+            SizedBox(width: 8),
+            Text('가상계좌 발급 완료'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('아래 계좌로 입금해주시면 결제가 완료됩니다.',
+                style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 16),
+            _vbankRow('입금은행', bankName),
+            _vbankRow('계좌번호', vbankNo),
+            _vbankRow('예금주', vbankOwner),
+            _vbankRow('입금금액', '₩${FormatUtils.formatCurrency(totalAmount)}'),
+            const Divider(height: 24),
+            Row(
+              children: [
+                const Icon(Icons.access_time, size: 16, color: Color(0xFFDC2626)),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    '입금기한: $deadlineText',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFDC2626),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text('기한 내 미입금 시 자동 취소됩니다.',
+                style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2196F3),
+            ),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _vbankRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 72,
+            child: Text(label,
+                style: const TextStyle(fontSize: 13, color: Colors.grey)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
   }
 }
 

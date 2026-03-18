@@ -148,7 +148,7 @@ class RentalOrderService {
 
   // ========== 5. 결제 정보 조회 ==========
 
-  /// 렌탈 주문 결제 정보 조회 (토스페이먼츠 연동)
+  /// 렌탈 주문 결제 정보 조회 (PayTag 연동)
   ///
   /// GET /api/rental-orders/:rentalOrderId/payment-info
   Future<Map<String, dynamic>> getPaymentInfo(int rentalOrderId) async {

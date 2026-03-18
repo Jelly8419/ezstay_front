@@ -980,7 +980,8 @@ class AppRouter {
           name: 'payment-success',
           builder: (context, state) {
             final contractId = state.uri.queryParameters['contractId'];
-            final paymentKey = state.uri.queryParameters['paymentKey'];
+            final recvPayparam = state.uri.queryParameters['recvPayparam'];
+            final payType = state.uri.queryParameters['payType'];
             final orderId = state.uri.queryParameters['orderId'];
             final amount = state.uri.queryParameters['amount'];
 
@@ -989,7 +990,8 @@ class AppRouter {
               () => payment_callback.PaymentCallbackPage(
                 isSuccess: true,
                 contractId: contractId != null ? int.tryParse(contractId) : null,
-                paymentKey: paymentKey,
+                recvPayparam: recvPayparam,
+                payType: payType,
                 orderId: orderId,
                 amount: amount,
               ),
@@ -1034,7 +1036,7 @@ class AppRouter {
                 isSuccess: true,
                 rentalOrderId:
                     rentalOrderId != null ? int.tryParse(rentalOrderId) : null,
-                paymentKey: paymentKey,
+                paymentKey: paymentKey, // 렌탈은 paymentKey 필드에 recv_payparam 값 전달 (API 호환)
                 orderId: orderId,
                 amount: amount,
               ),
