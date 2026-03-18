@@ -158,11 +158,11 @@ class PaymentServiceWeb {
       setProperty(params, 'order_hp', customerPhone ?? '');
       setProperty(params, 'order_email', customerEmail ?? '');
 
-      // 가상계좌 입금 확인용 웹훅 URL (설정된 경우에만)
-      final webhookUrl = PaymentConfig.webhookUrl;
-      if (webhookUrl.isNotEmpty) {
-        setProperty(params, 'webhook_url', webhookUrl);
-      }
+      // TODO: 오픈 후 가상계좌 추가 시 웹훅 URL 활성화
+      // final webhookUrl = PaymentConfig.webhookUrl;
+      // if (webhookUrl.isNotEmpty) {
+      //   setProperty(params, 'webhook_url', webhookUrl);
+      // }
 
       // PayTag SDK 콜백
       final callback = allowInterop((dynamic resp) {

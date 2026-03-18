@@ -1608,12 +1608,12 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
       );
 
       if (mounted) {
-        // 가상계좌: 입금 안내 표시
-        if (selectedMethod == PaymentMethod.virtualAccount && result != null) {
-          _showVbankInfoDialog(result);
-        } else {
-          _showSuccessDialog('결제가 완료되었습니다!');
-        }
+        // TODO: 오픈 후 가상계좌 추가 시 입금 안내 다이얼로그 활성화
+        // if (selectedMethod == PaymentMethod.virtualAccount && result != null) {
+        //   _showVbankInfoDialog(result);
+        // } else {
+        _showSuccessDialog('결제가 완료되었습니다!');
+        // }
         await _loadContractDetail();
       }
     } catch (e) {
@@ -1744,132 +1744,10 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     );
   }
 
-  /// 가상계좌 입금 안내 다이얼로그
-  void _showVbankInfoDialog(Map<String, dynamic> result) {
-    final payment = result['payment'] as Map<String, dynamic>? ?? {};
-    final vbankNo = payment['vbankNo'] as String? ?? '-';
-    final vbankOwner = payment['vbankOwner'] as String? ?? '-';
-    final vbankCode = payment['vbankCode'] as String? ?? '';
-    final depositDeadline = result['depositDeadline'] as String? ??
-        payment['depositDeadline'] as String? ?? '';
-
-    // 입금기한 포맷
-    String deadlineText = '-';
-    if (depositDeadline.isNotEmpty) {
-      try {
-        final dt = DateTime.parse(depositDeadline).toLocal();
-        deadlineText =
-            '${dt.year}.${dt.month.toString().padLeft(2, '0')}.${dt.day.toString().padLeft(2, '0')} '
-            '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}까지';
-      } catch (_) {
-        deadlineText = depositDeadline;
-      }
-    }
-
-    // 은행코드 → 은행명 매핑
-    const bankNames = {
-      '004': 'KB국민은행', '011': 'NH농협은행', '020': '우리은행',
-      '023': 'SC제일은행', '027': '한국씨티은행', '031': '대구은행',
-      '032': '부산은행', '034': '광주은행', '035': '제주은행',
-      '037': '전북은행', '039': '경남은행', '045': '새마을금고',
-      '048': '신협', '071': '우체국', '081': '하나은행',
-      '088': '신한은행', '089': 'K뱅크', '090': '카카오뱅크',
-      '092': '토스뱅크',
-    };
-    final bankName = bankNames[vbankCode] ?? '은행($vbankCode)';
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.account_balance, color: AppColors.primary500, size: 28),
-            const SizedBox(width: 8),
-            const Text('가상계좌 발급 완료'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '아래 계좌로 입금해주시면 결제가 완료됩니다.',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            _vbankInfoRow('입금은행', bankName),
-            _vbankInfoRow('계좌번호', vbankNo),
-            _vbankInfoRow('예금주', vbankOwner),
-            _vbankInfoRow('입금금액', '₩${FormatUtils.formatCurrency(
-                result['payment']?['totalAmount'] as int? ??
-                    _contractDetail?.finalTotalAmount ?? 0)}'),
-            const Divider(height: 24),
-            Row(
-              children: [
-                Icon(Icons.access_time, size: 16, color: AppColors.error500),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    '입금기한: $deadlineText',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.error500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '기한 내 미입금 시 자동 취소됩니다.',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary500,
-            ),
-            child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _vbankInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 72,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // TODO: 오픈 후 가상계좌 추가 시 아래 메서드들 주석 해제
+  // void _showVbankInfoDialog(Map<String, dynamic> result) { ... }
+  // Widget _vbankInfoRow(String label, String value) { ... }
+  // String _bankCodeToName(String code) { ... }
 
   /// 에러 다이얼로그
   void _showErrorDialog(String message) {

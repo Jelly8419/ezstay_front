@@ -22,8 +22,9 @@ extension PaymentMethodExtension on PaymentMethod {
         return '네이버페이로 간편결제';
       case PaymentMethod.payco:
         return '페이코로 간편결제';
-      case PaymentMethod.virtualAccount:
-        return '계좌번호 발급 후 입금';
+      // TODO: 오픈 후 가상계좌 추가 예정
+      // case PaymentMethod.virtualAccount:
+      //   return '계좌번호 발급 후 입금';
     }
   }
 
@@ -46,8 +47,9 @@ extension PaymentMethodExtension on PaymentMethod {
         return Icons.shopping_bag;
       case PaymentMethod.payco:
         return Icons.payment;
-      case PaymentMethod.virtualAccount:
-        return Icons.receipt_long;
+      // TODO: 오픈 후 가상계좌 추가 예정
+      // case PaymentMethod.virtualAccount:
+      //   return Icons.receipt_long;
     }
   }
 }

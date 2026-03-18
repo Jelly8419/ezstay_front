@@ -78,19 +78,14 @@ class PaymentConfig {
     return false;
   }
 
-  /// PayTag 웹훅 URL (가상계좌 입금 확인용)
-  ///
-  /// 외부에서 접근 가능한 URL이어야 함 (localhost 불가)
-  /// 설정 안 되어 있으면 빈 문자열 반환 → SDK에 webhook_url 파라미터 생략
-  static String get webhookUrl {
-    const dartDefineValue = String.fromEnvironment('PAYTAG_WEBHOOK_URL');
-    if (dartDefineValue.isNotEmpty) return dartDefineValue;
-
-    final dotenvValue = dotenv.env['PAYTAG_WEBHOOK_URL'];
-    if (dotenvValue != null && dotenvValue.isNotEmpty) return dotenvValue;
-
-    return '';
-  }
+  // TODO: 오픈 후 가상계좌 추가 시 웹훅 URL 활성화
+  // static String get webhookUrl {
+  //   const dartDefineValue = String.fromEnvironment('PAYTAG_WEBHOOK_URL');
+  //   if (dartDefineValue.isNotEmpty) return dartDefineValue;
+  //   final dotenvValue = dotenv.env['PAYTAG_WEBHOOK_URL'];
+  //   if (dotenvValue != null && dotenvValue.isNotEmpty) return dotenvValue;
+  //   return '';
+  // }
 
   /// Mock 모드 사용 여부
   ///

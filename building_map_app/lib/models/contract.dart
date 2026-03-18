@@ -131,8 +131,9 @@ enum PaymentMethod {
   naverPay('NAVER', '네이버페이'),
   payco('PAYCO', '페이코'),
 
-  // 기타
-  virtualAccount('VBANK', '가상계좌');
+  // TODO: 오픈 후 가상계좌 추가 예정
+  // virtualAccount('VBANK', '가상계좌'),
+  ;
 
   final String value;
   final String label;
@@ -140,7 +141,7 @@ enum PaymentMethod {
   const PaymentMethod(this.value, this.label);
 
   /// 신용카드 여부 (할부 가능)
-  bool get isCreditCard => !isEasyPay && this != virtualAccount;
+  bool get isCreditCard => !isEasyPay;
 
   /// 간편결제 여부 (할부 불가)
   bool get isEasyPay =>

@@ -73,11 +73,10 @@ class PaymentServiceUnified {
     final payType = paymentInfo['payType'] as String? ?? 'BC';
 
     // 테스트 환경: SDK에는 100원으로 결제 요청 (실제 결제 후 취소되므로 카드 한도 절약)
-    // 단, 가상계좌(VBANK)는 최소금액 제한이 있으므로 실제 금액 사용
     // 프로덕션: 항상 실제 금액
-    final sdkAmount = PaymentConfig.isProduction || payType == 'VBANK'
-        ? actualAmount
-        : 100;
+    // TODO: 오픈 후 가상계좌 추가 시 VBANK는 최소금액 제한으로 실제 금액 사용 필요
+    // final sdkAmount = PaymentConfig.isProduction || payType == 'VBANK' ? actualAmount : 100;
+    final sdkAmount = PaymentConfig.isProduction ? actualAmount : 100;
 
     debugPrint('🌐 [PaymentServiceUnified] 웹 결제 요청');
     debugPrint('  - contractId: $contractId');

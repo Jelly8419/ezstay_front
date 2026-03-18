@@ -48,10 +48,10 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
     PaymentMethod.payco,
   ];
 
-  /// 기타 결제 목록
-  static const _others = [
-    PaymentMethod.virtualAccount,
-  ];
+  // TODO: 오픈 후 가상계좌 추가 예정
+  // static const _others = [
+  //   PaymentMethod.virtualAccount,
+  // ];
 
   @override
   void initState() {
@@ -140,15 +140,14 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
                             child: _buildPaymentTile(method),
                           )),
 
-                      const SizedBox(height: 20),
-
-                      // 기타 섹션
-                      _buildSectionTitle('기타', Icons.more_horiz),
-                      const SizedBox(height: 8),
-                      ..._others.map((method) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _buildPaymentTile(method),
-                          )),
+                      // TODO: 오픈 후 가상계좌 섹션 추가 예정
+                      // const SizedBox(height: 20),
+                      // _buildSectionTitle('기타', Icons.more_horiz),
+                      // const SizedBox(height: 8),
+                      // ..._others.map((method) => Padding(
+                      //       padding: const EdgeInsets.only(bottom: 8),
+                      //       child: _buildPaymentTile(method),
+                      //     )),
 
                       const SizedBox(height: 8),
                     ],
