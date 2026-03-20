@@ -495,7 +495,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
   }
 
   String _getStatusText(String? status) {
-    if (status == null) return '계약 상태';
+    if (status == null) return '전체';
     if (status == 'all') return '전체';
 
     final statusMap = {

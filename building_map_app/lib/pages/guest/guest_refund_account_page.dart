@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -335,6 +336,7 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
                           TextFormField(
                             controller: _accountNumberController,
                             keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                             decoration: InputDecoration(
                               hintText: '계좌번호를 입력하세요 (- 제외)',
                               contentPadding: EdgeInsets.symmetric(
@@ -372,8 +374,9 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
                           SizedBox(height: AppSpacing.xs),
                           TextFormField(
                             controller: _accountHolderController,
+                            readOnly: true,
                             decoration: InputDecoration(
-                              hintText: '예금주명을 입력하세요',
+                              hintText: '',
                               contentPadding: EdgeInsets.symmetric(
                                 horizontal: AppSpacing.lg,
                                 vertical: AppSpacing.md,
@@ -391,9 +394,6 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
                                 borderSide: BorderSide(color: AppColors.primary500, width: 2),
                               ),
                             ),
-                            onChanged: (_) {
-                              setState(() => _accountVerified = false);
-                            },
                           ),
 
                           SizedBox(height: AppSpacing.lg),

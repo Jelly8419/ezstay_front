@@ -6,26 +6,6 @@ enum SenderRole {
   String get displayName => this == SenderRole.host ? '호스트' : '게스트';
 }
 
-/// 계약 상태 (React UI 호환)
-enum ContractStatus {
-  pending('pending', '대기중'),
-  confirmed('confirmed', '확정'),
-  active('active', '이용중'),
-  completed('completed', '완료'),
-  cancelled('cancelled', '취소');
-
-  final String value;
-  final String displayName;
-  const ContractStatus(this.value, this.displayName);
-
-  static ContractStatus fromString(String value) {
-    return ContractStatus.values.firstWhere(
-      (e) => e.value == value.toLowerCase(),
-      orElse: () => ContractStatus.pending,
-    );
-  }
-}
-
 /// 채팅방 모델
 class ChatRoom {
   final int id;
@@ -140,11 +120,6 @@ class ChatRoom {
   /// 현재 사용자의 역할 반환 (React UI 호환)
   SenderRole getMyRole(int currentUserId) {
     return currentUserId == hostId ? SenderRole.host : SenderRole.guest;
-  }
-
-  /// 계약 상태 enum으로 반환 (React UI 호환)
-  ContractStatus get contractStatus {
-    return ContractStatus.fromString(contract?.status ?? 'pending');
   }
 
   /// 상대방 프로필 이미지 URL

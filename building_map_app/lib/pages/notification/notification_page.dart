@@ -312,50 +312,53 @@ class _NotificationPageState extends State<NotificationPage> {
           bottom: BorderSide(color: AppColors.gray200, width: 1),
         ),
       ),
-      padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 24 : 4,
-        vertical: isDesktop ? 16 : 0,
-      ),
       child: isDesktop
-          ? const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '알림',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.gray900,
+          ? Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: const Text(
+                  '알림',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.gray900,
+                  ),
                 ),
               ),
             )
-          : SizedBox(
-              height: 56,
-              child: Row(
-                children: [
-                  // 뒤로가기 버튼 (좌측)
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      color: AppColors.gray900,
-                      size: 20,
-                    ),
-                    onPressed: () => context.pop(),
-                  ),
-                  // 중앙 타이틀
-                  const Expanded(
-                    child: Text(
-                      '알림',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+          : Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: SizedBox(
+                height: 56,
+                child: Row(
+                  children: [
+                    // 뒤로가기 버튼 (좌측)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new,
                         color: AppColors.gray900,
+                        size: 20,
                       ),
-                      textAlign: TextAlign.center,
+                      onPressed: () => context.pop(),
                     ),
-                  ),
-                  // 우측 대칭 공간 (48px = IconButton 기본 크기)
-                  const SizedBox(width: 48),
-                ],
+                    // 중앙 타이틀
+                    const Expanded(
+                      child: Text(
+                        '알림',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.gray900,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    // 우측 대칭 공간 (48px = IconButton 기본 크기)
+                    const SizedBox(width: 48),
+                  ],
+                ),
               ),
             ),
     );
@@ -376,48 +379,53 @@ class _NotificationPageState extends State<NotificationPage> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          Padding(
-            // React: px-4 py-6 pb-24 lg:py-8 lg:pb-8
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: isDesktop ? 32 : 24,
-              bottom: isDesktop ? 32 : 96,
-            ),
-            child: Padding(
-              // React: py-20 = 80px
-              padding: const EdgeInsets.symmetric(vertical: 80),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // React: w-16 h-16 text-gray-300
-                  Icon(
-                    Icons.notifications_outlined,
-                    size: 64,
-                    color: AppColors.neutral300,
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 896),
+              child: Padding(
+                // React: px-4 py-6 pb-24 lg:py-8 lg:pb-8
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: isDesktop ? 32 : 24,
+                  bottom: isDesktop ? 32 : 96,
+                ),
+                child: Padding(
+                  // React: py-20 = 80px
+                  padding: const EdgeInsets.symmetric(vertical: 80),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // React: w-16 h-16 text-gray-300
+                      Icon(
+                        Icons.notifications_outlined,
+                        size: 64,
+                        color: AppColors.neutral300,
+                      ),
+                      // React: mb-4 = 16px
+                      const SizedBox(height: 16),
+                      // React: text-gray-500 text-lg
+                      const Text(
+                        '아직 도착한 알림이 없습니다',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: AppColors.neutral500,
+                        ),
+                      ),
+                      // React: mb-2 = 8px
+                      const SizedBox(height: 8),
+                      // React: text-gray-400 text-sm
+                      const Text(
+                        '계약 요청, 메시지, 결제 등의 알림이 여기에 표시됩니다',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.neutral400,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                  // React: mb-4 = 16px
-                  const SizedBox(height: 16),
-                  // React: text-gray-500 text-lg
-                  const Text(
-                    '아직 도착한 알림이 없습니다',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: AppColors.neutral500,
-                    ),
-                  ),
-                  // React: mb-2 = 8px
-                  const SizedBox(height: 8),
-                  // React: text-gray-400 text-sm
-                  const Text(
-                    '계약 요청, 메시지, 결제 등의 알림이 여기에 표시됩니다',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.neutral400,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -452,15 +460,20 @@ class _NotificationPageState extends State<NotificationPage> {
         }
 
         final notification = _notifications[index];
-        return Padding(
-          // React: space-y-2 = 8px gap + px-4 py-6 pb-24 lg:py-8 lg:pb-8
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: index == 0 ? (isDesktop ? 32 : 24) : 0,
-            bottom: index < _notifications.length - 1 ? 8 : (isDesktop ? 32 : 96),
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 896),
+            child: Padding(
+              // React: space-y-2 = 8px gap + px-4 py-6 pb-24 lg:py-8 lg:pb-8
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: index == 0 ? (isDesktop ? 32 : 24) : 0,
+                bottom: index < _notifications.length - 1 ? 8 : (isDesktop ? 32 : 96),
+              ),
+              child: _buildNotificationCard(notification),
+            ),
           ),
-          child: _buildNotificationCard(notification),
         );
       },
     );

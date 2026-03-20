@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/chat_room.dart';
 import '../../utils/contract_utils.dart';
+import '../contract/contract_status_badge.dart';
 
 /// 채팅 목록 아이템 위젯
 /// React ChatList.tsx의 개별 아이템을 Flutter로 완전 복제
@@ -21,51 +22,6 @@ class ChatListItem extends StatelessWidget {
     required this.onTap,
   });
 
-  /// 계약 상태 라벨 (React getStatusLabel 함수와 동일)
-  String _getStatusLabel(ContractStatus status) {
-    switch (status) {
-      case ContractStatus.pending:
-        return '대기중';
-      case ContractStatus.confirmed:
-        return '결제 완료';
-      case ContractStatus.active:
-        return '임대 중';
-      case ContractStatus.completed:
-        return '계약 종료';
-      case ContractStatus.cancelled:
-        return '계약 취소';
-    }
-  }
-
-  /// 계약 상태 색상 (React getStatusColor 함수와 동일)
-  Color _getStatusBackgroundColor(ContractStatus status) {
-    switch (status) {
-      case ContractStatus.pending:
-        return const Color(0xFFFEF3C7); // bg-yellow-100
-      case ContractStatus.confirmed:
-        return const Color(0xFFDBEAFE); // bg-blue-100
-      case ContractStatus.active:
-        return const Color(0xFFD1FAE5); // bg-green-100
-      case ContractStatus.completed:
-      case ContractStatus.cancelled:
-        return AppColors.neutral100; // bg-gray-100
-    }
-  }
-
-  Color _getStatusTextColor(ContractStatus status) {
-    switch (status) {
-      case ContractStatus.pending:
-        return const Color(0xFF92400E); // text-yellow-800
-      case ContractStatus.confirmed:
-        return const Color(0xFF1E40AF); // text-blue-800
-      case ContractStatus.active:
-        return const Color(0xFF065F46); // text-green-800
-      case ContractStatus.completed:
-      case ContractStatus.cancelled:
-        return AppColors.neutral800; // text-gray-800
-    }
-  }
-
   /// 계약 기간 포맷팅
   String _formatContractPeriod() {
     if (chatRoom.contract == null) return '';
@@ -80,7 +36,7 @@ class ChatListItem extends StatelessWidget {
     final otherUserName = chatRoom.getOtherUserName(currentUserId);
     final otherUserAvatar = otherUser?.profileImageUrl ?? '';
     final propertyTitle = chatRoom.getRoomDisplayName();
-    final status = chatRoom.contractStatus;
+    final statusString = chatRoom.contract?.status ?? 'PENDING_APPROVAL';
 
     return Material(
       color: isSelected ? AppColors.blue50 : AppColors.neutral0, // bg-blue-50 : bg-white
@@ -145,7 +101,11 @@ class ChatListItem extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8), // gap-2
-                        _buildStatusBadge(status),
+                        ContractStatusBadge(
+                          status: statusString,
+                          showIcon: false,
+                          compact: true,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4), // mb-1
@@ -244,24 +204,6 @@ class ChatListItem extends StatelessWidget {
           style: AppTextStyles.labelLarge.copyWith(
             color: AppColors.neutral600,
           ),
-        ),
-      ),
-    );
-  }
-
-  /// 상태 배지
-  Widget _buildStatusBadge(ContractStatus status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // px-2 py-0.5
-      decoration: BoxDecoration(
-        color: _getStatusBackgroundColor(status),
-        borderRadius: BorderRadius.circular(4), // rounded
-      ),
-      child: Text(
-        _getStatusLabel(status),
-        style: AppTextStyles.caption.copyWith(
-          color: _getStatusTextColor(status),
-          fontWeight: FontWeight.w500,
         ),
       ),
     );

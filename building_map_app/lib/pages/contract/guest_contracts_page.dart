@@ -857,9 +857,13 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         return const Color(0xFFDC2626); // red-600
       case ContractStatus.cancelledByGuest:
       case ContractStatus.cancelledByHost:
+      case ContractStatus.cancelledByAdminWithRefund:
+      case ContractStatus.cancelledByAdminNoRefund:
         return Colors.grey;
       case ContractStatus.refunded:
         return const Color(0xFF7E22CE); // purple-700
+      case ContractStatus.cancelRequested:
+        return const Color(0xFFEA580C); // orange-600
     }
   }
 

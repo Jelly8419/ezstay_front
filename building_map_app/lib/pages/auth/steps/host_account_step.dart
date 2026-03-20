@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/theme/app_colors.dart';
@@ -515,6 +516,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
           TextFormField(
             controller: _accountController,
             keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
               hintText: '계좌번호를 입력하세요 (- 제외)',
               contentPadding: const EdgeInsets.symmetric(
@@ -554,8 +556,9 @@ class _HostAccountStepState extends State<HostAccountStep> {
           const SizedBox(height: 8),
           TextFormField(
             controller: _accountHolderController,
+            readOnly: true,
             decoration: InputDecoration(
-              hintText: '예금주명을 입력하세요',
+              hintText: '',
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 12,
@@ -573,11 +576,6 @@ class _HostAccountStepState extends State<HostAccountStep> {
                 borderSide: BorderSide(color: AppColors.primary600, width: 2),
               ),
             ),
-            onChanged: (_) {
-              setState(() {
-                _accountVerified = false; // 예금주명 변경 시 인증 초기화
-              });
-            },
           ),
           const SizedBox(height: 16),
 

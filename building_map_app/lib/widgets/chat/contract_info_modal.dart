@@ -36,7 +36,7 @@ class ContractInfoModal extends StatelessWidget {
     return baseAmount - _getHostCommissionFee();
   }
 
-  /// 상태 뱃지 색상
+  /// 상태 뱃지 색상 (백엔드 CONTRACT_STATUS 전체 매핑)
   Color _getStatusBackgroundColor(String status) {
     switch (status) {
       case 'PENDING_APPROVAL':
@@ -48,11 +48,19 @@ class ContractInfoModal extends StatelessWidget {
       case 'IN_PROGRESS':
         return const Color(0xFFF3E8FF); // bg-purple-100
       case 'COMPLETED':
+      case 'APPROVAL_EXPIRED':
+      case 'PAYMENT_EXPIRED':
         return AppColors.neutral100; // bg-gray-100
       case 'REJECTED':
       case 'CANCELLED_BY_GUEST':
       case 'CANCELLED_BY_HOST':
+      case 'CANCELLED_BY_ADMIN_WITH_REFUND':
+      case 'CANCELLED_BY_ADMIN_NO_REFUND':
         return const Color(0xFFFEE2E2); // bg-red-100
+      case 'REFUNDED':
+        return const Color(0xFFF3E8FF); // bg-purple-100
+      case 'CANCEL_REQUESTED':
+        return const Color(0xFFFFF7ED); // bg-orange-50
       default:
         return AppColors.neutral100;
     }
@@ -69,11 +77,19 @@ class ContractInfoModal extends StatelessWidget {
       case 'IN_PROGRESS':
         return const Color(0xFF7E22CE); // text-purple-700
       case 'COMPLETED':
+      case 'APPROVAL_EXPIRED':
+      case 'PAYMENT_EXPIRED':
         return AppColors.neutral700; // text-gray-700
       case 'REJECTED':
       case 'CANCELLED_BY_GUEST':
       case 'CANCELLED_BY_HOST':
+      case 'CANCELLED_BY_ADMIN_WITH_REFUND':
+      case 'CANCELLED_BY_ADMIN_NO_REFUND':
         return const Color(0xFFB91C1C); // text-red-700
+      case 'REFUNDED':
+        return const Color(0xFF7E22CE); // text-purple-700
+      case 'CANCEL_REQUESTED':
+        return const Color(0xFFEA580C); // text-orange-600
       default:
         return AppColors.neutral700;
     }
@@ -92,11 +108,23 @@ class ContractInfoModal extends StatelessWidget {
       case 'COMPLETED':
         return '계약 종료';
       case 'REJECTED':
-        return '계약 거절';
+        return '거절됨';
       case 'CANCELLED_BY_GUEST':
         return userMode == 'guest' ? '계약 취소' : '게스트 취소';
       case 'CANCELLED_BY_HOST':
         return '호스트 취소';
+      case 'CANCELLED_BY_ADMIN_WITH_REFUND':
+        return '관리자 취소 (환불)';
+      case 'CANCELLED_BY_ADMIN_NO_REFUND':
+        return '관리자 취소';
+      case 'REFUNDED':
+        return '환불 완료';
+      case 'APPROVAL_EXPIRED':
+        return '미승인 만료';
+      case 'PAYMENT_EXPIRED':
+        return '미결제 만료';
+      case 'CANCEL_REQUESTED':
+        return '취소 요청';
       default:
         return '알 수 없음';
     }

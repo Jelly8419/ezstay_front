@@ -9,9 +9,11 @@ import '../../models/chat_message.dart';
 import '../../models/user.dart';
 import '../../services/auth_service.dart';
 import '../../services/chat_service.dart';
+import '../../services/contract_service.dart';
 import '../../services/firebase_auth_service.dart';
 import '../../widgets/chat/chat_list_item.dart';
 import '../../widgets/chat/chat_window.dart';
+import '../../widgets/chat/contract_info_modal.dart';
 
 /// 채팅 목록 페이지
 /// React ChatListPage.tsx를 Flutter로 완전 복제
@@ -33,11 +35,11 @@ class ChatListPage extends StatefulWidget {
 
 class _ChatListPageState extends State<ChatListPage> {
   final ChatService _chatService = ChatService();
+  final ContractService _contractService = ContractService();
   final FirebaseAuthService _firebaseAuth = FirebaseAuthService();
 
   String _statusFilter = 'all';
   String? _selectedChatId;
-  bool _isContractInfoOpen = false;
   List<ChatRoom> _chatRooms = [];
   bool _isLoading = true;
   String? _error;
@@ -116,7 +118,7 @@ class _ChatListPageState extends State<ChatListPage> {
     }
 
     return _chatRooms.where((chat) {
-      return chat.contractStatus.value == _statusFilter;
+      return chat.contract?.status == _statusFilter;
     }).toList();
   }
 
@@ -162,16 +164,45 @@ class _ChatListPageState extends State<ChatListPage> {
     });
   }
 
-  void _handleOpenContractInfo() {
-    setState(() {
-      _isContractInfoOpen = true;
-    });
-  }
+  Future<void> _handleOpenContractInfo() async {
+    final selectedChat = _selectedChat;
+    if (selectedChat == null) return;
 
-  void _handleCloseContractInfo() {
-    setState(() {
-      _isContractInfoOpen = false;
-    });
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final userMode = authService.currentUser?.mode == UserMode.host ? 'host' : 'guest';
+
+    try {
+      final detail = await _contractService.getGuestContractDetail(
+        selectedChat.contractId,
+      );
+
+      if (detail == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('계약 정보를 찾을 수 없습니다.')),
+          );
+        }
+        return;
+      }
+
+      if (mounted) {
+        showContractInfoModal(
+          context,
+          contract: detail,
+          userMode: userMode,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ [CHAT_LIST] 계약 상세 조회 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('계약 정보 조회 실패: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: AppColors.error500,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -322,12 +353,14 @@ class _ChatListPageState extends State<ChatListPage> {
           ),
           items: const [
             DropdownMenuItem(value: 'all', child: Text('계약 상태')),
-            DropdownMenuItem(value: 'payment_pending', child: Text('결제 대기')),
-            DropdownMenuItem(value: 'payment_completed', child: Text('결제 완료')),
-            DropdownMenuItem(value: 'ongoing', child: Text('임대 중')),
-            DropdownMenuItem(value: 'terminated', child: Text('계약 종료')),
-            DropdownMenuItem(value: 'cancelled', child: Text('계약 취소')),
-            DropdownMenuItem(value: 'rejected', child: Text('승인 거절')),
+            DropdownMenuItem(value: 'PENDING_APPROVAL', child: Text('승인 대기')),
+            DropdownMenuItem(value: 'APPROVED', child: Text('결제 대기')),
+            DropdownMenuItem(value: 'PAYMENT_COMPLETED', child: Text('결제 완료')),
+            DropdownMenuItem(value: 'IN_PROGRESS', child: Text('임대 중')),
+            DropdownMenuItem(value: 'COMPLETED', child: Text('계약 종료')),
+            DropdownMenuItem(value: 'CANCELLED_BY_GUEST', child: Text('게스트 취소')),
+            DropdownMenuItem(value: 'CANCELLED_BY_HOST', child: Text('호스트 취소')),
+            DropdownMenuItem(value: 'REJECTED', child: Text('거절됨')),
           ],
           onChanged: (value) {
             if (value != null) {

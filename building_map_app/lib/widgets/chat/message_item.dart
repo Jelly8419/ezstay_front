@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -375,67 +376,89 @@ class _FullScreenImageViewer extends StatefulWidget {
 
 class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
   final TransformationController _transformController = TransformationController();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void dispose() {
     _transformController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black.withValues(alpha: 0.9),
-      body: Stack(
-        children: [
-          // 이미지 (핀치 줌 + 더블탭 줌)
-          Center(
-            child: InteractiveViewer(
-              transformationController: _transformController,
-              minScale: 0.5,
-              maxScale: 4.0,
-              child: Image.network(
-                widget.imageUrl,
-                fit: BoxFit.contain,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.broken_image, color: Colors.white54, size: 48),
-                      const SizedBox(height: 8),
-                      Text(
-                        '이미지를 불러올 수 없습니다',
-                        style: AppTextStyles.bodyMedium.copyWith(color: Colors.white54),
-                      ),
-                    ],
-                  );
-                },
+    return KeyboardListener(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: (event) {
+        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black.withValues(alpha: 0.9),
+        body: Stack(
+          children: [
+            // 배경 탭 시 닫기
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                behavior: HitTestBehavior.opaque,
+                child: const SizedBox.expand(),
               ),
             ),
-          ),
-          // 닫기 버튼
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            right: 8,
-            child: IconButton(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.close, color: Colors.white, size: 28),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.black45,
-                shape: const CircleBorder(),
+            // 이미지 (핀치 줌 + 더블탭 줌)
+            Center(
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: InteractiveViewer(
+                  transformationController: _transformController,
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Image.network(
+                    widget.imageUrl,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                          const SizedBox(height: 8),
+                          Text(
+                            '이미지를 불러올 수 없습니다',
+                            style: AppTextStyles.bodyMedium.copyWith(color: Colors.white54),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
+            // 닫기 버튼
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              right: 8,
+              child: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black45,
+                  shape: const CircleBorder(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
