@@ -1762,6 +1762,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
             checkOutDate: _bookingState.checkOutDate,
             minContractDays: _room!.minContractDays,
             maxContractDays: _room!.maxContractDays,
+            unavailablePeriods: _room!.unavailablePeriods,
             onDateSelected: (checkIn, checkOut) {
               setState(() {
                 _bookingState = _bookingState.copyWith(

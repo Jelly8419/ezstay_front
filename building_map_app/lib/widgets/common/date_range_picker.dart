@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../models/room.dart';
 
 /// 날짜 범위 선택 위젯 (React UI 스타일 - 범위 선택)
 /// 체크인/체크아웃 날짜를 동시에 선택하고 최소/최대 계약 일수를 검증합니다.
@@ -22,6 +23,7 @@ class DateRangePicker extends StatefulWidget {
   final String placeholderText; // 기본값: '임대 기간 선택'
   final bool showHelperText; // 헬퍼 텍스트 표시 여부 (기본값: true)
   final String? customHelperText; // 커스텀 헬퍼 텍스트 (null이면 기본 메시지)
+  final List<UnavailablePeriod> unavailablePeriods; // 임대 불가능 기간 목록
 
   const DateRangePicker({
     super.key,
@@ -35,6 +37,7 @@ class DateRangePicker extends StatefulWidget {
     this.placeholderText = '임대 기간 선택',
     this.showHelperText = true,
     this.customHelperText,
+    this.unavailablePeriods = const [],
   });
 
   @override
@@ -138,6 +141,7 @@ class _DateRangePickerState extends State<DateRangePicker> {
         onDateRangeSelected: widget.onDateSelected,
         onDateCleared: widget.onDateCleared,
         onValidationError: widget.onValidationError ?? (_) {},
+        unavailablePeriods: widget.unavailablePeriods,
       ),
     );
   }
@@ -152,6 +156,7 @@ class _DateRangePickerDialog extends StatefulWidget {
   final void Function(DateTime checkIn, DateTime checkOut) onDateRangeSelected;
   final void Function()? onDateCleared;
   final void Function(String) onValidationError;
+  final List<UnavailablePeriod> unavailablePeriods;
 
   const _DateRangePickerDialog({
     this.initialCheckIn,
@@ -161,6 +166,7 @@ class _DateRangePickerDialog extends StatefulWidget {
     required this.onDateRangeSelected,
     this.onDateCleared,
     required this.onValidationError,
+    this.unavailablePeriods = const [],
   });
 
   @override
@@ -171,6 +177,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
   late DateTime _focusedMonth;
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
+  String? _unavailableMessage; // 비가용 날짜 클릭 시 안내 메시지
 
   @override
   void initState() {
@@ -178,6 +185,29 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
     _focusedMonth = widget.initialCheckIn ?? DateTime.now();
     _rangeStart = widget.initialCheckIn;
     _rangeEnd = widget.initialCheckOut;
+  }
+
+  /// 특정 날짜가 임대 불가능 기간에 해당하는지 확인
+  bool _isUnavailableDate(DateTime date) {
+    for (final period in widget.unavailablePeriods) {
+      if (period.contains(date)) return true;
+    }
+    return false;
+  }
+
+  /// 선택한 범위 안에 임대 불가능 기간이 포함되는지 확인
+  bool _rangeContainsUnavailable(DateTime start, DateTime end) {
+    final normalizedStart = DateTime(start.year, start.month, start.day);
+    final normalizedEnd = DateTime(end.year, end.month, end.day);
+    for (final period in widget.unavailablePeriods) {
+      final periodStart = DateTime(period.startDate.year, period.startDate.month, period.startDate.day);
+      final periodEnd = DateTime(period.endDate.year, period.endDate.month, period.endDate.day);
+      // 두 범위가 겹치는지 확인
+      if (!periodEnd.isBefore(normalizedStart) && !periodStart.isAfter(normalizedEnd)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @override
@@ -284,6 +314,40 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
 
             // 날짜 그리드
             _buildDateGrid(),
+
+            // 비가용 날짜 클릭 시 안내 메시지
+            if (_unavailableMessage != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.error50,
+                  borderRadius: AppRadius.radiusSm,
+                  border: Border.all(color: AppColors.error500.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.block,
+                      size: 16,
+                      color: AppColors.error500,
+                    ),
+                    SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        _unavailableMessage!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.error600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             // 선택된 기간 표시
             if (_rangeStart != null && _rangeEnd != null) ...[
@@ -471,6 +535,8 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
         date.month == today.month &&
         date.day == today.day;
     final isPast = date.isBefore(DateTime(today.year, today.month, today.day));
+    final isUnavailable = _isUnavailableDate(date);
+    final isDisabled = isPast || isUnavailable;
 
     // 선택 상태 확인
     final isStart = _rangeStart != null && _isSameDay(date, _rangeStart!);
@@ -489,7 +555,12 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
     Color? textColor;
     FontWeight? fontWeight;
 
-    if (isStart || isEnd) {
+    if (isUnavailable && !isPast) {
+      // 임대 불가능 기간: 회색 배경 + 취소선 효과
+      backgroundColor = AppColors.neutral200;
+      textColor = AppColors.neutral400;
+      fontWeight = FontWeight.normal;
+    } else if (isStart || isEnd) {
       // 시작일/종료일: Primary 색상
       backgroundColor = AppColors.primary600;
       textColor = AppColors.textOnPrimary;
@@ -520,7 +591,15 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
     }
 
     return InkWell(
-      onTap: isPast ? null : () => _onDateSelected(date),
+      onTap: isDisabled
+          ? (isUnavailable
+              ? () {
+                  setState(() {
+                    _unavailableMessage = '해당 기간은 임대가 불가능합니다.';
+                  });
+                }
+              : null)
+          : () => _onDateSelected(date),
       borderRadius: BorderRadius.circular(18),
       child: Container(
         width: 36,
@@ -535,6 +614,10 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
           style: AppTextStyles.caption.copyWith(
             fontWeight: fontWeight,
             color: textColor,
+            decoration: isUnavailable && !isPast
+                ? TextDecoration.lineThrough
+                : null,
+            decorationColor: AppColors.neutral400,
           ),
         ),
       ),
@@ -559,6 +642,9 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
   /// 날짜 선택 핸들러
   void _onDateSelected(DateTime selectedDate) {
     setState(() {
+      // 비가용 메시지 초기화
+      _unavailableMessage = null;
+
       // 1. 시작일만 선택된 상태에서 같은 날짜 클릭 → 선택 해제 (토글)
       if (_rangeStart != null && _rangeEnd == null && _isSameDay(selectedDate, _rangeStart!)) {
         _rangeStart = null;
@@ -598,6 +684,12 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
           widget.onValidationError(
             '최대 ${widget.maxContractDays}일까지 선택할 수 있습니다.',
           );
+          return;
+        }
+
+        // 선택 범위 내에 임대 불가능 기간이 포함되는지 체크
+        if (_rangeContainsUnavailable(earlierDate, laterDate)) {
+          _unavailableMessage = '선택한 기간에 임대 불가능한 날짜가 포함되어 있습니다.';
           return;
         }
 

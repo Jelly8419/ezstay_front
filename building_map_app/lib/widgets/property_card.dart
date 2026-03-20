@@ -51,15 +51,19 @@ class _PropertyCardState extends State<PropertyCard> {
               ? Matrix4.translationValues(0, -8, 0)
               : Matrix4.identity(),
           decoration: BoxDecoration(
-            color: theme.AppColors.surface,
+            color: widget.room.isAvailable
+                ? theme.AppColors.surface
+                : theme.AppColors.neutral100,
             borderRadius: AppRadius.radiusMd,
             border: Border.all(
-              color: widget.isSelected
+              color: !widget.room.isAvailable
+                  ? theme.AppColors.neutral300
+                  : widget.isSelected
                   ? theme.AppColors.primary500
                   : _isHovered
                   ? theme.AppColors.primary300
                   : theme.AppColors.border,
-              width: widget.isSelected ? 2 : 1,
+              width: widget.isSelected && widget.room.isAvailable ? 2 : 1,
             ),
             boxShadow: isActive
                 ? (widget.isSelected
@@ -82,7 +86,11 @@ class _PropertyCardState extends State<PropertyCard> {
                     // 방 이름
                     Text(
                       widget.room.roomName,
-                      style: theme.AppTextStyles.headingSmall,
+                      style: theme.AppTextStyles.headingSmall.copyWith(
+                        color: widget.room.isAvailable
+                            ? null
+                            : theme.AppColors.neutral400,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -91,38 +99,68 @@ class _PropertyCardState extends State<PropertyCard> {
                     // 주소
                     Text(
                       widget.room.address,
-                      style: theme.AppTextStyles.bodyMediumSecondary,
+                      style: theme.AppTextStyles.bodyMediumSecondary.copyWith(
+                        color: widget.room.isAvailable
+                            ? null
+                            : theme.AppColors.neutral400,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: AppSpacing.sm),
 
-                    // 가격 (검은색)
+                    // 예약 불가 배지
+                    if (!widget.room.isAvailable) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.AppColors.neutral200,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '예약 불가',
+                          style: theme.AppTextStyles.bodySmall.copyWith(
+                            color: theme.AppColors.neutral500,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: AppSpacing.sm),
+                    ],
+
+                    // 가격 (검은색, 비가용 시 회색)
                     Text(
                       '${_formatPrice(widget.room.weeklyRent)}원/주',
                       style: theme.AppTextStyles.priceText.copyWith(
-                        color: Colors.black,
+                        color: widget.room.isAvailable
+                            ? Colors.black
+                            : theme.AppColors.neutral400,
                       ),
                     ),
 
-                    // 할인 정보 텍스트 (파란색, 배경 없음)
-                    if (_hasQuickMoveInDiscount()) ...[
-                      SizedBox(height: AppSpacing.xs),
-                      Text(
-                        '* ${widget.room.quickMoveIn}일 이내 입주시 ${_formatPrice(widget.room.quickMoveInDiscount!)}원 할인',
-                        style: theme.AppTextStyles.bodySmall.copyWith(
-                          color: theme.AppColors.primary500,
+                    // 할인 정보 텍스트 (파란색, 배경 없음) - 가용 시에만 표시
+                    if (widget.room.isAvailable) ...[
+                      if (_hasQuickMoveInDiscount()) ...[
+                        SizedBox(height: AppSpacing.xs),
+                        Text(
+                          '* ${widget.room.quickMoveIn}일 이내 입주시 ${_formatPrice(widget.room.quickMoveInDiscount!)}원 할인',
+                          style: theme.AppTextStyles.bodySmall.copyWith(
+                            color: theme.AppColors.primary500,
+                          ),
                         ),
-                      ),
-                    ],
-                    if (_hasLongTermDiscount()) ...[
-                      SizedBox(height: AppSpacing.xs),
-                      Text(
-                        '* ${widget.room.longTermWeeks}주 이상 계약시 ${widget.room.longTermDiscount}% 할인',
-                        style: theme.AppTextStyles.bodySmall.copyWith(
-                          color: theme.AppColors.primary500,
+                      ],
+                      if (_hasLongTermDiscount()) ...[
+                        SizedBox(height: AppSpacing.xs),
+                        Text(
+                          '* ${widget.room.longTermWeeks}주 이상 계약시 ${widget.room.longTermDiscount}% 할인',
+                          style: theme.AppTextStyles.bodySmall.copyWith(
+                            color: theme.AppColors.primary500,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
 
                     SizedBox(height: AppSpacing.sm),

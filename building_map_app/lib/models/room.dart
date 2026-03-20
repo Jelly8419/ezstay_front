@@ -3,6 +3,35 @@ import 'room_amenity_freezed.dart';
 import 'room_ez_service.dart';
 import 'rental_item.dart';
 
+/// 임대 불가능 기간 (계약 중이거나 호스트가 차단한 기간)
+class UnavailablePeriod {
+  final DateTime startDate;
+  final DateTime endDate;
+  final String type; // 'contract' | 'blocked'
+
+  const UnavailablePeriod({
+    required this.startDate,
+    required this.endDate,
+    required this.type,
+  });
+
+  factory UnavailablePeriod.fromJson(Map<String, dynamic> json) {
+    return UnavailablePeriod(
+      startDate: DateTime.parse(json['startDate'] as String),
+      endDate: DateTime.parse(json['endDate'] as String),
+      type: json['type'] as String? ?? 'blocked',
+    );
+  }
+
+  /// 특정 날짜가 이 기간에 포함되는지 확인
+  bool contains(DateTime date) {
+    final normalized = DateTime(date.year, date.month, date.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final end = DateTime(endDate.year, endDate.month, endDate.day);
+    return !normalized.isBefore(start) && !normalized.isAfter(end);
+  }
+}
+
 /// 방/숙소 정보 모델 (API 응답 기준)
 class Room {
   // 기본 정보
@@ -72,6 +101,8 @@ class Room {
   final int? hostId;
   final String status; // 방 상태 (draft, pending_review, approved, rejected)
   final bool isActive; // 게시 여부 (approved 상태에서만 의미 있음)
+  final bool isAvailable; // 예약 가능 여부 (지도 검색 API 응답)
+  final List<UnavailablePeriod> unavailablePeriods; // 임대 불가능 기간 목록
   final String? rejectionReason; // 반려 사유
 
   /// 호스트 표시명 (닉네임 우선, 없으면 이름)
@@ -165,6 +196,8 @@ class Room {
     this.hostId,
     this.status = 'draft',
     this.isActive = false,
+    this.isAvailable = true,
+    this.unavailablePeriods = const [],
     this.rejectionReason,
   });
 
@@ -256,6 +289,12 @@ class Room {
       hostId: json['host'] != null ? json['host']['id'] as int? : json['hostId'] as int?,
       status: _normalizeStatus(json['status'] as String?),
       isActive: json['isActive'] as bool? ?? false,
+      isAvailable: json['isAvailable'] as bool? ?? true,
+      unavailablePeriods: json['unavailablePeriods'] != null
+          ? (json['unavailablePeriods'] as List<dynamic>)
+              .map((e) => UnavailablePeriod.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : const [],
       rejectionReason: json['rejectionReason'] as String?,
     );
   }

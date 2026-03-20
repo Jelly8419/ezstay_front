@@ -189,14 +189,14 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
   void didUpdateWidget(KakaoMapWeb oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // 방 데이터가 실제로 변경되었는지 체크 (ID 목록 비교)
-    final oldRoomIds = oldWidget.rooms.map((r) => r['id']).toList()..sort();
-    final newRoomIds = widget.rooms.map((r) => r['id']).toList()..sort();
+    // 방 데이터가 실제로 변경되었는지 체크 (ID + isAvailable 비교)
+    final oldRoomKeys = oldWidget.rooms.map((r) => '${r['id']}_${r['isAvailable']}').toList()..sort();
+    final newRoomKeys = widget.rooms.map((r) => '${r['id']}_${r['isAvailable']}').toList()..sort();
 
-    // ID 목록이 다르거나 방 개수가 다를 때만 마커 업데이트
+    // ID 또는 isAvailable이 변경된 경우 마커 업데이트
     final roomsChanged =
-        oldRoomIds.length != newRoomIds.length ||
-        !_listEquals(oldRoomIds, newRoomIds);
+        oldRoomKeys.length != newRoomKeys.length ||
+        !_listEquals(oldRoomKeys, newRoomKeys);
 
     if (roomsChanged) {
       debugPrint('🔄 [Dart] 방 데이터 변경 감지 - 마커 업데이트 시작');
@@ -245,12 +245,14 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
         .map((room) {
           final weeklyRent =
               room['weeklyRent'] ?? room['weeklyPrice'] ?? room['price'] ?? 0;
+          final isAvailable = room['isAvailable'] ?? true;
           return '''{
         id: ${room['id']},
         latitude: ${room['latitude']},
         longitude: ${room['longitude']},
         weeklyRent: $weeklyRent,
-        roomName: "${room['roomName'] ?? ''}"
+        roomName: "${room['roomName'] ?? ''}",
+        isAvailable: $isAvailable
       }''';
         })
         .join(',');
@@ -324,9 +326,14 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
           var firstRoomId = cluster.rooms[0].id;
           var isSelected = container._selectedMarkerId === firstRoomId;
 
-          // 기본: 흰색 배경, 선택 시: 파란색 배경
+          // 클러스터 내 모든 방이 예약 불가인 경우 회색 마커로 표시
+          var allUnavailable = cluster.rooms.every(function(r) { return r.isAvailable === false; });
+
+          // 기본: 흰색 배경, 선택 시: 파란색 배경, 비가용 시: 회색
           var baseStyle = isSelected
             ? 'background:#3B82F6;color:white;border:none;'
+            : allUnavailable
+            ? 'background:#E5E7EB;color:#9CA3AF;border:1px solid #D1D5DB;'
             : 'background:white;color:#1F2937;border:1px solid #E5E7EB;';
 
           content.style.cssText = baseStyle + 'padding:8px 14px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);white-space:nowrap;transition:all 0.2s ease;z-index:' + (isSelected ? '20' : '10') + ';position:relative;';
@@ -334,6 +341,7 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
           content.dataset.clusterRooms = JSON.stringify(cluster.rooms.map(function(r) { return r.id; }));
           content.dataset.firstRoomId = firstRoomId;
+          content.dataset.unavailable = allUnavailable ? 'true' : 'false';
 
           var overlay = new kakao.maps.CustomOverlay({
             position: markerPosition,
@@ -348,8 +356,9 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
           }
           markers.push(overlay);
 
-          // 호버 효과 (선택 상태에 따라 다른 색상)
+          // 호버 효과 (선택 상태에 따라 다른 색상, 비가용 마커는 회색 유지)
           content.addEventListener('mouseover', function() {
+            if (allUnavailable) return; // 비가용 마커는 호버 효과 없음
             var currentlySelected = container._selectedMarkerId === firstRoomId;
             if (currentlySelected) {
               // 선택된 마커: blue-700 (더 진한 파란색)
@@ -369,6 +378,11 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
               content.style.backgroundColor = '#3B82F6';
               content.style.color = 'white';
               content.style.border = 'none';
+            } else if (allUnavailable) {
+              // 비가용 마커: 회색으로 복귀
+              content.style.backgroundColor = '#E5E7EB';
+              content.style.color = '#9CA3AF';
+              content.style.border = '1px solid #D1D5DB';
             } else {
               // 기본 마커: 흰색으로 복귀
               content.style.backgroundColor = 'white';
@@ -392,9 +406,15 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
             if (container._selectedMarkerId === clickedRoomId) {
               console.log('🔄 [JS] 같은 마커 재클릭 - 선택 해제');
               container._selectedMarkerId = null;
-              content.style.backgroundColor = 'white';
-              content.style.color = '#1F2937';
-              content.style.border = '1px solid #E5E7EB';
+              if (content.dataset.unavailable === 'true') {
+                content.style.backgroundColor = '#E5E7EB';
+                content.style.color = '#9CA3AF';
+                content.style.border = '1px solid #D1D5DB';
+              } else {
+                content.style.backgroundColor = 'white';
+                content.style.color = '#1F2937';
+                content.style.border = '1px solid #E5E7EB';
+              }
               content.style.zIndex = '10';
 
               // Flutter로 메시지 전송 (개별 마커 재클릭이므로 clusterRoomIds 필드 제외)
@@ -411,9 +431,15 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
               var oldMarkerElements = document.querySelectorAll('.price-marker');
               oldMarkerElements.forEach(function(el) {
                 if (parseInt(el.dataset.firstRoomId) === container._selectedMarkerId) {
-                  el.style.backgroundColor = 'white';
-                  el.style.color = '#1F2937';
-                  el.style.border = '1px solid #E5E7EB';
+                  if (el.dataset.unavailable === 'true') {
+                    el.style.backgroundColor = '#E5E7EB';
+                    el.style.color = '#9CA3AF';
+                    el.style.border = '1px solid #D1D5DB';
+                  } else {
+                    el.style.backgroundColor = 'white';
+                    el.style.color = '#1F2937';
+                    el.style.border = '1px solid #E5E7EB';
+                  }
                   el.style.zIndex = '10';
                 }
               });
@@ -773,9 +799,15 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
                 console.log('🔄 [JS] 모든 마커 선택 해제');
                 var allMarkerElements = document.querySelectorAll('.price-marker');
                 allMarkerElements.forEach(function(el) {
-                  el.style.backgroundColor = 'white';
-                  el.style.color = '#1F2937';
-                  el.style.border = '1px solid #E5E7EB';
+                  if (el.dataset.unavailable === 'true') {
+                    el.style.backgroundColor = '#E5E7EB';
+                    el.style.color = '#9CA3AF';
+                    el.style.border = '1px solid #D1D5DB';
+                  } else {
+                    el.style.backgroundColor = 'white';
+                    el.style.color = '#1F2937';
+                    el.style.border = '1px solid #E5E7EB';
+                  }
                   el.style.zIndex = '10';
                 });
                 container._selectedMarkerId = null;
@@ -788,9 +820,15 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
                 var oldMarkerElements = document.querySelectorAll('.price-marker');
                 oldMarkerElements.forEach(function(el) {
                   if (parseInt(el.dataset.firstRoomId) === container._selectedMarkerId) {
-                    el.style.backgroundColor = 'white';
-                    el.style.color = '#1F2937';
-                    el.style.border = '1px solid #E5E7EB';
+                    if (el.dataset.unavailable === 'true') {
+                      el.style.backgroundColor = '#E5E7EB';
+                      el.style.color = '#9CA3AF';
+                      el.style.border = '1px solid #D1D5DB';
+                    } else {
+                      el.style.backgroundColor = 'white';
+                      el.style.color = '#1F2937';
+                      el.style.border = '1px solid #E5E7EB';
+                    }
                     el.style.zIndex = '10';
                   }
                 });

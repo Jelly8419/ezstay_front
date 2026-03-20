@@ -200,6 +200,7 @@ class _MapScreenState extends State<MapScreen> {
     double neLat,
     double neLng, {
     int? zoom,
+    bool forceRefresh = false,
   }) async {
     debugPrint(
       '🎯 [MAP] _loadRoomsByBounds 호출됨! bounds: ($swLat,$swLng) ~ ($neLat,$neLng), zoom: $zoom',
@@ -234,8 +235,8 @@ class _MapScreenState extends State<MapScreen> {
           _currentNeLng != neLng ||
           _currentZoomLevel != zoom;
 
-      // 변경 없으면 스킵
-      if (!boundsChanged) {
+      // 변경 없으면 스킵 (forceRefresh 시 강제 호출)
+      if (!boundsChanged && !forceRefresh) {
         debugPrint('⏭️ [MAP] Bounds/Zoom 변경 없음 - 스킵');
         return; // 변경 없으면 조기 리턴
       }
@@ -481,12 +482,27 @@ class _MapScreenState extends State<MapScreen> {
             json.decode(savedFiltersJson) as Map<String, dynamic>;
         setState(() {
           _filters = SearchFilters.fromJson(filtersMap);
+          // 저장된 날짜 필터를 API 요청용 변수에 동기화
+          _syncDatesFromFilters();
         });
       }
     } catch (e) {
       debugPrint('Failed to load saved filters: $e');
     }
     _loadRooms();
+  }
+
+  /// _filters.dateRange → _checkInDate/_checkOutDate 동기화
+  void _syncDatesFromFilters() {
+    if (_filters.dateRange != null) {
+      _checkInDate = _filters.dateRange!.startDate;
+      _checkOutDate = _filters.dateRange!.endDate;
+      debugPrint('📅 [MAP] 필터 날짜 동기화 - 체크인: $_checkInDate, 체크아웃: $_checkOutDate');
+    } else {
+      _checkInDate = null;
+      _checkOutDate = null;
+      debugPrint('📅 [MAP] 필터 날짜 초기화 (날짜 없음)');
+    }
   }
 
   /// 필터 저장
@@ -500,12 +516,32 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _onFilterChanged(SearchFilters newFilters) {
+    final dateChanged = _filters.dateRange != newFilters.dateRange;
+
     setState(() {
       _filters = newFilters;
     });
     _saveFilters(newFilters);
-    // 프론트엔드 필터링이므로 API 재호출 불필요
-    // _buildPropertyList()가 자동으로 필터링 적용
+
+    // 날짜 필터가 변경된 경우 → API 재호출 (isAvailable 갱신 필요)
+    if (dateChanged) {
+      _syncDatesFromFilters();
+      debugPrint('📅 [MAP] 날짜 필터 변경 → API 재호출');
+      if (_currentSwLat != null &&
+          _currentSwLng != null &&
+          _currentNeLat != null &&
+          _currentNeLng != null) {
+        _loadRoomsByBounds(
+          _currentSwLat!,
+          _currentSwLng!,
+          _currentNeLat!,
+          _currentNeLng!,
+          zoom: _currentZoomLevel,
+          forceRefresh: true,
+        );
+      }
+    }
+    // 날짜 외 필터: 프론트엔드 필터링이므로 API 재호출 불필요
   }
 
   void _onRoomSelected(
@@ -954,6 +990,7 @@ class _MapScreenState extends State<MapScreen> {
               'updatedAt': DateTime.now().toIso8601String(),
               'photos': photos, // 이미 올바른 형식으로 파싱됨
               'isNearSubway': false,
+              'isAvailable': roomData['isAvailable'] ?? true,
               'hostName': '호스트',
               'hostId': 1,
               'status': 'published',
@@ -1239,6 +1276,7 @@ class _MapScreenState extends State<MapScreen> {
           'longitude': roomData['longitude'],
           'roomName': roomData['roomName'],
           'weeklyRent': weeklyRent, // 계산된 주간 임대료
+          'isAvailable': roomData['isAvailable'] ?? true,
         };
       }).toList();
 
@@ -1330,6 +1368,7 @@ class _MapScreenState extends State<MapScreen> {
               'updatedAt': DateTime.now().toIso8601String(),
               'photos': photos, // 이미 올바른 형식으로 파싱됨
               'isNearSubway': false,
+              'isAvailable': roomData['isAvailable'] ?? true,
               'hostName': '호스트',
               'hostId': 1,
               'status': 'published',
@@ -1408,6 +1447,7 @@ class _MapScreenState extends State<MapScreen> {
               'updatedAt': DateTime.now().toIso8601String(),
               'photos': photos,
               'isNearSubway': false,
+              'isAvailable': roomData['isAvailable'] ?? true,
               'hostName': '호스트',
               'hostId': 1,
               'status': 'published',
@@ -1487,6 +1527,7 @@ class _MapScreenState extends State<MapScreen> {
     final roomName = roomData['roomName'] ?? '';
     final address = roomData['address'] ?? '';
     final roomId = roomData['id'] ?? 0;
+    final isAvailable = roomData['isAvailable'] as bool? ?? true;
 
     // 할인 정보 파싱 (데스크톱과 동일)
     final discounts = roomData['discounts'] as Map<String, dynamic>?;
@@ -1514,8 +1555,11 @@ class _MapScreenState extends State<MapScreen> {
         width: 210, // 고정 너비 (4분의 1 축소)
         margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: isAvailable ? AppColors.surface : AppColors.neutral100,
           borderRadius: BorderRadius.circular(16), // rounded-2xl
+          border: isAvailable
+              ? null
+              : Border.all(color: AppColors.neutral300, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.15),
@@ -1580,10 +1624,12 @@ class _MapScreenState extends State<MapScreen> {
                   // 방 이름 (font-bold, text-gray-900, mb-1)
                   Text(
                     roomName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF111827), // text-gray-900
+                      color: isAvailable
+                          ? const Color(0xFF111827)
+                          : AppColors.neutral400,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1592,18 +1638,22 @@ class _MapScreenState extends State<MapScreen> {
                   // 주소 (text-xs, text-gray-600, mb-2)
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.location_on,
                         size: 12,
-                        color: Color(0xFF4B5563),
-                      ), // text-gray-600
+                        color: isAvailable
+                            ? const Color(0xFF4B5563)
+                            : AppColors.neutral400,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           address,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF4B5563), // text-gray-600
+                            color: isAvailable
+                                ? const Color(0xFF4B5563)
+                                : AppColors.neutral400,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1612,14 +1662,36 @@ class _MapScreenState extends State<MapScreen> {
                     ],
                   ),
                   const SizedBox(height: 8), // mb-2
-                  // 가격 (font-bold, text-[rgb(0,0,0)], mb-2)
+                  // 예약 불가 배지
+                  if (!isAvailable) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.neutral200,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '예약 불가',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.neutral500,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
+                  // 가격 (font-bold, 비가용 시 회색)
                   RichText(
                     text: TextSpan(
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black, // text-[rgb(0,0,0)]
-                        height: 1.2, // line height 줄임
+                        color: isAvailable ? Colors.black : AppColors.neutral400,
+                        height: 1.2,
                       ),
                       children: [
                         TextSpan(text: _formatPriceShort(dailyRent * 7)),
