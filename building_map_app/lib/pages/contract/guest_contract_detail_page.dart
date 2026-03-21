@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../utils/format_utils.dart';
 import '../../constants/notice_texts.dart';
 import '../../config/payment_config.dart';
@@ -9,10 +8,13 @@ import '../../models/contract_detail.dart';
 import '../../models/payment_history.dart';
 import '../../services/contract_service.dart';
 import '../../services/payment_service.dart';
+import '../../services/payment_service_unified.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
+import '../../models/contract.dart' show PaymentMethod;
 import '../../widgets/payment_webview.dart';
+import '../../widgets/payment_method_modal.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../utils/contract_utils.dart';
 import '../../widgets/contract/contract_status_banner.dart';
@@ -1560,25 +1562,13 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
         widget.contractId,
       );
 
-      // 2. 토스 결제창 URL 생성
-      final paymentUrl = _buildTossPaymentUrl(
-        clientKey: PaymentConfig.clientKey,
-        amount: paymentInfo['amount'] as int,
-        orderId: paymentInfo['orderId'] as String,
-        orderName: paymentInfo['orderName'] as String,
-        customerEmail: paymentInfo['customerEmail'] as String?,
-        customerName: paymentInfo['customerName'] as String?,
-        successUrl: PaymentConfig.successUrl,
-        failUrl: PaymentConfig.failUrl,
-      );
-
-      // 3. 웹/모바일 구분 처리
+      // 2. 웹/모바일 구분 처리
       if (kIsWeb) {
-        // 웹: 새 탭으로 토스 결제 페이지 열기
-        await _processPaymentWeb(paymentUrl);
+        // 웹: PayTag SDK로 결제 (콜백 방식)
+        await _processPaymentWeb(paymentInfo);
       } else {
-        // 모바일: WebView로 토스 결제창 열기
-        await _processPaymentMobile(paymentUrl);
+        // 모바일: WebView로 결제창 열기
+        await _processPaymentMobile(paymentInfo);
       }
     } catch (e) {
       debugPrint('❌ [GuestContractDetail] 결제 오류: $e');
@@ -1590,75 +1580,58 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     }
   }
 
-  /// 웹에서 결제 처리
-  Future<void> _processPaymentWeb(String paymentUrl) async {
+  /// 웹에서 결제 처리 (PayTag SDK)
+  Future<void> _processPaymentWeb(Map<String, dynamic> paymentInfo) async {
+    // 1. 결제수단 선택 모달 표시
+    final selectedMethod = await showModalBottomSheet<PaymentMethod>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => PaymentMethodModal(
+        totalAmount: paymentInfo['amount'] as int,
+      ),
+    );
+
+    if (selectedMethod == null || !mounted) return; // 취소
+
     try {
-      final uri = Uri.parse(paymentUrl);
+      // 2. 선택된 payType으로 PayTag SDK 호출
+      final paymentServiceUnified = PaymentServiceUnified();
 
-      // 새 탭으로 토스 결제 페이지 열기 (웹에서는 canLaunchUrl 체크 불필요)
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      // paymentInfo에 선택된 payType 추가
+      final enrichedPaymentInfo = Map<String, dynamic>.from(paymentInfo)
+        ..['payType'] = selectedMethod.value;
 
-      // 사용자 안내 다이얼로그
+      final result = await paymentServiceUnified.requestPayment(
+        contractId: widget.contractId,
+        paymentInfo: enrichedPaymentInfo,
+      );
+
       if (mounted) {
-        final result = await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('결제 진행 중'),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('새 탭에서 토스 결제창이 열렸습니다.'),
-                SizedBox(height: 16),
-                Text('결제를 완료하신 후, 이 페이지로 돌아와서 "확인" 버튼을 눌러주세요.'),
-                SizedBox(height: 16),
-                Text(
-                  '⚠️ 결제를 취소하셨다면 "취소" 버튼을 눌러주세요.',
-                  style: TextStyle(color: Colors.orange, fontSize: 12),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(false); // 취소
-                },
-                child: const Text('취소'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(true); // 완료
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary500,
-                ),
-                child: const Text('결제 완료'),
-              ),
-            ],
-          ),
-        );
-
-        // 결제 완료 시 페이지 새로고침
-        if (result == true) {
-          await _loadContractDetail();
-        }
+        // TODO: 오픈 후 가상계좌 추가 시 입금 안내 다이얼로그 활성화
+        // if (selectedMethod == PaymentMethod.virtualAccount && result != null) {
+        //   _showVbankInfoDialog(result);
+        // } else {
+        _showSuccessDialog('결제가 완료되었습니다!');
+        // }
+        await _loadContractDetail();
       }
     } catch (e) {
       if (mounted) {
-        _showErrorDialog('결제 페이지 열기 실패: ${e.toString()}');
+        _showErrorDialog('결제 실패: ${e.toString()}');
       }
     }
   }
 
-  /// 모바일에서 결제 처리
-  Future<void> _processPaymentMobile(String paymentUrl) async {
+  /// 모바일에서 결제 처리 (WebView)
+  Future<void> _processPaymentMobile(Map<String, dynamic> paymentInfo) async {
     try {
-      // WebView로 토스 결제창 열기
+      // TODO: 모바일 PayTag WebView 결제 플로우 구현
+      // WebView에서 PayTag SDK를 로드하고 결제 후 결과를 JavaScript 인터페이스로 수신
       final result = await Navigator.of(context).push<Map<String, dynamic>>(
         MaterialPageRoute(
           builder: (context) => PaymentWebView(
-            paymentUrl: paymentUrl,
+            paymentUrl: paymentInfo['paymentUrl'] as String? ?? '',
             contractId: widget.contractId,
           ),
           fullscreenDialog: true,
@@ -1669,9 +1642,10 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
       if (result != null && result['success'] == true) {
         // 결제 성공 - 백엔드 승인 API 호출
         await _confirmPayment(
-          paymentKey: result['paymentKey'] as String,
+          recvPayparam: result['recvPayparam'] as String,
           orderId: result['orderId'] as String,
           amount: result['amount'] as int,
+          payType: result['payType'] as String?,
         );
       } else {
         // 결제 실패 또는 취소
@@ -1716,52 +1690,20 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     }
   }
 
-  /// 토스 결제창 URL 생성
-  String _buildTossPaymentUrl({
-    required String clientKey,
-    required int amount,
-    required String orderId,
-    required String orderName,
-    String? customerEmail,
-    String? customerName,
-    required String successUrl,
-    required String failUrl,
-  }) {
-    final params = {
-      'clientKey': clientKey,
-      'amount': amount.toString(),
-      'orderId': orderId,
-      'orderName': orderName,
-      'successUrl': successUrl,
-      'failUrl': failUrl,
-      if (customerEmail != null) 'customerEmail': customerEmail,
-      if (customerName != null) 'customerName': customerName,
-    };
-
-    final queryString = params.entries
-        .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
-        .join('&');
-
-    debugPrint(
-      '🔗 [TossPayment] URL 생성: https://pay.toss.im/web/v2?$queryString',
-    );
-
-    // 토스 결제창 URL (웹용 결제 위젯 v2)
-    return 'https://pay.toss.im/web/v2?$queryString';
-  }
-
   /// 결제 승인
   Future<void> _confirmPayment({
-    required String paymentKey,
+    required String recvPayparam,
     required String orderId,
     required int amount,
+    String? payType,
   }) async {
     try {
       await _paymentService.confirmPayment(
         contractId: widget.contractId,
-        paymentKey: paymentKey,
+        recvPayparam: recvPayparam,
         orderId: orderId,
         amount: amount,
+        payType: payType,
       );
 
       if (mounted) {
@@ -1801,6 +1743,11 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
       ),
     );
   }
+
+  // TODO: 오픈 후 가상계좌 추가 시 아래 메서드들 주석 해제
+  // void _showVbankInfoDialog(Map<String, dynamic> result) { ... }
+  // Widget _vbankInfoRow(String label, String value) { ... }
+  // String _bankCodeToName(String code) { ... }
 
   /// 에러 다이얼로그
   void _showErrorDialog(String message) {

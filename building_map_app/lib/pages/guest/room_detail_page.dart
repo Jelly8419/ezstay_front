@@ -1762,6 +1762,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
             checkOutDate: _bookingState.checkOutDate,
             minContractDays: _room!.minContractDays,
             maxContractDays: _room!.maxContractDays,
+            unavailablePeriods: _room!.unavailablePeriods,
             onDateSelected: (checkIn, checkOut) {
               setState(() {
                 _bookingState = _bookingState.copyWith(
@@ -1862,7 +1863,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                 ),
               ),
             if (priceBreakdown.rentalItemsFee > 0)
-              _buildPriceRowDetailed('렌탈 아이템', priceBreakdown.rentalItemsFee),
+              _buildPriceRowDetailed('옵션', priceBreakdown.rentalItemsFee),
             _buildPriceRowDetailed('계약 수수료', priceBreakdown.contractFee),
             _buildPriceRowDetailed('보증금(퇴실 후 환급)', priceBreakdown.deposit),
 

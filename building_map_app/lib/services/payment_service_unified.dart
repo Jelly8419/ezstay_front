@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../config/payment_config.dart';
 import 'payment_service.dart';
 import 'payment_service_web.dart'
     if (dart.library.io) 'payment_service_stub.dart';
@@ -6,15 +7,13 @@ import 'payment_service_web.dart'
 /// 통합 결제 서비스
 ///
 /// 웹과 모바일 플랫폼에 따라 적절한 결제 방식을 자동으로 선택합니다.
-/// - 웹: JavaScript SDK 사용
+/// - 웹: PayTag JavaScript SDK 사용 (Tag.requestPay 콜백 방식)
 /// - 모바일: WebView 사용
 class PaymentServiceUnified {
   final PaymentService _apiService = PaymentService();
   PaymentServiceWeb? _webService;
 
   /// 생성자 - 웹 환경에서 자동으로 SDK 초기화
-  ///
-  /// SDK 초기화 실패 시에도 앱이 계속 작동하도록 예외를 catch합니다.
   PaymentServiceUnified() {
     if (kIsWeb) {
       try {
@@ -22,20 +21,6 @@ class PaymentServiceUnified {
         debugPrint('✅ [PaymentServiceUnified] 웹 SDK 자동 초기화 완료');
       } catch (e) {
         debugPrint('⚠️ [PaymentServiceUnified] 웹 SDK 초기화 실패: $e');
-        debugPrint('⚠️ [PaymentServiceUnified] 결제 기능이 비활성화됩니다. 앱은 계속 작동합니다.');
-        _webService = null;
-      }
-    }
-  }
-
-  /// 웹 SDK 초기화 (하위 호환성을 위해 유지, 생성자에서 자동 호출됨)
-  @Deprecated('생성자에서 자동으로 초기화됩니다. 이 메서드는 호출할 필요가 없습니다.')
-  void initializeWebSDK() {
-    if (kIsWeb && _webService == null) {
-      try {
-        _webService = PaymentServiceWeb();
-      } catch (e) {
-        debugPrint('⚠️ [PaymentServiceUnified] initializeWebSDK 실패: $e');
         _webService = null;
       }
     }
@@ -48,7 +33,7 @@ class PaymentServiceUnified {
 
   /// 결제 요청 (플랫폼별 분기)
   ///
-  /// 웹: JavaScript SDK로 결제창 호출 (토스 SDK가 결제수단 선택 UI 제공)
+  /// 웹: PayTag SDK로 결제 → 콜백으로 즉시 결과 수신 → 백엔드 승인까지 처리
   /// 모바일: WebView로 결제창 표시 (반환값으로 결과 전달)
   Future<Map<String, dynamic>?> requestPayment({
     required int contractId,
@@ -67,46 +52,73 @@ class PaymentServiceUnified {
     }
   }
 
-  /// 웹 결제 요청 (JavaScript SDK)
+  /// 웹 결제 요청 (PayTag SDK)
   ///
-  /// 토스페이먼츠 SDK가 자체적으로 결제수단 선택 UI를 제공하므로
-  /// 별도의 결제수단 선택 모달이 필요 없습니다.
+  /// PayTag SDK의 Tag.requestPay를 호출하고 콜백으로 결과를 수신합니다.
+  /// 성공 시 자동으로 백엔드 승인 API를 호출합니다.
   Future<Map<String, dynamic>?> _requestPaymentWeb({
     required int contractId,
     required Map<String, dynamic> paymentInfo,
   }) async {
     if (_webService == null) {
-      throw Exception('웹 결제 서비스가 초기화되지 않았습니다. initializeWebSDK()를 호출하세요.');
+      throw Exception('웹 결제 서비스가 초기화되지 않았습니다.');
     }
 
     final orderId = paymentInfo['orderId'] as String;
-    final amount = paymentInfo['amount'] as int;
+    final actualAmount = paymentInfo['amount'] as int;
     final orderName = paymentInfo['orderName'] as String;
     final customerName = paymentInfo['customerName'] as String?;
     final customerEmail = paymentInfo['customerEmail'] as String?;
+    final customerPhone = paymentInfo['customerPhone'] as String?;
+    final payType = paymentInfo['payType'] as String? ?? 'BC';
+
+    // 테스트 환경: SDK에는 100원으로 결제 요청 (실제 결제 후 취소되므로 카드 한도 절약)
+    // 프로덕션: 항상 실제 금액
+    // TODO: 오픈 후 가상계좌 추가 시 VBANK는 최소금액 제한으로 실제 금액 사용 필요
+    // final sdkAmount = PaymentConfig.isProduction || payType == 'VBANK' ? actualAmount : 100;
+    final sdkAmount = PaymentConfig.isProduction ? actualAmount : 100;
 
     debugPrint('🌐 [PaymentServiceUnified] 웹 결제 요청');
     debugPrint('  - contractId: $contractId');
     debugPrint('  - orderId: $orderId');
-    debugPrint('  - amount: $amount');
+    debugPrint('  - actualAmount: $actualAmount');
+    debugPrint(
+      '  - sdkAmount: $sdkAmount (${PaymentConfig.isProduction ? "프로덕션" : "테스트"})',
+    );
+    debugPrint('  - payType: $payType');
 
     try {
-      // 토스 SDK가 모든 결제수단을 표시하므로 통합 메서드 호출
-      // contractId를 successUrl/failUrl에 포함시켜 callback에서 사용
-      await _webService!.requestPaymentWithContractId(
+      // PayTag SDK 호출 → 콜백으로 즉시 결과 수신
+      // 테스트 환경에서는 100원으로 SDK 결제, 백엔드에는 실제 금액 전달
+      final response = await _webService!.requestPaymentWithContractId(
         contractId: contractId,
         orderId: orderId,
-        amount: amount,
+        amount: sdkAmount,
         orderName: orderName,
+        payType: payType,
         customerName: customerName,
+        customerPhone: customerPhone,
         customerEmail: customerEmail,
       );
 
-      // 웹에서는 자동 리다이렉트되므로 null 반환
-      // 실제 결과는 successUrl/failUrl로 전달됨
-      return null;
+      if (response.isSuccess && response.recvPayparam != null) {
+        // 결제 인증 성공 → 백엔드 승인 API 호출 (실제 금액으로 전달)
+        debugPrint('✅ [PaymentServiceUnified] PayTag 인증 성공, 백엔드 승인 요청...');
+        debugPrint('  - 백엔드 전달 금액: $actualAmount');
+        final confirmResult = await _apiService.confirmPayment(
+          contractId: contractId,
+          recvPayparam: response.recvPayparam!,
+          orderId: orderId,
+          amount: actualAmount,
+          payType: response.payType,
+        );
+        return confirmResult;
+      } else {
+        // 결제 실패 또는 사용자 취소
+        throw Exception(response.errmsg);
+      }
     } catch (e) {
-      debugPrint('❌ [PaymentServiceUnified] 웹 결제 요청 실패: $e');
+      debugPrint('❌ [PaymentServiceUnified] 웹 결제 실패: $e');
       rethrow;
     }
   }
@@ -119,22 +131,25 @@ class PaymentServiceUnified {
     debugPrint('📱 [PaymentServiceUnified] 모바일 결제 요청');
 
     // TODO: 모바일 WebView 구현
-    // 기존 PaymentWebView 위젯 사용
     throw UnimplementedError('모바일 결제는 PaymentWebView 위젯을 직접 사용하세요.');
   }
 
-  /// 결제 승인 (실제 결제)
+  /// 결제 승인 (직접 호출용)
+  ///
+  /// 모바일 WebView에서 결제 결과를 받은 후 직접 승인할 때 사용합니다.
   Future<Map<String, dynamic>> confirmPayment({
     required int contractId,
-    required String paymentKey,
+    required String recvPayparam,
     required String orderId,
     required int amount,
+    String? payType,
   }) async {
     return await _apiService.confirmPayment(
       contractId: contractId,
-      paymentKey: paymentKey,
+      recvPayparam: recvPayparam,
       orderId: orderId,
       amount: amount,
+      payType: payType,
     );
   }
 
@@ -155,22 +170,17 @@ class PaymentServiceUnified {
 
   /// 렌탈 추가 결제 요청 (웹 전용)
   ///
-  /// 토스페이먼츠 SDK를 호출하여 렌탈 아이템 추가 결제를 진행합니다.
-  /// successUrl/failUrl에 rentalOrderId를 포함하여 콜백에서 사용할 수 있도록 합니다.
-  ///
-  /// [rentalOrderId]: 렌탈 주문 ID
-  /// [orderId]: 주문 ID (백엔드에서 생성)
-  /// [amount]: 결제 금액
-  /// [orderName]: 주문명
-  /// [customerName]: 구매자 이름 (선택)
-  /// [customerEmail]: 구매자 이메일 (선택)
-  Future<void> requestRentalPayment({
+  /// PayTag SDK를 호출하여 렌탈 아이템 추가 결제를 진행합니다.
+  /// 성공 시 백엔드 승인까지 자동 처리합니다.
+  Future<Map<String, dynamic>?> requestRentalPayment({
     required int rentalOrderId,
     required String orderId,
     required int amount,
     required String orderName,
+    required String payType,
     String? customerName,
     String? customerEmail,
+    String? customerPhone,
   }) async {
     if (!kIsWeb) {
       throw Exception('렌탈 추가 결제는 현재 웹에서만 지원됩니다.');
@@ -186,14 +196,29 @@ class PaymentServiceUnified {
     debugPrint('  - amount: $amount');
 
     try {
-      await _webService!.requestRentalPayment(
+      final sdkAmount = PaymentConfig.isProduction ? amount : 100;
+      final response = await _webService!.requestRentalPayment(
         rentalOrderId: rentalOrderId,
         orderId: orderId,
-        amount: amount,
+        amount: sdkAmount,
         orderName: orderName,
+        payType: payType,
         customerName: customerName,
+        customerPhone: customerPhone,
         customerEmail: customerEmail,
       );
+
+      if (response.isSuccess && response.recvPayparam != null) {
+        // 렌탈 결제는 paymentKey 필드에 recv_payparam을 넣어서 전달 (API 호환성)
+        return {
+          'recvPayparam': response.recvPayparam,
+          'payType': response.payType ?? 'CARD',
+          'orderId': orderId,
+          'amount': amount,
+        };
+      } else {
+        throw Exception(response.errmsg);
+      }
     } catch (e) {
       debugPrint('❌ [PaymentServiceUnified] 렌탈 결제 요청 실패: $e');
       rethrow;

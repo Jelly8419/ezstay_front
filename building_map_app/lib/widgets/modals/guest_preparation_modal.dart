@@ -175,7 +175,7 @@ class _GuestPreparationModalState extends State<GuestPreparationModal> {
                     child: Padding(
                       padding: EdgeInsets.all(40),
                       child: Text(
-                        '렌탈 아이템이 없습니다.',
+                        '옵션이 없습니다.',
                         style: TextStyle(
                           fontSize: 14,
                           color: Color(0xFF6B7280),

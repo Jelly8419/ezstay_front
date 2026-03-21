@@ -17,18 +17,20 @@ class _StatusConfig {
   });
 }
 
-/// 계약 상태 배지 위젯
+/// 계약 상태 배지 위젯 (백엔드 CONTRACT_STATUS 전체 매핑)
 ///
-/// Guest/Host 계약 상세 페이지에서 공통으로 사용하는 상태 배지입니다.
-/// 아이콘 포함 여부를 선택할 수 있습니다.
+/// Guest/Host 계약 상세, 채팅 목록 등에서 공통으로 사용하는 상태 배지입니다.
+/// [compact] true이면 채팅 목록 등에서 사용하는 작은 사이즈 배지를 렌더링합니다.
 class ContractStatusBadge extends StatelessWidget {
   final String status;
   final bool showIcon;
+  final bool compact;
 
   const ContractStatusBadge({
     super.key,
     required this.status,
     this.showIcon = true,
+    this.compact = false,
   });
 
   static final Map<String, _StatusConfig> _statusMap = {
@@ -43,6 +45,12 @@ class ContractStatusBadge extends StatelessWidget {
       backgroundColor: AppColors.blue100,
       textColor: AppColors.blue700,
       icon: Icons.payment,
+    ),
+    'REJECTED': _StatusConfig(
+      text: '거절됨',
+      backgroundColor: AppColors.error50,
+      textColor: AppColors.error700,
+      icon: Icons.block,
     ),
     'PAYMENT_COMPLETED': _StatusConfig(
       text: '결제 완료',
@@ -62,23 +70,53 @@ class ContractStatusBadge extends StatelessWidget {
       textColor: AppColors.neutral700,
       icon: Icons.check_circle_outline,
     ),
-    'CANCELLED': _StatusConfig(
-      text: '취소됨',
-      backgroundColor: AppColors.error50,
-      textColor: AppColors.error700,
-      icon: Icons.cancel,
-    ),
     'CANCELLED_BY_GUEST': _StatusConfig(
-      text: '계약 취소',
+      text: '게스트 취소',
       backgroundColor: AppColors.error50,
       textColor: AppColors.error700,
       icon: Icons.cancel,
     ),
     'CANCELLED_BY_HOST': _StatusConfig(
-      text: '계약 취소',
+      text: '호스트 취소',
       backgroundColor: AppColors.error50,
       textColor: AppColors.error700,
       icon: Icons.cancel,
+    ),
+    'CANCELLED_BY_ADMIN_WITH_REFUND': _StatusConfig(
+      text: '관리자 취소 (환불)',
+      backgroundColor: AppColors.error50,
+      textColor: AppColors.error700,
+      icon: Icons.admin_panel_settings,
+    ),
+    'CANCELLED_BY_ADMIN_NO_REFUND': _StatusConfig(
+      text: '관리자 취소',
+      backgroundColor: AppColors.error50,
+      textColor: AppColors.error700,
+      icon: Icons.admin_panel_settings,
+    ),
+    'REFUNDED': _StatusConfig(
+      text: '환불 완료',
+      backgroundColor: AppColors.purple50,
+      textColor: AppColors.purple600,
+      icon: Icons.currency_exchange,
+    ),
+    'APPROVAL_EXPIRED': _StatusConfig(
+      text: '미승인 만료',
+      backgroundColor: AppColors.gray50,
+      textColor: AppColors.neutral700,
+      icon: Icons.timer_off,
+    ),
+    'PAYMENT_EXPIRED': _StatusConfig(
+      text: '미결제 만료',
+      backgroundColor: AppColors.gray50,
+      textColor: AppColors.neutral700,
+      icon: Icons.timer_off,
+    ),
+    'CANCEL_REQUESTED': _StatusConfig(
+      text: '취소 요청',
+      backgroundColor: const Color(0xFFFFF7ED), // orange-50
+      textColor: const Color(0xFFEA580C), // orange-600
+      icon: Icons.pending_actions,
     ),
   };
 
@@ -91,14 +129,37 @@ class ContractStatusBadge extends StatelessWidget {
     return _getConfig(status).text;
   }
 
-  /// 상태 색상만 필요한 경우
+  /// 상태 텍스트 색상만 필요한 경우
   static Color getStatusColor(String status) {
     return _getConfig(status).textColor;
+  }
+
+  /// 상태 배경 색상만 필요한 경우
+  static Color getStatusBgColor(String status) {
+    return _getConfig(status).backgroundColor;
   }
 
   @override
   Widget build(BuildContext context) {
     final config = _getConfig(status);
+
+    if (compact) {
+      // 채팅 목록 등에서 사용하는 작은 배지
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: config.backgroundColor,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          config.text,
+          style: AppTextStyles.caption.copyWith(
+            color: config.textColor,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

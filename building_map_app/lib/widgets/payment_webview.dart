@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import '../config/payment_config.dart';
 import '../core/theme/app_colors.dart';
 
-/// 토스페이먼츠 결제 WebView
+/// PayTag 결제 WebView
 ///
-/// 토스 결제창 URL을 WebView로 열고 성공/실패 리다이렉트를 감지합니다.
+/// PayTag 결제창 URL을 WebView로 열고 결제 결과를 JavaScript 인터페이스로 수신합니다.
+/// PayTag SDK의 Tag.requestPay 콜백 결과를 Flutter로 전달합니다.
 class PaymentWebView extends StatefulWidget {
-  /// 토스 결제창 URL
+  /// PayTag 결제창 URL
   final String paymentUrl;
 
   /// 계약 ID
@@ -36,11 +36,16 @@ class _PaymentWebViewState extends State<PaymentWebView> {
   void _initializeWebView() {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..addJavaScriptChannel(
+        'PayTagResult',
+        onMessageReceived: (JavaScriptMessage message) {
+          _handlePayTagResult(message.message);
+        },
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (url) {
             setState(() => _isLoading = true);
-            _checkRedirectUrl(url);
           },
           onPageFinished: (url) {
             setState(() => _isLoading = false);
@@ -53,50 +58,41 @@ class _PaymentWebViewState extends State<PaymentWebView> {
       ..loadRequest(Uri.parse(widget.paymentUrl));
   }
 
-  /// 성공/실패 URL 리다이렉트 감지
-  void _checkRedirectUrl(String url) {
-    debugPrint('🌐 [PaymentWebView] URL 변경: $url');
+  /// PayTag SDK 결과 처리 (JavaScript → Flutter)
+  void _handlePayTagResult(String message) {
+    debugPrint('📥 [PaymentWebView] PayTag 결과 수신: $message');
 
-    // 성공 URL로 리다이렉트됨
-    if (url.startsWith(PaymentConfig.successUrl)) {
-      final uri = Uri.parse(url);
-      final paymentKey = uri.queryParameters['paymentKey'];
-      final orderId = uri.queryParameters['orderId'];
-      final amount = uri.queryParameters['amount'];
+    try {
+      // JSON 파싱하여 결과 처리
+      // JavaScript에서 PayTagResult.postMessage(JSON.stringify({...})) 호출
+      final parts = message.split('|');
 
-      debugPrint('✅ [PaymentWebView] 결제 성공 감지');
-      debugPrint('  - paymentKey: $paymentKey');
-      debugPrint('  - orderId: $orderId');
-      debugPrint('  - amount: $amount');
-
-      if (paymentKey != null && orderId != null && amount != null) {
+      if (parts.length >= 2 && parts[0] == 'SUCCESS') {
+        // SUCCESS|recvPayparam|payType|orderId|amount
         Navigator.of(context).pop({
           'success': true,
-          'paymentKey': paymentKey,
-          'orderId': orderId,
-          'amount': int.parse(amount),
+          'recvPayparam': parts.length > 1 ? parts[1] : '',
+          'payType': parts.length > 2 ? parts[2] : 'CARD',
+          'orderId': parts.length > 3 ? parts[3] : '',
+          'amount': parts.length > 4 ? int.tryParse(parts[4]) ?? 0 : 0,
         });
-      } else {
+      } else if (parts[0] == 'FAIL') {
+        // FAIL|errorMessage
         Navigator.of(context).pop({
           'success': false,
-          'errorMessage': '결제 정보가 올바르지 않습니다.',
+          'errorMessage': parts.length > 1 ? parts[1] : '결제가 실패했습니다.',
+        });
+      } else if (parts[0] == 'CANCEL') {
+        Navigator.of(context).pop({
+          'success': false,
+          'errorMessage': '사용자가 결제를 취소했습니다.',
         });
       }
-    }
-    // 실패 URL로 리다이렉트됨
-    else if (url.startsWith(PaymentConfig.failUrl)) {
-      final uri = Uri.parse(url);
-      final errorCode = uri.queryParameters['code'];
-      final errorMessage = uri.queryParameters['message'];
-
-      debugPrint('❌ [PaymentWebView] 결제 실패 감지');
-      debugPrint('  - errorCode: $errorCode');
-      debugPrint('  - errorMessage: $errorMessage');
-
+    } catch (e) {
+      debugPrint('❌ [PaymentWebView] 결과 파싱 실패: $e');
       Navigator.of(context).pop({
         'success': false,
-        'errorCode': errorCode,
-        'errorMessage': errorMessage ?? '결제가 취소되었습니다.',
+        'errorMessage': '결제 결과 처리 중 오류가 발생했습니다.',
       });
     }
   }

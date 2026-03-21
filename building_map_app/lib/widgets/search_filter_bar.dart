@@ -38,6 +38,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
   DateTime _focusedMonth = DateTime.now();
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
+  String? _dateErrorMessage;
 
   // 건물 유형 선택 (다중 선택)
   Set<String> _selectedBuildingTypes = {};
@@ -881,6 +882,36 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
         // 날짜 그리드 (React 스타일 구현)
         _buildDateGrid(setOverlayState),
 
+        // 에러 메시지 (인라인 표시)
+        if (_dateErrorMessage != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 18,
+                  color: Color(0xFFEF4444),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _dateErrorMessage!,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: const Color(0xFFDC2626),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
         // 선택된 기간 표시
         if (_rangeStart != null && _rangeEnd != null) ...[
           const Divider(height: 32),
@@ -922,6 +953,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                 setOverlayState(() {
                   _rangeStart = null;
                   _rangeEnd = null;
+                  _dateErrorMessage = null;
                 });
                 setState(() {
                   _currentFilters = _currentFilters.copyWith(
@@ -1031,6 +1063,9 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
         date.isAfter(_rangeStart!) &&
         date.isBefore(_rangeEnd!);
 
+    // 최소 계약기간 범위 확인
+    final isInMinRange = _isInMinContractRange(date);
+
     // 색상 결정
     Color? backgroundColor;
     Color? textColor;
@@ -1043,6 +1078,11 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
     } else if (isInRange) {
       backgroundColor = const Color(0xFFDDEAFD); // blue-50
       textColor = const Color(0xFF3B82F6);
+      fontWeight = FontWeight.normal;
+    } else if (isInMinRange) {
+      // 최소 계약기간 범위: 회색 (선택 불가 표시)
+      backgroundColor = const Color(0xFFF3F4F6); // neutral-100
+      textColor = Colors.grey[400];
       fontWeight = FontWeight.normal;
     } else if (isToday) {
       backgroundColor = const Color(0xFFDDEAFD).withValues(alpha: 0.5);
@@ -1105,28 +1145,25 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
         // 최소 기간 체크 (7일)
         final duration = laterDate.difference(earlierDate).inDays;
         if (duration < 7) {
-          // 에러 표시 (2초 후 자동 제거)
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('이지스테이는 최소 7일부터 예약할 수 있어요'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          if (ResponsiveUtil.isMobile(context)) {
+            _showDateErrorToast('최소 7일 이상 선택해주세요');
+          } else {
+            _dateErrorMessage = '최소 7일 이상 선택해주세요';
+          }
           return;
         }
 
         // 최대 기간 체크 (90일)
         if (duration > 90) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('이지스테이는 최대 90일까지 예약할 수 있어요'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          if (ResponsiveUtil.isMobile(context)) {
+            _showDateErrorToast('최대 90일까지 선택 가능합니다');
+          } else {
+            _dateErrorMessage = '최대 90일까지 선택 가능합니다';
+          }
           return;
         }
+
+        _dateErrorMessage = null;
 
         // 체크인/체크아웃 날짜 설정 (자동 정렬됨)
         _rangeStart = earlierDate;
@@ -1145,11 +1182,13 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
       else if (_rangeStart != null && _rangeEnd != null) {
         _rangeStart = _normalizeDate(selectedDate);
         _rangeEnd = null;
+        _dateErrorMessage = null;
       }
       // 3. 아무것도 선택되지 않은 상태 → 시작일 설정
       else {
         _rangeStart = _normalizeDate(selectedDate);
         _rangeEnd = null;
+        _dateErrorMessage = null;
       }
     });
   }
@@ -1162,6 +1201,30 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
   /// 두 날짜가 같은 날인지 확인
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  /// 토스트 에러 메시지 (모바일용, 큐 쌓임 방지)
+  void _showDateErrorToast(String message) {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
+  /// 최소 계약기간 범위 내인지 확인 (시작일 선택 후, 시작일+1 ~ 시작일+6일)
+  bool _isInMinContractRange(DateTime date) {
+    if (_rangeStart == null || _rangeEnd != null) return false;
+    if (_isSameDay(date, _rangeStart!)) return false;
+
+    final minEndDate = _rangeStart!.add(const Duration(days: 6)); // 7일 - 1
+
+    return date.isAfter(_rangeStart!) &&
+        (date.isBefore(minEndDate) || _isSameDay(date, minEndDate));
   }
 
   Widget _buildRentRangeDropdown(StateSetter setOverlayState) {

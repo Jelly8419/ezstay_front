@@ -6,7 +6,8 @@ import '../../core/theme/app_text_styles.dart';
 
 /// 렌탈 아이템 추가 결제 콜백 페이지
 ///
-/// 토스페이먼츠 렌탈 결제 후 리다이렉트되는 페이지입니다.
+/// PayTag 렌탈 결제 후 리다이렉트되는 페이지입니다.
+/// paymentKey 필드에 PayTag의 recv_payparam 값이 전달됩니다 (API 호환성).
 /// - 성공: /rental-payment/success?rentalOrderId=xxx&paymentKey=xxx&orderId=xxx&amount=xxx
 /// - 실패: /rental-payment/fail?rentalOrderId=xxx&code=xxx&message=xxx
 class RentalPaymentCallbackPage extends StatefulWidget {

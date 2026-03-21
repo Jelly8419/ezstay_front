@@ -79,8 +79,26 @@
   <!-- Daum Postcode API - 필수 API이므로 동기 로딩 유지 -->
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 
-  <!-- Toss Payments JavaScript SDK -->
-  <script src="https://js.tosspayments.com/v2/standard"></script>
+  <!-- PayTag PG JavaScript SDK -->
+  <script src="https://apit.paytag.kr/std_pay/paytag_std.js?version=20251104" charset="utf-8"></script>
+  <script>
+    // PayTag SDK 초기화 (SDK 로드 후 1회 실행)
+    window.addEventListener('DOMContentLoaded', function () {
+      var checkTag = function (attempts) {
+        if (typeof Tag !== 'undefined' && Tag.init) {
+          // shopcode는 환경에 따라 변경 (테스트: 1901110002)
+          var shopcode = window.__PAYTAG_SHOPCODE__ || '1901110002';
+          Tag.init(shopcode, 'PAYTAG');
+          console.log('✅ [PayTag] SDK 초기화 완료 (shopcode: ' + shopcode + ')');
+        } else if (attempts < 50) {
+          setTimeout(function () { checkTag(attempts + 1); }, 100);
+        } else {
+          console.error('❌ [PayTag] SDK 로드 타임아웃');
+        }
+      };
+      checkTag(0);
+    });
+  </script>
 
   <!-- Firebase Configuration (설정만 먼저 노출) -->
   <script>

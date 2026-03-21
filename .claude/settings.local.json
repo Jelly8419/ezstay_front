@@ -86,10 +86,15 @@
       "WebFetch(domain:postcode.map.daum.net)",
       "Bash(dir:*)",
       "Bash(xargs grep -l \"identity\\\\|ID verification\\\\|ipin\\\\|niceverify\")",
-      "Bash(gcloud --version)"
+      "Bash(gcloud --version)",
+      "Bash(gh run list --limit 5)",
+      "Read(//c/study/ezstay_front/$USERPROFILE/Downloads/**)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\study\\ezstay_front\\$USERPROFILE\\Downloads"
+    ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [

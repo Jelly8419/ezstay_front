@@ -6,32 +6,50 @@ extension PaymentMethodExtension on PaymentMethod {
   /// 결제 수단 설명
   String get description {
     switch (this) {
-      case PaymentMethod.creditCard:
-        return '간편하고 빠른 결제';
-      case PaymentMethod.bankTransfer:
-        return '수수료 없이 안전한 결제';
-      case PaymentMethod.virtualAccount:
-        return '계좌번호 발급 후 입금';
-      case PaymentMethod.easyPay:
-        return '카카오페이·네이버페이·토스페이';
-      case PaymentMethod.mobilePayment:
-        return '휴대폰 소액결제로 간편하게';
+      case PaymentMethod.bc:
+      case PaymentMethod.kb:
+      case PaymentMethod.sh:
+      case PaymentMethod.ss:
+      case PaymentMethod.hd:
+      case PaymentMethod.lt:
+      case PaymentMethod.wr:
+      case PaymentMethod.ka:
+      case PaymentMethod.nh:
+        return '신용/체크카드 결제';
+      case PaymentMethod.kakaoPay:
+        return '카카오페이로 간편결제';
+      case PaymentMethod.naverPay:
+        return '네이버페이로 간편결제';
+      case PaymentMethod.payco:
+        return '페이코로 간편결제';
+      // TODO: 오픈 후 가상계좌 추가 예정
+      // case PaymentMethod.virtualAccount:
+      //   return '계좌번호 발급 후 입금';
     }
   }
 
   /// 결제 수단 아이콘
   IconData get icon {
     switch (this) {
-      case PaymentMethod.creditCard:
+      case PaymentMethod.bc:
+      case PaymentMethod.kb:
+      case PaymentMethod.sh:
+      case PaymentMethod.ss:
+      case PaymentMethod.hd:
+      case PaymentMethod.lt:
+      case PaymentMethod.wr:
+      case PaymentMethod.ka:
+      case PaymentMethod.nh:
         return Icons.credit_card;
-      case PaymentMethod.bankTransfer:
-        return Icons.account_balance;
-      case PaymentMethod.virtualAccount:
-        return Icons.receipt_long;
-      case PaymentMethod.easyPay:
-        return Icons.smartphone;
-      case PaymentMethod.mobilePayment:
-        return Icons.phone_android;
+      case PaymentMethod.kakaoPay:
+        return Icons.chat_bubble;
+      case PaymentMethod.naverPay:
+        return Icons.shopping_bag;
+      case PaymentMethod.payco:
+        return Icons.payment;
+      // TODO: 오픈 후 가상계좌 추가 예정
+      // case PaymentMethod.virtualAccount:
+      //   return Icons.receipt_long;
     }
   }
 }

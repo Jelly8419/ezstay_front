@@ -148,7 +148,7 @@ class RentalOrderService {
 
   // ========== 5. 결제 정보 조회 ==========
 
-  /// 렌탈 주문 결제 정보 조회 (토스페이먼츠 연동)
+  /// 렌탈 주문 결제 정보 조회 (PayTag 연동)
   ///
   /// GET /api/rental-orders/:rentalOrderId/payment-info
   Future<Map<String, dynamic>> getPaymentInfo(int rentalOrderId) async {
@@ -520,13 +520,14 @@ class AvailableRentalItem {
   });
 
   factory AvailableRentalItem.fromJson(Map<String, dynamic> json) {
+    final stock = json['availableStock'] ?? json['availableQuantity'] ?? 0;
     return AvailableRentalItem(
       id: json['id'],
       name: json['name'] ?? '',
       description: json['description'],
       price: _parsePrice(json['price']),
       imageUrl: json['imageUrl'],
-      availableStock: json['availableStock'] ?? 0,
+      availableStock: stock is int ? stock : int.tryParse(stock.toString()) ?? 0,
     );
   }
 

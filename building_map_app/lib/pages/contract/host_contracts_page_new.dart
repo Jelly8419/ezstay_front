@@ -495,7 +495,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
   }
 
   String _getStatusText(String? status) {
-    if (status == null) return '계약 상태';
+    if (status == null) return '전체';
     if (status == 'all') return '전체';
 
     final statusMap = {
@@ -2004,14 +2004,15 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       // 계약 목록 새로고침
       await _loadContracts();
 
+      if (!mounted) return;
       setState(() {
         _selectedContractIdForApproval = null;
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('계약 승인 실패: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('계약 승인 실패: $e')),
+      );
     }
   }
 

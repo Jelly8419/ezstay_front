@@ -1,19 +1,22 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
-/// 계약 상태
+/// 계약 상태 (백엔드 CONTRACT_STATUS 매핑)
 enum ContractStatus {
   pendingApproval('PENDING_APPROVAL', '승인 대기'),
-  approvalExpired('APPROVAL_EXPIRED', '미승인 만료'),
-  approved('APPROVED', '승인됨'),
-  paymentExpired('PAYMENT_EXPIRED', '미결제 만료'),
+  approved('APPROVED', '승인됨 (결제 대기)'),
   rejected('REJECTED', '거절됨'),
   paymentCompleted('PAYMENT_COMPLETED', '결제 완료'),
-  inProgress('IN_PROGRESS', '계약 진행중'),
-  completed('COMPLETED', '계약 완료'),
+  inProgress('IN_PROGRESS', '계약 진행중 (체크인 완료)'),
+  completed('COMPLETED', '계약 완료 (체크아웃 완료)'),
   cancelledByGuest('CANCELLED_BY_GUEST', '게스트 취소'),
   cancelledByHost('CANCELLED_BY_HOST', '호스트 취소'),
-  refunded('REFUNDED', '환불 완료');
+  cancelledByAdminWithRefund('CANCELLED_BY_ADMIN_WITH_REFUND', '관리자 취소 (환불 O)'),
+  cancelledByAdminNoRefund('CANCELLED_BY_ADMIN_NO_REFUND', '관리자 취소 (환불 X)'),
+  refunded('REFUNDED', '환불 완료'),
+  approvalExpired('APPROVAL_EXPIRED', '미승인 만료'),
+  paymentExpired('PAYMENT_EXPIRED', '미결제 만료'),
+  cancelRequested('CANCEL_REQUESTED', '취소 요청 (관리자 승인 대기)');
 
   final String value;
   final String label;
@@ -113,24 +116,45 @@ enum DiscountType {
   }
 }
 
-/// 결제 수단
+/// 결제 수단 (PayTag PG 코드 기준)
 enum PaymentMethod {
-  creditCard('CREDIT_CARD', '신용카드'),
-  bankTransfer('BANK_TRANSFER', '계좌이체'),
-  virtualAccount('VIRTUAL_ACCOUNT', '가상계좌'),
-  easyPay('EASY_PAY', '간편결제'),
-  mobilePayment('MOBILE_PAYMENT', '휴대폰 결제');
+  // 주요 신용카드
+  bc('BC', '비씨카드'),
+  kb('KB', '국민카드'),
+  sh('SH', '신한카드'),
+  ss('SS', '삼성카드'),
+  hd('HD', '현대카드'),
+  lt('LT', '롯데카드'),
+  wr('WR', '우리카드'),
+  ka('KA', '하나카드'),
+  nh('NH', '농협카드'),
+
+  // 간편결제
+  kakaoPay('KAKAO', '카카오페이'),
+  naverPay('NAVER', '네이버페이'),
+  payco('PAYCO', '페이코'),
+
+  // TODO: 오픈 후 가상계좌 추가 예정
+  // virtualAccount('VBANK', '가상계좌'),
+  ;
 
   final String value;
   final String label;
 
   const PaymentMethod(this.value, this.label);
 
+  /// 신용카드 여부 (할부 가능)
+  bool get isCreditCard => !isEasyPay;
+
+  /// 간편결제 여부 (할부 불가)
+  bool get isEasyPay =>
+      this == kakaoPay || this == naverPay || this == payco;
+
   static PaymentMethod? fromString(String? value) {
     if (value == null) return null;
     return PaymentMethod.values.firstWhere(
       (method) => method.value == value,
-      orElse: () => PaymentMethod.creditCard,
+      orElse: () => PaymentMethod.bc,
     );
   }
 }

@@ -208,6 +208,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                       checkOutDate: _bookingState.checkOutDate,
                       minContractDays: widget.room.minContractDays,
                       maxContractDays: widget.room.maxContractDays,
+                      unavailablePeriods: widget.room.unavailablePeriods,
                       onDateSelected: (checkIn, checkOut) {
                         _updateState(
                           _bookingState.copyWith(
@@ -335,7 +336,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
           ),
         _buildPriceRow('계약 수수료', breakdown.contractFee),
         if (breakdown.rentalItemsFee > 0)
-          _buildPriceRow('렌탈 아이템', breakdown.rentalItemsFee),
+          _buildPriceRow('옵션', breakdown.rentalItemsFee),
         _buildPriceRow('보증금(퇴실 후 환급)', breakdown.deposit),
 
         SizedBox(height: AppSpacing.sm),

@@ -6,13 +6,14 @@ import '../../core/theme/app_text_styles.dart';
 
 /// 결제 성공/실패 콜백 페이지
 ///
-/// 토스페이먼츠 결제 후 리다이렉트되는 페이지입니다.
-/// - 성공: /payment/success?contractId=xxx&paymentKey=xxx&orderId=xxx&amount=xxx
+/// PayTag 결제 후 리다이렉트되는 페이지입니다.
+/// - 성공: /payment/success?contractId=xxx&recvPayparam=xxx&payType=xxx&orderId=xxx&amount=xxx
 /// - 실패: /payment/fail?contractId=xxx&code=xxx&message=xxx
 class PaymentCallbackPage extends StatefulWidget {
   final bool isSuccess;
   final int? contractId;
-  final String? paymentKey;
+  final String? recvPayparam;
+  final String? payType;
   final String? orderId;
   final String? amount;
   final String? errorCode;
@@ -22,7 +23,8 @@ class PaymentCallbackPage extends StatefulWidget {
     super.key,
     required this.isSuccess,
     this.contractId,
-    this.paymentKey,
+    this.recvPayparam,
+    this.payType,
     this.orderId,
     this.amount,
     this.errorCode,
@@ -57,25 +59,25 @@ class _PaymentCallbackPageState extends State<PaymentCallbackPage> {
     // 결제 성공 - 백엔드 승인 처리
     try {
       final contractId = widget.contractId;
-      final paymentKey = widget.paymentKey;
+      final recvPayparam = widget.recvPayparam;
       final orderId = widget.orderId;
       final amount = widget.amount;
 
-      if (contractId == null || paymentKey == null || orderId == null || amount == null) {
+      if (contractId == null || recvPayparam == null || orderId == null || amount == null) {
         throw Exception('결제 정보가 올바르지 않습니다.');
       }
 
       debugPrint('✅ [PaymentCallback] 결제 승인 요청');
       debugPrint('  - contractId: $contractId');
-      debugPrint('  - paymentKey: $paymentKey');
       debugPrint('  - orderId: $orderId');
       debugPrint('  - amount: $amount');
 
       await _paymentService.confirmPayment(
         contractId: contractId,
-        paymentKey: paymentKey,
+        recvPayparam: recvPayparam,
         orderId: orderId,
         amount: int.parse(amount),
+        payType: widget.payType,
       );
 
       setState(() {

@@ -39,6 +39,7 @@ class _ChatWindowState extends State<ChatWindow> {
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
   final List<XFile> _selectedImages = [];
+  bool _hasText = false;
 
   @override
   void dispose() {
@@ -110,6 +111,7 @@ class _ChatWindowState extends State<ChatWindow> {
       widget.onSendMessage?.call(message, List.from(_selectedImages));
       _messageController.clear();
       setState(() {
+        _hasText = false;
         _selectedImages.clear();
       });
     }
@@ -455,6 +457,12 @@ class _ChatWindowState extends State<ChatWindow> {
                   minLines: 1,
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.send,
+                  onChanged: (value) {
+                    final hasText = value.trim().isNotEmpty;
+                    if (hasText != _hasText) {
+                      setState(() => _hasText = hasText);
+                    }
+                  },
                   onSubmitted: (_) => _handleSend(),
                   decoration: InputDecoration(
                     hintText: '메시지를 입력하세요...',
@@ -490,12 +498,12 @@ class _ChatWindowState extends State<ChatWindow> {
 
               // 전송 버튼
               Material(
-                color: _messageController.text.trim().isNotEmpty || _selectedImages.isNotEmpty
+                color: _hasText || _selectedImages.isNotEmpty
                     ? AppColors.blue600 // bg-blue-600
                     : AppColors.gray300, // disabled:bg-gray-300
                 borderRadius: BorderRadius.circular(8), // rounded-lg
                 child: InkWell(
-                  onTap: _messageController.text.trim().isNotEmpty || _selectedImages.isNotEmpty
+                  onTap: _hasText || _selectedImages.isNotEmpty
                       ? _handleSend
                       : null,
                   borderRadius: BorderRadius.circular(8),
