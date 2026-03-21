@@ -1,10 +1,53 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../models/contract.dart'; // PaymentMethod enum
-import '../models/payment_method.dart'; // PaymentMethod extensions
+import '../models/contract.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
-import '../core/theme/app_spacing.dart';
 import '../utils/format_utils.dart';
+
+/// 결제 수단 선택 모달을 플랫폼에 맞게 표시합니다.
+///
+/// 웹: 화면 중앙 다이얼로그
+/// 모바일: 하단 시트
+Future<PaymentMethod?> showPaymentMethodModal(
+  BuildContext context, {
+  required int totalAmount,
+  PaymentMethod? initialSelectedMethod,
+}) {
+  if (kIsWeb) {
+    return showDialog<PaymentMethod>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 480,
+            maxHeight: MediaQuery.of(context).size.height * 0.80,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: PaymentMethodModal(
+              totalAmount: totalAmount,
+              initialSelectedMethod: initialSelectedMethod,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  return showModalBottomSheet<PaymentMethod>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => PaymentMethodModal(
+      totalAmount: totalAmount,
+      initialSelectedMethod: initialSelectedMethod,
+    ),
+  );
+}
 
 /// 결제 수단 선택 모달 (PayTag PG)
 class PaymentMethodModal extends StatefulWidget {
@@ -21,14 +64,18 @@ class PaymentMethodModal extends StatefulWidget {
   State<PaymentMethodModal> createState() => _PaymentMethodModalState();
 }
 
+enum _PayCategory { easyPay, card, virtualAccount, transfer }
+
 class _PaymentMethodModalState extends State<PaymentMethodModal>
     with SingleTickerProviderStateMixin {
-  PaymentMethod? _selectedMethod;
+  _PayCategory? _selectedCategory;
+  PaymentMethod? _selectedCard;
+  PaymentMethod? _selectedEasyPay;
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  /// 신용카드 목록
   static const _creditCards = [
     PaymentMethod.bc,
     PaymentMethod.kb,
@@ -41,45 +88,44 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
     PaymentMethod.nh,
   ];
 
-  /// 간편결제 목록
   static const _easyPays = [
     PaymentMethod.kakaoPay,
     PaymentMethod.naverPay,
     PaymentMethod.payco,
   ];
 
-  // TODO: 오픈 후 가상계좌 추가 예정
-  // static const _others = [
-  //   PaymentMethod.virtualAccount,
-  // ];
+  // 드롭다운 버튼 위치 추적용
+  final _cardDropdownKey = GlobalKey();
+  final _easyPayDropdownKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _selectedMethod = widget.initialSelectedMethod;
+
+    final init = widget.initialSelectedMethod;
+    if (init != null) {
+      if (init.isEasyPay) {
+        _selectedCategory = _PayCategory.easyPay;
+        _selectedEasyPay = init;
+      } else {
+        _selectedCategory = _PayCategory.card;
+        _selectedCard = init;
+      }
+    }
 
     _animationController = AnimationController(
       vsync: this,
-      duration: AppDurations.modal,
+      duration: const Duration(milliseconds: 300),
     );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: AppCurves.modal,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.1),
       end: Offset.zero,
     ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: AppCurves.modal,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-
     _animationController.forward();
   }
 
@@ -89,8 +135,62 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
     super.dispose();
   }
 
+  PaymentMethod? get _resolvedMethod {
+    switch (_selectedCategory) {
+      case _PayCategory.easyPay:
+        return _selectedEasyPay;
+      case _PayCategory.card:
+        return _selectedCard;
+      case _PayCategory.virtualAccount:
+      case _PayCategory.transfer:
+      case null:
+        return null;
+    }
+  }
+
+  bool get _canProceed => _resolvedMethod != null;
+
   @override
   Widget build(BuildContext context) {
+    final isWeb = kIsWeb;
+
+    Widget content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildHeader(),
+        Flexible(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('결제수단', style: AppTextStyles.headingSmall),
+                const SizedBox(height: 12),
+                _buildOutlinedSection(
+                  children: [
+                    _buildEasyPayRow(),
+                    _buildDivider(),
+                    _buildCardRow(),
+                    _buildDivider(),
+                    _buildDisabledRow('무통장입금(가상계좌)'),
+                    _buildDivider(),
+                    _buildDisabledRow('계좌이체'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+        _buildBottomButton(),
+      ],
+    );
+
+    // 웹: Dialog 내부라 슬라이드 애니메이션 불필요, 페이드만
+    if (isWeb) {
+      return FadeTransition(opacity: _fadeAnimation, child: content);
+    }
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
@@ -99,193 +199,30 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(context).size.height * 0.85,
           ),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
+                color: Color(0x40000000),
                 blurRadius: 60,
-                offset: const Offset(0, 20),
+                offset: Offset(0, 20),
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHeader(),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 신용카드 섹션
-                      _buildSectionTitle('신용카드', Icons.credit_card),
-                      const SizedBox(height: 8),
-                      _buildCardGrid(_creditCards),
-
-                      const SizedBox(height: 20),
-
-                      // 간편결제 섹션
-                      _buildSectionTitle('간편결제', Icons.smartphone),
-                      const SizedBox(height: 8),
-                      ..._easyPays.map((method) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _buildPaymentTile(method),
-                          )),
-
-                      // TODO: 오픈 후 가상계좌 섹션 추가 예정
-                      // const SizedBox(height: 20),
-                      // _buildSectionTitle('기타', Icons.more_horiz),
-                      // const SizedBox(height: 8),
-                      // ..._others.map((method) => Padding(
-                      //       padding: const EdgeInsets.only(bottom: 8),
-                      //       child: _buildPaymentTile(method),
-                      //     )),
-
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                ),
-              ),
-              _buildBottomButton(),
-            ],
-          ),
+          child: content,
         ),
       ),
     );
   }
 
-  /// 섹션 제목
-  Widget _buildSectionTitle(String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: AppColors.textSecondary),
-        const SizedBox(width: 6),
-        Text(
-          title,
-          style: AppTextStyles.bodyMedium.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 신용카드 그리드 (3열)
-  Widget _buildCardGrid(List<PaymentMethod> cards) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: cards.map((method) {
-        final isSelected = _selectedMethod == method;
-        return GestureDetector(
-          onTap: () => setState(() => _selectedMethod = method),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            width: (MediaQuery.of(context).size.width - 40 - 16) / 3,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.primary500.withValues(alpha: 0.08)
-                  : Colors.white,
-              border: Border.all(
-                color: isSelected ? AppColors.primary500 : AppColors.border,
-                width: isSelected ? 2 : 1,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                method.label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? AppColors.primary500 : AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  /// 간편결제/기타 타일
-  Widget _buildPaymentTile(PaymentMethod method) {
-    final isSelected = _selectedMethod == method;
-
-    return GestureDetector(
-      onTap: () => setState(() => _selectedMethod = method),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary500.withValues(alpha: 0.08)
-              : Colors.white,
-          border: Border.all(
-            color: isSelected ? AppColors.primary500 : AppColors.border,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              method.icon,
-              size: 22,
-              color: isSelected ? AppColors.primary500 : AppColors.textSecondary,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    method.label,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected
-                          ? AppColors.primary500
-                          : AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    method.description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: AppColors.primary500, size: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 모달 헤더
   Widget _buildHeader() {
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.border, width: 1),
-        ),
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -303,17 +240,164 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
     );
   }
 
-  /// 하단 고정 버튼
-  Widget _buildBottomButton() {
-    final isEnabled = _selectedMethod != null;
+  Widget _buildOutlinedSection({required List<Widget> children}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.border, width: 1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: children),
+    );
+  }
 
+  Widget _buildDivider() =>
+      Divider(height: 1, thickness: 1, color: AppColors.border);
+
+  Widget _buildEasyPayRow() {
+    final isSelected = _selectedCategory == _PayCategory.easyPay;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _selectedCategory = _PayCategory.easyPay),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                _buildRadio(isSelected),
+                const SizedBox(width: 12),
+                Text(
+                  '간편결제',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (isSelected)
+          Padding(
+            padding: const EdgeInsets.only(left: 44, right: 16, bottom: 14),
+            child: _PositionedDropdown<PaymentMethod>(
+              key: _easyPayDropdownKey,
+              value: _selectedEasyPay,
+              items: _easyPays,
+              labelOf: (m) => m.label,
+              hint: '간편결제 선택',
+              onChanged: (m) => setState(() => _selectedEasyPay = m),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCardRow() {
+    final isSelected = _selectedCategory == _PayCategory.card;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _selectedCategory = _PayCategory.card),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                _buildRadio(isSelected),
+                const SizedBox(width: 12),
+                Text(
+                  '신용/체크 카드',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (isSelected)
+          Padding(
+            padding: const EdgeInsets.only(left: 44, right: 16, bottom: 14),
+            child: _PositionedDropdown<PaymentMethod>(
+              key: _cardDropdownKey,
+              value: _selectedCard,
+              items: _creditCards,
+              labelOf: (m) => m.label,
+              hint: '카드사 선택',
+              onChanged: (m) => setState(() => _selectedCard = m),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDisabledRow(String label) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          _buildRadio(false, disabled: true),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '준비중',
+              style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRadio(bool isSelected, {bool disabled = false}) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: disabled
+              ? AppColors.border
+              : isSelected
+                  ? AppColors.primary500
+                  : const Color(0xFFD1D5DB),
+          width: isSelected ? 6 : 2,
+        ),
+        color: isSelected ? AppColors.primary500 : Colors.white,
+      ),
+      child: isSelected
+          ? const Center(
+              child: CircleAvatar(radius: 4, backgroundColor: Colors.white),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildBottomButton() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 1),
-        ),
+        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -326,54 +410,147 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
         child: SizedBox(
           width: double.infinity,
           height: 56,
-          child: AnimatedContainer(
-            duration: AppDurations.hoverCard,
-            curve: AppCurves.hoverCard,
-            decoration: BoxDecoration(
-              gradient: isEnabled
-                  ? LinearGradient(
-                      colors: [
-                        AppColors.primary500,
-                        AppColors.primary500.withValues(alpha: 0.8),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : null,
-              color: isEnabled ? null : Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: isEnabled
-                  ? [
-                      BoxShadow(
-                        color: AppColors.primary500.withValues(alpha: 0.4),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : [],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: isEnabled
-                    ? () => Navigator.pop(context, _selectedMethod)
-                    : null,
+          child: ElevatedButton(
+            onPressed: _canProceed
+                ? () => Navigator.pop(context, _resolvedMethod)
+                : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  _canProceed ? AppColors.primary500 : Colors.grey.shade300,
+              disabledBackgroundColor: Colors.grey.shade300,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                child: Center(
-                  child: Text(
-                    isEnabled
-                        ? '₩${FormatUtils.formatCurrency(widget.totalAmount)} 결제하기'
-                        : '결제 수단을 선택해주세요',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: isEnabled ? Colors.white : Colors.grey.shade600,
-                    ),
-                  ),
-                ),
+              ),
+              elevation: _canProceed ? 4 : 0,
+              shadowColor: _canProceed
+                  ? AppColors.primary500.withValues(alpha: 0.4)
+                  : Colors.transparent,
+            ),
+            child: Text(
+              _canProceed
+                  ? '${FormatUtils.formatCurrency(widget.totalAmount)}원 결제하기'
+                  : '결제 수단을 선택해주세요',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: _canProceed ? Colors.white : Colors.grey.shade600,
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 버튼 바로 아래에 메뉴를 표시하는 커스텀 드롭다운
+///
+/// Flutter 기본 DropdownButton은 메뉴 위치를 제어할 수 없어
+/// showMenu + GlobalKey로 버튼 좌표를 직접 계산합니다.
+class _PositionedDropdown<T> extends StatefulWidget {
+  final T? value;
+  final List<T> items;
+  final String Function(T) labelOf;
+  final String hint;
+  final ValueChanged<T?> onChanged;
+
+  const _PositionedDropdown({
+    super.key,
+    required this.value,
+    required this.items,
+    required this.labelOf,
+    required this.hint,
+    required this.onChanged,
+  });
+
+  @override
+  State<_PositionedDropdown<T>> createState() => _PositionedDropdownState<T>();
+}
+
+class _PositionedDropdownState<T> extends State<_PositionedDropdown<T>> {
+  final _buttonKey = GlobalKey();
+
+  Future<void> _openMenu() async {
+    final box = _buttonKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+
+    final offset = box.localToGlobal(Offset.zero);
+    final size = box.size;
+
+    // 버튼 바로 아래에서 시작, 최대 높이 제한으로 스크롤 가능
+    final selected = await showMenu<T>(
+      context: context,
+      color: Colors.white,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      position: RelativeRect.fromLTRB(
+        offset.dx,
+        offset.dy + size.height + 4, // 버튼 하단 + 4px 간격
+        offset.dx + size.width,
+        0,
+      ),
+      constraints: BoxConstraints(
+        minWidth: size.width,
+        maxWidth: size.width,
+        maxHeight: 240, // 약 5~6개 표시, 이후 스크롤
+      ),
+      items: widget.items
+          .map(
+            (item) => PopupMenuItem<T>(
+              value: item,
+              height: 44,
+              child: Text(
+                widget.labelOf(item),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: widget.value == item
+                      ? FontWeight.w600
+                      : FontWeight.w400,
+                  color: widget.value == item
+                      ? AppColors.primary500
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+
+    if (selected != null) {
+      widget.onChanged(selected);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasValue = widget.value != null;
+
+    return GestureDetector(
+      onTap: _openMenu,
+      child: Container(
+        key: _buttonKey,
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: AppColors.border, width: 1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                hasValue ? widget.labelOf(widget.value as T) : widget.hint,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: hasValue
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+            const Icon(Icons.arrow_drop_down, size: 20, color: Colors.grey),
+          ],
         ),
       ),
     );
