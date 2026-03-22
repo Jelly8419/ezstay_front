@@ -80,10 +80,10 @@ class _KmcCallbackPageState extends State<KmcCallbackPage> {
             console.log('[KMC Callback] BroadcastChannel 실패:', e);
           }
 
-          // 팝업 닫기 비활성화 (디버깅용 - 콘솔 로그 확인 후 복원)
-          // setTimeout(function() {
-          //   window.close();
-          // }, 1500);
+          // 팝업 닫기 (메시지 수신 여유 확보)
+          setTimeout(function() {
+            window.close();
+          }, 1500);
         })();
       '''
       ]);

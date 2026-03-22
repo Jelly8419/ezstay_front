@@ -60,6 +60,9 @@ class KmcWebViewHelper {
         return;
       }
 
+      // JS에서 팝업 참조 저장 (닫힘 감지용)
+      js.context['_kmcPopupRef'] = popupRef;
+
       // 팝업에 form HTML 작성 및 자동 submit
       final popupDoc = popupRef['document'];
       popupDoc.callMethod('write', [formHtml]);
@@ -75,6 +78,7 @@ class KmcWebViewHelper {
         // JS 콜백 정리
         try {
           js.context.deleteProperty('_kmcMessageHandler');
+          js.context.deleteProperty('_kmcPopupRef');
           js.context.callMethod('eval', [
             'if (window._kmcBroadcastChannel) { window._kmcBroadcastChannel.close(); window._kmcBroadcastChannel = null; }'
           ]);
@@ -142,13 +146,28 @@ class KmcWebViewHelper {
       ''']);
 
       // 팝업 닫힘 감지 (1초 간격 폴링)
-      // KmcCallbackPage가 deferred loading으로 로드되므로
-      // 라이브러리 로딩 + 렌더링 + BroadcastChannel 전송까지 충분히 대기
+      // cross-origin 상태에서는 popupRef['closed']가 신뢰할 수 없으므로
+      // JS에서 직접 확인하고, cross-origin일 때는 닫힘으로 판단하지 않음
       pollTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         try {
-          final closed = popupRef['closed'];
-          if (closed == true) {
-            // 팝업 닫힘 감지 → BroadcastChannel 결과 대기 (3초)
+          // JS로 팝업 상태 확인 (cross-origin 안전)
+          final isClosed = js.context.callMethod('eval', ['''
+            (function() {
+              try {
+                var popup = window._kmcPopupRef;
+                if (!popup) return true;
+                if (popup.closed) return true;
+                // cross-origin이면 location 접근 시 에러 → 아직 열려있음
+                try { var loc = popup.location.href; } catch(e) { return false; }
+                return false;
+              } catch(e) {
+                return false;
+              }
+            })()
+          ''']);
+
+          if (isClosed == true) {
+            // 팝업이 실제로 닫힘 → BroadcastChannel 결과 대기 (3초)
             Timer(const Duration(seconds: 3), () {
               if (!completer.isCompleted) {
                 debugPrint('ℹ️ [KMC] 팝업 닫힘 (사용자 취소 또는 완료)');
@@ -159,7 +178,7 @@ class KmcWebViewHelper {
             timer.cancel();
           }
         } catch (_) {
-          // cross-origin 접근 에러 무시
+          // 에러 시 무시 (팝업 아직 열려있는 것으로 간주)
         }
       });
 
