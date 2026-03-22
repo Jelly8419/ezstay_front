@@ -11,6 +11,21 @@ import 'token_service.dart';
 class ContractService {
   ContractService();
 
+  /// PG 에러 코드(4900/4901/4902)를 사용자 안내 메시지로 변환합니다.
+  /// 알 수 없는 코드는 null 반환 → 호출부에서 기본 메시지 사용.
+  static String? _pgErrorMessage(dynamic code) {
+    switch (code) {
+      case 4900:
+        return '결제 취소 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+      case 4901:
+        return '이미 취소 처리된 결제입니다.';
+      case 4902:
+        return 'PG사 사정으로 취소가 불가합니다. 고객센터로 문의해 주세요.';
+      default:
+        return null;
+    }
+  }
+
   /// 계약 승인 요청
   Future<Map<String, dynamic>> requestContract({
     required int roomId,
@@ -695,9 +710,14 @@ class ContractService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return json.decode(utf8.decode(response.bodyBytes));
-      } else if (response.statusCode == 400) {
+      } else if (response.statusCode == 400 ||
+          response.statusCode == 502) {
         final error = json.decode(utf8.decode(response.bodyBytes));
-        throw Exception(error['message'] ?? '환불 요청을 처리할 수 없습니다.');
+        final code = error['error']?['code'] ?? error['code'];
+        throw Exception(_pgErrorMessage(code) ??
+            error['error']?['message'] ??
+            error['message'] ??
+            '환불 요청을 처리할 수 없습니다.');
       } else if (response.statusCode == 401) {
         throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
       } else if (response.statusCode == 403) {
@@ -706,7 +726,11 @@ class ContractService {
         throw Exception('계약을 찾을 수 없습니다.');
       } else {
         final error = json.decode(utf8.decode(response.bodyBytes));
-        throw Exception(error['message'] ?? '환불 요청에 실패했습니다.');
+        final code = error['error']?['code'] ?? error['code'];
+        throw Exception(_pgErrorMessage(code) ??
+            error['error']?['message'] ??
+            error['message'] ??
+            '환불 요청에 실패했습니다.');
       }
     } on SocketException {
       throw Exception('네트워크 연결을 확인해주세요.');
@@ -1289,9 +1313,14 @@ class ContractService {
           debugPrint('✅ [CONTRACT] 호스트 계약 취소 성공: $contractId');
         }
         return responseData['data'] ?? responseData;
-      } else if (response.statusCode == 400) {
+      } else if (response.statusCode == 400 ||
+          response.statusCode == 502) {
         final error = json.decode(utf8.decode(response.bodyBytes));
-        throw Exception(error['message'] ?? '계약을 취소할 수 없습니다.');
+        final code = error['error']?['code'] ?? error['code'];
+        throw Exception(_pgErrorMessage(code) ??
+            error['error']?['message'] ??
+            error['message'] ??
+            '계약을 취소할 수 없습니다.');
       } else if (response.statusCode == 401) {
         throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
       } else if (response.statusCode == 403) {
@@ -1300,7 +1329,11 @@ class ContractService {
         throw Exception('계약을 찾을 수 없습니다.');
       } else {
         final error = json.decode(utf8.decode(response.bodyBytes));
-        throw Exception(error['message'] ?? '계약 취소에 실패했습니다.');
+        final code = error['error']?['code'] ?? error['code'];
+        throw Exception(_pgErrorMessage(code) ??
+            error['error']?['message'] ??
+            error['message'] ??
+            '계약 취소에 실패했습니다.');
       }
     } on SocketException {
       throw Exception('네트워크 연결을 확인해주세요.');

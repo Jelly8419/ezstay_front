@@ -12,7 +12,6 @@ import '../../services/payment_service_unified.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
-import '../../models/contract.dart' show PaymentMethod;
 import '../../widgets/payment_webview.dart';
 import '../../widgets/payment_method_modal.dart';
 import '../../widgets/common/app_footer.dart';
@@ -1583,13 +1582,9 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
   /// 웹에서 결제 처리 (PayTag SDK)
   Future<void> _processPaymentWeb(Map<String, dynamic> paymentInfo) async {
     // 1. 결제수단 선택 모달 표시
-    final selectedMethod = await showModalBottomSheet<PaymentMethod>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => PaymentMethodModal(
-        totalAmount: paymentInfo['amount'] as int,
-      ),
+    final selectedMethod = await showPaymentMethodModal(
+      context,
+      totalAmount: paymentInfo['amount'] as int,
     );
 
     if (selectedMethod == null || !mounted) return; // 취소

@@ -579,11 +579,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
     // 3단계: 결제수단 선택 모달
     if (!mounted) return;
-    final selectedMethod = await showModalBottomSheet<PaymentMethod>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => PaymentMethodModal(totalAmount: amount),
+    final selectedMethod = await showPaymentMethodModal(
+      context,
+      totalAmount: amount,
     );
 
     if (selectedMethod == null || !mounted) return;
@@ -2677,13 +2675,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       // 웹: PayTag로 결제
       if (kIsWeb) {
         // 결제수단 선택 모달
-        final selectedMethod = await showModalBottomSheet<PaymentMethod>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => PaymentMethodModal(
-            totalAmount: paymentInfo['amount'] as int,
-          ),
+        final selectedMethod = await showPaymentMethodModal(
+          context,
+          totalAmount: paymentInfo['amount'] as int,
         );
 
         if (selectedMethod == null || !mounted) return;
@@ -2746,13 +2740,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       // 3. 플랫폼별 결제 처리
       if (kIsWeb) {
         // 3-1. 결제수단 선택 모달 표시
-        final selectedMethod = await showModalBottomSheet<PaymentMethod>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => PaymentMethodModal(
-            totalAmount: paymentInfo['amount'] as int,
-          ),
+        final selectedMethod = await showPaymentMethodModal(
+          context,
+          totalAmount: paymentInfo['amount'] as int,
         );
 
         if (selectedMethod == null || !mounted) return;
