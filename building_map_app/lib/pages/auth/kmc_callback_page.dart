@@ -55,36 +55,35 @@ class _KmcCallbackPageState extends State<KmcCallbackPage> {
             apiToken: apiToken,
             certNum: certNum
           };
-          var sent = false;
+
+          console.log('[KMC Callback] 결과 전달 시작 - apiToken:', apiToken ? '있음' : '없음', ', certNum:', certNum ? '있음' : '없음');
 
           // 1차: window.opener로 직접 전달
           if (window.opener && !window.opener.closed) {
             try {
               window.opener.postMessage(result, '*');
-              sent = true;
               console.log('[KMC Callback] opener.postMessage 전송 성공');
             } catch(e) {
               console.log('[KMC Callback] opener.postMessage 실패:', e);
             }
+          } else {
+            console.log('[KMC Callback] opener 없음 또는 닫힘');
           }
 
-          // 2차: BroadcastChannel로 전달 (opener가 끊어진 경우)
-          if (!sent) {
-            try {
-              var bc = new BroadcastChannel('kmc_auth');
-              bc.postMessage(result);
-              bc.close();
-              sent = true;
-              console.log('[KMC Callback] BroadcastChannel 전송 성공');
-            } catch(e) {
-              console.log('[KMC Callback] BroadcastChannel 실패:', e);
-            }
+          // 2차: BroadcastChannel로 항상 전달 (opener가 있어도 cross-origin일 수 있음)
+          try {
+            var bc = new BroadcastChannel('kmc_auth');
+            bc.postMessage(result);
+            console.log('[KMC Callback] BroadcastChannel 전송 성공');
+            setTimeout(function() { bc.close(); }, 1000);
+          } catch(e) {
+            console.log('[KMC Callback] BroadcastChannel 실패:', e);
           }
 
-          // 팝업 닫기
+          // 팝업 닫기 (메시지 수신 여유 확보)
           setTimeout(function() {
             window.close();
-          }, 500);
+          }, 1500);
         })();
       '''
       ]);

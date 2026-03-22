@@ -142,13 +142,14 @@ class KmcWebViewHelper {
       ''']);
 
       // 팝업 닫힘 감지 (1초 간격 폴링)
-      // BroadcastChannel 결과가 먼저 도착할 수 있으므로 닫힘 후 잠시 대기
+      // KmcCallbackPage가 deferred loading으로 로드되므로
+      // 라이브러리 로딩 + 렌더링 + BroadcastChannel 전송까지 충분히 대기
       pollTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         try {
           final closed = popupRef['closed'];
           if (closed == true) {
-            // 팝업 닫힘 감지 → BroadcastChannel 결과 대기 (1초)
-            Timer(const Duration(seconds: 1), () {
+            // 팝업 닫힘 감지 → BroadcastChannel 결과 대기 (3초)
+            Timer(const Duration(seconds: 3), () {
               if (!completer.isCompleted) {
                 debugPrint('ℹ️ [KMC] 팝업 닫힘 (사용자 취소 또는 완료)');
                 cleanup();
