@@ -10,6 +10,7 @@ import '../../services/user_profile_service.dart';
 import '../../services/bank_account_service.dart';
 import '../../services/receipt_service.dart';
 import '../../services/auth_service.dart';
+import '../../models/user.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../widgets/common/app_footer.dart';
@@ -782,7 +783,9 @@ class _HostMyPageState extends State<HostMyPage> {
                 value: _userProfile!.email,
               ),
               _buildPhoneField(),
-              _buildPasswordField(),
+              // 소셜 로그인 사용자는 비밀번호 변경 불필요
+              if (Provider.of<AuthService>(context, listen: false).currentUser?.provider == AuthProvider.email)
+                _buildPasswordField(),
             ],
           ),
         ],

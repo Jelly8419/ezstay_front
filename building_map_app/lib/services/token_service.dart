@@ -276,13 +276,15 @@ class TokenService {
         debugPrint('🔄 [TOKEN] Access Token 갱신 시도 중...');
       }
 
-      // 백엔드 API 호출
+      // 백엔드 API 호출 (백엔드는 req.body.refreshToken에서 읽음)
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/api/auth/refresh'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $refreshToken',
         },
+        body: jsonEncode({
+          'refreshToken': refreshToken,
+        }),
       ).timeout(
         Duration(seconds: ApiConfig.timeoutSeconds),
       );
