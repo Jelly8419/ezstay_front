@@ -174,7 +174,6 @@ class KmcWebViewHelper {
           ''']);
 
           final state = js.context['_kmcPopupState']?.toString() ?? 'unknown';
-          debugPrint('🔍 [KMC] 팝업 상태: $state');
 
           if (state == 'closed') {
             // 팝업이 실제로 닫힘 → BroadcastChannel 결과 대기 (3초)
