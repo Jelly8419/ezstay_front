@@ -79,6 +79,7 @@ class KmcWebViewHelper {
         try {
           js.context.deleteProperty('_kmcMessageHandler');
           js.context.deleteProperty('_kmcPopupRef');
+          js.context.deleteProperty('_kmcPopupState');
           js.context.callMethod('eval', [
             'if (window._kmcBroadcastChannel) { window._kmcBroadcastChannel.close(); window._kmcBroadcastChannel = null; }'
           ]);
@@ -145,28 +146,37 @@ class KmcWebViewHelper {
         }
       ''']);
 
-      // 팝업 닫힘 감지 (1초 간격 폴링)
-      // cross-origin 상태에서는 popupRef['closed']가 신뢰할 수 없으므로
-      // JS에서 직접 확인하고, cross-origin일 때는 닫힘으로 판단하지 않음
-      pollTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      // 팝업 닫힘 감지 — cross-origin에서 popup.closed가 true를 반환하는 문제 대응
+      // popup.closed를 사용하지 않고, location 접근 가능 여부로 판단
+      pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
         try {
-          // JS로 팝업 상태 확인 (cross-origin 안전)
-          final isClosed = js.context.callMethod('eval', ['''
+          js.context.callMethod('eval', ['''
             (function() {
+              var popup = window._kmcPopupRef;
+              if (!popup) {
+                window._kmcPopupState = 'closed';
+                return;
+              }
               try {
-                var popup = window._kmcPopupRef;
-                if (!popup) return true;
-                if (popup.closed) return true;
-                // cross-origin이면 location 접근 시 에러 → 아직 열려있음
-                try { var loc = popup.location.href; } catch(e) { return false; }
-                return false;
+                // cross-origin이면 location.href 접근 시 에러 → 아직 열려있음 (다른 도메인)
+                var href = popup.location.href;
+                // same-origin 접근 성공 → about:blank이거나 실제 닫힘 확인
+                if (popup.closed) {
+                  window._kmcPopupState = 'closed';
+                } else {
+                  window._kmcPopupState = 'open_same_origin';
+                }
               } catch(e) {
-                return false;
+                // cross-origin 에러 → 다른 도메인에 있음 (KMC 인증 중)
+                window._kmcPopupState = 'open_cross_origin';
               }
             })()
           ''']);
 
-          if (isClosed == true) {
+          final state = js.context['_kmcPopupState']?.toString() ?? 'unknown';
+          debugPrint('🔍 [KMC] 팝업 상태: $state');
+
+          if (state == 'closed') {
             // 팝업이 실제로 닫힘 → BroadcastChannel 결과 대기 (3초)
             Timer(const Duration(seconds: 3), () {
               if (!completer.isCompleted) {
