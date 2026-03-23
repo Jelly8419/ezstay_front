@@ -43,6 +43,9 @@ class _PricingStepState extends State<PricingStep> {
   late final FocusNode _longTermDiscountPercentFocus;
   late final FocusNode _earlyCheckInDiscountAmountFocus;
 
+  // 청소 서비스 비밀번호 키패드 표시 여부
+  bool _showServicePasswordKeypad = false;
+
   // 관리비 포함 항목
   static const List<String> _maintenanceOptions = ['수도세', '전기세', '가스비', '인터넷'];
 
@@ -93,6 +96,13 @@ class _PricingStepState extends State<PricingStep> {
           ?.map((e) => e.toString())
           .toList() ??
       [];
+
+  // 청소 서비스 관련 getter
+  bool get _cleaningService =>
+      (widget.formData['cleaningService'] as bool?) ?? false;
+  String get _servicePassword =>
+      (widget.formData['servicePassword'] as String?) ?? '';
+  String get _area => (widget.formData['area'] as String?) ?? '';
 
   @override
   void initState() {
@@ -312,6 +322,253 @@ class _PricingStepState extends State<PricingStep> {
       final rounded = (value / 1000).round() * 1000;
       _updateFormData('cleaningFee', rounded.toString());
     }
+  }
+
+  // 청소 서비스 자동 청소비 계산 (면적 기반)
+  int _calculateCleaningFee() {
+    if (!_cleaningService || _area.isEmpty) return 0;
+    final areaValue = double.tryParse(_area) ?? 0;
+    final pyeong = areaValue * 0.3025;
+    if (pyeong <= 10) return 50000;
+    return 50000 + ((pyeong - 10) / 10).ceil() * 20000;
+  }
+
+  void _handleCleaningServiceChange(bool enabled) {
+    if (enabled) {
+      final fee = _calculateCleaningFee();
+      _updateFormData('cleaningService', true);
+      _updateFormData('cleaningFee', fee.toString());
+      _cleaningFeeController.text = _formatNumberWithCommas(fee.toString());
+    } else {
+      _updateFormData('cleaningService', false);
+    }
+  }
+
+  void _showCleaningServiceConfirmDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline, color: AppColors.primary600, size: 24),
+            const SizedBox(width: 8),
+            const Text('청소 서비스 안내'),
+          ],
+        ),
+        titleTextStyle: AppTextStyles.headingSmall.copyWith(
+          fontSize: 18,
+          color: AppColors.textPrimary,
+        ),
+        content: const Text(
+          '청소 서비스 선택 시, 호스트님은 청소비를 설정 및 정산받을 수 없습니다.',
+        ),
+        contentTextStyle: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.textSecondary,
+          height: 1.5,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              '취소',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _handleCleaningServiceChange(true);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('확인', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 비밀번호 입력 섹션
+  Widget _buildServicePasswordSection() {
+    final password = _servicePassword;
+
+    return Column(
+      children: [
+        InkWell(
+          onTap: () {
+            setState(() {
+              _showServicePasswordKeypad = !_showServicePasswordKeypad;
+            });
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: AppColors.gray300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              password.isEmpty ? '비밀번호를 입력하세요' : password,
+              style: TextStyle(
+                fontSize: 14,
+                color: password.isEmpty ? Colors.grey[400] : Colors.black,
+              ),
+            ),
+          ),
+        ),
+        if (_showServicePasswordKeypad) ...[
+          const SizedBox(height: 16),
+          _buildKeypad(password),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildKeypad(String password) {
+    const double buttonHeight = 48.0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.gray50,
+        border: Border.all(color: AppColors.gray200),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          GridView.count(
+            shrinkWrap: true,
+            crossAxisCount: 3,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 2.5,
+            physics: const NeverScrollableScrollPhysics(),
+            children:
+                ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
+                    .map(
+                      (digit) => _buildKeypadButton(
+                        digit,
+                        onTap: () {
+                          _updateFormData(
+                              'servicePassword', password + digit);
+                        },
+                        height: buttonHeight,
+                      ),
+                    )
+                    .toList(),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: buttonHeight,
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      _updateFormData('servicePassword', '');
+                    },
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: AppColors.error50,
+                      side: const BorderSide(color: AppColors.error500),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      '전체 삭제',
+                      style: TextStyle(
+                        color: AppColors.error600,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      if (password.isNotEmpty) {
+                        _updateFormData(
+                          'servicePassword',
+                          password.substring(0, password.length - 1),
+                        );
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.gray300),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      '삭제',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _showServicePasswordKeypad = false;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary600,
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      '완료',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKeypadButton(
+    String label, {
+    required VoidCallback onTap,
+    double fontSize = 16,
+    double? height,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: height,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: AppColors.gray300),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+        ),
+      ),
+    );
   }
 
   void _toggleMaintenanceInclusion(String item) {
@@ -617,7 +874,7 @@ class _PricingStepState extends State<PricingStep> {
 
           // 청소비
           FormSection(
-            title: '청소비 (선택)',
+            title: '청소비',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -626,6 +883,7 @@ class _PricingStepState extends State<PricingStep> {
                   focusNode: _cleaningFeeFocus,
                   onChanged: _handleCleaningFeeChange,
                   keyboardType: TextInputType.number,
+                  enabled: !_cleaningService,
                   decoration: InputDecoration(
                     hintText: '예: 50,000',
                     hintStyle: const TextStyle(
@@ -638,9 +896,11 @@ class _PricingStepState extends State<PricingStep> {
                       color: AppColors.textSecondary,
                     ),
                     filled: true,
-                    fillColor: _hasError('cleaningFee')
-                        ? AppColors.error50
-                        : Colors.white,
+                    fillColor: _cleaningService
+                        ? AppColors.gray50
+                        : _hasError('cleaningFee')
+                            ? AppColors.error50
+                            : Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -660,6 +920,10 @@ class _PricingStepState extends State<PricingStep> {
                             ? AppColors.error500
                             : AppColors.gray300,
                       ),
+                    ),
+                    disabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.gray300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -681,6 +945,92 @@ class _PricingStepState extends State<PricingStep> {
                     color: AppColors.textSecondary,
                   ),
                 ),
+                const SizedBox(height: 16),
+
+                // 이지스테이 청소 서비스 체크박스
+                InkWell(
+                  onTap: () {
+                    if (!_cleaningService) {
+                      _showCleaningServiceConfirmDialog();
+                    } else {
+                      _handleCleaningServiceChange(false);
+                    }
+                  },
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        margin: const EdgeInsets.only(top: 2),
+                        decoration: BoxDecoration(
+                          color: _cleaningService
+                              ? AppColors.primary600
+                              : Colors.white,
+                          border: Border.all(
+                            color: _cleaningService
+                                ? AppColors.primary600
+                                : AppColors.gray300,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: _cleaningService
+                            ? const Icon(Icons.check,
+                                size: 16, color: Colors.white)
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '이지스테이 청소 서비스 사용',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _cleaningService
+                                  ? '* 이지스테이에서 게스트 퇴실 이후 부터 다음날 오전까지(부득이한 사정으로 인해 지연 시 사전 안내 예정) 청소를 진행합니다.\n  기본요금은 5만원이며, 10평마다 2만원이 추가되어 게스트에게 청구됩니다. (예 : 7평 5만원, 15평 7만원, 기존에 설정한 청소비는 게스트에게 이중 부과되지 않습니다.)'
+                                  : '* 이지스테이에서 게스트 퇴실 이후 부터 다음날 오전까지(부득이한 사정으로 인해 지연 시 사전 안내 예정) 청소를 진행합니다.\n  기본요금은 5만원, 등록된 방 평수 기준으로 10평마다 2만원이 추가되어 게스트에게 청구되며 해당 요금은 정산받을 수 없습니다. (예 : 7평 5만원, 15평 7만원)',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 청소 서비스 선택 시 방 비밀번호(도어락) 입력
+                if (_cleaningService) ...[
+                  const SizedBox(height: 24),
+                  const Text(
+                    '방 비밀번호(도어락)',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildServicePasswordSection(),
+                  const SizedBox(height: 8),
+                  Text(
+                    '* 청소 서비스 진행을 위해 도어락 비밀번호를 입력해주세요. 비밀번호가 불일치할 경우 청소 일정에 불이익이 발생할 수 있습니다.',
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
               ],
             ),
           ),

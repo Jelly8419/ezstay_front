@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/contract_detail.dart';
 import '../../services/contract_service.dart';
@@ -103,13 +105,104 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
 
   /// 호스트 퇴실 확인 처리
   Future<void> _handleHostCheckoutConfirm() async {
+    final roomId = _contract?.roomId;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: const Text('퇴실 확인'),
+        titleTextStyle: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Colors.black,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('퇴실을 확인하시겠습니까?'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7ED),
+                border: Border.all(color: const Color(0xFFFED7AA)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      size: 20, color: Color(0xFFF97316)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(
+                            text: '청소 서비스 진행을 위해 방 도어락 비밀번호가 변경되진 않았는지 반드시 확인해주세요. ',
+                          ),
+                          if (roomId != null)
+                            TextSpan(
+                              text: '(변경 요청)',
+                              style: const TextStyle(
+                                color: Color(0xFF2563EB),
+                                fontWeight: FontWeight.w700,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  Navigator.of(dialogContext).pop(false);
+                                  context.go('/host/room-registration/$roomId?step=3');
+                                },
+                            ),
+                        ],
+                      ),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF9A3412),
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('취소',
+                style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3B82F6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child:
+                const Text('확인', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     try {
       await _contractService.confirmHostCheckout(widget.contractId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('퇴실 확인이 완료되었습니다.')),
         );
-        _loadContractDetail(); // 상태 갱신
+        _loadContractDetail();
       }
     } catch (e) {
       if (mounted) {
@@ -444,6 +537,8 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
                 _submitDepositAgreement(deductAmount, agreementText),
             depositAmount: _contract!.deposit,
             checkOutDate: DateTime.tryParse(_contract!.checkOutDate) ?? DateTime.now(),
+            initialDeductAmount: _contract!.depositAgreement?.deductAmount,
+            initialAgreementText: _contract!.depositAgreement?.agreementText,
           ),
       ],
     );
@@ -788,26 +883,29 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: isExpired ? null : _handleDepositAgreement,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: const Color(0xFFF97316),
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFD1D5DB),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+              // ACCEPTED 상태면 버튼 비노출 (게스트 동의 완료)
+              if (agreement?.status != 'ACCEPTED') ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isExpired ? null : _handleDepositAgreement,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: const Color(0xFFF97316),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: const Color(0xFFD1D5DB),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      agreement?.status == 'SUBMITTED' ? '합의 내용 수정' : '합의 내용 제출',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  child: const Text(
-                    '합의 내용 제출',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
