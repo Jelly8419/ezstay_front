@@ -243,29 +243,16 @@ class RegistrationValidator {
       }
     }
 
-    return errors;
-  }
-
-  /// Step 4: 무료 부가서비스 검증
-  static List<String> validateServices(Map<String, dynamic> formData) {
-    final errors = <String>[];
-
-    // 호스트 관리 서비스 중 하나라도 선택 시 비밀번호 필수
+    // 청소 서비스 선택 시 비밀번호 필수
     final cleaningService = formData['cleaningService'] as bool? ?? false;
-    final exitInspectionService =
-        formData['exitInspectionService'] as bool? ?? false;
-
-    if (cleaningService || exitInspectionService) {
+    if (cleaningService) {
       final servicePassword = formData['servicePassword'] as String?;
       if (servicePassword == null || servicePassword.isEmpty) {
-        errors.add('호스트 관리 서비스를 위해 방 비밀번호를 입력해주세요');
+        errors.add('청소 서비스를 위해 방 비밀번호를 입력해주세요');
       } else if (servicePassword.length < 4) {
         errors.add('방 비밀번호를 4자리 이상 입력해주세요');
       }
-    }
 
-    // 청소 서비스 선택 시 면적 정보 필요 (자동 계산용)
-    if (cleaningService) {
       final area = formData['area'] as String?;
       if (area == null || area.isEmpty) {
         errors.add('청소 서비스 요금 계산을 위해 면적 정보가 필요합니다');
@@ -275,7 +262,7 @@ class RegistrationValidator {
     return errors;
   }
 
-  /// Step 5: 방 소개 및 안내 검증
+  /// Step 4: 방 소개 및 안내 검증
   static List<String> validateDescription(Map<String, dynamic> formData) {
     final errors = <String>[];
 
@@ -311,7 +298,6 @@ class RegistrationValidator {
       'basicInfo': validateBasicInfo(formData),
       'photos': validatePhotos(formData),
       'pricing': validatePricing(formData),
-      'services': validateServices(formData),
       'description': validateDescription(formData),
     };
   }
@@ -342,12 +328,6 @@ class RegistrationValidator {
         return validateBasicInfo(formData).isEmpty &&
             validatePhotos(formData).isEmpty &&
             validatePricing(formData).isEmpty &&
-            validateServices(formData).isEmpty;
-      case 5:
-        return validateBasicInfo(formData).isEmpty &&
-            validatePhotos(formData).isEmpty &&
-            validatePricing(formData).isEmpty &&
-            validateServices(formData).isEmpty &&
             validateDescription(formData).isEmpty;
       default:
         return false;

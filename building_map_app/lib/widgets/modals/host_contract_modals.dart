@@ -670,6 +670,8 @@ class DepositAgreementModal extends StatefulWidget {
   final DateTime checkOutDate; // 퇴실일
   final String? roomCheckoutTime; // 퇴실 시간 (HH:mm)
   final DateTime? agreementDeadline; // 합의 데드라인 (정책 7.9.1: 관리자 승인 시점 + 10일)
+  final int? initialDeductAmount; // 수정 모드: 기존 차감 금액
+  final String? initialAgreementText; // 수정 모드: 기존 합의 내용
 
   const DepositAgreementModal({
     super.key,
@@ -679,6 +681,8 @@ class DepositAgreementModal extends StatefulWidget {
     required this.checkOutDate,
     this.roomCheckoutTime,
     this.agreementDeadline,
+    this.initialDeductAmount,
+    this.initialAgreementText,
   });
 
   @override
@@ -720,6 +724,17 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
     if (remaining.inDays > 0) return '${remaining.inDays}일 ${remaining.inHours % 24}시간 남음';
     if (remaining.inHours > 0) return '${remaining.inHours}시간 ${remaining.inMinutes % 60}분 남음';
     return '${remaining.inMinutes}분 남음';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialDeductAmount != null) {
+      _amountController.text = widget.initialDeductAmount.toString();
+    }
+    if (widget.initialAgreementText != null) {
+      _agreementTextController.text = widget.initialAgreementText!;
+    }
   }
 
   @override
@@ -842,7 +857,7 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                   SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
-                      '보증금 합의 내용 제출',
+                      widget.initialDeductAmount != null ? '보증금 합의 내용 수정' : '보증금 합의 내용 제출',
                       style: AppTextStyles.headingMedium,
                     ),
                   ),
@@ -1115,7 +1130,7 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                               ),
                             )
                           : Text(
-                              '합의 내용 제출',
+                              widget.initialDeductAmount != null ? '합의 내용 수정' : '합의 내용 제출',
                               style: AppTextStyles.bodyMedium.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,

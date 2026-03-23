@@ -94,10 +94,8 @@ class _HostAccountStepState extends State<HostAccountStep> {
 
   /// 계좌 인증
   Future<void> _verifyAccount() async {
-    if (_selectedBank == null ||
-        _accountController.text.isEmpty ||
-        _accountHolderController.text.isEmpty) {
-      _showErrorDialog('모든 계좌 정보를 입력해주세요.');
+    if (_selectedBank == null || _accountController.text.isEmpty) {
+      _showErrorDialog('은행과 계좌번호를 입력해주세요.');
       return;
     }
 
@@ -544,41 +542,6 @@ class _HostAccountStepState extends State<HostAccountStep> {
           ),
           const SizedBox(height: 16),
 
-          // 예금주명
-          const Text(
-            '예금주명',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: primaryBlack,
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _accountHolderController,
-            readOnly: true,
-            decoration: InputDecoration(
-              hintText: '',
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: borderGray),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: borderGray),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.primary600, width: 2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
           // 계좌 인증 버튼
           SizedBox(
             height: 48,
@@ -615,6 +578,36 @@ class _HostAccountStepState extends State<HostAccountStep> {
                     ),
             ),
           ),
+
+          // 인증 완료 후 예금주명 표시
+          if (_accountVerified && _accountHolderController.text.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              '예금주명',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: primaryBlack,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                border: Border.all(color: borderGray),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _accountHolderController.text,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: primaryBlack,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 32),
 
           // 약관 동의 (회원가입 모드에서만 표시)

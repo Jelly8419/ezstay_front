@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/format_utils.dart';
 import '../../utils/contract_utils.dart';
@@ -44,6 +45,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
   // 보증금 합의 모달 상태
   bool _showDepositAgreementModal = false;
   ContractListItem? _selectedContractForAgreement;
+  int? _existingDeductAmount; // 수정 모드: 기존 차감 금액
+  String? _existingAgreementText; // 수정 모드: 기존 합의 내용
 
   @override
   void initState() {
@@ -256,6 +259,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                 setState(() {
                   _showDepositAgreementModal = false;
                   _selectedContractForAgreement = null;
+                  _existingDeductAmount = null;
+                  _existingAgreementText = null;
                 });
               },
               onConfirm: (deductAmount, agreementText) =>
@@ -263,6 +268,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
               depositAmount: _selectedContractForAgreement!.deposit ?? 300000,
               checkOutDate: _selectedContractForAgreement!.checkOutDate,
               roomCheckoutTime: _selectedContractForAgreement!.roomCheckoutTime,
+              initialDeductAmount: _existingDeductAmount,
+              initialAgreementText: _existingAgreementText,
             ),
         ],
       ),
@@ -684,6 +691,25 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _buildStatusBadge(contract.status),
+              if (contract.checkoutStatus == CheckoutStatus.holdRequested) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED), // orange-50
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: const Color(0xFFFED7AA)), // orange-200
+                  ),
+                  child: const Text(
+                    '보증금 반환 보류 신청중',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFEA580C), // orange-600
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(width: 12),
               Expanded(child: _buildStatusMessage(contract.status)),
               _buildDetailButton(contract),
@@ -1441,7 +1467,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => _handleHostCheckoutConfirm(contract.id),
+                      onPressed: () => _handleHostCheckoutConfirm(contract.id, contract.roomId),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         backgroundColor: const Color(0xFF2563EB),
@@ -1480,6 +1506,42 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                 ],
               ),
             ],
+          ),
+        );
+      }
+
+      // HOLD_REQUESTED: 보증금 반환 보류 신청 → 관리자 승인 대기
+      if (checkoutStatus == CheckoutStatus.holdRequested) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7ED), // orange-50
+              border: Border.all(color: const Color(0xFFFED7AA)), // orange-200
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '보증금 반환 보류를 신청했습니다.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF9A3412), // orange-800
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '관리자 승인을 기다리고 있습니다.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF9A3412),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       }
@@ -1555,25 +1617,28 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => _handleDepositAgreement(contract),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    backgroundColor: const Color(0xFFF97316), // orange-500
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+              // ACCEPTED 상태면 버튼 비노출
+              if (contract.depositAgreementStatus != 'ACCEPTED') ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => _handleDepositAgreement(contract),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      backgroundColor: const Color(0xFFF97316), // orange-500
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      contract.depositAgreementStatus == 'SUBMITTED' ? '합의 내용 수정' : '합의 내용 제출',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  child: const Text(
-                    '합의 내용 제출',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
                 ),
-              ),
+              ],
             ],
           ),
         );
@@ -1849,28 +1914,109 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
     }
   }
 
-  /// 합의 내용 제출 모달 표시
-  void _handleDepositAgreement(ContractListItem contract) {
-    setState(() {
-      _selectedContractForAgreement = contract;
-      _showDepositAgreementModal = true;
-    });
+  /// 합의 내용 제출/수정 모달 표시
+  Future<void> _handleDepositAgreement(ContractListItem contract) async {
+    // 수정 모드: 기존 합의 내용을 상세 API에서 가져옴
+    if (contract.depositAgreementStatus == 'SUBMITTED') {
+      try {
+        final agreement = await _contractService.getDepositAgreement(contract.id);
+        if (!mounted) return;
+        setState(() {
+          _selectedContractForAgreement = contract;
+          _existingDeductAmount = agreement?.deductAmount;
+          _existingAgreementText = agreement?.agreementText;
+          _showDepositAgreementModal = true;
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('합의 내용 조회 실패: ${e.toString().replaceAll('Exception: ', '')}'),
+              backgroundColor: const Color(0xFFDC2626),
+            ),
+          );
+        }
+      }
+    } else {
+      // 신규 제출 모드
+      setState(() {
+        _selectedContractForAgreement = contract;
+        _existingDeductAmount = null;
+        _existingAgreementText = null;
+        _showDepositAgreementModal = true;
+      });
+    }
   }
 
   /// 호스트 퇴실 확인
-  Future<void> _handleHostCheckoutConfirm(int contractId) async {
+  Future<void> _handleHostCheckoutConfirm(int contractId, int roomId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         title: const Text('퇴실 확인'),
-        content: const Text('퇴실 상태를 확인하시겠습니까?\n확인 후 보증금 환급 절차가 진행됩니다.'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('퇴실 상태를 확인하시겠습니까?\n확인 후 보증금 환급 절차가 진행됩니다.'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7ED),
+                border: Border.all(color: const Color(0xFFFED7AA)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      size: 20, color: Color(0xFFF97316)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(
+                            text: '청소 서비스 진행을 위해 방 도어락 비밀번호가 변경되진 않았는지 반드시 확인해주세요. ',
+                          ),
+                          TextSpan(
+                            text: '(변경 요청)',
+                            style: const TextStyle(
+                              color: Color(0xFF2563EB),
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.underline,
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                Navigator.of(dialogContext).pop(false);
+                                context.go('/host/room-registration/$roomId?step=3');
+                              },
+                          ),
+                        ],
+                      ),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF9A3412),
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text('취소'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2563EB),
               foregroundColor: Colors.white,

@@ -406,15 +406,20 @@ class AppRouter {
                 );
               },
             ),
-            // 기존 방 수정 (roomId 있음)
+            // 기존 방 수정 (roomId 있음, ?step=N 으로 초기 단계 지정 가능)
             GoRoute(
               path: '/host/room-registration/:roomId',
               name: 'room-registration-edit',
               builder: (context, state) {
                 final roomId = _parseIntParameter(state.pathParameters['roomId']);
+                final step = int.tryParse(state.uri.queryParameters['step'] ?? '');
                 return _deferredShellWidget(
                   room_registration.loadLibrary,
-                  () => room_registration.RoomRegistrationFlowPage(roomId: roomId),
+                  () => room_registration.RoomRegistrationFlowPage(
+                    key: ValueKey('room-edit-$roomId-step-$step'),
+                    roomId: roomId,
+                    initialStep: step,
+                  ),
                 );
               },
             ),

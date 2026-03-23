@@ -946,12 +946,29 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         textColor = const Color(0xFF166534); // green-800
         title = '퇴실 확인 완료';
         message = '보증금 환급 절차가 진행됩니다.';
+      case CheckoutStatus.holdRequested:
+        bgColor = const Color(0xFFFFF7ED); // orange-50
+        borderColor = const Color(0xFFFED7AA); // orange-200
+        textColor = const Color(0xFF9A3412); // orange-800
+        title = '보증금 반환 보류 신청중';
+        message = '호스트가 보증금 반환 보류를 신청했습니다. 관리자 승인을 기다리고 있습니다.';
       case CheckoutStatus.hostPending:
         bgColor = const Color(0xFFFFF7ED); // orange-50
         borderColor = const Color(0xFFFED7AA); // orange-200
         textColor = const Color(0xFF9A3412); // orange-800
-        title = '⚠️ 퇴실 확인 보류';
-        message = '호스트가 보증금 반환을 보류했습니다. 합의 절차가 진행 중입니다.';
+        if (contract.depositAgreementStatus == 'ACCEPTED') {
+          title = '✅ 합의 완료';
+          message = '보증금 합의가 완료되었습니다. 차감 후 환급이 진행됩니다.';
+          bgColor = const Color(0xFFDCFCE7); // green-100
+          borderColor = const Color(0xFFBBF7D0); // green-200
+          textColor = const Color(0xFF166534); // green-800
+        } else if (contract.depositAgreementStatus == 'SUBMITTED') {
+          title = '합의 내용 확인 요청';
+          message = '호스트가 보증금 합의 내용을 제출했습니다. 확인해주세요.';
+        } else {
+          title = '⚠️ 퇴실 확인 보류';
+          message = '호스트가 합의 내용을 작성 중입니다.';
+        }
       case CheckoutStatus.agreementSubmitted:
         bgColor = const Color(0xFFEFF6FF); // blue-50
         borderColor = const Color(0xFFBFDBFE); // blue-200
@@ -975,7 +992,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       // 서버에서 agreementDeadline을 내려주면 사용, 없으면 퇴실일 + 10일 폴백
       DateTime deadline;
       if (contract.agreementDeadline != null) {
-        deadline = DateTime.tryParse(contract.agreementDeadline!) ??
+        deadline =
+            DateTime.tryParse(contract.agreementDeadline!) ??
             contract.checkOutDate.add(const Duration(days: 10));
       } else {
         final checkoutTimeStr = contract.roomCheckoutTime ?? '11:00';
@@ -1046,9 +1064,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                 ],
               ),
             ),
-            // AGREEMENT_SUBMITTED: "확인하기" 버튼
-            if (contract.checkoutStatus ==
-                CheckoutStatus.agreementSubmitted) ...[
+            // AGREEMENT_SUBMITTED 또는 HOST_PENDING+SUBMITTED: "확인하기" 버튼
+            if (contract.checkoutStatus == CheckoutStatus.agreementSubmitted ||
+                (contract.checkoutStatus == CheckoutStatus.hostPending &&
+                    contract.depositAgreementStatus == 'SUBMITTED')) ...[
               const SizedBox(width: 8),
               OutlinedButton(
                 onPressed: () => _showDepositAgreementReviewModal(contract),
@@ -1083,8 +1102,40 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text('퇴실 완료'),
-        content: const Text('퇴실을 완료하시겠습니까?\n호스트가 퇴실 상태를 확인한 후 보증금 환급이 진행됩니다.'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('퇴실을 완료하시겠습니까?\n호스트가 퇴실 상태를 확인한 후 보증금 환급이 진행됩니다.'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                border: Border.all(color: const Color(0xFFFECACA)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '방 도어락 비밀번호를 임의 변경 후 퇴실하셨을 경우, \n퇴실 확인 전에 호스트에게 비밀번호를 안내하지 않으면 보증금 환급 절차에 불이익이 발생할 수 있습니다.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF991B1B),
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -2851,7 +2902,8 @@ class _AddOptionModalState extends State<_AddOptionModal> {
       if (entry.value > 0) {
         final option = widget.availableOptions.firstWhere(
           (o) => o.id == entry.key,
-          orElse: () => AvailableRentalItem(id: 0, name: '', price: 0, availableStock: 0),
+          orElse: () =>
+              AvailableRentalItem(id: 0, name: '', price: 0, availableStock: 0),
         );
         total += option.price * entry.value;
       }
@@ -2922,10 +2974,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                 ),
                 child: const Text(
                   '• 계약 시작일의 5일 전 까지만 구매할 수 있어요.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF1E40AF),
-                  ),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF1E40AF)),
                 ),
               ),
             ),
@@ -2950,9 +2999,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: const BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: Color(0xFFD1D5DB)),
-                  ),
+                  border: Border(top: BorderSide(color: Color(0xFFD1D5DB))),
                 ),
                 child: Column(
                   children: [
@@ -3075,10 +3122,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
             const SizedBox(height: 4),
             Text(
               option.description!,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-              ),
+              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
             ),
           ],
           // 가격
@@ -3153,7 +3197,9 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                         : () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('이 옵션은 최대 ${option.availableStock}개까지 선택 가능합니다.'),
+                                content: Text(
+                                  '이 옵션은 최대 ${option.availableStock}개까지 선택 가능합니다.',
+                                ),
                                 backgroundColor: const Color(0xFFF59E0B),
                               ),
                             );
@@ -3201,7 +3247,7 @@ class _CancelOptionModal extends StatefulWidget {
   final ContractListItem contract;
   final List<RentalOrder> orders;
   final Future<Map<String, dynamic>> Function(int rentalOrderId, String reason)
-      onRefund;
+  onRefund;
 
   const _CancelOptionModal({
     required this.contract,
@@ -3243,8 +3289,9 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
   ({int total, int shippingFee, int finalAmount}) _getOrderRefundCalc(
     RentalOrder order,
   ) {
-    final activeItems =
-        order.items.where((item) => item.status == 'ACTIVE').toList();
+    final activeItems = order.items
+        .where((item) => item.status == 'ACTIVE')
+        .toList();
     if (activeItems.isEmpty) {
       return (total: 0, shippingFee: 0, finalAmount: 0);
     }
@@ -3287,13 +3334,11 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
     if (order.deliveryStatus?.toUpperCase() == 'DELIVERED') return false;
 
     // 모든 아이템이 이미 취소/환불됨
-    final hasActiveItem =
-        order.items.any((item) => item.status == 'ACTIVE');
+    final hasActiveItem = order.items.any((item) => item.status == 'ACTIVE');
     if (!hasActiveItem) return false;
 
     // 임대중 + 7일 초과 → 불가
-    final isInProgress =
-        widget.contract.status == ContractStatus.inProgress;
+    final isInProgress = widget.contract.status == ContractStatus.inProgress;
     if (isInProgress && !_isWithin7DaysOfCheckIn()) return false;
 
     return true;
@@ -3305,8 +3350,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
       return '배송 완료 주문은 환불할 수 없습니다';
     }
 
-    final isInProgress =
-        widget.contract.status == ContractStatus.inProgress;
+    final isInProgress = widget.contract.status == ContractStatus.inProgress;
     if (isInProgress && !_isWithin7DaysOfCheckIn()) {
       return '입주 후 7일 경과로 취소 불가';
     }
@@ -3404,8 +3448,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
             else
               Flexible(
                 child: SingleChildScrollView(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
+                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
                   child: isMobile
                       ? _buildOrderCardList(visibleOrders)
                       : _buildOrderTableList(visibleOrders),
@@ -3462,19 +3505,31 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
   /// 주문 상태 뱃지 위젯
   Widget _buildOrderStatusBadge(RentalOrder order) {
     if (_cancelledOrderIds.contains(order.id)) {
-      return _buildBadge('환불 완료', const Color(0xFFF3F4F6),
-          const Color(0xFF374151), const Color(0xFFD1D5DB));
+      return _buildBadge(
+        '환불 완료',
+        const Color(0xFFF3F4F6),
+        const Color(0xFF374151),
+        const Color(0xFFD1D5DB),
+      );
     }
     if (_cancelRequestedOrderIds.contains(order.id) ||
         order.status == 'CANCEL_REQUESTED') {
-      return _buildBadge('취소 요청 중', const Color(0xFFFEF3C7),
-          const Color(0xFFA16207), const Color(0xFFFCD34D));
+      return _buildBadge(
+        '취소 요청 중',
+        const Color(0xFFFEF3C7),
+        const Color(0xFFA16207),
+        const Color(0xFFFCD34D),
+      );
     }
     return const SizedBox.shrink();
   }
 
   Widget _buildBadge(
-      String text, Color bgColor, Color textColor, Color borderColor) {
+    String text,
+    Color bgColor,
+    Color textColor,
+    Color borderColor,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
@@ -3496,12 +3551,20 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
   /// 아이템 상태 뱃지
   Widget _buildItemStatusBadge(RentalOrderItemDetail item) {
     if (item.status == 'REFUNDED') {
-      return _buildBadge('환불완료', const Color(0xFFF3F4F6),
-          const Color(0xFF374151), const Color(0xFFD1D5DB));
+      return _buildBadge(
+        '환불완료',
+        const Color(0xFFF3F4F6),
+        const Color(0xFF374151),
+        const Color(0xFFD1D5DB),
+      );
     }
     if (item.status == 'CANCELLED') {
-      return _buildBadge('취소됨', const Color(0xFFF3F4F6),
-          const Color(0xFF374151), const Color(0xFFD1D5DB));
+      return _buildBadge(
+        '취소됨',
+        const Color(0xFFF3F4F6),
+        const Color(0xFF374151),
+        const Color(0xFFD1D5DB),
+      );
     }
     return const SizedBox.shrink();
   }
@@ -3515,12 +3578,13 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
         final deliveryStatus = order.deliveryStatus;
         final canCancel = _canCancelOrder(order);
         final disabledReason = _getCancelDisabledReason(order);
-        final hasActiveItems =
-            order.items.any((item) => item.status == 'ACTIVE');
+        final hasActiveItems = order.items.any(
+          (item) => item.status == 'ACTIVE',
+        );
         final isAlreadyCancelledOrRequested =
             _cancelledOrderIds.contains(order.id) ||
-                _cancelRequestedOrderIds.contains(order.id) ||
-                order.status == 'CANCEL_REQUESTED';
+            _cancelRequestedOrderIds.contains(order.id) ||
+            order.status == 'CANCEL_REQUESTED';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 24),
@@ -3539,8 +3603,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                 ),
                 decoration: const BoxDecoration(
                   color: Color(0xFFF9FAFB),
-                  border:
-                      Border(bottom: BorderSide(color: Color(0xFFD1D5DB))),
+                  border: Border(bottom: BorderSide(color: Color(0xFFD1D5DB))),
                 ),
                 child: Row(
                   children: [
@@ -3575,8 +3638,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                         color: _getDeliveryStatusBadgeColor(deliveryStatus),
                         borderRadius: BorderRadius.circular(9999),
                         border: Border.all(
-                          color:
-                              _getDeliveryStatusBorderColor(deliveryStatus),
+                          color: _getDeliveryStatusBorderColor(deliveryStatus),
                         ),
                       ),
                       child: Text(
@@ -3584,8 +3646,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color:
-                              _getDeliveryStatusTextColor(deliveryStatus),
+                          color: _getDeliveryStatusTextColor(deliveryStatus),
                         ),
                       ),
                     ),
@@ -3615,16 +3676,15 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                     children: [
                       _buildTableHeaderCell('상품정보'),
                       _buildTableHeaderCell('수량', align: TextAlign.center),
-                      _buildTableHeaderCell('상품금액',
-                          align: TextAlign.right),
+                      _buildTableHeaderCell('상품금액', align: TextAlign.right),
                       _buildTableHeaderCell('상태', align: TextAlign.center),
                     ],
                   ),
                   // 아이템 행
                   ...order.items.map((item) {
                     final itemAmount = item.price * item.quantity;
-                    final isItemInactive = item.status == 'REFUNDED' ||
-                        item.status == 'CANCELLED';
+                    final isItemInactive =
+                        item.status == 'REFUNDED' || item.status == 'CANCELLED';
 
                     return TableRow(
                       decoration: const BoxDecoration(
@@ -3635,8 +3695,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                       children: [
                         // 상품정보
                         TableCell(
-                          verticalAlignment:
-                              TableCellVerticalAlignment.middle,
+                          verticalAlignment: TableCellVerticalAlignment.middle,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -3680,8 +3739,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                         ),
                         // 수량
                         TableCell(
-                          verticalAlignment:
-                              TableCellVerticalAlignment.middle,
+                          verticalAlignment: TableCellVerticalAlignment.middle,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -3702,8 +3760,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                         ),
                         // 상품금액
                         TableCell(
-                          verticalAlignment:
-                              TableCellVerticalAlignment.middle,
+                          verticalAlignment: TableCellVerticalAlignment.middle,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -3724,8 +3781,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                         ),
                         // 상태
                         TableCell(
-                          verticalAlignment:
-                              TableCellVerticalAlignment.middle,
+                          verticalAlignment: TableCellVerticalAlignment.middle,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -3735,8 +3791,8 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                               item.status == 'REFUNDED'
                                   ? '환불완료'
                                   : item.status == 'CANCELLED'
-                                      ? '취소됨'
-                                      : '-',
+                                  ? '취소됨'
+                                  : '-',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,
@@ -3862,8 +3918,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                             elevation: 0,
                           ),
                           child: Text(
-                            widget.contract.status ==
-                                    ContractStatus.inProgress
+                            widget.contract.status == ContractStatus.inProgress
                                 ? '취소 요청'
                                 : '주문 취소',
                             style: const TextStyle(
@@ -3910,12 +3965,13 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
         final refundCalc = _getOrderRefundCalc(order);
         final canCancel = _canCancelOrder(order);
         final disabledReason = _getCancelDisabledReason(order);
-        final hasActiveItems =
-            order.items.any((item) => item.status == 'ACTIVE');
+        final hasActiveItems = order.items.any(
+          (item) => item.status == 'ACTIVE',
+        );
         final isAlreadyCancelledOrRequested =
             _cancelledOrderIds.contains(order.id) ||
-                _cancelRequestedOrderIds.contains(order.id) ||
-                order.status == 'CANCEL_REQUESTED';
+            _cancelRequestedOrderIds.contains(order.id) ||
+            order.status == 'CANCEL_REQUESTED';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -3942,11 +3998,9 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                 ),
                 decoration: const BoxDecoration(
                   color: Color(0xFFF3F4F6),
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(8)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
                   border: Border(
-                    bottom:
-                        BorderSide(color: Color(0xFFD1D5DB), width: 2),
+                    bottom: BorderSide(color: Color(0xFFD1D5DB), width: 2),
                   ),
                 ),
                 child: Column(
@@ -3977,8 +4031,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: _getDeliveryStatusBadgeColor(
-                                deliveryStatus),
+                            color: _getDeliveryStatusBadgeColor(deliveryStatus),
                             borderRadius: BorderRadius.circular(9999),
                             border: Border.all(
                               color: _getDeliveryStatusBorderColor(
@@ -4017,15 +4070,15 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                     // 아이템별 카드
                     ...order.items.map((item) {
                       final itemAmount = item.price * item.quantity;
-                      final isItemInactive = item.status == 'REFUNDED' ||
+                      final isItemInactive =
+                          item.status == 'REFUNDED' ||
                           item.status == 'CANCELLED';
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          border: Border.all(
-                              color: const Color(0xFFE5E7EB)),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
@@ -4034,8 +4087,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                             // 상품명 + 상태 뱃지
                             Wrap(
                               spacing: 8,
-                              crossAxisAlignment:
-                                  WrapCrossAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
                                   item.name,
@@ -4082,8 +4134,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEFF6FF),
-                          border: Border.all(
-                              color: const Color(0xFFBFDBFE)),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
@@ -4156,14 +4207,11 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                               const SizedBox(height: 12),
                               // 취소 버튼
                               ElevatedButton(
-                                onPressed:
-                                    canCancel && !_isProcessing
-                                        ? () =>
-                                            _handleOrderRefund(order)
-                                        : null,
+                                onPressed: canCancel && !_isProcessing
+                                    ? () => _handleOrderRefund(order)
+                                    : null,
                                 style: ElevatedButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 24,
                                     vertical: 8,
                                   ),
@@ -4174,8 +4222,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                                       ? Colors.white
                                       : const Color(0xFF9CA3AF),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   elevation: 0,
                                 ),
@@ -4209,8 +4256,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
 
   Future<void> _handleOrderRefund(RentalOrder order) async {
     final refundCalc = _getOrderRefundCalc(order);
-    final isInProgress =
-        widget.contract.status == ContractStatus.inProgress;
+    final isInProgress = widget.contract.status == ContractStatus.inProgress;
 
     // 확인 메시지 구성
     String confirmMsg;
@@ -4263,8 +4309,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
     setState(() => _isProcessing = true);
 
     try {
-      final result =
-          await widget.onRefund(order.id, '고객 요청 환불');
+      final result = await widget.onRefund(order.id, '고객 요청 환불');
 
       // 응답 분기
       final refundStatus = result['refundStatus']?.toString() ?? '';
@@ -4282,16 +4327,14 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('환불 완료'),
-            content: const Text(
-                '환불이 완료되었습니다.\n영업일 기준 3-5일 내 입금됩니다.'),
+            content: const Text('환불이 완료되었습니다.\n영업일 기준 3-5일 내 입금됩니다.'),
             actions: [
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2563EB),
                 ),
-                child: const Text('확인',
-                    style: TextStyle(color: Colors.white)),
+                child: const Text('확인', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -4308,16 +4351,14 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('취소 요청 접수'),
-            content: const Text(
-                '취소 요청이 접수되었습니다.\n관리자 확인 후 처리됩니다.'),
+            content: const Text('취소 요청이 접수되었습니다.\n관리자 확인 후 처리됩니다.'),
             actions: [
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2563EB),
                 ),
-                child: const Text('확인',
-                    style: TextStyle(color: Colors.white)),
+                child: const Text('확인', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -4343,8 +4384,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFDC2626),
               ),
-              child:
-                  const Text('확인', style: TextStyle(color: Colors.white)),
+              child: const Text('확인', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),

@@ -12,24 +12,25 @@ import '../../../widgets/common/custom_toast.dart';
 import 'steps/basic_info_step.dart';
 import 'steps/photos_step.dart';
 import 'steps/pricing_step.dart';
-import 'steps/services_step.dart';
 import 'steps/description_step.dart';
 import 'validators/registration_validator.dart';
 import 'components/registration_flow_indicator.dart';
 
 /// 방 등록 플로우 메인 페이지
 ///
-/// 5단계로 구성된 방 등록 프로세스를 관리:
+/// 4단계로 구성된 방 등록 프로세스를 관리:
 /// 1. 기본 정보
 /// 2. 사진 및 편의옵션
-/// 3. 요금 설정
-/// 4. 이지스테이 관리 서비스
-/// 5. 방 소개 및 안내
+/// 3. 요금 설정 (청소 서비스 포함)
+/// 4. 방 소개 및 안내
 class RoomRegistrationFlowPage extends StatefulWidget {
   /// 편집할 방 ID (null이면 신규 등록)
   final int? roomId;
 
-  const RoomRegistrationFlowPage({super.key, this.roomId});
+  /// 초기 시작 단계 (null이면 자동 계산)
+  final int? initialStep;
+
+  const RoomRegistrationFlowPage({super.key, this.roomId, this.initialStep});
 
   @override
   State<RoomRegistrationFlowPage> createState() =>
@@ -43,7 +44,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
   // 현재 등록 중인 방 ID (null이면 신규 등록)
   int? _currentRoomId;
 
-  // 현재 단계 (1-5)
+  // 현재 단계 (1-4)
   int _currentStep = 1;
 
   // 전체 폼 데이터 (모든 Step에서 공유)
@@ -86,12 +87,12 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     'earlyCheckinDiscountDays': '',
     'earlyCheckinDiscountAmount': '',
 
-    // Step 4: 이지스테이 관리 서비스
+    // Step 3: 청소 서비스 (요금 설정에 포함)
     'cleaningService': false,
     'exitInspectionService': false,
     'servicePassword': '',
 
-    // Step 5: 방 소개 및 안내
+    // Step 4: 방 소개 및 안내
     'maxGuests': '',
     'checkInTime': '14:00',
     'checkOutTime': '11:00',
@@ -309,15 +310,15 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
             debugPrint('✅ servicePassword 로드: ${_formData['servicePassword']}');
           }
 
-          // Step 5: 방 소개
+          // Step 4: 방 소개
           _formData['maxGuests'] = roomData['maxGuests']?.toString() ?? '';
           _formData['checkInTime'] = roomData['checkInTime'] ?? '14:00';
           _formData['checkOutTime'] = roomData['checkOutTime'] ?? '11:00';
           _formData['propertyDescription'] =
               roomData['propertyDescription'] ?? '';
 
-          // 진행 상태에 따라 현재 단계 설정
-          _currentStep = _calculateCurrentStep(roomData);
+          // initialStep이 지정되면 우선 적용, 아니면 진행 상태에 따라 계산
+          _currentStep = widget.initialStep ?? _calculateCurrentStep(roomData);
         });
 
         debugPrint('✅ 저장된 등록 데이터 복원 완료 - roomId: $_currentRoomId');
@@ -357,16 +358,13 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     } else if (steps['pricing'] == false) {
       debugPrint('📍 pricing 미완료 → Step 3으로 이동');
       return 3;
-    } else if (steps['ezServices'] == false) {
-      debugPrint('📍 ezServices 미완료 → Step 4로 이동');
-      return 4;
     } else if (steps['description'] == false) {
-      debugPrint('📍 description 미완료 → Step 5로 이동');
-      return 5;
+      debugPrint('📍 description 미완료 → Step 4로 이동');
+      return 4;
     } else {
       // 모든 단계 완료 → 마지막 단계로 이동 (재확인용)
-      debugPrint('📍 모든 단계 완료 → Step 5로 이동 (재확인)');
-      return 5;
+      debugPrint('📍 모든 단계 완료 → Step 4로 이동 (재확인)');
+      return 4;
     }
   }
 
@@ -442,9 +440,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         errors = RegistrationValidator.validatePricing(_formData);
         break;
       case 4:
-        errors = RegistrationValidator.validateServices(_formData);
-        break;
-      case 5:
         errors = RegistrationValidator.validateDescription(_formData);
         break;
     }
@@ -475,12 +470,12 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
       await _saveCurrentStepToApi();
 
       // 저장 성공 토스트 (마지막 단계 제외)
-      if (_currentStep < 5 && mounted) {
+      if (_currentStep < 4 && mounted) {
         CustomToast.success(context, '저장되었습니다');
       }
 
       // 3. 다음 단계로 이동
-      if (_currentStep < 5) {
+      if (_currentStep < 4) {
         setState(() {
           _currentStep++;
           _currentStepErrors = [];
@@ -860,21 +855,12 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         if (!pricingSuccess) {
           throw Exception('요금 설정 실패');
         }
-        debugPrint('✅ Step 3 저장 완료');
-        break;
 
-      case 4:
-        // Step 4: 이지스테이 관리 서비스 저장
-        if (_currentRoomId == null) {
-          throw Exception('roomId가 없습니다. Step 1을 먼저 완료해주세요.');
-        }
-
-        // Frontend → API 필드명 매핑
+        // 청소 서비스 데이터도 함께 저장
         final servicesData = {
           'cleaningService': _formData['cleaningService'] ?? false,
-          'autoPasswordChange':
-              _formData['exitInspectionService'] ?? false, // API 필드명
-          'roomPassword': _formData['servicePassword'], // API 필드명
+          'autoPasswordChange': false,
+          'roomPassword': _formData['servicePassword'] ?? '',
         };
 
         final servicesSuccess = await _roomService.updateEzServices(
@@ -882,13 +868,13 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           servicesData,
         );
         if (!servicesSuccess) {
-          throw Exception('이지스테이 관리 서비스 설정 실패');
+          throw Exception('청소 서비스 설정 실패');
         }
-        debugPrint('✅ Step 4 저장 완료');
+        debugPrint('✅ Step 3 저장 완료 (요금 + 청소서비스)');
         break;
 
-      case 5:
-        // Step 5: 방 소개 및 안내 저장
+      case 4:
+        // Step 4: 방 소개 및 안내 저장
         if (_currentRoomId == null) {
           throw Exception('roomId가 없습니다. Step 1을 먼저 완료해주세요.');
         }
@@ -909,7 +895,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         if (!descriptionSuccess) {
           throw Exception('방 소개 설정 실패');
         }
-        debugPrint('✅ Step 5 저장 완료');
+        debugPrint('✅ Step 4 저장 완료');
         break;
     }
   }
@@ -1053,11 +1039,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           validationErrors: _currentStepErrors,
         );
       case 4:
-        return ServicesStep(
-          formData: _formData,
-          onFormDataChange: _handleFormDataChange,
-        );
-      case 5:
         return DescriptionStep(
           formData: _formData,
           onFormDataChange: _handleFormDataChange,
@@ -1091,12 +1072,11 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                 constraints: const BoxConstraints(maxWidth: 1000),
                 child: RegistrationFlowIndicator(
                   currentStep: _currentStep,
-                  totalSteps: 5,
+                  totalSteps: 4,
                   stepTitles: const [
                     '기본 정보',
                     '사진·편의옵션',
                     '요금 설정',
-                    'EZ서비스',
                     '방 소개',
                   ],
                 ),
@@ -1181,7 +1161,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                                       ),
                                     )
                                   : Text(
-                                      _currentStep == 5 ? '등록 완료' : '다음',
+                                      _currentStep == 4 ? '등록 완료' : '다음',
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,

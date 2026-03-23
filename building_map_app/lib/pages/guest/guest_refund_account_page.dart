@@ -73,10 +73,8 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
 
   /// 예금주 확인
   Future<void> _verifyAccount() async {
-    if (_selectedBank == null ||
-        _accountNumberController.text.isEmpty ||
-        _accountHolderController.text.isEmpty) {
-      _showErrorSnackBar('모든 계좌 정보를 입력해주세요.');
+    if (_selectedBank == null || _accountNumberController.text.isEmpty) {
+      _showErrorSnackBar('은행과 계좌번호를 입력해주세요.');
       return;
     }
 
@@ -363,41 +361,6 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
 
                           SizedBox(height: AppSpacing.lg),
 
-                          // 예금주명
-                          Text(
-                            '예금주명',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          SizedBox(height: AppSpacing.xs),
-                          TextFormField(
-                            controller: _accountHolderController,
-                            readOnly: true,
-                            decoration: InputDecoration(
-                              hintText: '',
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: AppSpacing.lg,
-                                vertical: AppSpacing.md,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
-                                borderSide: BorderSide(color: AppColors.border),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
-                                borderSide: BorderSide(color: AppColors.border),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
-                                borderSide: BorderSide(color: AppColors.primary500, width: 2),
-                              ),
-                            ),
-                          ),
-
-                          SizedBox(height: AppSpacing.lg),
-
                           // 예금주 확인 버튼
                           SizedBox(
                             width: double.infinity,
@@ -435,6 +398,37 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
                                     ),
                             ),
                           ),
+
+                          // 인증 완료 후 예금주명 표시
+                          if (_accountVerified && _accountHolderController.text.isNotEmpty) ...[
+                            SizedBox(height: AppSpacing.lg),
+                            Text(
+                              '예금주명',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            SizedBox(height: AppSpacing.xs),
+                            Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: AppSpacing.lg,
+                                vertical: AppSpacing.md,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.gray50,
+                                border: Border.all(color: AppColors.border),
+                                borderRadius: BorderRadius.circular(AppRadius.sm),
+                              ),
+                              child: Text(
+                                _accountHolderController.text,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
