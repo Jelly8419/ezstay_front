@@ -1,3 +1,5 @@
+import '../constants/fee_constants.dart';
+
 /// 방 상세페이지에서 계산된 금액 정보
 /// PRD: 반드시 상세페이지 계산값 그대로 사용하고 재계산 금지
 class CalculatedPricing {
@@ -53,7 +55,7 @@ class CalculatedPricing {
       rentalItemsFee: json['rentalItemsFee'] as int? ?? 0,
       subtotal: json['subtotal'] as int? ?? 0,
       totalUsageFee: json['totalUsageFee'] as int? ?? 0,
-      deposit: json['deposit'] as int? ?? 300000,
+      deposit: json['deposit'] as int? ?? FeeConstants.depositAmount,
       finalTotalAmount: json['finalTotalAmount'] as int? ?? 0,
     );
   }
@@ -80,7 +82,7 @@ class CalculatedPricing {
   }
 
   /// 빈 가격 정보 (날짜 미선택 시)
-  static const CalculatedPricing empty = CalculatedPricing(
+  static final CalculatedPricing empty = CalculatedPricing(
     totalDays: 0,
     totalWeeks: 0,
     rentalFee: 0,
@@ -89,7 +91,7 @@ class CalculatedPricing {
     platformFee: 0,
     subtotal: 0,
     totalUsageFee: 0,
-    deposit: 300000,
+    deposit: FeeConstants.depositAmount,
     finalTotalAmount: 0,
   );
 

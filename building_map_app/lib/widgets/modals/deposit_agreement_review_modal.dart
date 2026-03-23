@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../constants/fee_constants.dart';
 import '../../models/contract_detail.dart';
 import '../../utils/format_utils.dart' show FormatUtils;
 
@@ -33,7 +34,7 @@ class DepositAgreementReviewModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final deposit = agreement.deposit ?? 300000;
+    final deposit = agreement.deposit ?? FeeConstants.depositAmount;
     final deductAmount = agreement.deductAmount;
     final refundAmount = agreement.refundableAmount ?? (deposit - deductAmount);
 

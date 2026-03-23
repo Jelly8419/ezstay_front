@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
+import '../../constants/fee_constants.dart';
 import '../../utils/format_utils.dart';
 import '../../utils/contract_utils.dart';
 import '../../models/contract.dart';
@@ -265,7 +266,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
               },
               onConfirm: (deductAmount, agreementText) =>
                   _submitDepositAgreement(deductAmount, agreementText),
-              depositAmount: _selectedContractForAgreement!.deposit ?? 300000,
+              depositAmount: _selectedContractForAgreement!.deposit ?? FeeConstants.depositAmount,
               checkOutDate: _selectedContractForAgreement!.checkOutDate,
               roomCheckoutTime: _selectedContractForAgreement!.roomCheckoutTime,
               initialDeductAmount: _existingDeductAmount,

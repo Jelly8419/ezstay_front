@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../constants/fee_constants.dart';
 import '../../../../utils/format_utils.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -63,7 +64,7 @@ class _PricingStepState extends State<PricingStep> {
     return (dailyValue * 7).toString();
   }
 
-  String get _deposit => '300000'; // 고정값
+  String get _deposit => FeeConstants.depositAmount.toString();
 
   String get _dailyMaintenanceFee =>
       widget.formData['dailyMaintenanceFee']?.toString() ?? '';
@@ -1082,8 +1083,8 @@ class _PricingStepState extends State<PricingStep> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              '보증금은 30만원으로 고정되어 있습니다',
+                            Text(
+                              '보증금은 ${_formatNumberWithCommas(_deposit)}원으로 고정되어 있습니다',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: AppColors.textSecondary,
