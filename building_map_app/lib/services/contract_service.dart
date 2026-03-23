@@ -1534,7 +1534,11 @@ class ContractService {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
         final data = responseData['data'] ?? responseData;
         if (data is Map<String, dynamic>) {
-          return DepositAgreement.fromJson(data);
+          // data.depositAgreement가 있으면 그 안의 객체를 파싱
+          final agreement = data['depositAgreement'] ?? data;
+          if (agreement is Map<String, dynamic>) {
+            return DepositAgreement.fromJson(agreement);
+          }
         }
         return null;
       } else if (response.statusCode == 404) {
