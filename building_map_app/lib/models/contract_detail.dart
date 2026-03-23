@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../constants/fee_constants.dart';
 import 'contract.dart';
 import 'payment_history.dart';
 
@@ -229,7 +230,7 @@ class ContractDetail {
       rentalFee: json['rentalFee'] as int,
       maintenanceFee: json['maintenanceFee'] as int,
       cleaningFee: json['cleaningFee'] as int,
-      deposit: json['deposit'] as int? ?? 300000,
+      deposit: json['deposit'] as int? ?? FeeConstants.depositAmount,
       rentalItemsFee: json['rentalItemsFee'] as int? ?? 0,
       platformFee: json['platformFee'] as int,
       finalTotalAmount: json['finalTotalAmount'] as int,

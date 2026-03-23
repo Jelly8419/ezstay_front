@@ -50,8 +50,8 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: backgroundWhite,
-      child: Center(
-        child: SingleChildScrollView(
+      child: SingleChildScrollView(
+        child: Center(
           child: Container(
             constraints: const BoxConstraints(maxWidth: 400),
             padding: const EdgeInsets.only(

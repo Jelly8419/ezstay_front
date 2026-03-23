@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../constants/fee_constants.dart';
 import '../../../utils/contract_utils.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -74,7 +75,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     // Step 3: 요금 설정
     'dailyRent': '',
     'weeklyRent': '',
-    'deposit': '300000', // 고정 보증금
+    'deposit': FeeConstants.depositAmount.toString(), // 고정 보증금
     'dailyMaintenanceFee': '',
     'weeklyMaintenanceFee': '',
     'maintenanceInclusions': <String>['수도세', '전기세'],
@@ -268,7 +269,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           // Step 3: 요금 설정
           _formData['dailyRent'] = roomData['dailyRent']?.toString() ?? '';
           _formData['weeklyRent'] = roomData['weeklyRent']?.toString() ?? '';
-          _formData['deposit'] = roomData['deposit']?.toString() ?? '300000';
+          _formData['deposit'] = roomData['deposit']?.toString() ?? FeeConstants.depositAmount.toString();
           _formData['dailyMaintenanceFee'] =
               roomData['dailyMaintenanceFee']?.toString() ?? '';
           _formData['weeklyMaintenanceFee'] =
@@ -824,7 +825,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         final pricingData = {
           'dailyRent': int.tryParse(_formData['dailyRent'] ?? ''),
           'weeklyRent': int.tryParse(_formData['weeklyRent'] ?? ''),
-          'deposit': int.tryParse(_formData['deposit'] ?? '300000'),
+          'deposit': int.tryParse(_formData['deposit'] ?? FeeConstants.depositAmount.toString()),
           'dailyMaintenanceFee': int.tryParse(
             _formData['dailyMaintenanceFee'] ?? '',
           ),
