@@ -221,14 +221,14 @@ class Room {
       area: json['area']?.toString() ?? '0',
       floor: json['floor']?.toString() ?? '1',
       buildingType: json['buildingType'] as String? ?? '',
-      parkingAvailable: json['parkingAvailable'] as bool? ?? false,
+      parkingAvailable: _parseBool(json['parkingAvailable']) ?? false,
       parkingInfo: json['parkingInfo'] as String?,
-      elevatorAvailable: json['elevatorAvailable'] as bool? ?? false,
+      elevatorAvailable: _parseBool(json['elevatorAvailable']) ?? false,
       roomCount: json['roomCount'] as int? ?? 0,
       bathroomCount: json['bathroomCount'] as int? ?? 0,
       livingRoomCount: json['livingRoomCount'] as int? ?? 0,
       kitchenCount: json['kitchenCount'] as int? ?? 0,
-      isDuplex: json['isDuplex'] as bool? ?? false,
+      isDuplex: _parseBool(json['isDuplex']) ?? false,
       maxGuests: json['maxGuests'] as int? ?? 2,
 
       // 가격 정보
@@ -240,10 +240,10 @@ class Room {
       quickMoveInDiscount: _parseNullableInt(json['discounts']?['quickMoveInDiscount']) ?? _parseNullableInt(json['quickMoveInDiscount']),
       dailyMaintenanceFee: json['dailyMaintenanceFee'] as int? ?? 0,
       maintenanceDetail: json['maintenanceDetail'] as String?,
-      includeElectricity: json['includeElectricity'] as bool? ?? false,
-      includeWater: json['includeWater'] as bool? ?? false,
-      includeGas: json['includeGas'] as bool? ?? false,
-      includeInternet: json['includeInternet'] as bool? ?? false,
+      includeElectricity: _parseBool(json['includeElectricity']) ?? false,
+      includeWater: _parseBool(json['includeWater']) ?? false,
+      includeGas: _parseBool(json['includeGas']) ?? false,
+      includeInternet: _parseBool(json['includeInternet']) ?? false,
       cleaningFee: json['cleaningFee'] as int? ?? 0,
       deposit: json['deposit'] as int? ?? 0,
 
@@ -279,7 +279,7 @@ class Room {
           : null,
 
       // UI 전용 필드
-      isNearSubway: json['isNearSubway'] as bool? ?? false,
+      isNearSubway: _parseBool(json['isNearSubway']) ?? false,
       // host 객체에서 정보 추출
       hostProfileImage: json['host'] != null ? json['host']['profileImageUrl'] as String? : json['hostProfileImage'] as String?,
       hostPhoneVerified: json['host'] != null ? _parseBool(json['host']['phoneVerified']) : _parseBool(json['hostPhoneVerified']),
@@ -288,8 +288,8 @@ class Room {
       hostNickname: json['host'] != null ? json['host']['nickname'] as String? : json['hostNickname'] as String?,
       hostId: json['host'] != null ? json['host']['id'] as int? : json['hostId'] as int?,
       status: _normalizeStatus(json['status'] as String?),
-      isActive: json['isActive'] as bool? ?? false,
-      isAvailable: json['isAvailable'] as bool? ?? true,
+      isActive: _parseBool(json['isActive']) ?? false,
+      isAvailable: _parseBool(json['isAvailable']) ?? true,
       unavailablePeriods: json['unavailablePeriods'] != null
           ? (json['unavailablePeriods'] as List<dynamic>)
               .map((e) => UnavailablePeriod.fromJson(e as Map<String, dynamic>))

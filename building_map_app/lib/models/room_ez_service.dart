@@ -27,10 +27,10 @@ class RoomEzService {
   factory RoomEzService.fromJson(Map<String, dynamic> json) {
     return RoomEzService(
       roomId: json['roomId'] as int? ?? 0,
-      agreeTerms: json['agreeTerms'] as bool? ?? false,
-      cleaningService: json['cleaningService'] as bool? ?? false,
+      agreeTerms: _parseBool(json['agreeTerms']) ?? false,
+      cleaningService: _parseBool(json['cleaningService']) ?? false,
       cleaningToolImageUrl: json['cleaningToolImageUrl'] as String?,
-      autoPasswordChange: json['autoPasswordChange'] as bool? ?? false,
+      autoPasswordChange: _parseBool(json['autoPasswordChange']) ?? false,
       roomPassword: json['roomPassword'] as String?, // 게스트에게는 null
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
@@ -39,6 +39,14 @@ class RoomEzService {
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
     );
+  }
+
+  static bool? _parseBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return null;
   }
 
   Map<String, dynamic> toJson() {
