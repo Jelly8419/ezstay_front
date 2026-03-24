@@ -134,6 +134,7 @@ class PaymentServiceWeb {
       }
       // 테스트 팝업 즉시 닫기
       callMethod(popup, 'close', []);
+      debugPrint('✅ [PaymentServiceWeb] 팝업 허용 상태 확인됨');
       return false;
     } catch (e) {
       debugPrint('⚠️ [PaymentServiceWeb] 팝업 차단 감지 중 오류: $e');
