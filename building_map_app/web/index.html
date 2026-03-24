@@ -252,6 +252,51 @@
     });
   </script>
 
+  <!-- .part.js 로딩 실패 자동 감지 → 캐시 삭제 후 새로고침 (1회만) -->
+  <script>
+    window.addEventListener('error', function(e) {
+      var msg = (e.message || '') + ' ' + (e.filename || '');
+      if (msg.indexOf('.part.js') !== -1 && !sessionStorage.getItem('_partjs_reload')) {
+        console.log('🔄 [AutoReload] .part.js 로딩 실패 감지, 캐시 삭제 후 새로고침');
+        sessionStorage.setItem('_partjs_reload', '1');
+        // 캐시 전부 삭제 후 새로고침
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            return Promise.all(names.map(function(n) { return caches.delete(n); }));
+          }).then(function() { window.location.reload(); });
+        } else {
+          window.location.reload();
+        }
+      }
+    }, true);
+    // 정상 로드 시 플래그 제거 (무한 리로드 방지)
+    window.addEventListener('flutter-first-frame', function() {
+      sessionStorage.removeItem('_partjs_reload');
+    });
+  </script>
+
+  <!-- 서비스 워커 해제: .part.js 캐시 불일치 방지 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (var reg of registrations) {
+          reg.unregister().then(function() {
+            console.log('🧹 [SW] 서비스 워커 해제 완료');
+          });
+        }
+      });
+      // 서비스 워커 캐시도 전부 삭제
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (var name of names) {
+            caches.delete(name);
+            console.log('🧹 [Cache] 삭제:', name);
+          }
+        });
+      }
+    }
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 
