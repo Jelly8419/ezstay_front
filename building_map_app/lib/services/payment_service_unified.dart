@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../config/payment_config.dart';
+
 import 'payment_service.dart';
 import 'payment_service_web.dart'
     if (dart.library.io) 'payment_service_stub.dart';
@@ -66,25 +66,22 @@ class PaymentServiceUnified {
 
     final orderId = paymentInfo['orderId'] as String;
     final actualAmount = paymentInfo['amount'] as int;
+    final pgAmount = paymentInfo['pgAmount'] as int?;
     final orderName = paymentInfo['orderName'] as String;
     final customerName = paymentInfo['customerName'] as String?;
     final customerEmail = paymentInfo['customerEmail'] as String?;
     final customerPhone = paymentInfo['customerPhone'] as String?;
     final payType = paymentInfo['payType'] as String? ?? 'BC';
 
-    // 테스트 환경: SDK에는 100원으로 결제 요청 (실제 결제 후 취소되므로 카드 한도 절약)
-    // 프로덕션: 항상 실제 금액
-    // TODO: 오픈 후 가상계좌 추가 시 VBANK는 최소금액 제한으로 실제 금액 사용 필요
-    // final sdkAmount = PaymentConfig.isProduction || payType == 'VBANK' ? actualAmount : 100;
-    final sdkAmount = PaymentConfig.isProduction ? actualAmount : 100;
+    // PG SDK 호출 금액: 백엔드에서 pgAmount를 내려주면 해당 값 사용, 없으면 실제 금액
+    final sdkAmount = pgAmount ?? actualAmount;
 
     debugPrint('🌐 [PaymentServiceUnified] 웹 결제 요청');
     debugPrint('  - contractId: $contractId');
     debugPrint('  - orderId: $orderId');
     debugPrint('  - actualAmount: $actualAmount');
-    debugPrint(
-      '  - sdkAmount: $sdkAmount (${PaymentConfig.isProduction ? "프로덕션" : "테스트"})',
-    );
+    debugPrint('  - pgAmount: $pgAmount');
+    debugPrint('  - sdkAmount: $sdkAmount (pgAmount ${pgAmount != null ? "사용" : "없음, actualAmount 사용"})');
     debugPrint('  - payType: $payType');
 
     try {
@@ -196,7 +193,8 @@ class PaymentServiceUnified {
     debugPrint('  - amount: $amount');
 
     try {
-      final sdkAmount = PaymentConfig.isProduction ? amount : 100;
+      // 렌탈 결제도 동일하게 pgAmount 우선 사용
+      final sdkAmount = amount;
       final response = await _webService!.requestRentalPayment(
         rentalOrderId: rentalOrderId,
         orderId: orderId,
