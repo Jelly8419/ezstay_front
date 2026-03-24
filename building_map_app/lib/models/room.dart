@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'room_photo.dart';
 import 'room_amenity_freezed.dart';
 import 'room_ez_service.dart';
@@ -266,12 +267,12 @@ class Room {
 
       // 연관 데이터
       photos: photoList,
-      amenity: json['amenity'] != null ? RoomAmenityFreezed.fromJson(_sanitizeBools(json['amenity'] as Map<String, dynamic>)) : null,
+      amenity: json['amenity'] != null ? RoomAmenityFreezed.fromJson(_sanitizeJson(json['amenity'] as Map<String, dynamic>)) : null,
       // ezService 우선, 없으면 freeService fallback (백엔드 마이그레이션 기간 호환성)
       ezService: json['ezService'] != null
-          ? RoomEzService.fromJson(_sanitizeBools(json['ezService'] as Map<String, dynamic>))
+          ? RoomEzService.fromJson(_sanitizeJson(json['ezService'] as Map<String, dynamic>))
           : json['freeService'] != null
-              ? RoomEzService.fromJson(_sanitizeBools(json['freeService'] as Map<String, dynamic>))
+              ? RoomEzService.fromJson(_sanitizeJson(json['freeService'] as Map<String, dynamic>))
               : null,
       // EZStay가 제공하는 렌탈 아이템 (모든 방에 표시)
       availableRentalItems: json['availableRentalItems'] != null
@@ -333,19 +334,27 @@ class Room {
     return null;
   }
 
-  /// JSON 맵 내 타입 불일치를 정규화 (freezed 모델 호환용)
+  /// JSON을 순수 Dart 타입으로 재변환 (freezed 모델 호환용)
   ///
-  /// - bed 필드: API에서 Map으로 오지만 freezed 모델은 bool로 정의 → 변환
-  /// - 중첩 Map도 재귀적으로 처리합니다.
-  static Map<String, dynamic> _sanitizeBools(Map<String, dynamic> json) {
+  /// JS interop에서 넘어온 타입이 Dart 타입과 불일치하는 문제 해결.
+  /// json.encode → json.decode로 완전한 Dart 타입으로 변환 후
+  /// bed 필드(Map→bool) 등 스키마 불일치도 처리.
+  static Map<String, dynamic> _sanitizeJson(Map<String, dynamic> json) {
+    // json.encode → json.decode로 순수 Dart 타입 보장
+    final purified = jsonDecode(jsonEncode(json)) as Map<String, dynamic>;
+    return _fixSchemaTypes(purified);
+  }
+
+  /// 스키마 타입 불일치 수정 (재귀)
+  static Map<String, dynamic> _fixSchemaTypes(Map<String, dynamic> json) {
     return json.map((key, value) {
+      if (key == 'bed' && value is Map<String, dynamic>) {
+        // bed: API에서 {king:0, queen:1, ...} Map → freezed는 bool
+        final hasBed = value.values.any((v) => v is int && v > 0);
+        return MapEntry(key, hasBed);
+      }
       if (value is Map<String, dynamic>) {
-        // bed 필드가 Map인 경우 bool로 변환 (값이 하나라도 > 0이면 true)
-        if (key == 'bed') {
-          final hasBed = value.values.any((v) => v is int && v > 0);
-          return MapEntry(key, hasBed);
-        }
-        return MapEntry(key, _sanitizeBools(value));
+        return MapEntry(key, _fixSchemaTypes(value));
       }
       return MapEntry(key, value);
     });
