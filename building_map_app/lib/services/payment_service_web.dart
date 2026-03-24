@@ -7,6 +7,16 @@ import 'package:js/js.dart';
 import 'package:flutter/foundation.dart';
 import '../config/payment_config.dart';
 
+@JS('window.open')
+external dynamic _windowOpen(String url, String target, String features);
+
+/// 팝업 차단 예외
+class PopupBlockedException implements Exception {
+  final String message = '팝업이 차단되어 결제창을 열 수 없습니다.\n브라우저 설정에서 팝업 차단을 해제해주세요.';
+  @override
+  String toString() => message;
+}
+
 /// PayTag SDK Tag.requestPay 바인딩
 @JS('Tag.requestPay')
 external void _tagRequestPay(dynamic params, dynamic callback);
@@ -111,6 +121,26 @@ class PaymentServiceWeb {
     }
   }
 
+  /// 팝업 차단 여부 감지
+  ///
+  /// window.open으로 테스트 팝업을 열어 차단 여부를 확인합니다.
+  /// 차단되면 true를 반환합니다.
+  bool isPopupBlocked() {
+    try {
+      final popup = _windowOpen('about:blank', '_blank', 'width=1,height=1');
+      if (popup == null) {
+        debugPrint('⚠️ [PaymentServiceWeb] 팝업이 차단되었습니다');
+        return true;
+      }
+      // 테스트 팝업 즉시 닫기
+      callMethod(popup, 'close', []);
+      return false;
+    } catch (e) {
+      debugPrint('⚠️ [PaymentServiceWeb] 팝업 차단 감지 중 오류: $e');
+      return true;
+    }
+  }
+
   /// 통합 결제 요청 (기본 - 신용카드)
   ///
   /// PayTag SDK의 Tag.requestPay를 호출하고 콜백으로 결과를 수신합니다.
@@ -135,6 +165,11 @@ class PaymentServiceWeb {
     String? customerEmail,
   }) async {
     _ensureInitialized();
+
+    // 팝업 차단 여부 사전 감지
+    if (isPopupBlocked()) {
+      throw PopupBlockedException();
+    }
 
     debugPrint('💳 [PaymentServiceWeb] PayTag 결제 요청');
     debugPrint('  - orderId: $orderId');
