@@ -49,11 +49,6 @@ class AuthService extends ChangeNotifier {
   ///
   /// Returns: 로그인 성공 여부
   Future<bool> loginWithDevBypass(String userId) async {
-    if (ApiConfig.isProduction) {
-      debugPrint('❌ [DEV_BYPASS] 프로덕션 환경에서는 개발자 바이패스를 사용할 수 없습니다');
-      return false;
-    }
-
     debugPrint('🚀 [DEV_BYPASS] 개발자 바이패스 로그인 시작 - User ID: $userId');
     _setLoading(true);
 
