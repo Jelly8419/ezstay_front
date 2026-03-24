@@ -9,8 +9,11 @@
 /flutter_bootstrap.js
   Cache-Control: no-cache, must-revalidate
 
+/
+  Cache-Control: no-cache, no-store, must-revalidate
+
 /index.html
-  Cache-Control: no-cache, must-revalidate
+  Cache-Control: no-cache, no-store, must-revalidate
 
 # 이미지, 폰트 등 정적 자원은 캐시 허용
 /assets/*
