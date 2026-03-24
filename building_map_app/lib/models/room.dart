@@ -333,28 +333,19 @@ class Room {
     return null;
   }
 
-  /// JSON 맵 내 모든 bool-like 값을 실제 bool로 변환 (freezed 모델 호환용)
+  /// JSON 맵 내 타입 불일치를 정규화 (freezed 모델 호환용)
   ///
-  /// JS 런타임에서 bool이 다른 타입으로 넘어올 수 있어 freezed의 `as bool` 캐스팅이 실패함.
-  /// 중첩 Map도 재귀적으로 처리합니다.
+  /// - bed 필드: API에서 Map으로 오지만 freezed 모델은 bool로 정의 → 변환
+  /// - 중첩 Map도 재귀적으로 처리합니다.
   static Map<String, dynamic> _sanitizeBools(Map<String, dynamic> json) {
     return json.map((key, value) {
       if (value is Map<String, dynamic>) {
-        return MapEntry(key, _sanitizeBools(value));
-      }
-      if (value is bool) return MapEntry(key, value);
-      // JS에서 bool이 아닌 타입으로 넘어오는 경우 변환 시도
-      if (value != null && value is! String && value is! int && value is! double && value is! List && value is! Map) {
-        // JS interop에서 bool-like 객체가 넘어오는 경우
-        try {
-          final boolVal = value as bool;
-          return MapEntry(key, boolVal);
-        } catch (_) {
-          // toString()으로 판단
-          final str = value.toString().toLowerCase();
-          if (str == 'true') return MapEntry(key, true);
-          if (str == 'false') return MapEntry(key, false);
+        // bed 필드가 Map인 경우 bool로 변환 (값이 하나라도 > 0이면 true)
+        if (key == 'bed') {
+          final hasBed = value.values.any((v) => v is int && v > 0);
+          return MapEntry(key, hasBed);
         }
+        return MapEntry(key, _sanitizeBools(value));
       }
       return MapEntry(key, value);
     });
