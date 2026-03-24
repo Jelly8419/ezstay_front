@@ -266,12 +266,12 @@ class Room {
 
       // 연관 데이터
       photos: photoList,
-      amenity: json['amenity'] != null ? RoomAmenityFreezed.fromJson(json['amenity'] as Map<String, dynamic>) : null,
+      amenity: json['amenity'] != null ? RoomAmenityFreezed.fromJson(_sanitizeBools(json['amenity'] as Map<String, dynamic>)) : null,
       // ezService 우선, 없으면 freeService fallback (백엔드 마이그레이션 기간 호환성)
       ezService: json['ezService'] != null
-          ? RoomEzService.fromJson(json['ezService'] as Map<String, dynamic>)
+          ? RoomEzService.fromJson(_sanitizeBools(json['ezService'] as Map<String, dynamic>))
           : json['freeService'] != null
-              ? RoomEzService.fromJson(json['freeService'] as Map<String, dynamic>)
+              ? RoomEzService.fromJson(_sanitizeBools(json['freeService'] as Map<String, dynamic>))
               : null,
       // EZStay가 제공하는 렌탈 아이템 (모든 방에 표시)
       availableRentalItems: json['availableRentalItems'] != null
@@ -331,6 +331,33 @@ class Room {
     if (value is int) return value == 1;
     if (value is String) return value == '1' || value.toLowerCase() == 'true';
     return null;
+  }
+
+  /// JSON 맵 내 모든 bool-like 값을 실제 bool로 변환 (freezed 모델 호환용)
+  ///
+  /// JS 런타임에서 bool이 다른 타입으로 넘어올 수 있어 freezed의 `as bool` 캐스팅이 실패함.
+  /// 중첩 Map도 재귀적으로 처리합니다.
+  static Map<String, dynamic> _sanitizeBools(Map<String, dynamic> json) {
+    return json.map((key, value) {
+      if (value is Map<String, dynamic>) {
+        return MapEntry(key, _sanitizeBools(value));
+      }
+      if (value is bool) return MapEntry(key, value);
+      // JS에서 bool이 아닌 타입으로 넘어오는 경우 변환 시도
+      if (value != null && value is! String && value is! int && value is! double && value is! List && value is! Map) {
+        // JS interop에서 bool-like 객체가 넘어오는 경우
+        try {
+          final boolVal = value as bool;
+          return MapEntry(key, boolVal);
+        } catch (_) {
+          // toString()으로 판단
+          final str = value.toString().toLowerCase();
+          if (str == 'true') return MapEntry(key, true);
+          if (str == 'false') return MapEntry(key, false);
+        }
+      }
+      return MapEntry(key, value);
+    });
   }
 
   Map<String, dynamic> toJson() {
