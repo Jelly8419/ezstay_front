@@ -44,8 +44,13 @@ class ApiConfig {
   static String get authKakaoWebUrl => '$baseUrl/api/auth/kakao';
   static String get authProfileUrl => '$baseUrl/api/auth/profile';
   static String get authRefreshUrl => '$baseUrl/api/auth/refresh';
-  static String authDevBypassUrl(String userId) =>
-      '$baseUrl/api/auth/dev-bypass/$userId';
+  static String authDevBypassUrl(String userId, {String? key}) {
+    final base = '$baseUrl/api/auth/dev-bypass/$userId';
+    if (key != null && key.isNotEmpty) {
+      return '$base?key=$key';
+    }
+    return base;
+  }
 
   /// 이메일 인증 API 엔드포인트
   static String get authSendVerificationCodeUrl =>

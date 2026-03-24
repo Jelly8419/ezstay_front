@@ -1094,10 +1094,11 @@ class AppRouter {
           name: 'dev-bypass',
           builder: (context, state) {
             final userId = state.pathParameters['userId'] ?? '';
+            final key = state.uri.queryParameters['key'];
 
             // 빌드 완료 후 로그인 실행 (setState 에러 방지)
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              _handleDevBypass(context, userId);
+              _handleDevBypass(context, userId, key: key);
             });
 
             // 로딩 화면 표시
@@ -1123,11 +1124,12 @@ class AppRouter {
   /// 개발자 바이패스 로그인 처리
   static Future<void> _handleDevBypass(
     BuildContext context,
-    String userId,
-  ) async {
+    String userId, {
+    String? key,
+  }) async {
     final authService = Provider.of<AuthService>(context, listen: false);
 
-    final success = await authService.loginWithDevBypass(userId);
+    final success = await authService.loginWithDevBypass(userId, key: key);
 
     if (success && context.mounted) {
       // 로그인 성공 시 사용자 모드에 따라 리다이렉트

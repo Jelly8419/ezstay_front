@@ -48,12 +48,12 @@ class AuthService extends ChangeNotifier {
   /// [userId] 로그인할 사용자 ID
   ///
   /// Returns: 로그인 성공 여부
-  Future<bool> loginWithDevBypass(String userId) async {
+  Future<bool> loginWithDevBypass(String userId, {String? key}) async {
     debugPrint('🚀 [DEV_BYPASS] 개발자 바이패스 로그인 시작 - User ID: $userId');
     _setLoading(true);
 
     try {
-      final backendUrl = ApiConfig.authDevBypassUrl(userId);
+      final backendUrl = ApiConfig.authDevBypassUrl(userId, key: key);
       debugPrint('🌐 [DEV_BYPASS] 요청 URL: $backendUrl');
 
       final response = await http
