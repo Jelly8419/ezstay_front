@@ -7,6 +7,8 @@ import '../../constants/notice_texts.dart';
 import '../../models/contract.dart';
 import '../../services/contract_service.dart';
 import '../../services/payment_service_unified.dart';
+import '../../services/payment_service_web.dart'
+    if (dart.library.io) '../../services/payment_service_stub.dart';
 import '../../services/rental_order_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -2859,6 +2861,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           _loadContracts();
         }
       }
+    } on PopupBlockedException {
+      if (!mounted) return;
+      _showPopupBlockedDialog();
     } catch (e) {
       if (!mounted) return;
 
@@ -2870,6 +2875,37 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         ),
       );
     }
+  }
+
+  /// 팝업 차단 안내 다이얼로그
+  void _showPopupBlockedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('팝업 차단 감지'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('결제창을 열기 위해 팝업 차단을 해제해주세요.'),
+            SizedBox(height: 12),
+            Text(
+              '해제 방법:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 4),
+            Text('• 주소창 오른쪽의 팝업 차단 아이콘 클릭'),
+            Text('• "팝업 허용" 선택 후 페이지 새로고침'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
   }
 
   // TODO: 오픈 후 가상계좌 추가 시 아래 메서드들 주석 해제
