@@ -1,19 +1,26 @@
-# Flutter 빌드 산출물 - 캐시 비활성화
-# .part.js, main.dart.js 등이 배포마다 바뀌므로 항상 최신 파일 사용
+# Flutter 빌드 산출물 - 캐시 완전 비활성화
+# .part.js, main.dart.js 등이 배포마다 바뀌므로 절대 캐시하면 안 됨
+# no-store: 브라우저/CDN 캐시 저장 자체를 금지
 /*.js
-  Cache-Control: no-cache, must-revalidate
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
 /*.part.js
-  Cache-Control: no-cache, must-revalidate
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
 /flutter_bootstrap.js
-  Cache-Control: no-cache, must-revalidate
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/flutter_service_worker.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/main.dart.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
 /
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
 /index.html
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
 # 이미지, 폰트 등 정적 자원은 캐시 허용
 /assets/*

@@ -65,7 +65,15 @@ class AppRouter {
   ///
   /// 지연 로딩 실패 시 에러 화면을 표시하고 새로고침 옵션을 제공합니다.
   /// 브라우저 캐시 불일치, 네트워크 문제 등으로 인한 로딩 실패를 처리합니다.
+  /// .part.js 로딩 실패가 캐시 불일치인지 판별
+  static bool _isPartJsCacheMismatch(Object error) {
+    final msg = error.toString();
+    return msg.contains('.part.js') && msg.contains('failed');
+  }
+
   /// Deferred 라이브러리 로딩 (최대 3회 자동 재시도)
+  ///
+  /// .part.js 캐시 불일치 감지 시 에러 UI에서 강제 새로고침 유도
   static Future<void> _loadWithRetry(Future<void> Function() loadLibrary) async {
     const maxRetries = 3;
     for (var i = 0; i < maxRetries; i++) {
@@ -75,10 +83,49 @@ class AppRouter {
       } catch (e) {
         debugPrint('⚠️ [Deferred] 로딩 재시도 ${i + 1}/$maxRetries: $e');
         if (i == maxRetries - 1) rethrow;
-        // 재시도 전 대기 (500ms, 1000ms)
         await Future.delayed(Duration(milliseconds: 500 * (i + 1)));
       }
     }
+  }
+
+  /// Deferred 로딩 에러 UI (공통)
+  ///
+  /// 캐시 불일치(.part.js 실패) 감지 시 업데이트 안내,
+  /// 그 외에는 일반 에러 안내를 표시합니다.
+  static Widget _buildDeferredErrorContent(BuildContext context, Object error) {
+    final isCacheMismatch = _isPartJsCacheMismatch(error);
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isCacheMismatch ? Icons.update : Icons.error_outline,
+            size: 64,
+            color: isCacheMismatch ? Colors.orange : Colors.red,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isCacheMismatch ? '새 버전이 있습니다' : '페이지를 불러올 수 없습니다',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isCacheMismatch
+                ? '앱이 업데이트되었습니다.\nCtrl+Shift+R을 눌러 새로고침해주세요.'
+                : '네트워크 상태를 확인하고 다시 시도해주세요.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => context.go('/'),
+            icon: Icon(isCacheMismatch ? Icons.refresh : Icons.home),
+            label: Text(isCacheMismatch ? '홈으로 이동' : '홈으로 이동'),
+          ),
+        ],
+      ),
+    );
   }
 
   static Widget _deferredWidget(
@@ -92,32 +139,7 @@ class AppRouter {
           debugPrint('❌ [Deferred] 라이브러리 로딩 최종 실패: ${snapshot.error}');
           return Scaffold(
             body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                    const SizedBox(height: 16),
-                    const Text(
-                      '페이지를 불러올 수 없습니다',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '네트워크 상태를 확인하고 다시 시도해주세요.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () => context.go('/'),
-                      icon: const Icon(Icons.home),
-                      label: const Text('홈으로 이동'),
-                    ),
-                  ],
-                ),
-              ),
+              child: _buildDeferredErrorContent(context, snapshot.error!),
             ),
           );
         }
@@ -140,32 +162,7 @@ class AppRouter {
         if (snapshot.hasError) {
           debugPrint('❌ [Deferred] 라이브러리 로딩 최종 실패: ${snapshot.error}');
           return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '페이지를 불러올 수 없습니다',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '네트워크 상태를 확인하고 다시 시도해주세요.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () => context.go('/'),
-                    icon: const Icon(Icons.home),
-                    label: const Text('홈으로 이동'),
-                  ),
-                ],
-              ),
-            ),
+            child: _buildDeferredErrorContent(context, snapshot.error!),
           );
         }
         if (snapshot.connectionState == ConnectionState.done) {
