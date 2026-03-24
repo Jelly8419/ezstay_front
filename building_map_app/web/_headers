@@ -1,0 +1,20 @@
+# Flutter 빌드 산출물 - 캐시 비활성화
+# .part.js, main.dart.js 등이 배포마다 바뀌므로 항상 최신 파일 사용
+/*.js
+  Cache-Control: no-cache, must-revalidate
+
+/*.part.js
+  Cache-Control: no-cache, must-revalidate
+
+/flutter_bootstrap.js
+  Cache-Control: no-cache, must-revalidate
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+# 이미지, 폰트 등 정적 자원은 캐시 허용
+/assets/*
+  Cache-Control: public, max-age=86400
+
+/icons/*
+  Cache-Control: public, max-age=86400
