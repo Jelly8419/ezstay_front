@@ -8,11 +8,13 @@ extension PaymentMethodExtension on PaymentMethod {
     switch (this) {
       case PaymentMethod.bc:
       case PaymentMethod.kb:
+      case PaymentMethod.sin:
       case PaymentMethod.sh:
       case PaymentMethod.ss:
       case PaymentMethod.hd:
       case PaymentMethod.lt:
       case PaymentMethod.wr:
+      case PaymentMethod.hn:
       case PaymentMethod.ka:
       case PaymentMethod.nh:
         return '신용/체크카드 결제';
@@ -33,11 +35,13 @@ extension PaymentMethodExtension on PaymentMethod {
     switch (this) {
       case PaymentMethod.bc:
       case PaymentMethod.kb:
+      case PaymentMethod.sin:
       case PaymentMethod.sh:
       case PaymentMethod.ss:
       case PaymentMethod.hd:
       case PaymentMethod.lt:
       case PaymentMethod.wr:
+      case PaymentMethod.hn:
       case PaymentMethod.ka:
       case PaymentMethod.nh:
         return Icons.credit_card;
