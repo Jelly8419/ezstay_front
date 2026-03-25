@@ -574,6 +574,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     final orderName = paymentInfo['orderName'] as String? ?? '렌탈 아이템 추가';
     final customerName = paymentInfo['customerName'] as String?;
     final customerEmail = paymentInfo['customerEmail'] as String?;
+    final customerPhone = paymentInfo['customerPhone'] as String?;
 
     debugPrint(
       '💳 [PAYMENT INFO] Retrieved for order: $orderId, amount: $amount',
@@ -598,6 +599,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       payType: selectedMethod.value,
       customerName: customerName,
       customerEmail: customerEmail,
+      customerPhone: customerPhone,
     );
   }
 
@@ -614,6 +616,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     required String payType,
     String? customerName,
     String? customerEmail,
+    String? customerPhone,
   }) async {
     try {
       if (kIsWeb) {
@@ -634,6 +637,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           payType: payType,
           customerName: customerName,
           customerEmail: customerEmail,
+          customerPhone: customerPhone,
         );
 
         if (payResult != null) {
@@ -2744,6 +2748,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           payType: selectedMethod.value,
           customerName: paymentInfo['customerName'] as String?,
           customerEmail: paymentInfo['customerEmail'] as String?,
+          customerPhone: paymentInfo['customerPhone'] as String?,
         );
       }
     } catch (e) {
