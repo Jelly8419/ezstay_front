@@ -79,13 +79,15 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
   static const _creditCards = [
     PaymentMethod.bc,
     PaymentMethod.kb,
-    PaymentMethod.sh,
+    PaymentMethod.sin,
     PaymentMethod.ss,
     PaymentMethod.hd,
     PaymentMethod.lt,
     PaymentMethod.wr,
+    PaymentMethod.hn,
     PaymentMethod.ka,
     PaymentMethod.nh,
+    PaymentMethod.sh,
   ];
 
   static const _easyPays = [
