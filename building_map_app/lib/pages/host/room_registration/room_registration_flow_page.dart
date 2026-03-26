@@ -316,7 +316,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           _formData['checkInTime'] = roomData['checkInTime'] ?? '14:00';
           _formData['checkOutTime'] = roomData['checkOutTime'] ?? '11:00';
           _formData['propertyDescription'] =
-              roomData['propertyDescription'] ?? '';
+              roomData['description'] ?? roomData['propertyDescription'] ?? '';
 
           // initialStep이 지정되면 우선 적용, 아니면 진행 상태에 따라 계산
           _currentStep = widget.initialStep ?? _calculateCurrentStep(roomData);

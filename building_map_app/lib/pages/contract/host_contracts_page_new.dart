@@ -187,39 +187,46 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       child: Stack(
         children: [
           SafeArea(
-            child: Center(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 896),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 24, bottom: 96),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 탭 (진행중 / 지난계약 / 취소)
-                      _buildTabs(),
-                      const SizedBox(height: 12),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 896),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 24),
 
-                      // 상태 필터 드롭다운 (왼쪽 정렬)
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: _buildStatusDropdown(),
+                          // 탭 (진행중 / 지난계약 / 취소)
+                          _buildTabs(),
+                          const SizedBox(height: 12),
+
+                          // 상태 필터 드롭다운 (왼쪽 정렬)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: _buildStatusDropdown(),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // 안내 메시지
+                          _buildInfoMessage(),
+                          const SizedBox(height: 24),
+
+                          // 계약 목록
+                          _buildContractList(),
+
+                          const SizedBox(height: 48),
+                        ],
                       ),
-                      const SizedBox(height: 24),
-
-                      // 안내 메시지
-                      _buildInfoMessage(),
-                      const SizedBox(height: 24),
-
-                      // 계약 목록
-                      _buildContractList(),
-
-                      // 푸터
-                      const SizedBox(height: 48),
-                      const AppFooter(),
-                    ],
+                    ),
                   ),
-                ),
+
+                  // 푸터 (maxWidth 제한 밖)
+                  const AppFooter(),
+                ],
               ),
             ),
           ),
@@ -399,7 +406,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFF3F4F6),
+          color: isSelected ? AppColors.primary600 : const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -557,7 +564,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline, color: Color(0xFF2563EB), size: 20),
+          const Icon(Icons.info_outline, color: AppColors.primary600, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -882,7 +889,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                           onPressed: () => _handleRequestCheckout(contract.id),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            backgroundColor: const Color(0xFF2563EB),
+                            backgroundColor: AppColors.primary600,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -1060,7 +1067,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       color = const Color(0xFFCA8A04);
     } else if (status == ContractStatus.approved) {
       message = '게스트가 결제하면 계약이 확정됩니다.';
-      color = const Color(0xFF2563EB);
+      color = AppColors.primary600;
     } else if (status == ContractStatus.paymentCompleted) {
       message = '입주일에 맞춰 게스트를 맞이해주세요.';
       color = const Color(0xFF059669);
@@ -1085,12 +1092,12 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.description_outlined, size: 16, color: Color(0xFF2563EB)),
+            const Icon(Icons.description_outlined, size: 16, color: AppColors.primary600),
             const SizedBox(width: 6),
             Text(
               '계약 상세',
               style: AppTextStyles.labelMedium.copyWith(
-                color: const Color(0xFF2563EB),
+                color: AppColors.primary600,
               ),
             ),
           ],
@@ -1134,7 +1141,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
             borderRadius: BorderRadius.circular(4),
             child: const Padding(
               padding: EdgeInsets.all(4),
-              child: Icon(Icons.chat_bubble_outline, size: 16, color: Color(0xFF2563EB)),
+              child: Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.primary600),
             ),
           ),
         ],
@@ -1243,7 +1250,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2563EB),
+                              color: AppColors.primary600,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -1360,13 +1367,13 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2563EB),
+                    color: AppColors.primary600,
                   ),
                 ),
                 Text(
                   '₩${FormatUtils.formatCurrency(settlementAmount)}',
                   style: AppTextStyles.headingSmall.copyWith(
-                    color: const Color(0xFF2563EB),
+                    color: AppColors.primary600,
                   ),
                 ),
               ],
@@ -1418,7 +1425,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
             style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2563EB),
+            backgroundColor: AppColors.primary600,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
             shape: RoundedRectangleBorder(
@@ -1493,7 +1500,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                       onPressed: () => _handleHostCheckoutConfirm(contract.id, contract.roomId),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        backgroundColor: const Color(0xFF2563EB),
+                        backgroundColor: AppColors.primary600,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -1816,7 +1823,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: AppColors.primary600,
               foregroundColor: Colors.white,
             ),
             child: const Text('확인'),
@@ -2009,7 +2016,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                           TextSpan(
                             text: '(변경 요청)',
                             style: const TextStyle(
-                              color: Color(0xFF2563EB),
+                              color: AppColors.primary600,
                               fontWeight: FontWeight.w700,
                               decoration: TextDecoration.underline,
                             ),
@@ -2041,7 +2048,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: AppColors.primary600,
               foregroundColor: Colors.white,
             ),
             child: const Text('확인'),
@@ -2282,7 +2289,7 @@ class _CheckoutPendingDialogState extends State<_CheckoutPendingDialog> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
+                    borderSide: const BorderSide(color: AppColors.primary600, width: 2),
                   ),
                   contentPadding: const EdgeInsets.all(12),
                 ),
