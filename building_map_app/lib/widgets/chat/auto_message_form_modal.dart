@@ -122,21 +122,23 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
   void _handleSave() {
     if (_titleController.text.trim().isEmpty ||
         _contentController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('제목, 메시지 내용을 모두 입력해주세요.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('제목, 메시지 내용을 모두 입력해주세요.')));
       return;
     }
 
     final template = AutoMessageTemplate(
-      id: widget.editingTemplate?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id:
+          widget.editingTemplate?.id ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
       title: _titleController.text.trim(),
       content: _contentController.text.trim(),
       trigger: MessageTrigger(
         type: _triggerType,
-        daysOffset: _triggerType != TriggerType.contractConfirmed ? _daysOffset : null,
+        daysOffset: _triggerType != TriggerType.contractConfirmed
+            ? _daysOffset
+            : null,
         time: _triggerType != TriggerType.contractConfirmed ? _time : null,
       ),
       appliedProperties: _selectedProperties,
@@ -185,7 +187,6 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
                   // Title input
                   _buildTitleInput(),
                   const SizedBox(height: 24), // space-y-6
-
                   // Content input
                   _buildContentInput(),
                   const SizedBox(height: 24),
@@ -215,11 +216,16 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
   /// 헤더 (React: sticky top-0 bg-white border-b border-gray-200 px-6 py-4)
   Widget _buildHeader(bool isEditing) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16), // px-6 py-4
+      padding: const EdgeInsets.symmetric(
+        horizontal: 24,
+        vertical: 16,
+      ), // px-6 py-4
       decoration: const BoxDecoration(
         color: AppColors.neutral0,
         border: Border(
-          bottom: BorderSide(color: AppColors.gray200), // border-b border-gray-200
+          bottom: BorderSide(
+            color: AppColors.gray200,
+          ), // border-b border-gray-200
         ),
       ),
       child: Row(
@@ -296,9 +302,7 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
       children: [
         Text(
           '메시지 내용',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.neutral900,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral900),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -344,7 +348,7 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
 
         // Help text (React: text-sm text-gray-500)
         Text(
-          '변수 버튼을 클릭하면 커서 위치에 변수가 삽입됩니다. 해당 방의 실제 값으로 자동 대체됩니다.',
+          '버튼을 클릭하여 입력된 텍스트는 게스트에게 전송 시, 해당 방 정보에 저장된 내용으로 보여집니다. (예 : {방 비밀번호} > *1234)',
           style: AppTextStyles.bodySmall.copyWith(
             color: AppColors.neutral500, // text-gray-500
           ),
@@ -365,7 +369,9 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
         ),
         decoration: BoxDecoration(
           color: AppColors.blue50, // bg-blue-50
-          border: Border.all(color: AppColors.blue100), // border border-blue-200
+          border: Border.all(
+            color: AppColors.blue100,
+          ), // border border-blue-200
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
@@ -402,28 +408,18 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
           ],
         ),
         const SizedBox(height: 12), // space-y-3
-
         // Radio options
-        _buildTriggerOption(
-          TriggerType.contractConfirmed,
-          '계약 확정(결제 완료) 즉시',
-        ),
+        _buildTriggerOption(TriggerType.contractConfirmed, '계약 확정(결제 완료) 즉시'),
         const SizedBox(height: 12),
 
-        _buildTriggerOption(
-          TriggerType.checkin,
-          '입주일 기준',
-        ),
+        _buildTriggerOption(TriggerType.checkin, '입주일 기준'),
         if (_triggerType == TriggerType.checkin) ...[
           const SizedBox(height: 12),
           _buildDaysAndTimeSelector(),
         ],
         const SizedBox(height: 12),
 
-        _buildTriggerOption(
-          TriggerType.checkout,
-          '퇴실일 기준',
-        ),
+        _buildTriggerOption(TriggerType.checkout, '퇴실일 기준'),
         if (_triggerType == TriggerType.checkout) ...[
           const SizedBox(height: 12),
           _buildDaysAndTimeSelector(),
@@ -521,7 +517,6 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
             ),
           ),
           const SizedBox(width: 16), // gap-4
-
           // Time dropdown
           Expanded(
             child: Column(
@@ -567,9 +562,7 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
           items: items,
           onChanged: onChanged,
           isExpanded: true,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.neutral900,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral900),
         ),
       ),
     );
@@ -644,7 +637,8 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
                         child: Checkbox(
                           value: isSelected,
                           onChanged: (_) => _toggleProperty(property.id),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
                       const SizedBox(width: 12), // gap-3
@@ -668,9 +662,7 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
         // Selected count (React: text-sm text-gray-500)
         Text(
           '선택된 방: ${_selectedProperties.length}개',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.neutral500,
-          ),
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.neutral500),
         ),
       ],
     );
@@ -708,7 +700,10 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
   /// 푸터 (React: sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex gap-3)
   Widget _buildFooter() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16), // px-6 py-4
+      padding: const EdgeInsets.symmetric(
+        horizontal: 24,
+        vertical: 16,
+      ), // px-6 py-4
       decoration: const BoxDecoration(
         color: AppColors.neutral0,
         border: Border(
@@ -739,7 +734,6 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
             ),
           ),
           const SizedBox(width: 12), // gap-3
-
           // Save button (React: flex-1 py-3 bg-blue-600 text-white rounded-lg)
           Expanded(
             child: InkWell(
