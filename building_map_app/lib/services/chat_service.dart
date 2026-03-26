@@ -43,19 +43,22 @@ class ChatService {
   ///   - COMPLETED: 계약종료
   ///   - CANCELLED: 계약취소
   ///   - REJECTED: 승인거절
-  Future<List<ChatRoom>> getChatRooms({String? status}) async {
+  Future<List<ChatRoom>> getChatRooms({String? status, String? userMode}) async {
     try {
-      debugPrint('📋 [CHAT] 채팅방 목록 조회 시작 (status: $status)');
+      debugPrint('📋 [CHAT] 채팅방 목록 조회 시작 (status: $status, userMode: $userMode)');
 
       final headers = await _getAuthHeaders();
 
-      // 상태 필터가 있으면 쿼리 파라미터 추가
-      String urlString = '${ApiConfig.baseUrl}/api/chats/rooms';
+      // 쿼리 파라미터 조합
+      final params = <String, String>{};
       if (status != null && status.isNotEmpty && status != 'all') {
-        urlString += '?status=$status';
+        params['status'] = status;
       }
-
-      final url = Uri.parse(urlString);
+      if (userMode != null && userMode.isNotEmpty) {
+        params['userMode'] = userMode;
+      }
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/chats/rooms')
+          .replace(queryParameters: params.isEmpty ? null : params);
       final response = await _apiClient.get(url, headers: headers);
 
       if (response == null) {
@@ -72,6 +75,9 @@ class ChatService {
       final chatRooms = roomsJson.map((json) => ChatRoom.fromJson(json)).toList();
 
       debugPrint('✅ [CHAT] 채팅방 ${chatRooms.length}개 조회 완료');
+      for (final room in chatRooms) {
+        debugPrint('🔢 [CHAT] ${room.firebaseChatRoomId} unreadCount=${room.unreadCount}');
+      }
       return chatRooms;
     } catch (e) {
       debugPrint('❌ [CHAT] 채팅방 목록 조회 실패: $e');

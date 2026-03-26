@@ -18,7 +18,7 @@ class ChatWindow extends StatefulWidget {
   final int currentUserId;
   final VoidCallback onOpenContractInfo;
   final VoidCallback? onBack;
-  final Function(String message, List<XFile> images)? onSendMessage;
+  final Future<void> Function(String message, List<XFile> images)? onSendMessage;
 
   const ChatWindow({
     super.key,
@@ -40,6 +40,7 @@ class _ChatWindowState extends State<ChatWindow> {
   final ImagePicker _imagePicker = ImagePicker();
   final List<XFile> _selectedImages = [];
   bool _hasText = false;
+  bool _isSending = false;
 
   @override
   void dispose() {
@@ -105,15 +106,23 @@ class _ChatWindowState extends State<ChatWindow> {
     });
   }
 
-  void _handleSend() {
+  Future<void> _handleSend() async {
     final message = _messageController.text.trim();
-    if (message.isNotEmpty || _selectedImages.isNotEmpty) {
-      widget.onSendMessage?.call(message, List.from(_selectedImages));
+    if ((message.isNotEmpty || _selectedImages.isNotEmpty) && !_isSending) {
+      final imagesToSend = List<XFile>.from(_selectedImages);
       _messageController.clear();
       setState(() {
         _hasText = false;
         _selectedImages.clear();
+        _isSending = true;
       });
+      try {
+        await widget.onSendMessage?.call(message, imagesToSend);
+      } finally {
+        if (mounted) {
+          setState(() => _isSending = false);
+        }
+      }
     }
   }
 
@@ -443,9 +452,9 @@ class _ChatWindowState extends State<ChatWindow> {
             children: [
               // 이미지 첨부 버튼
               IconButton(
-                onPressed: _handleImageSelect,
+                onPressed: _isSending ? null : _handleImageSelect,
                 icon: const Icon(Icons.attach_file),
-                color: AppColors.gray600, // text-gray-600
+                color: _isSending ? AppColors.gray300 : AppColors.gray600,
                 padding: const EdgeInsets.all(10), // p-2.5
               ),
 
@@ -498,22 +507,31 @@ class _ChatWindowState extends State<ChatWindow> {
 
               // 전송 버튼
               Material(
-                color: _hasText || _selectedImages.isNotEmpty
+                color: (_hasText || _selectedImages.isNotEmpty) && !_isSending
                     ? AppColors.blue600 // bg-blue-600
                     : AppColors.gray300, // disabled:bg-gray-300
                 borderRadius: BorderRadius.circular(8), // rounded-lg
                 child: InkWell(
-                  onTap: _hasText || _selectedImages.isNotEmpty
+                  onTap: (_hasText || _selectedImages.isNotEmpty) && !_isSending
                       ? _handleSend
                       : null,
                   borderRadius: BorderRadius.circular(8),
                   child: Padding(
                     padding: const EdgeInsets.all(10), // p-2.5
-                    child: Icon(
-                      Icons.send,
-                      size: 20, // w-5 h-5
-                      color: AppColors.neutral0, // text-white
-                    ),
+                    child: _isSending
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.neutral0),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.send,
+                            size: 20, // w-5 h-5
+                            color: AppColors.neutral0, // text-white
+                          ),
                   ),
                 ),
               ),

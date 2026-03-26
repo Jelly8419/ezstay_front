@@ -81,6 +81,29 @@ class ChatRoom {
     );
   }
 
+  ChatRoom copyWith({int? unreadCount}) {
+    return ChatRoom(
+      id: id,
+      contractId: contractId,
+      firebaseChatRoomId: firebaseChatRoomId,
+      hostId: hostId,
+      guestId: guestId,
+      roomId: roomId,
+      isActive: isActive,
+      lastMessageAt: lastMessageAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      contract: contract,
+      room: room,
+      host: host,
+      guest: guest,
+      lastMessage: lastMessage,
+      unreadCount: unreadCount ?? this.unreadCount,
+      isReadOnly: isReadOnly,
+      readOnlyReason: readOnlyReason,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

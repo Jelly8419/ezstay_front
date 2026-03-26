@@ -37,9 +37,9 @@ class _AppGNBState extends State<AppGNB> {
         if (isLoggedIn && !_hasCheckedUnread) {
           _hasCheckedUnread = true;
           final userMode = isHostMode ? 'host' : 'guest';
-          // 비동기로 미확인 알림 체크 (UI 블로킹 없음)
+          // 비동기로 미확인 알림/채팅 체크 (UI 블로킹 없음)
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            gnbProvider.checkUnreadNotifications(userMode);
+            gnbProvider.checkGnbBadgeStatus(userMode);
           });
         }
 
@@ -361,9 +361,9 @@ class _AppGNBState extends State<AppGNB> {
                   if (currentUser.phoneVerified && currentUser.hasBank) {
                     debugPrint('✅ [GNB] 본인인증+계좌 모두 완료 → 호스트 모드 전환');
                     await authService.switchUserMode(newMode);
-                    // 모드 전환 후 미읽은 알림 재체크
+                    // 모드 전환 후 배지 상태 재체크
                     if (context.mounted) {
-                      context.read<GNBProvider>().checkUnreadNotifications('host');
+                      context.read<GNBProvider>().checkGnbBadgeStatus('host');
                       context.go('/host');
                     }
                     return;
@@ -391,9 +391,9 @@ class _AppGNBState extends State<AppGNB> {
               await authService.switchUserMode(newMode);
 
               if (context.mounted) {
-                // 모드 전환 후 미읽은 알림 재체크
+                // 모드 전환 후 배지 상태 재체크
                 final newUserMode = isCurrentlyHostMode ? 'guest' : 'host';
-                context.read<GNBProvider>().checkUnreadNotifications(newUserMode);
+                context.read<GNBProvider>().checkGnbBadgeStatus(newUserMode);
                 final route = isCurrentlyHostMode ? '/' : '/host';
                 context.go(route);
               }
