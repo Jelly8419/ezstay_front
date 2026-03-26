@@ -112,18 +112,30 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
       // 각 계약에 대해 상태 매칭 확인
       for (var contract in _contracts) {
-        final matches = expectedStatuses.contains(contract.status);
+        final matches = expectedStatuses.contains(contract.status) ||
+            (contract.status == ContractStatus.completed &&
+                !_isDepositRefundComplete(contract));
         debugPrint(
           '🔍 [FILTER] Contract ${contract.id}: status=${contract.status}, matches=$matches',
         );
       }
 
       tabFiltered = _contracts
-          .where((c) => expectedStatuses.contains(c.status))
+          .where(
+            (c) =>
+                expectedStatuses.contains(c.status) ||
+                // COMPLETED이지만 보증금 환급 미완료 시 진행중으로 표시
+                (c.status == ContractStatus.completed &&
+                    !_isDepositRefundComplete(c)),
+          )
           .toList();
     } else if (_selectedTab == 'past') {
       tabFiltered = _contracts
-          .where((c) => c.status == ContractStatus.completed)
+          .where(
+            (c) =>
+                c.status == ContractStatus.completed &&
+                _isDepositRefundComplete(c),
+          )
           .toList();
     } else if (_selectedTab == 'cancelled') {
       tabFiltered = _contracts
@@ -277,18 +289,28 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
     );
   }
 
+  /// 보증금 환급이 완료된 상태인지 확인
+  /// returned(반환완료) 또는 returnConfirmed(반환확정)인 경우만 완료로 간주
+  bool _isDepositRefundComplete(ContractListItem c) {
+    return c.depositStatus == DepositStatus.returned ||
+        c.depositStatus == DepositStatus.returnConfirmed;
+  }
+
   /// 탭별 계약 개수 계산
   int _getTabCount(String tab) {
     return _contracts.where((contract) {
       if (tab == 'in_progress') {
         return [
-          ContractStatus.pendingApproval,
-          ContractStatus.approved,
-          ContractStatus.paymentCompleted,
-          ContractStatus.inProgress,
-        ].contains(contract.status);
+              ContractStatus.pendingApproval,
+              ContractStatus.approved,
+              ContractStatus.paymentCompleted,
+              ContractStatus.inProgress,
+            ].contains(contract.status) ||
+            (contract.status == ContractStatus.completed &&
+                !_isDepositRefundComplete(contract));
       } else if (tab == 'past') {
-        return contract.status == ContractStatus.completed;
+        return contract.status == ContractStatus.completed &&
+            _isDepositRefundComplete(contract);
       } else if (tab == 'cancelled') {
         return [
           ContractStatus.rejected,

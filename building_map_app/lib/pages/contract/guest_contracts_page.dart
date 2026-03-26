@@ -203,22 +203,37 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     });
   }
 
+  /// 보증금 환급이 완료된 상태인지 확인
+  /// returned(반환완료) 또는 returnConfirmed(반환확정)인 경우만 완료로 간주
+  bool _isDepositRefundComplete(ContractListItem c) {
+    return c.depositStatus == DepositStatus.returned ||
+        c.depositStatus == DepositStatus.returnConfirmed;
+  }
+
   // 탭별 계약 필터링
   List<ContractListItem> get _filteredContracts {
     if (_selectedTab == 'in_progress') {
       return _allContracts
           .where(
-            (c) => [
-              ContractStatus.pendingApproval,
-              ContractStatus.approved,
-              ContractStatus.paymentCompleted,
-              ContractStatus.inProgress,
-            ].contains(c.status),
+            (c) =>
+                [
+                  ContractStatus.pendingApproval,
+                  ContractStatus.approved,
+                  ContractStatus.paymentCompleted,
+                  ContractStatus.inProgress,
+                ].contains(c.status) ||
+                // COMPLETED이지만 보증금 환급 미완료 시 진행중으로 표시
+                (c.status == ContractStatus.completed &&
+                    !_isDepositRefundComplete(c)),
           )
           .toList();
     } else if (_selectedTab == 'completed') {
       return _allContracts
-          .where((c) => c.status == ContractStatus.completed)
+          .where(
+            (c) =>
+                c.status == ContractStatus.completed &&
+                _isDepositRefundComplete(c),
+          )
           .toList();
     } else if (_selectedTab == 'cancelled') {
       return _allContracts
@@ -812,17 +827,24 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     if (tab == 'in_progress') {
       return _allContracts
           .where(
-            (c) => [
-              ContractStatus.pendingApproval,
-              ContractStatus.approved,
-              ContractStatus.paymentCompleted,
-              ContractStatus.inProgress,
-            ].contains(c.status),
+            (c) =>
+                [
+                  ContractStatus.pendingApproval,
+                  ContractStatus.approved,
+                  ContractStatus.paymentCompleted,
+                  ContractStatus.inProgress,
+                ].contains(c.status) ||
+                (c.status == ContractStatus.completed &&
+                    !_isDepositRefundComplete(c)),
           )
           .length;
     } else if (tab == 'completed') {
       return _allContracts
-          .where((c) => c.status == ContractStatus.completed)
+          .where(
+            (c) =>
+                c.status == ContractStatus.completed &&
+                _isDepositRefundComplete(c),
+          )
           .length;
     } else if (tab == 'cancelled') {
       return _allContracts

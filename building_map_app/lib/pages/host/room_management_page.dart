@@ -87,14 +87,18 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
         statusFilter = 'draft';
       } else if (_selectedStatus == 'pending_review') {
         statusFilter = 'pending_review';
-      } else if (_selectedStatus == 'approved_active') {
+      } else if (_selectedStatus == 'approved') {
         statusFilter = 'approved';
+      } else if (_selectedStatus == 'published_active') {
+        statusFilter = 'published';
         isActiveFilter = true;
-      } else if (_selectedStatus == 'approved_inactive') {
-        statusFilter = 'approved';
+      } else if (_selectedStatus == 'published_inactive') {
+        statusFilter = 'published';
         isActiveFilter = false;
       } else if (_selectedStatus == 'rejected') {
         statusFilter = 'rejected';
+      } else if (_selectedStatus == 'hidden_by_admin') {
+        statusFilter = 'hidden_by_admin';
       }
 
       final data = await _roomService.getRooms(
@@ -321,9 +325,19 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
                         value: 'pending_review',
                       ),
                       _buildStatusMenuItem(
+                        label: '승인됨',
+                        count: statusCounts['approved'] ?? 0,
+                        value: 'approved',
+                      ),
+                      _buildStatusMenuItem(
                         label: '게시중',
-                        count: statusCounts['approved_active'] ?? 0,
-                        value: 'approved_active',
+                        count: statusCounts['published_active'] ?? 0,
+                        value: 'published_active',
+                      ),
+                      _buildStatusMenuItem(
+                        label: '게시중단',
+                        count: statusCounts['published_inactive'] ?? 0,
+                        value: 'published_inactive',
                       ),
                       _buildStatusMenuItem(
                         label: '등록 반려',
@@ -331,9 +345,9 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
                         value: 'rejected',
                       ),
                       _buildStatusMenuItem(
-                        label: '게시중단',
-                        count: statusCounts['approved_inactive'] ?? 0,
-                        value: 'approved_inactive',
+                        label: '관리자 숨김',
+                        count: statusCounts['hidden_by_admin'] ?? 0,
+                        value: 'hidden_by_admin',
                       ),
                     ],
                   ),
@@ -426,17 +440,25 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
         selectedLabel = '심사중';
         selectedCount = statusCounts['pending_review'] ?? 0;
         break;
-      case 'approved_active':
+      case 'approved':
+        selectedLabel = '승인됨';
+        selectedCount = statusCounts['approved'] ?? 0;
+        break;
+      case 'published_active':
         selectedLabel = '게시중';
-        selectedCount = statusCounts['approved_active'] ?? 0;
+        selectedCount = statusCounts['published_active'] ?? 0;
+        break;
+      case 'published_inactive':
+        selectedLabel = '게시중단';
+        selectedCount = statusCounts['published_inactive'] ?? 0;
         break;
       case 'rejected':
         selectedLabel = '등록 반려';
         selectedCount = statusCounts['rejected'] ?? 0;
         break;
-      case 'approved_inactive':
-        selectedLabel = '게시중단';
-        selectedCount = statusCounts['approved_inactive'] ?? 0;
+      case 'hidden_by_admin':
+        selectedLabel = '관리자 숨김';
+        selectedCount = statusCounts['hidden_by_admin'] ?? 0;
         break;
       default:
         selectedLabel = '전체';
@@ -501,9 +523,11 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
       'all': _rooms.length,
       'draft': 0,
       'pending_review': 0,
-      'approved_active': 0,
-      'approved_inactive': 0,
+      'approved': 0,
+      'published_active': 0,
+      'published_inactive': 0,
       'rejected': 0,
+      'hidden_by_admin': 0,
     };
 
     for (final room in _rooms) {
@@ -511,12 +535,16 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
         counts['draft'] = (counts['draft'] ?? 0) + 1;
       } else if (room.status == 'pending_review') {
         counts['pending_review'] = (counts['pending_review'] ?? 0) + 1;
-      } else if (room.status == 'approved' && room.isActive) {
-        counts['approved_active'] = (counts['approved_active'] ?? 0) + 1;
-      } else if (room.status == 'approved' && !room.isActive) {
-        counts['approved_inactive'] = (counts['approved_inactive'] ?? 0) + 1;
+      } else if (room.status == 'approved') {
+        counts['approved'] = (counts['approved'] ?? 0) + 1;
+      } else if (room.status == 'published' && room.isActive) {
+        counts['published_active'] = (counts['published_active'] ?? 0) + 1;
+      } else if (room.status == 'published' && !room.isActive) {
+        counts['published_inactive'] = (counts['published_inactive'] ?? 0) + 1;
       } else if (room.status == 'rejected') {
         counts['rejected'] = (counts['rejected'] ?? 0) + 1;
+      } else if (room.status == 'hidden_by_admin') {
+        counts['hidden_by_admin'] = (counts['hidden_by_admin'] ?? 0) + 1;
       }
     }
 
@@ -539,13 +567,15 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
       if (_selectedStatus == 'all') return true;
       if (_selectedStatus == 'draft') return room.status == 'draft';
       if (_selectedStatus == 'pending_review') return room.status == 'pending_review';
-      if (_selectedStatus == 'approved_active') {
-        return room.status == 'approved' && room.isActive;
+      if (_selectedStatus == 'approved') return room.status == 'approved';
+      if (_selectedStatus == 'published_active') {
+        return room.status == 'published' && room.isActive;
       }
-      if (_selectedStatus == 'approved_inactive') {
-        return room.status == 'approved' && !room.isActive;
+      if (_selectedStatus == 'published_inactive') {
+        return room.status == 'published' && !room.isActive;
       }
       if (_selectedStatus == 'rejected') return room.status == 'rejected';
+      if (_selectedStatus == 'hidden_by_admin') return room.status == 'hidden_by_admin';
 
       return true;
     }).toList();
