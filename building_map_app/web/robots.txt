@@ -6,6 +6,8 @@ Allow: /
 Disallow: /api/
 Disallow: /admin/
 Disallow: /user/
+Disallow: /payment/
+Disallow: /contract/
 
 # Sitemap
-Sitemap: https://ezstay.com/sitemap.xml
+Sitemap: https://ezstay.io/sitemap.xml
