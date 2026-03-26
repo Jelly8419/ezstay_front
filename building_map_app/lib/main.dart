@@ -20,6 +20,7 @@ import 'services/room_service.dart';
 import 'services/map_interaction_coordinator.dart';
 import 'services/payment_service_unified.dart';
 import 'providers/gnb_provider.dart';
+import 'providers/map_state_provider.dart';
 import 'router/app_router.dart';
 import 'widgets/kakao_map_web.dart';
 import 'widgets/splash_screen.dart';
@@ -129,6 +130,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => GNBProvider()),
         // 지도 상호작용 조정자 (이벤트 충돌 방지)
         ChangeNotifierProvider(create: (_) => MapInteractionCoordinator()),
+        // 지도 검색 상태 보존 (방 상세 진입 후 뒤로가기 시 위치 복원)
+        ChangeNotifierProvider(create: (_) => MapStateProvider()),
         // Firebase 초기화 Future 제공
         Provider<Future<FirebaseApp>>.value(value: firebaseInitFuture),
       ],
