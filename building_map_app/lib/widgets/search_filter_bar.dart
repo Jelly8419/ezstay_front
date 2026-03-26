@@ -579,19 +579,25 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
 
                                 return InkWell(
                                   onTap: () {
-                                    setOverlayState(() {
-                                      if (type == '전체') {
-                                        // '전체' 클릭 시 모든 선택 해제
+                                    if (type == '전체') {
+                                      // '전체' 클릭 시 모든 선택 해제 후 즉시 적용 및 드롭다운 닫기
+                                      setState(() {
                                         _selectedBuildingTypes.clear();
-                                      } else {
+                                        _currentFilters = _currentFilters
+                                            .copyWith(buildingTypes: _selectedBuildingTypes);
+                                      });
+                                      widget.onFiltersChanged(_currentFilters);
+                                      _removeOverlay();
+                                    } else {
+                                      setOverlayState(() {
                                         // 개별 항목 토글
                                         if (isSelected) {
                                           _selectedBuildingTypes.remove(type);
                                         } else {
                                           _selectedBuildingTypes.add(type);
                                         }
-                                      }
-                                    });
+                                      });
+                                    }
                                   },
                                   borderRadius: BorderRadius.circular(8),
                                   child: Padding(
