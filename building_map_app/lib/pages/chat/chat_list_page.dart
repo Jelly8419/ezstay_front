@@ -11,6 +11,7 @@ import '../../services/auth_service.dart';
 import '../../services/chat_service.dart';
 import '../../services/contract_service.dart';
 import '../../services/firebase_auth_service.dart';
+import '../../providers/gnb_provider.dart';
 import '../../widgets/chat/chat_list_item.dart';
 import '../../widgets/chat/chat_window.dart';
 import '../../widgets/chat/contract_info_modal.dart';
@@ -62,16 +63,51 @@ class _ChatListPageState extends State<ChatListPage> {
         _error = null;
       });
 
-      // 1. Firebase 인증 확인
+      // 1. async 전에 context 의존 값 추출
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final userMode = authService.currentUser?.mode == UserMode.host ? 'host' : 'guest';
+
+      // 2. Firebase 인증 확인
       await _firebaseAuth.ensureAuthenticated();
 
-      // 2. 채팅방 목록 로드
-      final chatRooms = await _chatService.getChatRooms();
+      // 3. 채팅방 목록 로드 (유저 모드 분기)
+      final chatRooms = await _chatService.getChatRooms(userMode: userMode);
+
+      // 초기 선택된 채팅방이 있으면 unreadCount를 0으로 설정
+      final initialId = _selectedChatId ?? widget.initialChatRoomId;
+      final updatedRooms = initialId != null
+          ? chatRooms.map((chat) {
+              if (chat.firebaseChatRoomId == initialId) {
+                return chat.copyWith(unreadCount: 0);
+              }
+              return chat;
+            }).toList()
+          : chatRooms;
 
       setState(() {
-        _chatRooms = chatRooms;
+        _chatRooms = updatedRooms;
         _isLoading = false;
       });
+
+      // 초기 선택된 채팅방의 읽음 처리 (fire-and-forget)
+      if (initialId != null) {
+        final currentUserId =
+            int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
+        if (currentUserId != 0) {
+          _chatService.markAsRead(
+            chatRoomId: initialId,
+            userId: currentUserId,
+          );
+        }
+        _chatService.markAsReadOnServer(initialId);
+
+        // GNB 채팅 레드닷 업데이트
+        final totalUnread = updatedRooms.fold(
+            0, (sum, chat) => sum + (chat.unreadCount ?? 0));
+        if (totalUnread == 0 && mounted) {
+          context.read<GNBProvider>().markChatsAsRead();
+        }
+      }
 
       // 3. 계약 ID로 채팅방 찾아서 선택 및 URL 업데이트
       debugPrint('📱 [CHAT_LIST] initialContractId: ${widget.initialContractId}, _selectedChatId: $_selectedChatId');
@@ -139,12 +175,39 @@ class _ChatListPageState extends State<ChatListPage> {
   }
 
   void _handleSelectChat(String firebaseChatRoomId) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUserId = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
+
+    // setState 전에 새 리스트와 합계를 미리 계산
+    final updatedRooms = _chatRooms.map((chat) {
+      if (chat.firebaseChatRoomId == firebaseChatRoomId) {
+        return chat.copyWith(unreadCount: 0);
+      }
+      return chat;
+    }).toList();
+    final totalUnreadAfter = updatedRooms.fold(0, (sum, chat) => sum + (chat.unreadCount ?? 0));
+
     setState(() {
       _selectedChatId = firebaseChatRoomId;
+      _chatRooms = updatedRooms;
     });
-    // 서버 읽음 처리 (알림톡 차단용, fire-and-forget)
+
+    // 전체 미읽음 합이 0이면 GNB 채팅 레드닷 제거
+    if (totalUnreadAfter == 0) {
+      context.read<GNBProvider>().markChatsAsRead();
+    }
+
+    // Firestore unreadCount 리셋 (fire-and-forget)
+    if (currentUserId != 0) {
+      _chatService.markAsRead(
+        chatRoomId: firebaseChatRoomId,
+        userId: currentUserId,
+      );
+    }
+    // Redis 읽음 처리 (알림톡 차단용, fire-and-forget)
     _chatService.markAsReadOnServer(firebaseChatRoomId);
-    // URL 업데이트 (go 사용 - 페이지 재빌드 없이 URL만 변경)
+
+    // URL 업데이트
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.go('/chat-list/$firebaseChatRoomId');
@@ -220,10 +283,14 @@ class _ChatListPageState extends State<ChatListPage> {
             // React: 모바일에서 채팅 선택 시 숨김, 웹에서 항상 표시
             // hidden lg:flex → ${selectedChatId ? 'hidden lg:flex' : 'flex'}
             if (isDesktop || _selectedChatId == null)
-              SizedBox(
-                width: isDesktop ? 384 : double.infinity, // lg:w-96 (384px)
-                child: _buildChatListSidebar(isDesktop, isHostMode),
-              ),
+              isDesktop
+                  ? SizedBox(
+                      width: 384, // lg:w-96 (384px)
+                      child: _buildChatListSidebar(isDesktop, isHostMode),
+                    )
+                  : Expanded(
+                      child: _buildChatListSidebar(isDesktop, isHostMode),
+                    ),
 
             // 구분선 (웹에서만)
             if (isDesktop)
@@ -531,7 +598,7 @@ class _ChatListPageState extends State<ChatListPage> {
           currentUserId: currentUserId,
           onOpenContractInfo: _handleOpenContractInfo,
           onBack: isDesktop ? null : _handleBack,
-          onSendMessage: (text, images) => _handleSendMessage(text, images, currentUserId),
+          onSendMessage: (text, images) async => _handleSendMessage(text, images, currentUserId),
         );
       },
     );
