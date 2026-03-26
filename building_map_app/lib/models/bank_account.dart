@@ -29,7 +29,7 @@ class BankAccount {
       id: json['id'] as int,
       bankCode: json['bankCode'] as String?,
       bankName: json['bankName'] as String,
-      accountNumber: json['accountNumber'] as String,
+      accountNumber: json['accountNumber'] as String? ?? '',
       accountHolder: json['accountHolder'] as String,
       isVerified: json['isVerified'] as bool? ?? false,
       verifiedAt: json['verifiedAt'] != null
