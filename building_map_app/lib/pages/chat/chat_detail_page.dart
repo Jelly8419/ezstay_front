@@ -9,7 +9,8 @@ import '../../models/chat_room.dart';
 import '../../services/chat_service.dart';
 import '../../services/firebase_auth_service.dart';
 import '../../services/auth_service.dart';
-import '../../constants/app_constants.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../widgets/system_message_bubble.dart';
 
 /// 채팅 상세 페이지
@@ -144,7 +145,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('메시지 전송 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: AppColors.error500,
           ),
         );
       }
@@ -190,7 +191,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               children: [
                 Text(
                   otherUser?.displayName ?? '채팅',
-                  style: AppTextStyles.heading3.copyWith(
+                  style: AppTextStyles.headingLarge.copyWith(
                     color: Colors.white,
                   ),
                 ),
@@ -203,7 +204,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                   ),
               ],
             ),
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.primary500,
       foregroundColor: Colors.white,
       elevation: 0,
     );
@@ -224,7 +225,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             const Icon(
               Icons.error_outline,
               size: 64,
-              color: AppColors.error,
+              color: AppColors.error500,
             ),
             const SizedBox(height: 16),
             Text(
@@ -305,7 +306,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             child: Text(
               '메시지를 불러올 수 없습니다\n${snapshot.error}',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.error,
+                color: AppColors.error500,
               ),
               textAlign: TextAlign.center,
             ),
@@ -467,7 +468,7 @@ class _ChatBubble extends StatelessWidget {
         vertical: message.isImageMessage && message.text.isEmpty ? 4 : 10,
       ),
       decoration: BoxDecoration(
-        color: isMe ? AppColors.primary : AppColors.grey200,
+        color: isMe ? AppColors.primary500 : AppColors.neutral200,
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(20),
           topRight: const Radius.circular(20),
@@ -611,7 +612,7 @@ class _MessageInputFieldState extends State<_MessageInputField> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(28),
-                    borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
+                    borderSide: BorderSide(color: AppColors.primary500.withValues(alpha: 0.3), width: 1),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -630,11 +631,11 @@ class _MessageInputFieldState extends State<_MessageInputField> {
               builder: (context, isSending, child) {
                 return Container(
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: AppColors.primary500,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
+                        color: AppColors.primary500.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),

@@ -8,7 +8,7 @@ enum ContractStatus {
   rejected('REJECTED', '거절됨'),
   paymentCompleted('PAYMENT_COMPLETED', '결제 완료'),
   inProgress('IN_PROGRESS', '계약 진행중 (체크인 완료)'),
-  completed('COMPLETED', '계약 완료 (체크아웃 완료)'),
+  completed('COMPLETED', '계약 종료'),
   cancelledByGuest('CANCELLED_BY_GUEST', '게스트 취소'),
   cancelledByHost('CANCELLED_BY_HOST', '호스트 취소'),
   cancelledByAdminWithRefund('CANCELLED_BY_ADMIN_WITH_REFUND', '관리자 취소 (환불 O)'),
@@ -27,7 +27,9 @@ enum ContractStatus {
     return ContractStatus.values.firstWhere(
       (status) => status.value == value,
       orElse: () {
-        debugPrint('⚠️ [CONTRACT_STATUS] Unknown status: $value, defaulting to pendingApproval');
+        debugPrint(
+          '⚠️ [CONTRACT_STATUS] Unknown status: $value, defaulting to pendingApproval',
+        );
         return ContractStatus.pendingApproval;
       },
     );
@@ -54,7 +56,9 @@ enum CheckoutStatus {
     return CheckoutStatus.values.firstWhere(
       (status) => status.value == value,
       orElse: () {
-        debugPrint('⚠️ [CHECKOUT_STATUS] Unknown status: $value, defaulting to notStarted');
+        debugPrint(
+          '⚠️ [CHECKOUT_STATUS] Unknown status: $value, defaulting to notStarted',
+        );
         return CheckoutStatus.notStarted;
       },
     );
@@ -88,7 +92,9 @@ enum DepositStatus {
     return DepositStatus.values.firstWhere(
       (status) => status.value == value,
       orElse: () {
-        debugPrint('⚠️ [DEPOSIT_STATUS] Unknown status: $value, defaulting to held');
+        debugPrint(
+          '⚠️ [DEPOSIT_STATUS] Unknown status: $value, defaulting to held',
+        );
         return DepositStatus.held;
       },
     );
@@ -135,8 +141,7 @@ enum PaymentMethod {
   // 간편결제
   kakaoPay('KAKAO', '카카오페이'),
   naverPay('NAVER', '네이버페이'),
-  payco('PAYCO', '페이코'),
-
+  payco('PAYCO', '페이코')
   // TODO: 오픈 후 가상계좌 추가 예정
   // virtualAccount('VBANK', '가상계좌'),
   ;
@@ -150,8 +155,7 @@ enum PaymentMethod {
   bool get isCreditCard => !isEasyPay;
 
   /// 간편결제 여부 (할부 불가)
-  bool get isEasyPay =>
-      this == kakaoPay || this == naverPay || this == payco;
+  bool get isEasyPay => this == kakaoPay || this == naverPay || this == payco;
 
   static PaymentMethod? fromString(String? value) {
     if (value == null) return null;
@@ -197,9 +201,11 @@ class ContractListItem {
   final bool? checkoutRequested; // 퇴실 요청 여부
   final bool? hostCheckedOut; // 호스트 퇴실 확인 여부
   final DepositStatus? depositStatus; // 보증금 프로세스 상태 (정책 7.4)
-  final String? agreementDeadline; // 합의 데드라인 ISO8601 (정책 7.9.1: 관리자 승인 시점 + 10일)
+  final String?
+  agreementDeadline; // 합의 데드라인 ISO8601 (정책 7.9.1: 관리자 승인 시점 + 10일)
   final bool? cancellationRequested; // 취소 요청 여부 (1회 제한)
-  final String? depositAgreementStatus; // 합의 상태 (null | SUBMITTED | ACCEPTED | AUTO_RETURNED)
+  final String?
+  depositAgreementStatus; // 합의 상태 (null | SUBMITTED | ACCEPTED | AUTO_RETURNED)
 
   // 방 정보
   final int roomId;
@@ -219,7 +225,8 @@ class ContractListItem {
   final DateTime createdAt;
 
   /// 상대방 표시명 (닉네임 우선, 없으면 이름)
-  String get partnerDisplayName => (partnerNickname?.isNotEmpty == true) ? partnerNickname! : partnerName;
+  String get partnerDisplayName =>
+      (partnerNickname?.isNotEmpty == true) ? partnerNickname! : partnerName;
 
   ContractListItem({
     required this.id,
@@ -292,8 +299,8 @@ class ContractListItem {
       platformFee: json['platformFee'] as int?,
       discountAmount: json['discountAmount'] as int?,
       discountType: json['discountType'] != null
-        ? DiscountType.fromString(json['discountType'] as String)
-        : null,
+          ? DiscountType.fromString(json['discountType'] as String)
+          : null,
       discountCode: json['discountCode'] as String?,
       subtotal: json['subtotal'] as int?,
       totalUsageFee: json['totalUsageFee'] as int?,
@@ -301,7 +308,9 @@ class ContractListItem {
       hostEarnings: json['hostEarnings'] as int?,
       isEzCleaning: json['isEzCleaning'] as bool?,
       // 퇴실 정보
-      checkoutStatus: CheckoutStatus.fromString(json['checkoutStatus'] as String?),
+      checkoutStatus: CheckoutStatus.fromString(
+        json['checkoutStatus'] as String?,
+      ),
       checkoutStatusLabel: json['checkoutStatusLabel'] as String?,
       roomCheckoutTime: json['roomCheckoutTime'] as String?,
       checkoutRequested: json['checkoutRequested'] as bool?,
@@ -445,15 +454,18 @@ class Contract {
 
   factory Contract.fromJson(Map<String, dynamic> json) {
     // hostId와 guestId는 직접 포함되거나, host.id / guest.id로 중첩될 수 있음
-    final hostId = json['hostId'] as int? ??
-                   (json['host'] != null ? json['host']['id'] as int? : null) ??
-                   0;
-    final guestId = json['guestId'] as int? ??
-                    (json['guest'] != null ? json['guest']['id'] as int? : null) ??
-                    0;
-    final roomId = json['roomId'] as int? ??
-                   (json['room'] != null ? json['room']['id'] as int? : null) ??
-                   0;
+    final hostId =
+        json['hostId'] as int? ??
+        (json['host'] != null ? json['host']['id'] as int? : null) ??
+        0;
+    final guestId =
+        json['guestId'] as int? ??
+        (json['guest'] != null ? json['guest']['id'] as int? : null) ??
+        0;
+    final roomId =
+        json['roomId'] as int? ??
+        (json['room'] != null ? json['room']['id'] as int? : null) ??
+        0;
 
     return Contract(
       id: json['id'] as int,
@@ -470,14 +482,18 @@ class Contract {
       rentalItemsFee: json['rentalItemsFee'] as int? ?? 0,
       platformFee: json['platformFee'] as int? ?? 0,
       discountAmount: json['discountAmount'] as int? ?? 0,
-      discountType: json['discountType'] != null ? DiscountType.fromString(json['discountType'] as String) : null,
+      discountType: json['discountType'] != null
+          ? DiscountType.fromString(json['discountType'] as String)
+          : null,
       discountCode: json['discountCode'] as String?,
       subtotal: json['subtotal'] as int? ?? 0,
       totalUsageFee: json['totalUsageFee'] as int? ?? 0,
       deposit: json['deposit'] as int? ?? 0,
       finalTotalAmount: json['finalTotalAmount'] as int? ?? 0,
       rentalItems: _parseRentalItems(json['rentalItems']),
-      paymentMethod: json['paymentMethod'] != null ? PaymentMethod.fromString(json['paymentMethod'] as String) : null,
+      paymentMethod: json['paymentMethod'] != null
+          ? PaymentMethod.fromString(json['paymentMethod'] as String)
+          : null,
       installmentMonths: json['installmentMonths'] as int? ?? 0,
       guestMessage: json['guestMessage'] as String?,
       hostMessage: json['hostMessage'] as String?,
@@ -487,19 +503,41 @@ class Contract {
       status: ContractStatus.fromString(json['status'] as String),
       refundPolicy: json['refundPolicy'] as String? ?? 'moderate',
       isEzCleaning: json['isEzCleaning'] as bool? ?? false,
-      checkoutStatus: CheckoutStatus.fromString(json['checkoutStatus'] as String?),
+      checkoutStatus: CheckoutStatus.fromString(
+        json['checkoutStatus'] as String?,
+      ),
       roomCheckoutTime: json['roomCheckoutTime'] as String?,
-      approvedAt: json['approvedAt'] != null ? DateTime.parse(json['approvedAt'] as String) : null,
-      rejectedAt: json['rejectedAt'] != null ? DateTime.parse(json['rejectedAt'] as String) : null,
-      paidAt: json['paidAt'] != null ? DateTime.parse(json['paidAt'] as String) : null,
-      checkedInAt: json['checkedInAt'] != null ? DateTime.parse(json['checkedInAt'] as String) : null,
-      checkedOutAt: json['checkedOutAt'] != null ? DateTime.parse(json['checkedOutAt'] as String) : null,
-      cancelledAt: json['cancelledAt'] != null ? DateTime.parse(json['cancelledAt'] as String) : null,
+      approvedAt: json['approvedAt'] != null
+          ? DateTime.parse(json['approvedAt'] as String)
+          : null,
+      rejectedAt: json['rejectedAt'] != null
+          ? DateTime.parse(json['rejectedAt'] as String)
+          : null,
+      paidAt: json['paidAt'] != null
+          ? DateTime.parse(json['paidAt'] as String)
+          : null,
+      checkedInAt: json['checkedInAt'] != null
+          ? DateTime.parse(json['checkedInAt'] as String)
+          : null,
+      checkedOutAt: json['checkedOutAt'] != null
+          ? DateTime.parse(json['checkedOutAt'] as String)
+          : null,
+      cancelledAt: json['cancelledAt'] != null
+          ? DateTime.parse(json['cancelledAt'] as String)
+          : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,
-      room: json['room'] != null ? RoomInfo.fromJson(json['room'] as Map<String, dynamic>) : null,
-      host: json['host'] != null ? UserInfo.fromJson(json['host'] as Map<String, dynamic>) : null,
-      guest: json['guest'] != null ? UserInfo.fromJson(json['guest'] as Map<String, dynamic>) : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : null,
+      room: json['room'] != null
+          ? RoomInfo.fromJson(json['room'] as Map<String, dynamic>)
+          : null,
+      host: json['host'] != null
+          ? UserInfo.fromJson(json['host'] as Map<String, dynamic>)
+          : null,
+      guest: json['guest'] != null
+          ? UserInfo.fromJson(json['guest'] as Map<String, dynamic>)
+          : null,
     );
   }
 }
@@ -623,7 +661,9 @@ class RentalItem {
       description: json['description'],
       price: price,
       quantity: json['quantity'] as int? ?? 0,
-      deliveryStatus: DeliveryStatus.fromString(json['deliveryStatus'] ?? 'pending'),
+      deliveryStatus: DeliveryStatus.fromString(
+        json['deliveryStatus'] ?? 'pending',
+      ),
       rentalOrderId: json['rentalOrderId'] as int?,
     );
   }
@@ -773,7 +813,9 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
         if (item is Map<String, dynamic>) {
           items.add(RentalItem.fromJson(item));
         } else {
-          debugPrint('⚠️ [PARSE_ERROR] List item is not a Map: ${item.runtimeType} = $item');
+          debugPrint(
+            '⚠️ [PARSE_ERROR] List item is not a Map: ${item.runtimeType} = $item',
+          );
         }
       }
       return items.isEmpty ? null : items;
@@ -784,15 +826,20 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
       final items = <RentalItem>[];
 
       // ✅ 새로운 API 형식: { items: [...], totalPaid, totalRefunded, netAmount }
-      if (rentalItemsJson.containsKey('items') && rentalItemsJson['items'] is List) {
+      if (rentalItemsJson.containsKey('items') &&
+          rentalItemsJson['items'] is List) {
         final itemsList = rentalItemsJson['items'] as List;
-        debugPrint('✅ [PARSE_RENTAL_ITEMS] Found ${itemsList.length} items in new API format');
+        debugPrint(
+          '✅ [PARSE_RENTAL_ITEMS] Found ${itemsList.length} items in new API format',
+        );
 
         for (final item in itemsList) {
           if (item is Map<String, dynamic>) {
             items.add(RentalItem.fromJson(item));
           } else {
-            debugPrint('⚠️ [PARSE_ERROR] Item in items array is not a Map: ${item.runtimeType}');
+            debugPrint(
+              '⚠️ [PARSE_ERROR] Item in items array is not a Map: ${item.runtimeType}',
+            );
           }
         }
         return items.isEmpty ? null : items;
@@ -816,33 +863,44 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
             final itemType = key.substring(0, key.length - 2); // 'Id' 제거
             itemMap[itemType] ??= {};
             itemMap[itemType]!['id'] = value.toString();
-            debugPrint('⚠️ [PARSE_NONSTANDARD] Detected ${itemType}Id = $value');
+            debugPrint(
+              '⚠️ [PARSE_NONSTANDARD] Detected ${itemType}Id = $value',
+            );
           }
           // {itemType}Quantity 형식 (예: beddingSetQuantity: 1)
           else if (key.endsWith('Quantity')) {
             final itemType = key.substring(0, key.length - 8); // 'Quantity' 제거
             itemMap[itemType] ??= {};
             itemMap[itemType]!['quantity'] = value;
-            debugPrint('⚠️ [PARSE_NONSTANDARD] Detected ${itemType}Quantity = $value');
+            debugPrint(
+              '⚠️ [PARSE_NONSTANDARD] Detected ${itemType}Quantity = $value',
+            );
           }
           // 기타 int 값 (key를 id로 사용)
           else {
             debugPrint('⚠️ [PARSE_WARNING] Simplified format: $key = $value');
-            items.add(RentalItem(
-              id: key,
-              name: '', // API에서 채워질 예정
-              price: 0, // API에서 채워질 예정
-              quantity: value,
-              deliveryStatus: DeliveryStatus.pending,
-            ));
+            items.add(
+              RentalItem(
+                id: key,
+                name: '', // API에서 채워질 예정
+                price: 0, // API에서 채워질 예정
+                quantity: value,
+                deliveryStatus: DeliveryStatus.pending,
+              ),
+            );
           }
         }
         // totalPaid, totalRefunded, netAmount 등 메타데이터는 무시
-        else if (key == 'totalPaid' || key == 'totalRefunded' || key == 'netAmount') {
-          debugPrint('ℹ️ [PARSE_RENTAL_ITEMS] Skipping metadata field: $key = $value');
-        }
-        else {
-          debugPrint('⚠️ [PARSE_ERROR] Map value is unexpected type: ${value.runtimeType} = $value');
+        else if (key == 'totalPaid' ||
+            key == 'totalRefunded' ||
+            key == 'netAmount') {
+          debugPrint(
+            'ℹ️ [PARSE_RENTAL_ITEMS] Skipping metadata field: $key = $value',
+          );
+        } else {
+          debugPrint(
+            '⚠️ [PARSE_ERROR] Map value is unexpected type: ${value.runtimeType} = $value',
+          );
         }
       }
 
@@ -852,14 +910,18 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
         final itemData = entry.value;
 
         if (itemData['id'] != null) {
-          items.add(RentalItem(
-            id: itemData['id'] as String,
-            name: '', // API에서 채워질 예정
-            price: 0, // API에서 채워질 예정
-            quantity: itemData['quantity'] as int? ?? 1, // 기본값 1
-            deliveryStatus: DeliveryStatus.pending,
-          ));
-          debugPrint('✅ [PARSE_NONSTANDARD] Created RentalItem: id=${itemData['id']}, quantity=${itemData['quantity'] ?? 1}, type=$itemType');
+          items.add(
+            RentalItem(
+              id: itemData['id'] as String,
+              name: '', // API에서 채워질 예정
+              price: 0, // API에서 채워질 예정
+              quantity: itemData['quantity'] as int? ?? 1, // 기본값 1
+              deliveryStatus: DeliveryStatus.pending,
+            ),
+          );
+          debugPrint(
+            '✅ [PARSE_NONSTANDARD] Created RentalItem: id=${itemData['id']}, quantity=${itemData['quantity'] ?? 1}, type=$itemType',
+          );
         }
       }
 
@@ -874,13 +936,17 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
           return _parseRentalItems(decoded);
         }
       } catch (_) {
-        debugPrint('⚠️ [PARSE_ERROR] Failed to decode rentalItems string: $rentalItemsJson');
+        debugPrint(
+          '⚠️ [PARSE_ERROR] Failed to decode rentalItems string: $rentalItemsJson',
+        );
       }
       return null;
     }
 
     // 예상치 못한 형식
-    debugPrint('⚠️ [PARSE_ERROR] Unexpected rentalItems format: ${rentalItemsJson.runtimeType}');
+    debugPrint(
+      '⚠️ [PARSE_ERROR] Unexpected rentalItems format: ${rentalItemsJson.runtimeType}',
+    );
     debugPrint('⚠️ [PARSE_ERROR] Content: $rentalItemsJson');
     return null;
   } catch (e, stackTrace) {

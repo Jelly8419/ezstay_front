@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../constants/app_constants.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
 
 /// 공통 버튼 위젯
@@ -35,7 +36,7 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBackgroundColor = backgroundColor ?? AppColors.primary;
+    final effectiveBackgroundColor = backgroundColor ?? AppColors.primary500;
     final effectiveForegroundColor = foregroundColor ?? Colors.white;
 
     // 반응형 높이 계산: React UI 일치 (모바일 36px, 데스크톱 42px)
@@ -54,7 +55,7 @@ class CustomButton extends StatelessWidget {
             foregroundColor: effectiveBackgroundColor,
             side: BorderSide(color: effectiveBackgroundColor, width: 1.5),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+              borderRadius: BorderRadius.circular(16.0),
             ),
           ),
           child: _buildContent(effectiveBackgroundColor),
@@ -66,7 +67,7 @@ class CustomButton extends StatelessWidget {
       width: width,
       height: effectiveHeight,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+        borderRadius: BorderRadius.circular(16.0),
         boxShadow: (isLoading || onPressed == null)
             ? null
             : [
@@ -85,7 +86,7 @@ class CustomButton extends StatelessWidget {
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+            borderRadius: BorderRadius.circular(16.0),
           ),
         ),
         child: _buildContent(effectiveForegroundColor),
@@ -113,7 +114,7 @@ class CustomButton extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             text,
-            style: AppTextStyles.button.copyWith(color: textColor),
+            style: AppTextStyles.labelLarge.copyWith(color: textColor),
           ),
         ],
       );
@@ -121,7 +122,7 @@ class CustomButton extends StatelessWidget {
 
     return Text(
       text,
-      style: AppTextStyles.button.copyWith(color: textColor),
+      style: AppTextStyles.labelLarge.copyWith(color: textColor),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../constants/app_constants.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 
 /// 공통 텍스트 필드 위젯
 ///
@@ -68,27 +69,27 @@ class CustomTextField extends StatelessWidget {
         suffixText: suffixText,
         prefixText: prefixText,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-          borderSide: BorderSide(color: AppColors.grey300),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: BorderSide(color: AppColors.neutral300),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-          borderSide: BorderSide(color: AppColors.grey300),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: BorderSide(color: AppColors.neutral300),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: const BorderSide(color: AppColors.primary500, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: const BorderSide(color: AppColors.error500),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: const BorderSide(color: AppColors.error500, width: 2),
         ),
         filled: true,
-        fillColor: enabled ? AppColors.grey50 : AppColors.grey100,
+        fillColor: enabled ? AppColors.neutral50 : AppColors.neutral100,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16, // ✅ React pl-10 pr-4와 유사
           vertical: 10,   // ✅ React py-2.5 = 10px
