@@ -746,6 +746,74 @@ class ContractService {
     }
   }
 
+  /// 환불 금액 사전 계산 (POST /api/contracts/:contractId/calculate-refund)
+  ///
+  /// 실제 환불 처리 없이 예상 환불 금액만 조회합니다.
+  Future<Map<String, dynamic>> calculateRefund(int contractId) async {
+    try {
+      var token = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (token == null && !ApiConfig.isProduction) {
+        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        token = await TokenService.getAccessToken(skipExpiryCheck: true);
+      }
+
+      if (token == null) {
+        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      final url = Uri.parse(
+        '${ApiConfig.baseUrl}/api/contracts/$contractId/calculate-refund',
+      );
+
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({}),
+          )
+          .timeout(
+            Duration(seconds: ApiConfig.timeoutSeconds),
+            onTimeout: () {
+              throw Exception('요청 시간이 초과되었습니다.');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      } else if (response.statusCode == 400) {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        final code = error['error']?['code'] ?? error['code'];
+        if (code == 4501) {
+          throw Exception('현재 상태에서는 환불 계산이 불가능합니다.');
+        }
+        throw Exception(
+          error['error']?['message'] ?? error['message'] ?? '환불 금액 계산에 실패했습니다.',
+        );
+      } else if (response.statusCode == 404) {
+        throw Exception('계약을 찾을 수 없습니다.');
+      } else {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(
+          error['error']?['message'] ?? error['message'] ?? '환불 금액 계산에 실패했습니다.',
+        );
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버와 통신할 수 없습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception('요청 시간이 초과되었습니다.');
+      }
+      rethrow;
+    }
+  }
+
   /// 게스트 퇴실 확인
   Future<Map<String, dynamic>> confirmGuestCheckout(int contractId) async {
     try {
