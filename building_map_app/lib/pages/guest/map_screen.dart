@@ -70,6 +70,10 @@ class _MapScreenState extends State<MapScreen> {
   // 초기 로드 시 photos 누락 대응
   bool _hasRetriedForPhotos = false; // photos 누락 재시도 여부 추적
 
+  // 지도 초기화 후 localStorage 복원 여부 (onBoundsChanged 최초 1회)
+  bool _mapRestoreAttempted = false;
+
+
   // 캐시된 반응형 값 (JS 콜백에서 안전하게 사용)
   bool _isMobile = false;
   bool _isDesktop = true;
@@ -544,6 +548,40 @@ class _MapScreenState extends State<MapScreen> {
     // 날짜 외 필터: 프론트엔드 필터링이므로 API 재호출 불필요
   }
 
+  /// 방 상세 진입 전 현재 지도 상태를 localStorage에 저장
+  void _saveMapState(int roomId) {
+    if (_currentSwLat == null || _currentNeLat == null) return;
+    final data = jsonEncode({
+      'lat': (_currentSwLat! + _currentNeLat!) / 2,
+      'lng': (_currentSwLng! + _currentNeLng!) / 2,
+      'zoom': _currentZoomLevel ?? 5,
+      'selectedRoomId': roomId,
+    });
+    html.window.localStorage['map_restore_state'] = data;
+  }
+
+  /// localStorage에서 지도 상태 복원 (카카오맵 초기화 완료 후 호출)
+  void _restoreMapStateIfNeeded() {
+    final raw = html.window.localStorage['map_restore_state'];
+    if (raw == null) return;
+    html.window.localStorage.remove('map_restore_state');
+
+    try {
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      final lat = (data['lat'] as num).toDouble();
+      final lng = (data['lng'] as num).toDouble();
+      final zoom = (data['zoom'] as num).toInt();
+      final selectedRoomId = data['selectedRoomId'] as int?;
+
+      _mapController.focusOnLocation(lat, lng, zoomLevel: zoom);
+      if (selectedRoomId != null) {
+        _mapController.selectMarker(selectedRoomId);
+      }
+    } catch (_) {
+      // 파싱 실패 시 무시
+    }
+  }
+
   void _onRoomSelected(
     Room? room, {
     bool focusMap = false,
@@ -1016,7 +1054,7 @@ class _MapScreenState extends State<MapScreen> {
                 room: room,
                 isSelected: _selectedRoom?.id == room.id,
                 onTap: () {
-                  // 상세 페이지로 이동 (GoRouter 사용)
+                  _saveMapState(room.id);
                   context.go('/guest/room/detail/${room.id}');
                 },
                 onHover: (isHovered) {
@@ -1467,6 +1505,12 @@ class _MapScreenState extends State<MapScreen> {
           // 🔒 위젯이 dispose된 후에는 콜백 처리하지 않음
           if (!mounted) return;
 
+          // 카카오맵 초기화 완료 후 최초 1회: localStorage 지도 상태 복원
+          if (!_mapRestoreAttempted) {
+            _mapRestoreAttempted = true;
+            _restoreMapStateIfNeeded();
+          }
+
           // 모바일 환경에서 슬라이드 카드가 표시 중이면 숨김 (지도 드래그 시)
           if (_isMobile && _showMobileCardList) {
             debugPrint('📱 [MOBILE] 지도 드래그 감지 - 슬라이드 카드 숨김 및 매물 개수 뱃지 재표시');
@@ -1548,6 +1592,7 @@ class _MapScreenState extends State<MapScreen> {
 
     return GestureDetector(
       onTap: () {
+        _saveMapState(roomId);
         context.go('/guest/room/detail/$roomId');
       },
       behavior: HitTestBehavior.opaque,

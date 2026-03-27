@@ -2,11 +2,11 @@
 
 /// 발송 트리거 타입
 enum TriggerType {
-  contractConfirmed('contract_confirmed', '계약 확정(결제 완료) 즉시'),
-  paymentCompleted('payment_completed', '결제 완료 즉시'),
-  checkin('checkin', '입주일 기준'),
-  checkout('checkout', '퇴실일 기준'),
-  checkoutConfirmed('checkout_confirmed', '퇴실 확인 완료 즉시');
+  contractConfirmed('CONTRACT_CONFIRMED', '계약 확정(결제 완료) 즉시'),
+  paymentCompleted('PAYMENT_COMPLETED', '결제 완료 즉시'),
+  checkin('BEFORE_CHECK_IN', '입주일 기준'),
+  checkout('BEFORE_CHECK_OUT', '퇴실일 기준'),
+  checkoutConfirmed('CHECKOUT_CONFIRMED', '퇴실 확인 완료 즉시');
 
   final String value;
   final String displayName;
@@ -106,11 +106,13 @@ class AutoMessageTemplate {
     return AutoMessageTemplate(
       id: json['id'].toString(),
       title: json['title'] ?? '',
-      content: json['content'] ?? '',
-      trigger: json['trigger'] != null
-          ? MessageTrigger.fromJson(json['trigger'])
-          : MessageTrigger(type: TriggerType.checkin),
-      appliedProperties: List<String>.from(json['appliedProperties'] ?? []),
+      content: json['messageContent'] ?? '',
+      trigger: MessageTrigger(
+        type: TriggerType.fromString(json['triggerType'] ?? 'BEFORE_CHECK_IN'),
+        daysOffset: json['triggerDays'],
+        time: json['triggerTime'],
+      ),
+      appliedProperties: json['roomId'] != null ? [json['roomId'].toString()] : [],
       isActive: json['isActive'] ?? true,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
@@ -123,14 +125,13 @@ class AutoMessageTemplate {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'title': title,
-      'content': content,
-      'trigger': trigger.toJson(),
-      'appliedProperties': appliedProperties,
+      'messageContent': content,
+      'triggerType': trigger.type.value,
+      if (trigger.daysOffset != null) 'triggerDays': trigger.daysOffset,
+      if (trigger.time != null) 'triggerTime': trigger.time,
+      'roomIds': appliedProperties,
       'isActive': isActive,
-      'createdAt': createdAt.toIso8601String(),
-      if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
     };
   }
 

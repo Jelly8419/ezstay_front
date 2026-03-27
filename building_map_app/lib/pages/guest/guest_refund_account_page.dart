@@ -489,7 +489,7 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
                                       ),
                                     )
                                   : Text(
-                                      '수정 완료',
+                                      '등록 완료',
                                       style: AppTextStyles.bodyMedium.copyWith(
                                         color: AppColors.neutral0,
                                         fontWeight: FontWeight.bold,

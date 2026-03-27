@@ -53,16 +53,16 @@ class GNBProvider extends ChangeNotifier {
   }
 
   // ==================== API 연동 ====================
-  /// 미확인 알림 개수 조회 및 상태 업데이트
-  /// GNB가 마운트되거나 로그인 후 호출해야 합니다.
-  Future<void> checkUnreadNotifications(String userMode) async {
+  /// GNB 배지 상태 조회 (알림 미확인 + 채팅 미확인 통합 API)
+  /// GNB가 마운트되거나 로그인/모드 전환 후 호출해야 합니다.
+  Future<void> checkGnbBadgeStatus(String userMode) async {
     if (_isCheckingUnread) return;
     _isCheckingUnread = true;
 
     try {
-      final response = await _notificationService.getUnreadCount(userMode: userMode);
-      final count = response.getCount(userMode: userMode);
-      setUnreadNotifications(count > 0);
+      final response = await _notificationService.getGnbBadgeStatus(userMode: userMode);
+      setUnreadNotifications(response.unreadNotificationCount > 0);
+      setUnreadChats(response.hasUnreadChat);
     } catch (e) {
       // 에러 시 상태 변경하지 않음
     } finally {

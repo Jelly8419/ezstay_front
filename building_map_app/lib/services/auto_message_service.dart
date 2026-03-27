@@ -61,7 +61,7 @@ class AutoMessageService extends ChangeNotifier {
         throw Exception(data['message'] ?? '자동 메시지 목록 조회 실패');
       }
 
-      final List<dynamic> templatesJson = data['data']['autoMessages'] ?? [];
+      final List<dynamic> templatesJson = data['data']['templates'] ?? [];
       _templates =
           templatesJson.map((json) => AutoMessageTemplate.fromJson(json)).toList();
 
@@ -98,7 +98,7 @@ class AutoMessageService extends ChangeNotifier {
         throw Exception(data['message'] ?? '자동 메시지 조회 실패');
       }
 
-      final template = AutoMessageTemplate.fromJson(data['data']['autoMessage']);
+      final template = AutoMessageTemplate.fromJson(data['data']['template']);
       debugPrint('✅ [AUTO_MSG] 자동 메시지 상세 조회 완료');
       return template;
     } catch (e) {
@@ -133,7 +133,7 @@ class AutoMessageService extends ChangeNotifier {
         throw Exception(data['message'] ?? '자동 메시지 생성 실패');
       }
 
-      final newTemplate = AutoMessageTemplate.fromJson(data['data']['autoMessage']);
+      final newTemplate = AutoMessageTemplate.fromJson(data['data']['template']);
 
       // 로컬 목록에 추가
       _templates = [..._templates, newTemplate];
@@ -177,7 +177,7 @@ class AutoMessageService extends ChangeNotifier {
         throw Exception(data['message'] ?? '자동 메시지 수정 실패');
       }
 
-      final updatedTemplate = AutoMessageTemplate.fromJson(data['data']['autoMessage']);
+      final updatedTemplate = AutoMessageTemplate.fromJson(data['data']['template']);
 
       // 로컬 목록 업데이트
       _templates = _templates.map((t) {

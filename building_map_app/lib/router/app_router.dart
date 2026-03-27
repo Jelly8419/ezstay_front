@@ -49,6 +49,8 @@ import '../pages/support/inquiries_page.dart' deferred as inquiries;
 import '../pages/support/inquiry_form_page.dart' deferred as inquiry_form;
 import '../pages/notification/notification_page.dart'
     deferred as notification_page;
+import '../pages/host/host_settlement_account_page.dart'
+    deferred as host_settlement_account;
 import '../pages/host/host_settlement_page.dart' deferred as host_settlement;
 import '../pages/host/host_settlement_detail_page.dart'
     deferred as host_settlement_detail;
@@ -898,6 +900,15 @@ class AppRouter {
           builder: (context, state) => _deferredWidget(
             host_my_page.loadLibrary,
             () => host_my_page.HostMyPage(),
+          ),
+        ),
+        // 호스트 정산계좌 등록/수정 페이지
+        GoRoute(
+          path: '/host/my-page/settlement-account',
+          name: 'host-settlement-account',
+          builder: (context, state) => _deferredWidget(
+            host_settlement_account.loadLibrary,
+            () => host_settlement_account.HostSettlementAccountPage(),
           ),
         ),
         // 게스트→호스트 전환 - 계좌 설정 페이지

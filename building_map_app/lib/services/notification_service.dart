@@ -142,4 +142,33 @@ class NotificationService {
       return const UnreadCountResponse(singleModeCount: 0);
     }
   }
+
+  /// GNB 배지 상태 조회 (알림 미확인 수 + 채팅 미확인 여부 통합)
+  /// GET /api/gnb/badge-status?userMode={userMode}
+  Future<GnbBadgeStatusResponse> getGnbBadgeStatus({String? userMode}) async {
+    try {
+      final token = await TokenService.getValidAccessToken();
+      if (token == null) return GnbBadgeStatusResponse.empty;
+
+      final url = Uri.parse(ApiConfig.gnbBadgeStatusUrl(userMode: userMode));
+      final response = await _apiClient.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        showErrorDialog: false,
+      );
+
+      if (response != null && response.statusCode == 200) {
+        final jsonData = json.decode(response.body) as Map<String, dynamic>;
+        return GnbBadgeStatusResponse.fromJson(jsonData, userMode: userMode);
+      }
+
+      return GnbBadgeStatusResponse.empty;
+    } catch (e) {
+      debugPrint('❌ [NotificationService] GNB 배지 상태 조회 에러: $e');
+      return GnbBadgeStatusResponse.empty;
+    }
+  }
 }

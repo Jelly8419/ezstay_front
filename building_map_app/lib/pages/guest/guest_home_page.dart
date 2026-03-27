@@ -179,8 +179,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary600, // Primary-600
-            AppColors.primary700, // Primary-700
+            AppColors.primary50, // 연한 블루
+            Colors.white,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -193,7 +193,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
         ),
         child: Column(
           children: [
-            // 서브 타이틀 (Blue-50) - 작은 글씨
+            // 서브 타이틀 - 보조 텍스트
             Text(
               '누구나 쉽고 안전하게 사용할 수 있어요',
               style:
@@ -201,7 +201,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                           ? AppTextStyles.bodyLarge
                           : AppTextStyles.headingLarge)
                       .copyWith(
-                        color: AppColors.blue50,
+                        color: AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
                       ),
               textAlign: TextAlign.center,
@@ -209,15 +209,23 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
             SizedBox(height: AppSpacing.md),
 
-            // 헤드라인 (흰색) - 큰 글씨
-            Text(
-              '가장 안전하고 쉬운 단기임대는 이지스테이',
+            // 헤드라인 - 다크 텍스트 + 강조색
+            Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(text: '가장 안전하고 쉬운 단기임대는\n'),
+                  TextSpan(
+                    text: '이지스테이',
+                    style: TextStyle(color: AppColors.primary500),
+                  ),
+                ],
+              ),
               style:
                   (isMobile
                           ? AppTextStyles.headingLarge.copyWith(fontSize: 28)
                           : AppTextStyles.displayLarge)
                       .copyWith(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
               textAlign: TextAlign.center,
@@ -331,9 +339,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2), // 강한 그림자
-              blurRadius: 24,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
           ],
         ),

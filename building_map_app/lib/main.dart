@@ -11,13 +11,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
 import 'firebase_options.dart';
 import 'config/kakao_config.dart';
-import 'constants/app_constants.dart';
+import 'core/theme/app_colors.dart';
+import 'core/theme/app_text_styles.dart';
+import 'core/theme/app_theme.dart';
 import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
 import 'services/room_service.dart';
 import 'services/map_interaction_coordinator.dart';
 import 'services/payment_service_unified.dart';
 import 'providers/gnb_provider.dart';
+import 'providers/map_state_provider.dart';
 import 'router/app_router.dart';
 import 'widgets/kakao_map_web.dart';
 import 'widgets/splash_screen.dart';
@@ -127,6 +130,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => GNBProvider()),
         // 지도 상호작용 조정자 (이벤트 충돌 방지)
         ChangeNotifierProvider(create: (_) => MapInteractionCoordinator()),
+        // 지도 검색 상태 보존 (방 상세 진입 후 뒤로가기 시 위치 복원)
+        ChangeNotifierProvider(create: (_) => MapStateProvider()),
         // Firebase 초기화 Future 제공
         Provider<Future<FirebaseApp>>.value(value: firebaseInitFuture),
       ],
@@ -343,7 +348,7 @@ class _MapScreenState extends State<MapScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppColors.grey300,
+                      color: AppColors.neutral300,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -352,20 +357,20 @@ class _MapScreenState extends State<MapScreen> {
                 // 방 이름
                 Text(
                   room['roomName'] ?? '이름 없음',
-                  style: AppTextStyles.heading1,
+                  style: AppTextStyles.displayLarge,
                 ),
                 const SizedBox(height: 12),
                 // 건물 타입
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: AppColors.primary500.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     room['buildingType'] ?? '알 수 없음',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.primary,
+                      color: AppColors.primary500,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -377,12 +382,12 @@ class _MapScreenState extends State<MapScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: AppColors.primary500.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
                         Icons.location_on,
-                        color: AppColors.primary,
+                        color: AppColors.primary500,
                         size: 20,
                       ),
                     ),
@@ -400,7 +405,7 @@ class _MapScreenState extends State<MapScreen> {
                 if (room['weeklyRent'] != null)
                   Row(
                     children: [
-                      const Icon(Icons.attach_money, color: AppColors.primary, size: 20),
+                      const Icon(Icons.attach_money, color: AppColors.primary500, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         '주간 요금: ${room['weeklyRent']}원',
@@ -415,13 +420,13 @@ class _MapScreenState extends State<MapScreen> {
                 Row(
                   children: [
                     if (room['roomCount'] != null) ...[
-                      const Icon(Icons.bed, color: AppColors.primary, size: 20),
+                      const Icon(Icons.bed, color: AppColors.primary500, size: 20),
                       const SizedBox(width: 4),
                       Text('방 ${room['roomCount']}개'),
                       const SizedBox(width: 16),
                     ],
                     if (room['bathroomCount'] != null) ...[
-                      const Icon(Icons.bathroom, color: AppColors.primary, size: 20),
+                      const Icon(Icons.bathroom, color: AppColors.primary500, size: 20),
                       const SizedBox(width: 4),
                       Text('욕실 ${room['bathroomCount']}개'),
                     ],
@@ -445,7 +450,7 @@ class _MapScreenState extends State<MapScreen> {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.primary500,
                       foregroundColor: Colors.white,
                     ),
                     child: const Text('닫기'),

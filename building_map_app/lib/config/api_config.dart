@@ -114,9 +114,21 @@ class ApiConfig {
   static String chatReadUrl(String chatRoomId) =>
       '$baseUrl/api/chats/rooms/$chatRoomId/read';
 
+  /// GNB 배지 상태 API 엔드포인트
+  /// GET /api/gnb/badge-status?userMode=guest
+  static String gnbBadgeStatusUrl({String? userMode}) {
+    final base = '$baseUrl/api/gnb/badge-status';
+    return userMode != null ? '$base?userMode=$userMode' : base;
+  }
+
   /// 환급 계좌 API 엔드포인트
   static String get refundAccountUrl => '$baseUrl/api/account/refund';
   static String get refundAccountVerifyUrl =>
+      '$baseUrl/api/account/refund/verify';
+
+  /// 호스트 정산계좌 API 엔드포인트
+  static String get hostSettlementAccountUrl => '$baseUrl/api/account';
+  static String get hostSettlementAccountVerifyUrl =>
       '$baseUrl/api/account/refund/verify';
 
   /// API 설정 유효성 검사

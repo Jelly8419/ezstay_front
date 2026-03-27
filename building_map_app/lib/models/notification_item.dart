@@ -370,3 +370,47 @@ class UnreadCountResponse {
     return totalCount ?? singleModeCount ?? 0;
   }
 }
+
+/// GET /api/gnb/badge-status 응답 모델
+class GnbBadgeStatusResponse {
+  final int unreadNotificationCount;
+  final bool hasUnreadChat;
+
+  const GnbBadgeStatusResponse({
+    required this.unreadNotificationCount,
+    required this.hasUnreadChat,
+  });
+
+  factory GnbBadgeStatusResponse.fromJson(Map<String, dynamic> json, {String? userMode}) {
+    final data = json['data'] as Map<String, dynamic>? ?? json;
+    final unreadCount = data['unreadCount'];
+    final hasUnreadChat = data['hasUnreadChat'];
+
+    // userMode 없이 호출: 두 필드 모두 Map
+    if (unreadCount is Map<String, dynamic>) {
+      final count = userMode != null
+          ? (unreadCount[userMode] as int? ?? 0)
+          : (unreadCount['total'] as int? ?? 0);
+      final chatUnread = hasUnreadChat is Map<String, dynamic>
+          ? (userMode != null
+              ? hasUnreadChat[userMode] == true
+              : (hasUnreadChat['guest'] == true || hasUnreadChat['host'] == true))
+          : hasUnreadChat == true;
+      return GnbBadgeStatusResponse(
+        unreadNotificationCount: count,
+        hasUnreadChat: chatUnread,
+      );
+    }
+
+    // userMode 지정 호출: 두 필드 모두 단일값
+    return GnbBadgeStatusResponse(
+      unreadNotificationCount: unreadCount as int? ?? 0,
+      hasUnreadChat: hasUnreadChat == true,
+    );
+  }
+
+  static const GnbBadgeStatusResponse empty = GnbBadgeStatusResponse(
+    unreadNotificationCount: 0,
+    hasUnreadChat: false,
+  );
+}

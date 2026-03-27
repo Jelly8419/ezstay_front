@@ -47,6 +47,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ScaffoldMessenger.of(context).clearSnackBars();
+    });
     _loadContracts();
   }
 
@@ -203,22 +206,37 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     });
   }
 
+  /// 보증금 환급이 완료된 상태인지 확인
+  /// returned(반환완료) 또는 returnConfirmed(반환확정)인 경우만 완료로 간주
+  bool _isDepositRefundComplete(ContractListItem c) {
+    return c.depositStatus == DepositStatus.returned ||
+        c.depositStatus == DepositStatus.returnConfirmed;
+  }
+
   // 탭별 계약 필터링
   List<ContractListItem> get _filteredContracts {
     if (_selectedTab == 'in_progress') {
       return _allContracts
           .where(
-            (c) => [
-              ContractStatus.pendingApproval,
-              ContractStatus.approved,
-              ContractStatus.paymentCompleted,
-              ContractStatus.inProgress,
-            ].contains(c.status),
+            (c) =>
+                [
+                  ContractStatus.pendingApproval,
+                  ContractStatus.approved,
+                  ContractStatus.paymentCompleted,
+                  ContractStatus.inProgress,
+                ].contains(c.status) ||
+                // COMPLETED이지만 보증금 환급 미완료 시 진행중으로 표시
+                (c.status == ContractStatus.completed &&
+                    !_isDepositRefundComplete(c)),
           )
           .toList();
     } else if (_selectedTab == 'completed') {
       return _allContracts
-          .where((c) => c.status == ContractStatus.completed)
+          .where(
+            (c) =>
+                c.status == ContractStatus.completed &&
+                _isDepositRefundComplete(c),
+          )
           .toList();
     } else if (_selectedTab == 'cancelled') {
       return _allContracts
@@ -311,6 +329,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
   /// 옵션 편집 시작 (API에서 이용 가능한 렌탈 아이템 조회)
   Future<void> _handleEditButtonClick(ContractListItem contract) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     // 먼저 편집 모드 진입 (로딩 표시용)
     setState(() {
       _editingContractId = contract.id;
@@ -374,7 +393,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         _editingContractId = null;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('옵션 목록을 불러오는데 실패했습니다: $e'),
           backgroundColor: const Color(0xFFDC2626),
@@ -404,6 +423,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     final modifiedItems = _modifiedOptions[contract.id];
     if (modifiedItems == null) return;
 
+    // async 갭 전에 ScaffoldMessenger 미리 캡처
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     // 결제 전 상태인지 확인 (승인대기 또는 승인됨)
     // - PENDING_APPROVAL: 호스트 승인 대기 중
     // - APPROVED: 호스트 승인됨, 게스트 결제 대기 중
@@ -412,11 +434,27 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         contract.status == ContractStatus.approved;
 
     if (isBeforePayment) {
+      // 결제 전 상태: 총 옵션 금액 최소 10,000원 검증
+      final totalOptionsFee = modifiedItems.fold(
+        0,
+        (sum, item) => sum + item.price * item.quantity,
+      );
+      if (totalOptionsFee > 0 && totalOptionsFee < 10000) {
+        scaffoldMessenger
+          ..clearSnackBars()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('옵션 상품 총액은 최소 10,000원 이상이어야 합니다.'),
+              backgroundColor: Color(0xFFEF4444),
+            ),
+          );
+        return;
+      }
       // 결제 전 상태: 장바구니처럼 렌탈 아이템만 업데이트 (결제 없음)
-      await _updatePendingRentalItems(contract, modifiedItems);
+      await _updatePendingRentalItems(contract, modifiedItems, scaffoldMessenger);
     } else {
       // 결제 후 상태 (PAYMENT_COMPLETED, IN_PROGRESS): 추가 결제 플로우 진행
-      await _createRentalOrderWithPayment(contract, modifiedItems);
+      await _createRentalOrderWithPayment(contract, modifiedItems, scaffoldMessenger);
     }
   }
 
@@ -426,6 +464,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   Future<void> _updatePendingRentalItems(
     ContractListItem contract,
     List<RentalItem> modifiedItems,
+    ScaffoldMessengerState scaffoldMessenger,
   ) async {
     // 전체 아이템 목록 생성 (수량 0 제외)
     final itemsToUpdate = <RentalOrderItem>[];
@@ -457,7 +496,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           ? '옵션 상품이 저장되었습니다. 승인 후 결제 시 반영됩니다.'
           : '옵션 상품이 저장되었습니다. 결제 시 반영됩니다.';
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text(message),
           backgroundColor: const Color(0xFF10B981),
@@ -473,7 +512,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     } catch (e) {
       debugPrint('❌ [UPDATE BEFORE_PAYMENT] Error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('옵션 저장 중 오류가 발생했습니다: $e'),
           backgroundColor: const Color(0xFFDC2626),
@@ -487,6 +526,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   Future<void> _createRentalOrderWithPayment(
     ContractListItem contract,
     List<RentalItem> modifiedItems,
+    ScaffoldMessengerState scaffoldMessenger,
   ) async {
     // 변경사항 계산: 추가된 아이템만 (기존 대비 수량 증가분)
     final itemsToOrder = <RentalOrderItem>[];
@@ -519,11 +559,11 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     );
 
     try {
-      await _processRentalOrderPayment(contract, itemsToOrder);
+      await _processRentalOrderPayment(contract, itemsToOrder, scaffoldMessenger);
     } catch (e) {
       debugPrint('❌ [SAVE OPTIONS] Error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('옵션 저장 중 오류가 발생했습니다: $e'),
           backgroundColor: const Color(0xFFDC2626),
@@ -536,6 +576,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   Future<void> _processRentalOrderPayment(
     ContractListItem contract,
     List<RentalOrderItem> itemsToOrder,
+    ScaffoldMessengerState scaffoldMessenger,
   ) async {
     // 1단계: 렌탈 주문 생성 (PENDING 상태)
     final orderResponse = await _rentalOrderService.createRentalOrder(
@@ -550,7 +591,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     if (orderResponse.totalAmount == 0) {
       // 결제 불필요 (무료 아이템 등)
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('옵션이 추가되었습니다.'),
           backgroundColor: Color(0xFF10B981),
@@ -600,6 +641,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       customerName: customerName,
       customerEmail: customerEmail,
       customerPhone: customerPhone,
+      scaffoldMessenger: scaffoldMessenger,
     );
   }
 
@@ -617,6 +659,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     String? customerName,
     String? customerEmail,
     String? customerPhone,
+    required ScaffoldMessengerState scaffoldMessenger,
   }) async {
     try {
       if (kIsWeb) {
@@ -651,7 +694,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
           if (!mounted) return;
 
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             const SnackBar(
               content: Text('옵션 상품 결제가 완료되었습니다!'),
               backgroundColor: Color(0xFF10B981),
@@ -685,7 +728,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('결제 처리 중 오류가 발생했습니다: $e'),
           backgroundColor: const Color(0xFFDC2626),
@@ -812,17 +855,24 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     if (tab == 'in_progress') {
       return _allContracts
           .where(
-            (c) => [
-              ContractStatus.pendingApproval,
-              ContractStatus.approved,
-              ContractStatus.paymentCompleted,
-              ContractStatus.inProgress,
-            ].contains(c.status),
+            (c) =>
+                [
+                  ContractStatus.pendingApproval,
+                  ContractStatus.approved,
+                  ContractStatus.paymentCompleted,
+                  ContractStatus.inProgress,
+                ].contains(c.status) ||
+                (c.status == ContractStatus.completed &&
+                    !_isDepositRefundComplete(c)),
           )
           .length;
     } else if (tab == 'completed') {
       return _allContracts
-          .where((c) => c.status == ContractStatus.completed)
+          .where(
+            (c) =>
+                c.status == ContractStatus.completed &&
+                _isDepositRefundComplete(c),
+          )
           .length;
     } else if (tab == 'cancelled') {
       return _allContracts
@@ -1150,7 +1200,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: AppColors.primary600,
               foregroundColor: Colors.white,
             ),
             child: const Text('퇴실 완료'),
@@ -1190,40 +1240,42 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: const Color(0xFFF9FAFB), // gray-50
-      child: Column(
-        children: [
-          // 페이지 타이틀 + 탭 메뉴
-          Container(
-            color: Colors.white,
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 896),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 페이지 타이틀
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                      child: Text(
-                        '계약 관리',
-                        style: AppTextStyles.headingLarge.copyWith(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            // 페이지 타이틀 + 탭 메뉴
+            Container(
+              color: Colors.white,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 896),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 페이지 타이틀
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                        child: Text(
+                          '계약 관리',
+                          style: AppTextStyles.headingLarge.copyWith(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
 
-                    // 탭 메뉴
-                    _buildTabMenu(),
-                  ],
+                      // 탭 메뉴
+                      _buildTabMenu(),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // 계약 목록
-          Expanded(child: _buildContractsList()),
-        ],
+            // 계약 목록
+            _buildContractsList(),
+          ],
+        ),
       ),
     );
   }
@@ -1259,7 +1311,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     final isSelected = _selectedTab == tab;
     return Expanded(
       child: Material(
-        color: isSelected ? const Color(0xFF2563EB) : Colors.white, // blue-600
+        color: isSelected ? AppColors.primary600 : Colors.white,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           onTap: () => _onTabChanged(tab),
@@ -1328,39 +1380,36 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadContracts,
-      child: ListView(
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 896),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    // 안내 메시지 박스
-                    _buildInfoBox(),
-                    const SizedBox(height: 16),
+    return Column(
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 896),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // 안내 메시지 박스
+                  _buildInfoBox(),
+                  const SizedBox(height: 16),
 
-                    // 계약 카드 목록
-                    if (_filteredContracts.isEmpty)
-                      _buildEmptyState()
-                    else
-                      ..._filteredContracts.map(
-                        (contract) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _buildContractCard(contract),
-                        ),
+                  // 계약 카드 목록
+                  if (_filteredContracts.isEmpty)
+                    _buildEmptyState()
+                  else
+                    ..._filteredContracts.map(
+                      (contract) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildContractCard(contract),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
             ),
           ),
-          const AppFooter(),
-        ],
-      ),
+        ),
+        const AppFooter(),
+      ],
     );
   }
 
@@ -1377,7 +1426,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         children: [
           const Icon(
             Icons.info,
-            color: Color(0xFF2563EB), // blue-600
+            color: AppColors.primary600, // blue-600
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -1531,7 +1580,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                   context.go(path);
                 },
                 icon: const Icon(Icons.article_outlined),
-                color: const Color(0xFF2563EB), // blue-600
+                color: AppColors.primary600, // blue-600
                 tooltip: '상세',
               ),
             ],
@@ -1604,7 +1653,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                 label: Text('결제하기', style: AppTextStyles.labelMedium),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: const Color(0xFF2563EB), // blue-600
+                  backgroundColor: AppColors.primary600, // blue-600
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -1797,7 +1846,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             ElevatedButton(
               onPressed: () => _handleGuestCheckout(contract.id),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
+                backgroundColor: AppColors.primary600,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   vertical: 12,
@@ -1890,7 +1939,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                       vertical: 6,
                     ),
                     side: const BorderSide(
-                      color: Color(0xFF2563EB), // blue-600
+                      color: AppColors.primary600, // blue-600
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1901,7 +1950,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2563EB), // blue-600
+                      color: AppColors.primary600, // blue-600
                     ),
                   ),
                 ),
@@ -1924,7 +1973,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                             ElevatedButton(
                               onPressed: () => Navigator.pop(ctx),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF2563EB),
+                                backgroundColor: AppColors.primary600,
                               ),
                               child: const Text(
                                 '확인',
@@ -1944,7 +1993,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                       vertical: 6,
                     ),
                     side: const BorderSide(
-                      color: Color(0xFF2563EB), // blue-600
+                      color: AppColors.primary600, // blue-600
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1955,7 +2004,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2563EB), // blue-600
+                      color: AppColors.primary600, // blue-600
                     ),
                   ),
                 ),
@@ -2048,7 +2097,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: totalDiff > 0
-                          ? const Color(0xFF2563EB) // blue-600
+                          ? AppColors.primary600 // blue-600
                           : const Color(0xFFDC2626), // red-600
                     ),
                   ),
@@ -2092,7 +2141,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       backgroundColor: changes.isEmpty
                           ? const Color(0xFFD1D5DB) // gray-300
-                          : const Color(0xFF2563EB), // blue-600
+                          : AppColors.primary600, // blue-600
                       foregroundColor: Colors.white,
                       disabledBackgroundColor: const Color(0xFFD1D5DB),
                       disabledForegroundColor: const Color(
@@ -2158,7 +2207,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                   '(개당 ${FormatUtils.formatCurrency(item.price)}원)',
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF2563EB), // blue-600
+                    color: AppColors.primary600, // blue-600
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -2269,7 +2318,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                                 decoration: BoxDecoration(
                                   border: Border.all(
                                     color: canIncrease
-                                        ? const Color(0xFF2563EB)
+                                        ? AppColors.primary600
                                         : const Color(0xFFE5E7EB),
                                     width: 2,
                                   ),
@@ -2282,7 +2331,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                                   Icons.add,
                                   size: 16,
                                   color: canIncrease
-                                      ? const Color(0xFF2563EB)
+                                      ? AppColors.primary600
                                       : const Color(0xFFD1D5DB),
                                 ),
                               ),
@@ -2299,7 +2348,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                         '이전 수량에서 +$qtyDiff개',
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF2563EB), // blue-600
+                          color: AppColors.primary600, // blue-600
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -2344,7 +2393,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                         '(+${FormatUtils.formatCurrency(diffPrice)}원)',
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF2563EB), // blue-600
+                          color: AppColors.primary600, // blue-600
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -2544,7 +2593,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             },
             child: const Icon(
               Icons.chat_bubble_outline,
-              color: Color(0xFF2563EB),
+              color: AppColors.primary600,
               size: 18,
             ),
           ),
@@ -3067,7 +3116,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF2563EB),
+                              color: AppColors.primary600,
                             ),
                           ),
                         ],
@@ -3110,7 +3159,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                             },
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              backgroundColor: const Color(0xFF2563EB),
+                              backgroundColor: AppColors.primary600,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -3173,7 +3222,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2563EB),
+              color: AppColors.primary600,
             ),
           ),
           const SizedBox(height: 12),
@@ -3251,7 +3300,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                       height: 32,
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: const Color(0xFF2563EB),
+                          color: AppColors.primary600,
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(8),
@@ -3259,7 +3308,7 @@ class _AddOptionModalState extends State<_AddOptionModal> {
                       child: const Icon(
                         Icons.add,
                         size: 16,
-                        color: Color(0xFF2563EB),
+                        color: AppColors.primary600,
                       ),
                     ),
                   ),
@@ -3948,7 +3997,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                               vertical: 6,
                             ),
                             backgroundColor: canCancel
-                                ? const Color(0xFF2563EB)
+                                ? AppColors.primary600
                                 : const Color(0xFFE5E7EB),
                             foregroundColor: canCancel
                                 ? Colors.white
@@ -4257,7 +4306,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
                                     vertical: 8,
                                   ),
                                   backgroundColor: canCancel
-                                      ? const Color(0xFF2563EB)
+                                      ? AppColors.primary600
                                       : const Color(0xFFE5E7EB),
                                   foregroundColor: canCancel
                                       ? Colors.white
@@ -4334,7 +4383,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: AppColors.primary600,
             ),
             child: Text(
               isInProgress ? '취소 요청' : '주문 취소',
@@ -4373,7 +4422,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
+                  backgroundColor: AppColors.primary600,
                 ),
                 child: const Text('확인', style: TextStyle(color: Colors.white)),
               ),
@@ -4397,7 +4446,7 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
+                  backgroundColor: AppColors.primary600,
                 ),
                 child: const Text('확인', style: TextStyle(color: Colors.white)),
               ),

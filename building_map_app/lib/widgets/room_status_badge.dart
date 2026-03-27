@@ -39,19 +39,19 @@ class RoomStatusBadge extends StatelessWidget {
 
   /// 상태별 배지 정보 반환
   _BadgeInfo _getBadgeInfo() {
-    // approved 상태에서는 isActive 여부로 구분
-    if (status == 'approved') {
+    // published 상태에서는 isActive 여부로 게시중/게시중단 구분
+    if (status == 'published') {
       if (isActive) {
         return const _BadgeInfo(
           label: '게시중',
-          backgroundColor: Color(0xFFE7F5FF), // 파란색 배경
-          textColor: Color(0xFF1971C2), // 파란색 텍스트
+          backgroundColor: Color(0xFFE7F5FF),
+          textColor: Color(0xFF1971C2),
         );
       } else {
         return const _BadgeInfo(
           label: '게시중단',
-          backgroundColor: Color(0xFFF3F4F6), // 회색 배경
-          textColor: Color(0xFF6B7280), // 회색 텍스트
+          backgroundColor: Color(0xFFF3F4F6),
+          textColor: Color(0xFF6B7280),
         );
       }
     }
@@ -60,20 +60,32 @@ class RoomStatusBadge extends StatelessWidget {
       case 'draft':
         return const _BadgeInfo(
           label: '등록중',
-          backgroundColor: Color(0xFFFFF4E6), // 주황색 배경
-          textColor: Color(0xFFE67700), // 주황색 텍스트
+          backgroundColor: Color(0xFFFFF4E6),
+          textColor: Color(0xFFE67700),
         );
       case 'pending_review':
         return const _BadgeInfo(
           label: '심사중',
-          backgroundColor: Color(0xFFFFE6F0), // 분홍색 배경
-          textColor: Color(0xFFC2255C), // 분홍색 텍스트
+          backgroundColor: Color(0xFFFFE6F0),
+          textColor: Color(0xFFC2255C),
+        );
+      case 'approved':
+        return const _BadgeInfo(
+          label: '승인됨',
+          backgroundColor: Color(0xFFE6FCF5),
+          textColor: Color(0xFF0CA678),
         );
       case 'rejected':
         return const _BadgeInfo(
           label: '등록 반려',
-          backgroundColor: Color(0xFFFEE2E2), // 빨간색 배경
-          textColor: Color(0xFFDC2626), // 빨간색 텍스트
+          backgroundColor: Color(0xFFFEE2E2),
+          textColor: Color(0xFFDC2626),
+        );
+      case 'hidden_by_admin':
+        return const _BadgeInfo(
+          label: '관리자 숨김',
+          backgroundColor: Color(0xFFF3F4F6),
+          textColor: Color(0xFF374151),
         );
       default:
         return const _BadgeInfo(

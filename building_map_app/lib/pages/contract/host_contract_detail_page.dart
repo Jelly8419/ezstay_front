@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/contract_detail.dart';
 import '../../services/contract_service.dart';
-import '../../constants/app_constants.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../constants/fee_constants.dart';
 import '../../constants/notice_texts.dart';
 import '../../utils/format_utils.dart';
@@ -556,11 +558,11 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            Icon(Icons.error_outline, size: 64, color: AppColors.error500),
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error500),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -1057,7 +1059,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
       padding: AppSpacing.paddingLg,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+        borderRadius: AppRadius.radiusMd,
         border: Border.all(color: const Color(0xFFE5E7EB)), // gray-200 테두리 추가
         boxShadow: ContractDetailCard.cardShadow,
       ),
@@ -1120,7 +1122,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
               children: [
                 // 방 이미지 (전체 너비)
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.radiusSm),
+                  borderRadius: AppRadius.radiusSm,
                   child: _contract!.roomPhoto.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: ContractUtils.getFullImageUrl(_contract!.roomPhoto),
@@ -1130,7 +1132,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
                           placeholder: (context, url) => Container(
                             width: double.infinity,
                             height: 192,
-                            color: AppColors.grey50,
+                            color: AppColors.neutral50,
                             child: const Center(
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
@@ -1138,17 +1140,17 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
                           errorWidget: (context, url, error) => Container(
                             width: double.infinity,
                             height: 192,
-                            color: AppColors.grey50,
+                            color: AppColors.neutral50,
                             child: Icon(Icons.image_not_supported,
-                                color: AppColors.textHint),
+                                color: AppColors.textDisabled),
                           ),
                         )
                       : Container(
                           width: double.infinity,
                           height: 192,
-                          color: AppColors.grey50,
+                          color: AppColors.neutral50,
                           child: Icon(Icons.home,
-                              size: 40, color: AppColors.textHint),
+                              size: 40, color: AppColors.textDisabled),
                         ),
                 ),
                 const SizedBox(height: 12),
@@ -1163,7 +1165,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
               children: [
                 // 방 이미지 (고정 크기)
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.radiusSm),
+                  borderRadius: AppRadius.radiusSm,
                   child: _contract!.roomPhoto.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: ContractUtils.getFullImageUrl(_contract!.roomPhoto),
@@ -1173,7 +1175,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
                           placeholder: (context, url) => Container(
                             width: 128,
                             height: 128,
-                            color: AppColors.grey50,
+                            color: AppColors.neutral50,
                             child: const Center(
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
@@ -1181,17 +1183,17 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
                           errorWidget: (context, url, error) => Container(
                             width: 128,
                             height: 128,
-                            color: AppColors.grey50,
+                            color: AppColors.neutral50,
                             child: Icon(Icons.image_not_supported,
-                                color: AppColors.textHint),
+                                color: AppColors.textDisabled),
                           ),
                         )
                       : Container(
                           width: 128,
                           height: 128,
-                          color: AppColors.grey50,
+                          color: AppColors.neutral50,
                           child: Icon(Icons.home,
-                              size: 40, color: AppColors.textHint),
+                              size: 40, color: AppColors.textDisabled),
                         ),
                 ),
                 const SizedBox(width: 16),
@@ -1237,7 +1239,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
       padding: AppSpacing.paddingLg,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+        borderRadius: AppRadius.radiusMd,
         border: Border.all(color: const Color(0xFFE5E7EB)), // gray-200 테두리
         boxShadow: ContractDetailCard.cardShadow,
       ),
@@ -1347,7 +1349,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
       padding: AppSpacing.paddingLg,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+        borderRadius: AppRadius.radiusMd,
         border: Border.all(color: const Color(0xFFE5E7EB)), // gray-200 테두리
         boxShadow: ContractDetailCard.cardShadow,
       ),
@@ -1447,7 +1449,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
                   padding: const EdgeInsets.all(12), // p-3 = 12px
                   decoration: BoxDecoration(
                     color: const Color(0xFFF9FAFB), // gray-50
-                    borderRadius: BorderRadius.circular(AppRadius.radiusSm),
+                    borderRadius: AppRadius.radiusSm,
                     border: Border.all(color: const Color(0xFFE5E7EB)), // gray-200
                   ),
                   child: Row(
@@ -1503,7 +1505,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
       padding: AppSpacing.paddingLg,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.radiusMd),
+        borderRadius: AppRadius.radiusMd,
         border: Border.all(color: const Color(0xFFE5E7EB)), // gray-200 테두리
         boxShadow: ContractDetailCard.cardShadow,
       ),
@@ -1526,7 +1528,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
             padding: const EdgeInsets.all(16), // p-4
             decoration: BoxDecoration(
               color: const Color(0xFFF9FAFB), // gray-50
-              borderRadius: BorderRadius.circular(AppRadius.radiusSm),
+              borderRadius: AppRadius.radiusSm,
               border: Border.all(color: const Color(0xFFE5E7EB)), // gray-200
             ),
             child: Column(

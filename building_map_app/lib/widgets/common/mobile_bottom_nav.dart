@@ -71,7 +71,7 @@ class MobileBottomNav extends StatelessWidget {
               _buildChatTab(
                 context: context,
                 isActive: _isActiveChat(location),
-                hasUnread: gnbProvider.hasUnreadNotifications,
+                hasUnread: gnbProvider.hasUnreadChats,
                 onTap: () => context.go('/chat-list'),
               ),
               // 더보기

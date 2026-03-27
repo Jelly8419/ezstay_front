@@ -59,7 +59,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     });
 
     try {
-      // 1. 계약 상세 조회 (rentalItems에 itemId, quantity만 있음)
+      // 계약 상세 조회 (rentalOrders.activeItems에서 옵션 상품 완전한 정보 포함)
       final detail = await _contractService.getGuestContractDetail(
         widget.contractId,
       );
@@ -72,109 +72,11 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
         return;
       }
 
-      // 2. 렌탈 아이템이 있으면 전체 목록 조회하여 매칭
-      if (detail.rentalItems.isNotEmpty) {
-        try {
-          final allRentalItems = await _contractService.getAllRentalItems(
-            inStock: false, // 재고 여부 무관하게 전체 조회
-          );
-
-          if (allRentalItems != null && allRentalItems.isNotEmpty) {
-            // itemId로 매칭하여 완전한 정보로 교체
-            final enrichedRentalItems = detail.rentalItems.map((contractItem) {
-              // 전체 목록에서 itemId가 일치하는 아이템 찾기
-              final fullItemData = allRentalItems.firstWhere(
-                (fullItem) => fullItem['id'] == contractItem.id,
-                orElse: () => <String, dynamic>{},
-              );
-
-              // 완전한 정보가 있으면 병합
-              if (fullItemData.isNotEmpty) {
-                // fullItemData에 계약의 quantity와 deliveryStatus 추가
-                final mergedData = Map<String, dynamic>.from(fullItemData);
-                mergedData['quantity'] = contractItem.quantity;
-                mergedData['deliveryStatus'] = contractItem.deliveryStatus;
-
-                // ContractRentalItem.fromJson()으로 안전하게 파싱 (price 타입 변환 포함)
-                return ContractRentalItem.fromJson(mergedData);
-              }
-
-              // 매칭 실패 시 기존 데이터 유지
-              return contractItem;
-            }).toList();
-
-            // 매칭된 데이터로 ContractDetail 재생성
-            final enrichedDetail = ContractDetail(
-              id: detail.id,
-              orderId: detail.orderId,
-              roomId: detail.roomId,
-              roomName: detail.roomName,
-              roomPhoto: detail.roomPhoto,
-              address: detail.address,
-              detailAddress: detail.detailAddress,
-              floor: detail.floor,
-              checkInDate: detail.checkInDate,
-              checkOutDate: detail.checkOutDate,
-              totalDays: detail.totalDays,
-              rentalFee: detail.rentalFee,
-              maintenanceFee: detail.maintenanceFee,
-              cleaningFee: detail.cleaningFee,
-              deposit: detail.deposit,
-              rentalItemsFee: detail.rentalItemsFee,
-              platformFee: detail.platformFee,
-              finalTotalAmount: detail.finalTotalAmount,
-              status: detail.status,
-              paidAt: detail.paidAt,
-              refundPolicy: detail.refundPolicy,
-              refundPolicyDetail: detail.refundPolicyDetail,
-              refundPolicySnapshot: detail.refundPolicySnapshot,
-              rentalItems: enrichedRentalItems, // 완전한 정보로 교체
-              paymentHistory: detail.paymentHistory,
-              hostName: detail.hostName,
-              hostNickname: detail.hostNickname,
-              hostProfileImage: detail.hostProfileImage,
-              hostPhoneNumber: detail.hostPhoneNumber,
-              guestName: detail.guestName,
-              guestNickname: detail.guestNickname,
-              guestPhone: detail.guestPhone,
-              guestMessage: detail.guestMessage,
-              requestedAt: detail.requestedAt,
-              approvedAt: detail.approvedAt,
-              createdAt: detail.createdAt,
-              guestCheckoutConfirmedAt: detail.guestCheckoutConfirmedAt,
-              hostCheckoutConfirmedAt: detail.hostCheckoutConfirmedAt,
-              depositStatus: detail.depositStatus,
-              isReadOnly: detail.isReadOnly,
-              readOnlyReason: detail.readOnlyReason,
-              isEzCleaning: detail.isEzCleaning,
-            );
-
-            setState(() {
-              _contractDetail = enrichedDetail;
-              _isLoading = false;
-            });
-          } else {
-            // 렌탈 아이템 목록 조회 실패 시 원본 데이터 사용
-            setState(() {
-              _contractDetail = detail;
-              _isLoading = false;
-            });
-          }
-        } catch (rentalItemsError) {
-          // 렌탈 아이템 매칭 실패해도 계약 정보는 표시
-          debugPrint('⚠️ 렌탈 아이템 매칭 실패: $rentalItemsError');
-          setState(() {
-            _contractDetail = detail;
-            _isLoading = false;
-          });
-        }
-      } else {
-        // 렌탈 아이템이 없으면 바로 표시
-        setState(() {
-          _contractDetail = detail;
-          _isLoading = false;
-        });
-      }
+      // rentalOrders.activeItems에서 완전한 정보를 가져오므로 추가 API 호출 불필요
+      setState(() {
+        _contractDetail = detail;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -1094,7 +996,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 헤더: 아이콘 + 제목 + 전체 배송 상태 뱃지 + 옵션 추가 버튼
+          // 헤더: 아이콘 + 제목 + 옵션 추가 버튼
           Row(
             children: [
               // Package 아이콘 (w-5 h-5 text-gray-700)
@@ -1114,11 +1016,6 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
                 ),
               ),
 
-              // 전체 배송 상태 뱃지 (옵션 상품이 있을 때만)
-              if (contract.rentalItems.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                _buildOverallDeliveryStatusBadge(contract.rentalItems),
-              ],
             ],
           ),
 
@@ -1183,63 +1080,6 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  /// 전체 배송 상태 뱃지 (React UI 로직 복제)
-  Widget _buildOverallDeliveryStatusBadge(List<ContractRentalItem> items) {
-    // hasShipping: 배송 중인 아이템이 하나라도 있는지
-    final hasShipping = items.any((item) => item.deliveryStatus == 'SHIPPING');
-    // allDelivered: 모든 아이템이 배송 완료인지
-    final allDelivered = items.every(
-      (item) => item.deliveryStatus == 'DELIVERED',
-    );
-
-    final String status;
-    if (hasShipping) {
-      status = 'SHIPPING';
-    } else if (allDelivered) {
-      status = 'DELIVERED';
-    } else {
-      status = 'PENDING';
-    }
-
-    // 상태별 설정
-    final Map<String, dynamic> config = {
-      'PENDING': {
-        'text': '배송 대기',
-        'bgColor': const Color(0xFFF3F4F6), // bg-gray-100
-        'textColor': const Color(0xFF374151), // text-gray-700
-      },
-      'SHIPPING': {
-        'text': '배송 중',
-        'bgColor': const Color(0xFFDBEAFE), // bg-blue-100
-        'textColor': const Color(0xFF1D4ED8), // text-blue-700
-      },
-      'DELIVERED': {
-        'text': '배송 완료',
-        'bgColor': const Color(0xFFD1FAE5), // bg-green-100
-        'textColor': const Color(0xFF047857), // text-green-700
-      },
-    }[status]!;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 2,
-      ), // px-2 py-0.5
-      decoration: BoxDecoration(
-        color: config['bgColor'],
-        borderRadius: BorderRadius.circular(4), // rounded
-      ),
-      child: Text(
-        config['text'],
-        style: TextStyle(
-          fontSize: 12, // text-xs
-          fontWeight: FontWeight.w700, // font-bold
-          color: config['textColor'],
-        ),
       ),
     );
   }

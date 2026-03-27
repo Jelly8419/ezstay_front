@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../constants/app_constants.dart';
+import '../../constants/app_constants.dart' show AppConstants;
+import '../../core/theme/app_colors.dart';
 import '../../utils/responsive_util.dart';
 import 'ezstay_logo.dart';
 import 'app_gnb.dart';

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../utils/format_utils.dart';
 import '../models/chat_message.dart';
-import '../constants/app_constants.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_text_styles.dart';
 
 /// 시스템 메시지 말풍선
 /// - 중앙 정렬
@@ -27,7 +28,7 @@ class SystemMessageBubble extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.grey300,
+            color: AppColors.neutral300,
             width: 1,
           ),
           boxShadow: [
@@ -87,52 +88,52 @@ class SystemMessageBubble extends StatelessWidget {
       case 'contract_approved':
         return SystemMessageConfig(
           label: '계약승인',
-          labelColor: AppColors.primary,
+          labelColor: AppColors.primary500,
           icon: Icons.check_circle,
-          iconColor: AppColors.success,
-          backgroundColor: AppColors.success.withOpacity(0.08),
-          borderColor: AppColors.success.withOpacity(0.2),
-          textColor: AppColors.success.darken(0.2),
+          iconColor: AppColors.success500,
+          backgroundColor: AppColors.success500.withValues(alpha: 0.08),
+          borderColor: AppColors.success500.withValues(alpha: 0.2),
+          textColor: AppColors.success500.darken(0.2),
         );
       case 'contract_completed':
         return SystemMessageConfig(
           label: '계약완료',
-          labelColor: AppColors.primary,
+          labelColor: AppColors.primary500,
           icon: Icons.verified,
-          iconColor: AppColors.primary,
-          backgroundColor: AppColors.primary.withOpacity(0.08),
-          borderColor: AppColors.primary.withOpacity(0.2),
-          textColor: AppColors.primary.darken(0.2),
+          iconColor: AppColors.primary500,
+          backgroundColor: AppColors.primary500.withValues(alpha: 0.08),
+          borderColor: AppColors.primary500.withValues(alpha: 0.2),
+          textColor: AppColors.primary500.darken(0.2),
         );
       case 'contract_cancelled':
         return SystemMessageConfig(
           label: '계약취소',
-          labelColor: AppColors.error,
+          labelColor: AppColors.error500,
           icon: Icons.cancel,
-          iconColor: AppColors.error,
-          backgroundColor: AppColors.error.withOpacity(0.08),
-          borderColor: AppColors.error.withOpacity(0.2),
-          textColor: AppColors.error.darken(0.2),
+          iconColor: AppColors.error500,
+          backgroundColor: AppColors.error500.withValues(alpha: 0.08),
+          borderColor: AppColors.error500.withValues(alpha: 0.2),
+          textColor: AppColors.error500.darken(0.2),
         );
       case 'payment_completed':
         return SystemMessageConfig(
           label: '결제완료',
-          labelColor: AppColors.primary,
+          labelColor: AppColors.primary500,
           icon: Icons.payments,
-          iconColor: AppColors.info,
-          backgroundColor: AppColors.info.withOpacity(0.08),
-          borderColor: AppColors.info.withOpacity(0.2),
-          textColor: AppColors.info.darken(0.2),
+          iconColor: AppColors.info500,
+          backgroundColor: AppColors.info500.withValues(alpha: 0.08),
+          borderColor: AppColors.info500.withValues(alpha: 0.2),
+          textColor: AppColors.info500.darken(0.2),
         );
       case 'check_in':
         return SystemMessageConfig(
           label: '체크인',
-          labelColor: AppColors.primary,
+          labelColor: AppColors.primary500,
           icon: Icons.login,
-          iconColor: AppColors.info,
-          backgroundColor: AppColors.info.withOpacity(0.08),
-          borderColor: AppColors.info.withOpacity(0.2),
-          textColor: AppColors.info.darken(0.2),
+          iconColor: AppColors.info500,
+          backgroundColor: AppColors.info500.withValues(alpha: 0.08),
+          borderColor: AppColors.info500.withValues(alpha: 0.2),
+          textColor: AppColors.info500.darken(0.2),
         );
       case 'check_out':
         return SystemMessageConfig(
@@ -140,18 +141,18 @@ class SystemMessageBubble extends StatelessWidget {
           labelColor: AppColors.textSecondary,
           icon: Icons.logout,
           iconColor: AppColors.textSecondary,
-          backgroundColor: AppColors.grey100,
-          borderColor: AppColors.grey300,
+          backgroundColor: AppColors.neutral100,
+          borderColor: AppColors.neutral300,
           textColor: AppColors.textSecondary,
         );
       default:
         return SystemMessageConfig(
           label: '시스템 알림',
-          labelColor: AppColors.primary,
+          labelColor: AppColors.primary500,
           icon: Icons.info_outline,
           iconColor: AppColors.textSecondary,
-          backgroundColor: AppColors.grey100,
-          borderColor: AppColors.grey300,
+          backgroundColor: AppColors.neutral100,
+          borderColor: AppColors.neutral300,
           textColor: AppColors.textSecondary,
         );
     }

@@ -2,8 +2,10 @@
 enum RoomStatus {
   draft('draft', '등록중'),
   pendingReview('pending_review', '심사중'),
-  approved('approved', '게시중'),
-  rejected('rejected', '등록 반려');
+  approved('approved', '승인됨'),
+  rejected('rejected', '등록 반려'),
+  published('published', '게시중'),
+  hiddenByAdmin('hidden_by_admin', '관리자 숨김');
 
   final String value;
   final String label;
@@ -17,15 +19,4 @@ enum RoomStatus {
       orElse: () => RoomStatus.draft,
     );
   }
-}
-
-/// 게시 상태 (승인된 방의 isActive 여부)
-enum PublishStatus {
-  active('active', '게시중'),
-  inactive('inactive', '게시중단');
-
-  final String value;
-  final String label;
-
-  const PublishStatus(this.value, this.label);
 }

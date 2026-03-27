@@ -240,11 +240,13 @@ class _HostMyPageState extends State<HostMyPage> {
   }
 
   /// 계좌 정보 수정
-  void _handleAccountEdit() {
-    // TODO: 계좌 정보 수정 페이지로 이동 또는 다이얼로그
-    debugPrint('🏦 [HostMyPage] 계좌 정보 수정');
-
-    _showInfoDialog('준비 중입니다', '계좌 정보 수정 기능은 준비 중입니다.');
+  Future<void> _handleAccountEdit() async {
+    debugPrint('🏦 [HostMyPage] 계좌 정보 수정 페이지로 이동');
+    final result =
+        await context.push<dynamic>('/host/my-page/settlement-account');
+    if (result != null && mounted) {
+      _loadUserProfile();
+    }
   }
 
   /// 영수증 편집 시작 (저장된 값 로드)

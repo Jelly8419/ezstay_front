@@ -300,11 +300,9 @@ class Room {
     );
   }
 
-  /// status 값 정규화 (API 응답값을 앱 내부 상태값으로 변환)
-  /// - published → approved (백엔드 API와 앱 내부 용어 불일치 해결)
+  /// status 값 정규화 (API 응답값을 그대로 사용)
   static String _normalizeStatus(String? status) {
     if (status == null) return 'draft';
-    if (status == 'published') return 'approved';
     return status;
   }
 
@@ -582,28 +580,37 @@ class Room {
 
   /// 방 관리 페이지용 헬퍼 메서드들
 
-  /// 현재 표시할 상태 라벨 (status + isActive 조합)
+  /// 현재 표시할 상태 라벨
   String get displayStatus {
-    if (status == 'approved' && isActive) return '게시중';
-    if (status == 'approved' && !isActive) return '게시중단';
-    if (status == 'pending_review') return '심사중';
-    if (status == 'rejected') return '등록 반려';
-    return '등록중';
+    switch (status) {
+      case 'published':
+        return isActive ? '게시중' : '게시중단';
+      case 'approved':
+        return '승인됨';
+      case 'pending_review':
+        return '심사중';
+      case 'rejected':
+        return '등록 반려';
+      case 'hidden_by_admin':
+        return '관리자 숨김';
+      default:
+        return '등록중';
+    }
   }
 
-  /// 수정 가능 여부 (React: draft, rejected, approved일 때)
-  bool get canEdit => status == 'draft' || status == 'rejected' || status == 'approved';
+  /// 수정 가능 여부
+  bool get canEdit => status == 'draft' || status == 'rejected' || status == 'approved' || status == 'published';
 
-  /// 일정관리 가능 여부 (React: approved 또는 inactive일 때)
-  bool get canSchedule => status == 'approved';
+  /// 일정관리 가능 여부
+  bool get canSchedule => status == 'published';
 
-  /// 복제 가능 여부 (React: draft가 아닐 때)
+  /// 복제 가능 여부
   bool get canDuplicate => status != 'draft';
 
   /// 삭제 가능 여부 (React: 항상 표시)
   bool get canDelete => true;
 
-  /// 게시/비공개 토글 가능 여부 (React: approved 또는 inactive일 때)
-  bool get canTogglePublish => status == 'approved';
+  /// 게시/비공개 토글 가능 여부 (published 상태에서만)
+  bool get canTogglePublish => status == 'published';
 }
 
