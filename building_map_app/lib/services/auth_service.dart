@@ -1090,12 +1090,16 @@ class AuthService extends ChangeNotifier {
       // 서버에 로그아웃 요청 (토큰 무효화)
       final accessToken = await getAccessToken();
       if (accessToken != null) {
+        final refreshToken = await TokenService.getRefreshToken();
         await http.post(
           Uri.parse(ApiConfig.authLogoutUrl),
           headers: {
             'Authorization': 'Bearer $accessToken',
             'Content-Type': 'application/json',
           },
+          body: json.encode({
+            if (refreshToken != null) 'refreshToken': refreshToken,
+          }),
         );
       }
     } catch (e) {

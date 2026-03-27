@@ -44,15 +44,11 @@ class AppPrimaryButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: isInteractive ? onPressed : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isInteractive
-              ? AppColors.blue600  // Blue-600 브랜드 색상
-              : AppColors.neutral300,
+          backgroundColor: isInteractive ? AppColors.blue500 : AppColors.neutral300,
           foregroundColor: AppColors.neutral0,
           elevation: 0,
           shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.radiusMd,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
           padding: EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.md,
@@ -64,9 +60,7 @@ class AppPrimaryButton extends StatelessWidget {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    AppColors.neutral0,
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.neutral0),
                 ),
               )
             : Row(
@@ -126,15 +120,11 @@ class AppSecondaryButton extends StatelessWidget {
               ? AppColors.neutral700
               : AppColors.neutral400,
           side: BorderSide(
-            color: isInteractive
-                ? AppColors.neutral300
-                : AppColors.neutral200,
+            color: isInteractive ? AppColors.neutral300 : AppColors.neutral200,
             width: 1,
           ),
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.radiusMd,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
           padding: EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.md,
@@ -258,10 +248,7 @@ class AppIconButton extends StatelessWidget {
     );
 
     if (tooltip != null) {
-      return Tooltip(
-        message: tooltip!,
-        child: button,
-      );
+      return Tooltip(message: tooltip!, child: button);
     }
 
     return button;
