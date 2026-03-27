@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../services/token_service.dart';
+import '../core/exceptions.dart';
 
 /// 일정 관리 서비스
 /// 방 일정 조회, 계약 불가 기간 생성/삭제 등을 처리
@@ -44,7 +45,7 @@ class ScheduleService {
       } else if (response.statusCode == 404) {
         throw Exception('방을 찾을 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다.');
+        throw const UnauthorizedException();
       } else {
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? '일정 조회 실패');
@@ -94,7 +95,7 @@ class ScheduleService {
       } else if (response.statusCode == 404) {
         throw Exception('방을 찾을 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다.');
+        throw const UnauthorizedException();
       } else {
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? '계약 불가 기간 설정 실패');
@@ -129,7 +130,7 @@ class ScheduleService {
       } else if (response.statusCode == 403) {
         throw Exception('삭제 권한이 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다.');
+        throw const UnauthorizedException();
       } else {
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? '계약 불가 기간 삭제 실패');
@@ -169,7 +170,7 @@ class ScheduleService {
       } else if (response.statusCode == 404) {
         throw Exception('방을 찾을 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다.');
+        throw const UnauthorizedException();
       } else {
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? '계약 가능 전환 실패');
@@ -208,7 +209,7 @@ class ScheduleService {
       } else if (response.statusCode == 404) {
         throw Exception('방을 찾을 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다.');
+        throw const UnauthorizedException();
       } else {
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? '계약 목록 조회 실패');
@@ -247,7 +248,7 @@ class ScheduleService {
       } else if (response.statusCode == 404) {
         throw Exception('방을 찾을 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다.');
+        throw const UnauthorizedException();
       } else {
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? '계약 불가 기간 목록 조회 실패');
@@ -276,7 +277,7 @@ class ScheduleService {
       } else if (response.statusCode == 404) {
         throw Exception('방을 찾을 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다.');
+        throw const UnauthorizedException();
       } else {
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? '방 정보 조회 실패');

@@ -16,17 +16,17 @@ class AppColors {
   AppColors._(); // Private constructor to prevent instantiation
 
   // ============= Primary Colors (메인 브랜드 컬러) =============
-  /// EZStay 브랜드 컬러 - Electric Aqua 계열
-  static const Color primary50 = Color(0xFFE0FAFF);   // Light Aqua BG
-  static const Color primary100 = Color(0xFFB3F0FC);  // Lighter aqua
-  static const Color primary200 = Color(0xFF80E6FA);  // Light aqua
-  static const Color primary300 = Color(0xFF5CDEF7);  // Light-medium aqua
-  static const Color primary400 = Color(0xFF34EEFD);  // Electric Aqua (원본)
-  static const Color primary500 = Color(0xFF00C8E0);  // Main - Deep Aqua (브랜드 대표)
-  static const Color primary600 = Color(0xFF00B0C8);  // Deeper aqua
-  static const Color primary700 = Color(0xFF0098AE);  // Dark aqua
-  static const Color primary800 = Color(0xFF007F94);  // Darker aqua
-  static const Color primary900 = Color(0xFF005A6A);  // Darkest aqua
+  /// EZStay 브랜드 컬러 - Material Blue (#2196F3)
+  static const Color primary50 = Color(0xFFE3F2FD);   // --color-primary-light
+  static const Color primary100 = Color(0xFFBBDEFB);  // Lighter blue
+  static const Color primary200 = Color(0xFF90CAF9);  // Light blue
+  static const Color primary300 = Color(0xFF64B5F6);  // Light-medium blue
+  static const Color primary400 = Color(0xFF42A5F5);  // Medium blue
+  static const Color primary500 = Color(0xFF2196F3);  // Main - --color-primary (브랜드 대표)
+  static const Color primary600 = Color(0xFF1E88E5);  // Deeper blue
+  static const Color primary700 = Color(0xFF1976D2);  // Dark blue - --color-primary-dark
+  static const Color primary800 = Color(0xFF1565C0);  // Darker blue
+  static const Color primary900 = Color(0xFF0D47A1);  // Darkest blue
 
   // ============= Secondary Colors (보조 컬러 - Wood Accent) =============
   /// 따뜻한 우디 계열 (검색 버튼, 포인트 컬러)
@@ -41,14 +41,14 @@ class AppColors {
   static const Color secondary800 = Color(0xFF5E442C);
   static const Color secondary900 = Color(0xFF3A2A1C);
 
-  // ============= Blue/Aqua Colors (Electric Aqua) =============
-  /// Electric Aqua 스타일 시스템 (primary와 동기화)
-  static const Color blue50  = Color(0xFFE0FAFF);   // Light Aqua (text on dark)
-  static const Color blue100 = Color(0xFFB3F0FC);   // Light aqua (badges, backgrounds)
-  static const Color blue500 = Color(0xFF34EEFD);   // Electric Aqua (gradients start)
-  static const Color blue600 = Color(0xFF00C8E0);   // Deep Aqua (main brand)
-  static const Color blue700 = Color(0xFF0098AE);   // Dark aqua (gradients end)
-  static const Color blue900 = Color(0xFF0D1218);   // Deep Navy Dark (text)
+  // ============= Blue Colors (Material Blue) =============
+  /// Material Blue 스타일 시스템 (primary와 동기화)
+  static const Color blue50  = Color(0xFFE3F2FD);   // --color-primary-light (text on dark)
+  static const Color blue100 = Color(0xFFBBDEFB);   // Light blue (badges, backgrounds)
+  static const Color blue500 = Color(0xFF2196F3);   // --color-primary (main brand)
+  static const Color blue600 = Color(0xFF1976D2);   // --color-primary-dark
+  static const Color blue700 = Color(0xFF1565C0);   // Dark blue (gradients end)
+  static const Color blue900 = Color(0xFF0D47A1);   // Darkest blue (text)
 
   // ============= Green Colors (Host-specific) =============
   /// 호스트 전용 섹션 강조색
@@ -62,12 +62,12 @@ class AppColors {
   static const Color purple600 = Color(0xFF9333EA);
 
   // ============= Gray Colors (Neutral additions) =============
-  /// 추가 중립 색상 (Deep Navy 톤)
-  static const Color gray50   = Color(0xFFF8FAFB);
-  static const Color gray200  = Color(0xFFE0E7EA);
-  static const Color gray300  = Color(0xFFCDD5DA);
-  static const Color gray600  = Color(0xFF5A6872);
-  static const Color gray900  = Color(0xFF0D1218);
+  /// 추가 중립 색상
+  static const Color gray50   = Color(0xFFF8FAFE);  // --color-bg-light
+  static const Color gray200  = Color(0xFFE5E7EB);  // --color-border
+  static const Color gray300  = Color(0xFFD1D5DB);
+  static const Color gray600  = Color(0xFF666666);  // --color-text-secondary
+  static const Color gray900  = Color(0xFF1A1A1A);  // --color-text
 
   // ============= Neutral Colors (중립 컬러) =============
   /// 텍스트, 배경, 구분선 등
@@ -81,7 +81,7 @@ class AppColors {
   static const Color neutral600 = Color(0xFF757575); // Body text
   static const Color neutral700 = Color(0xFF616161); // Title
   static const Color neutral800 = Color(0xFF424242); // Heading
-  static const Color neutral900 = Color(0xFF212121); // Primary text
+  static const Color neutral900 = Color(0xFF1A1A1A); // Primary text - --color-text
   static const Color neutral1000 = Color(0xFF000000); // 검정
 
   // ============= Semantic Colors (의미 색상) =============
@@ -105,16 +105,16 @@ class AppColors {
   static const Color warning700 = Color(0xFFFFA000);
 
   /// 정보 (primary와 동기화)
-  static const Color info50 = Color(0xFFE0FAFF);
-  static const Color info500 = Color(0xFF00C8E0);
-  static const Color info600 = Color(0xFF00B0C8);
-  static const Color info700 = Color(0xFF0098AE);
+  static const Color info50 = Color(0xFFE3F2FD);
+  static const Color info500 = Color(0xFF2196F3);
+  static const Color info600 = Color(0xFF1E88E5);
+  static const Color info700 = Color(0xFF1976D2);
 
   // ============= Special Colors (특수 색상) =============
   /// 배지, 태그 등 특별한 용도
   static const Color badge = Color(0xFFE91E63); // 핑크 (새 매물)
   static const Color premium = Color(0xFFFFD700); // 골드 (프리미엄)
-  static const Color verified = Color(0xFF00C8E0); // 아쿠아 (인증됨)
+  static const Color verified = Color(0xFF2196F3); // 블루 (인증됨)
   static const Color discount = Color(0xFF9C27B0); // 퍼플 (할인)
 
   // ============= Common Usage (자주 쓰는 조합) =============

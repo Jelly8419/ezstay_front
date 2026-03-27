@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
 import '../../constants/notice_texts.dart';
 import '../../models/room.dart';
@@ -86,6 +87,8 @@ class _ContractStartPageState extends State<ContractStartPage> {
           _isLoadingPolicy = false;
         });
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [CONTRACT_START] 환불 정책 로드 실패: $e');
       if (mounted) {
@@ -1690,6 +1693,8 @@ class _ContractStartPageState extends State<ContractStartPage> {
         // 환경별 성공 안내 표시
         await _showContractSuccessMessage();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         setState(() {

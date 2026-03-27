@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/format_utils.dart';
 import '../../utils/contract_utils.dart';
@@ -70,6 +71,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         _allContracts = contracts;
         _isLoading = false;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -383,6 +386,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
         _modifiedOptions[contract.id] = allOptions;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [AVAILABLE ITEMS] Error: $e');
 
@@ -509,6 +514,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       });
 
       await _loadContracts();
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [UPDATE BEFORE_PAYMENT] Error: $e');
       if (!mounted) return;
@@ -560,6 +567,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
     try {
       await _processRentalOrderPayment(contract, itemsToOrder, scaffoldMessenger);
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [SAVE OPTIONS] Error: $e');
       if (!mounted) return;
@@ -712,6 +721,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         // TODO: 모바일 PayTag WebView 렌탈 결제 구현
         throw Exception('모바일에서는 아직 렌탈 추가 결제가 지원되지 않습니다.');
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [RENTAL PAYMENT] Error: $e');
 
@@ -793,6 +804,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                 ),
               );
               _loadContracts();
+            } on UnauthorizedException {
+              if (mounted) context.go('/login');
             } catch (e) {
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
@@ -806,6 +819,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           onClose: () => Navigator.of(context).pop(),
         ),
       );
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [DEPOSIT AGREEMENT] Error: $e');
       if (!mounted) return;
@@ -837,6 +852,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       );
 
       await _loadContracts();
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [CANCEL] Error: $e');
 
@@ -848,6 +865,345 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         ),
       );
     }
+  }
+
+  /// PAYMENT_COMPLETED 상태 계약 취소: 환불 금액 계산 후 모달 표시
+  Future<void> _showRefundInfoAndCancel(contract) async {
+    // 1단계: 로딩 표시하며 환불 금액 계산 API 호출
+    // rootNavigator: true 로 go_router 대신 최상위 Navigator를 사용해
+    // go_router 페이지 스택을 건드리지 않고 다이얼로그만 닫음
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    Map<String, dynamic>? refundData;
+    try {
+      final result = await _contractService.calculateRefund(contract.id);
+      refundData = result['data'] as Map<String, dynamic>?;
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
+    } catch (e) {
+      if (mounted) Navigator.of(context, rootNavigator: false).pop();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('환불 금액 조회에 실패했습니다: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: false).pop(); // 로딩 닫기
+
+    // 2단계: 환불 정보 모달 표시
+    final reasonController = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        final totalRefund = refundData?['finalRefundAmount'] ?? 0;
+        final penalty = refundData?['penaltyAmount'] ?? 0;
+        final refundRate = refundData?['rentalFeeRefundRate'] ?? 100;
+        final policyName = refundData?['policyDisplayName'] ?? '';
+        final ruleDesc = refundData?['applicableRuleDescription'] ?? '';
+        final serverMessage = refundData?['message'] ?? '';
+        final platformFeeDeducted = refundData?['platformFeeDeducted'] ?? 0;
+        final isSameDay = refundData?['isSameDayCancellation'] ?? false;
+
+        // 항목별 환불 금액
+        final rentalFeeRefund = refundData?['rentalFeeRefundAmount'] ?? 0;
+        final maintenanceFeeRefund = refundData?['maintenanceFeeRefundAmount'] ?? 0;
+        final cleaningFeeRefund = refundData?['cleaningFeeRefundAmount'] ?? 0;
+        final rentalItemsRefund = refundData?['rentalItemsFeeRefundAmount'] ?? 0;
+        final depositRefund = refundData?['depositRefundAmount'] ?? 0;
+        final guestServiceFeeRefunded = refundData?['guestServiceFeeRefunded'] ?? false;
+
+        // 원금액
+        final originalRentalFee = refundData?['originalRentalFee'] ?? 0;
+        final originalMaintenanceFee = refundData?['originalMaintenanceFee'] ?? 0;
+        final originalCleaningFee = refundData?['originalCleaningFee'] ?? 0;
+        final originalRentalItemsFee = refundData?['originalRentalItemsFee'] ?? 0;
+        final originalDeposit = refundData?['originalDeposit'] ?? 0;
+        final originalPlatformFee = refundData?['originalPlatformFee'] ?? 0;
+
+        return AlertDialog(
+          title: const Text('계약 취소 및 환불 안내'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 환불 정책 정보
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (policyName.isNotEmpty)
+                        Text(
+                          '환불 정책: $policyName',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF374151),
+                          ),
+                        ),
+                      if (ruleDesc.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          ruleDesc,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ],
+                      if (isSameDay) ...[
+                        const SizedBox(height: 4),
+                        const Text(
+                          '결제 당일 취소 — 전액 환불',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF10B981),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 항목별 환불 내역
+                const Text(
+                  '환불 내역',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildRefundRow(
+                  '임대료 ($refundRate% 환불)',
+                  '${FormatUtils.formatCurrency(rentalFeeRefund as num)}원',
+                  subLabel: '결제액 ${FormatUtils.formatCurrency(originalRentalFee as num)}원',
+                ),
+                if ((originalMaintenanceFee as num) > 0)
+                  _buildRefundRow(
+                    '관리비',
+                    '${FormatUtils.formatCurrency(maintenanceFeeRefund as num)}원',
+                    subLabel: '결제액 ${FormatUtils.formatCurrency(originalMaintenanceFee)}원',
+                  ),
+                if ((originalCleaningFee as num) > 0)
+                  _buildRefundRow(
+                    '청소비',
+                    '${FormatUtils.formatCurrency(cleaningFeeRefund as num)}원',
+                    subLabel: '결제액 ${FormatUtils.formatCurrency(originalCleaningFee)}원',
+                  ),
+                if ((originalRentalItemsFee as num) > 0)
+                  _buildRefundRow(
+                    '옵션상품',
+                    '${FormatUtils.formatCurrency(rentalItemsRefund as num)}원',
+                    subLabel: '결제액 ${FormatUtils.formatCurrency(originalRentalItemsFee)}원',
+                  ),
+                if ((originalDeposit as num) > 0)
+                  _buildRefundRow(
+                    '보증금',
+                    '${FormatUtils.formatCurrency(depositRefund as num)}원',
+                    subLabel: '결제액 ${FormatUtils.formatCurrency(originalDeposit)}원',
+                  ),
+                _buildRefundRow(
+                  '서비스 수수료',
+                  guestServiceFeeRefunded
+                      ? '${FormatUtils.formatCurrency(originalPlatformFee as num)}원'
+                      : '환불 없음',
+                  subLabel: '결제액 ${FormatUtils.formatCurrency(originalPlatformFee as num)}원',
+                  isWarning: !guestServiceFeeRefunded,
+                ),
+                const Divider(height: 20),
+
+                if ((penalty as num) > 0)
+                  _buildRefundRow(
+                    '위약금',
+                    '-${FormatUtils.formatCurrency(penalty)}원',
+                    isWarning: true,
+                  ),
+                if ((platformFeeDeducted as num) > 0)
+                  _buildRefundRow(
+                    '차감 수수료',
+                    '-${FormatUtils.formatCurrency(platformFeeDeducted)}원',
+                    isWarning: true,
+                  ),
+                _buildRefundRow(
+                  '최종 환불 예정 금액',
+                  '${FormatUtils.formatCurrency(totalRefund as num)}원',
+                  isBold: true,
+                  isHighlight: true,
+                ),
+                const SizedBox(height: 12),
+
+                // 서버 안내 메시지
+                if (serverMessage.isNotEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFFED7AA)),
+                    ),
+                    child: Text(
+                      serverMessage,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF92400E),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+
+                // 취소 사유 입력
+                const Text(
+                  '취소 사유',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: reasonController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: '취소 사유를 입력해주세요',
+                    hintStyle: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF9CA3AF),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('돌아가기'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final reason = reasonController.text.trim();
+                if (reason.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('취소 사유를 입력해주세요.'),
+                      backgroundColor: Color(0xFFDC2626),
+                    ),
+                  );
+                  return;
+                }
+                Navigator.of(dialogContext).pop();
+                try {
+                  await _contractService.requestRefund(contract.id, reason);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('환불 요청이 처리되었습니다.'),
+                      backgroundColor: Color(0xFF10B981),
+                    ),
+                  );
+                  _loadContracts();
+                } on UnauthorizedException {
+                  if (mounted) context.go('/login');
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('환불 요청에 실패했습니다: $e'),
+                      backgroundColor: const Color(0xFFDC2626),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('환불 요청'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildRefundRow(
+    String label,
+    String value, {
+    String? subLabel,
+    bool isBold = false,
+    bool isWarning = false,
+    bool isHighlight = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+                  color: isWarning
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFF374151),
+                ),
+              ),
+              if (subLabel != null)
+                Text(
+                  subLabel,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                ),
+            ],
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.normal,
+              color: isHighlight
+                  ? const Color(0xFF2563EB)
+                  : isWarning
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFF111827),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // 탭별 계약 개수
@@ -1222,6 +1578,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         );
         _loadContracts();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1665,85 +2023,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             Row(
               children: [
                 OutlinedButton(
-                  onPressed: () {
-                    final reasonController = TextEditingController();
-                    showDialog(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        title: const Text('계약 취소'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('계약을 취소하시겠습니까?\n결제 금액의 100%가 환불됩니다.'),
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: reasonController,
-                              maxLines: 3,
-                              decoration: InputDecoration(
-                                hintText: '취소 사유를 입력해주세요',
-                                hintStyle: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF9CA3AF),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                contentPadding: const EdgeInsets.all(12),
-                              ),
-                            ),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(dialogContext).pop(),
-                            child: const Text('돌아가기'),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              final reason = reasonController.text.trim();
-                              if (reason.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('취소 사유를 입력해주세요.'),
-                                    backgroundColor: Color(0xFFDC2626),
-                                  ),
-                                );
-                                return;
-                              }
-                              Navigator.of(dialogContext).pop();
-                              try {
-                                await _contractService.requestRefund(
-                                  contract.id,
-                                  reason,
-                                );
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('환불 요청이 처리되었습니다.'),
-                                    backgroundColor: Color(0xFF10B981),
-                                  ),
-                                );
-                                _loadContracts();
-                              } catch (e) {
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('환불 요청에 실패했습니다: $e'),
-                                    backgroundColor: const Color(0xFFDC2626),
-                                  ),
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFDC2626),
-                            ),
-                            child: const Text('취소하기'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                  onPressed: () => _showRefundInfoAndCancel(contract),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -1795,6 +2075,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                               ),
                             );
                             _loadContracts();
+                          } on UnauthorizedException {
+                            if (mounted) context.go('/login');
                           } catch (e) {
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -2673,6 +2955,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       availableItems = await rentalOrderService.getAvailableRentalItems(
         contract.id,
       );
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
+      return;
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2708,6 +2993,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     try {
       final rentalOrderService = RentalOrderService();
       response = await rentalOrderService.getRentalOrders(contract.id);
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
+      return;
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2800,6 +3088,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           customerPhone: paymentInfo['customerPhone'] as String?,
         );
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2826,6 +3116,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       // 계약 목록 새로고침 (결과 알림은 모달 내 AlertDialog에서 처리)
       _loadContracts();
       return result;
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
+      return {};
     } catch (e) {
       rethrow;
     }
@@ -2918,6 +3211,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     } on PopupBlockedException {
       if (!mounted) return;
       _showPopupBlockedDialog();
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (!mounted) return;
 
@@ -4460,6 +4755,8 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
           _isProcessing = false;
         });
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       setState(() => _isProcessing = false);
       if (!mounted) return;

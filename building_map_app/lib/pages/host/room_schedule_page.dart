@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/exceptions.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -161,6 +163,8 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
         });
         _showMonthsProgressively();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -415,6 +419,8 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
           const SnackBar(content: Text('계약 불가 기간이 설정되었습니다')),
         );
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -525,6 +531,8 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
           const SnackBar(content: Text('계약 가능으로 전환되었습니다')),
         );
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {

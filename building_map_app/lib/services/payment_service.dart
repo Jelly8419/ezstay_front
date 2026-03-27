@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../config/payment_config.dart';
 import '../services/auth_service.dart';
 import 'package:flutter/foundation.dart';
+import '../core/exceptions.dart';
 
 /// 결제 서비스
 ///
@@ -19,7 +20,7 @@ class PaymentService {
     final accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('📡 [PaymentService] 결제 정보 요청: contractId=$contractId');
@@ -69,7 +70,7 @@ class PaymentService {
     final accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('📡 [PaymentService] 결제 승인 요청');
@@ -125,7 +126,7 @@ class PaymentService {
     final accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('📡 [PaymentService] 호스트 위약금 결제 정보 요청: contractId=$contractId');
@@ -176,7 +177,7 @@ class PaymentService {
     final accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('📡 [PaymentService] 호스트 위약금 결제 승인 요청');
@@ -232,7 +233,7 @@ class PaymentService {
     final accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('🎭 [PaymentService] Mock 결제 승인 요청');

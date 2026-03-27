@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/payment_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -85,6 +86,8 @@ class _PaymentCallbackPageState extends State<PaymentCallbackPage> {
       });
 
       debugPrint('✅ [PaymentCallback] 결제 승인 완료');
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [PaymentCallback] 결제 승인 실패: $e');
       setState(() {

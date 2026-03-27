@@ -6,6 +6,7 @@ import '../config/api_config.dart';
 import '../models/contract.dart';
 import '../models/contract_detail.dart';
 import 'token_service.dart';
+import '../core/exceptions.dart';
 
 /// 계약 요청 및 관리 서비스
 class ContractService {
@@ -65,7 +66,7 @@ class ContractService {
     final token = await TokenService.getValidAccessToken(autoRefresh: true);
 
     if (token == null) {
-      throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     final body = {
@@ -153,7 +154,7 @@ class ContractService {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['message'] ?? '잘못된 요청입니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 404) {
         throw Exception('방을 찾을 수 없습니다.');
       } else if (response.statusCode == 409) {
@@ -180,7 +181,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       if (!ApiConfig.isProduction) {
@@ -259,7 +260,7 @@ class ContractService {
 
         return parsedContracts;
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '계약 목록을 불러오는데 실패했습니다.');
@@ -289,7 +290,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       if (!ApiConfig.isProduction) {
@@ -344,7 +345,7 @@ class ContractService {
             .map((json) => ContractListItem.fromJson(json))
             .toList();
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '계약 목록을 불러오는데 실패했습니다.');
@@ -374,7 +375,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       if (!ApiConfig.isProduction) {
@@ -430,7 +431,7 @@ class ContractService {
 
         return Contract.fromJson(contractData);
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('해당 계약을 볼 수 있는 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -468,7 +469,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -511,7 +512,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '계약을 승인할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('계약을 승인할 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -548,7 +549,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -578,7 +579,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '계약을 거절할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('계약을 거절할 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -615,7 +616,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -645,7 +646,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '계약을 철회할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('계약을 철회할 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -683,7 +684,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -719,7 +720,7 @@ class ContractService {
             error['message'] ??
             '환불 요청을 처리할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('환불 요청 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -746,6 +747,74 @@ class ContractService {
     }
   }
 
+  /// 환불 금액 사전 계산 (POST /api/contracts/:contractId/calculate-refund)
+  ///
+  /// 실제 환불 처리 없이 예상 환불 금액만 조회합니다.
+  Future<Map<String, dynamic>> calculateRefund(int contractId) async {
+    try {
+      var token = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (token == null && !ApiConfig.isProduction) {
+        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        token = await TokenService.getAccessToken(skipExpiryCheck: true);
+      }
+
+      if (token == null) {
+        throw const UnauthorizedException('로그인이 필요합니다.');
+      }
+
+      final url = Uri.parse(
+        '${ApiConfig.baseUrl}/api/contracts/$contractId/calculate-refund',
+      );
+
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({}),
+          )
+          .timeout(
+            Duration(seconds: ApiConfig.timeoutSeconds),
+            onTimeout: () {
+              throw Exception('요청 시간이 초과되었습니다.');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      } else if (response.statusCode == 400) {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        final code = error['error']?['code'] ?? error['code'];
+        if (code == 4501) {
+          throw Exception('현재 상태에서는 환불 계산이 불가능합니다.');
+        }
+        throw Exception(
+          error['error']?['message'] ?? error['message'] ?? '환불 금액 계산에 실패했습니다.',
+        );
+      } else if (response.statusCode == 404) {
+        throw Exception('계약을 찾을 수 없습니다.');
+      } else {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(
+          error['error']?['message'] ?? error['message'] ?? '환불 금액 계산에 실패했습니다.',
+        );
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버와 통신할 수 없습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception('요청 시간이 초과되었습니다.');
+      }
+      rethrow;
+    }
+  }
+
   /// 게스트 퇴실 확인
   Future<Map<String, dynamic>> confirmGuestCheckout(int contractId) async {
     try {
@@ -755,7 +824,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -782,7 +851,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '퇴실 확인을 할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('퇴실 확인 권한이 없습니다.');
       } else {
@@ -810,7 +879,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -837,7 +906,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '퇴실 확인을 할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('퇴실 확인 권한이 없습니다.');
       } else {
@@ -903,7 +972,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       if (!ApiConfig.isProduction) {
@@ -955,7 +1024,7 @@ class ContractService {
           throw Exception('예상하지 못한 응답 형식입니다.');
         }
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '렌탈 아이템 목록을 불러오는데 실패했습니다.');
@@ -989,7 +1058,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       if (!ApiConfig.isProduction) {
@@ -1043,7 +1112,7 @@ class ContractService {
       } else if (response.statusCode == 404) {
         throw Exception('계약을 찾을 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('계약을 조회할 권한이 없습니다.');
       } else {
@@ -1074,7 +1143,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -1103,7 +1172,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '퇴실 처리를 할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('퇴실 처리 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -1143,7 +1212,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -1180,7 +1249,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '퇴실 확인을 할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('퇴실 확인 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -1216,7 +1285,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -1246,7 +1315,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '퇴실 보류 처리를 할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('퇴실 보류 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -1284,7 +1353,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -1322,7 +1391,7 @@ class ContractService {
             error['message'] ??
             '계약을 취소할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('계약 취소 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -1365,7 +1434,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -1398,7 +1467,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '취소 요청을 할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('취소 요청 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -1439,7 +1508,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -1475,7 +1544,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '합의 내용을 제출할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('합의 제출 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -1508,7 +1577,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -1544,7 +1613,7 @@ class ContractService {
       } else if (response.statusCode == 404) {
         return null; // 아직 합의 정보가 없는 경우
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '합의 정보를 불러오는데 실패했습니다.');
@@ -1575,7 +1644,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -1603,7 +1672,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '합의 동의를 처리할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('합의 동의 권한이 없습니다.');
       } else if (response.statusCode == 404) {
@@ -1638,7 +1707,7 @@ class ContractService {
       }
 
       if (token == null) {
-        throw Exception('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final url = Uri.parse(
@@ -1670,7 +1739,7 @@ class ContractService {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '퇴실 요청을 할 수 없습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
         throw Exception('퇴실 요청 권한이 없습니다.');
       } else if (response.statusCode == 404) {

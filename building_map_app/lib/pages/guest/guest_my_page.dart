@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -92,6 +93,8 @@ class _GuestMyPageState extends State<GuestMyPage> {
         } else {
           debugPrint('ℹ️ [GuestMyPage] 환급 계좌 미등록');
         }
+      } on UnauthorizedException {
+        if (mounted) context.go('/login');
       } catch (e) {
         debugPrint('⚠️ [GuestMyPage] 환급 계좌 로드 실패 (무시): $e');
       }
@@ -101,6 +104,8 @@ class _GuestMyPageState extends State<GuestMyPage> {
         _refundAccount = refundAccount;
         _isLoading = false;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -151,6 +156,8 @@ class _GuestMyPageState extends State<GuestMyPage> {
         });
         _showSuccessDialog('닉네임이 성공적으로 변경되었습니다.');
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
@@ -183,6 +190,8 @@ class _GuestMyPageState extends State<GuestMyPage> {
         _showSuccessDialog('정상적으로 변경되었습니다.');
         _cancelPasswordEdit();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
@@ -268,6 +277,8 @@ class _GuestMyPageState extends State<GuestMyPage> {
             ).pushNamedAndRemoveUntil('/login', (route) => false);
           }
         }
+      } on UnauthorizedException {
+        if (mounted) context.go('/login');
       } catch (e) {
         if (mounted) {
           _showErrorDialog(e.toString().replaceAll('Exception: ', ''));

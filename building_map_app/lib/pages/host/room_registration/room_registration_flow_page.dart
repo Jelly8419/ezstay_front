@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../constants/fee_constants.dart';
@@ -213,6 +214,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                     }
                   }
                 });
+              } on UnauthorizedException {
+                if (mounted) context.go('/login');
               } catch (e) {
                 debugPrint('❌ basicOptions JSON 파싱 실패: $e');
               }
@@ -234,6 +237,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                     }
                   }
                 });
+              } on UnauthorizedException {
+                if (mounted) context.go('/login');
               } catch (e) {
                 debugPrint('❌ additionalOptions JSON 파싱 실패: $e');
               }
@@ -255,6 +260,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                     }
                   }
                 });
+              } on UnauthorizedException {
+                if (mounted) context.go('/login');
               } catch (e) {
                 debugPrint('❌ convenienceOptions JSON 파싱 실패: $e');
               }
@@ -324,6 +331,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
         debugPrint('✅ 저장된 등록 데이터 복원 완료 - roomId: $_currentRoomId');
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ 등록 중인 데이터 불러오기 실패: $e');
     } finally {
@@ -485,6 +494,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         // 마지막 단계: 심사 요청
         await _submitForReview();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       _showErrorSnackBar('저장 중 오류가 발생했습니다: $e');
     } finally {
@@ -1007,6 +1018,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           ),
         ),
       );
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ 심사 요청 실패: $e');
       _showErrorSnackBar('심사 요청 중 오류가 발생했습니다: $e');

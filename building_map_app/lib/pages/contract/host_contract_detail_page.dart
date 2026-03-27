@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/exceptions.dart';
 import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -75,6 +76,8 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
           _errorMessage = '계약 정보를 불러올 수 없습니다.';
         });
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -206,6 +209,8 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         );
         _loadContractDetail();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -235,6 +240,8 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         );
         _loadContractDetail(); // 상태 갱신
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -337,6 +344,8 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         );
         _loadContractDetail();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -364,6 +373,8 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         );
         _loadContractDetail();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -415,6 +426,8 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         );
         _loadContractDetail();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -451,6 +464,8 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         );
         _loadContractDetail();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -491,6 +506,8 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         );
         _loadContractDetail();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

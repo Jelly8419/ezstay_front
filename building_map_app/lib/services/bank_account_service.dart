@@ -4,6 +4,7 @@ import '../config/api_config.dart';
 import '../models/bank_account.dart';
 import 'api_client.dart';
 import 'token_service.dart';
+import '../core/exceptions.dart';
 
 /// 계좌 정보 관리 서비스 (호스트 전용)
 /// Backend API: /api/host/account
@@ -26,7 +27,7 @@ class BankAccountService {
       // 액세스 토큰 가져오기
       final accessToken = await TokenService.getValidAccessToken();
       if (accessToken == null) {
-        throw Exception('로그인이 필요합니다.');
+        throw const UnauthorizedException('로그인이 필요합니다.');
       }
 
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/host/account');
@@ -99,7 +100,7 @@ class BankAccountService {
   }) async {
     final accessToken = await TokenService.getValidAccessToken();
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('🏦 [BankAccountService] 정산계좌 저장 시작');
@@ -134,7 +135,7 @@ class BankAccountService {
       }
       throw Exception('응답 형식이 올바르지 않습니다.');
     } else if (response.statusCode == 401) {
-      throw Exception('인증이 만료되었습니다. 다시 로그인해주세요.');
+      throw const UnauthorizedException();
     } else {
       final errorData = json.decode(utf8.decode(response.bodyBytes));
       throw Exception(errorData['message'] ?? '정산계좌 저장 실패');
@@ -150,7 +151,7 @@ class BankAccountService {
   }) async {
     final accessToken = await TokenService.getValidAccessToken();
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('🏦 [BankAccountService] 예금주 확인 시작');
@@ -186,7 +187,7 @@ class BankAccountService {
       }
       throw Exception('응답 형식이 올바르지 않습니다.');
     } else if (response.statusCode == 401) {
-      throw Exception('인증이 만료되었습니다.');
+      throw const UnauthorizedException();
     } else {
       final errorData = json.decode(utf8.decode(response.bodyBytes));
       throw Exception(errorData['message'] ?? '예금주 확인 실패');

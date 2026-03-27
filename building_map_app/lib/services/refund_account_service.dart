@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../models/bank_account.dart';
 import 'auth_service.dart';
+import '../core/exceptions.dart';
 
 /// 게스트 환급 계좌 관리 서비스
 /// Backend API: /api/account/refund
@@ -21,7 +22,7 @@ class RefundAccountService {
   Future<BankAccount?> getRefundAccount() async {
     final accessToken = await _authService.getAccessToken();
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('🏦 [RefundAccountService] 환급 계좌 조회 시작');
@@ -51,7 +52,7 @@ class RefundAccountService {
         debugPrint('ℹ️ [RefundAccountService] 환급 계좌 미등록 (404)');
         return null;
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '환급 계좌 조회 실패');
@@ -76,7 +77,7 @@ class RefundAccountService {
   }) async {
     final accessToken = await _authService.getAccessToken();
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('🏦 [RefundAccountService] 환급 계좌 저장 시작');
@@ -108,7 +109,7 @@ class RefundAccountService {
         }
         throw Exception('응답 형식이 올바르지 않습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다.');
+        throw const UnauthorizedException();
       } else {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '환급 계좌 저장 실패');
@@ -133,7 +134,7 @@ class RefundAccountService {
   }) async {
     final accessToken = await _authService.getAccessToken();
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('🏦 [RefundAccountService] 예금주 확인 시작');
@@ -167,7 +168,7 @@ class RefundAccountService {
         }
         throw Exception('응답 형식이 올바르지 않습니다.');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다.');
+        throw const UnauthorizedException();
       } else {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '예금주 확인 실패');
@@ -186,7 +187,7 @@ class RefundAccountService {
   Future<void> deleteRefundAccount() async {
     final accessToken = await _authService.getAccessToken();
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('🏦 [RefundAccountService] 환급 계좌 삭제 시작');
@@ -205,7 +206,7 @@ class RefundAccountService {
       if (response.statusCode == 200) {
         debugPrint('✅ [RefundAccountService] 환급 계좌 삭제 성공');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다.');
+        throw const UnauthorizedException();
       } else {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '환급 계좌 삭제 실패');

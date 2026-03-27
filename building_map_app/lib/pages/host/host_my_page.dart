@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -118,6 +119,8 @@ class _HostMyPageState extends State<HostMyPage> {
         } else {
           debugPrint('ℹ️ [HostMyPage] 계좌 미등록');
         }
+      } on UnauthorizedException {
+        if (mounted) context.go('/login');
       } catch (e) {
         debugPrint('⚠️ [HostMyPage] 계좌 정보 로드 실패 (무시): $e');
         // 계좌 정보 로드 실패는 무시하고 계속 진행
@@ -132,6 +135,8 @@ class _HostMyPageState extends State<HostMyPage> {
         } else {
           debugPrint('ℹ️ [HostMyPage] 영수증 설정 없음');
         }
+      } on UnauthorizedException {
+        if (mounted) context.go('/login');
       } catch (e) {
         debugPrint('⚠️ [HostMyPage] 영수증 설정 로드 실패 (무시): $e');
       }
@@ -142,6 +147,8 @@ class _HostMyPageState extends State<HostMyPage> {
         _savedReceipt = receipt;
         _isLoading = false;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -192,6 +199,8 @@ class _HostMyPageState extends State<HostMyPage> {
         });
         _showSuccessDialog('닉네임이 성공적으로 변경되었습니다.');
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
@@ -224,6 +233,8 @@ class _HostMyPageState extends State<HostMyPage> {
         _showSuccessDialog('정상적으로 변경되었습니다.');
         _cancelPasswordEdit();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
@@ -312,6 +323,8 @@ class _HostMyPageState extends State<HostMyPage> {
         });
         _showSuccessDialog('영수증 정보가 저장되었습니다.');
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
@@ -339,6 +352,8 @@ class _HostMyPageState extends State<HostMyPage> {
         });
         _showSuccessDialog('영수증 설정이 삭제되었습니다.');
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
@@ -513,6 +528,8 @@ class _HostMyPageState extends State<HostMyPage> {
             ).pushNamedAndRemoveUntil('/login', (route) => false);
           }
         }
+      } on UnauthorizedException {
+        if (mounted) context.go('/login');
       } catch (e) {
         if (mounted) {
           _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
