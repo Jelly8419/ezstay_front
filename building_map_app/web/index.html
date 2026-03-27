@@ -117,6 +117,31 @@
   <link rel="icon" type="image/png" sizes="32x32" href="assets/logos/ezstay_icon_only.png" />
   <link rel="manifest" href="manifest.json">
 
+  <!-- Pretendard 폰트 preload - X박스 방지 -->
+  <link rel="preload" href="assets/fonts/Pretendard-Regular.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="assets/fonts/Pretendard-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="assets/fonts/Pretendard-Bold.otf" as="font" type="font/otf" crossorigin>
+  <style>
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('assets/fonts/Pretendard-Regular.otf') format('opentype');
+      font-weight: 400;
+      font-display: block;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('assets/fonts/Pretendard-SemiBold.otf') format('opentype');
+      font-weight: 600;
+      font-display: block;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('assets/fonts/Pretendard-Bold.otf') format('opentype');
+      font-weight: 700;
+      font-display: block;
+    }
+  </style>
+
   <!-- Material Icons - preload로 최적화 -->
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Material+Icons&display=swap" as="style"
     onload="this.onload=null;this.rel='stylesheet'">
