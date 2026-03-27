@@ -50,17 +50,16 @@ class _AppGNBState extends State<AppGNB> {
 
         // 🐛 디버깅: 사용자 상태 로그
         debugPrint('🔍 [GNB] isLoggedIn: $isLoggedIn, isHostMode: $isHostMode');
-        debugPrint('🔍 [GNB] currentUser: ${authService.currentUser?.email}, mode: ${authService.currentUser?.mode}');
+        debugPrint(
+          '🔍 [GNB] currentUser: ${authService.currentUser?.email}, mode: ${authService.currentUser?.mode}',
+        );
 
         return Container(
           height: 64,
           decoration: BoxDecoration(
             color: AppColors.surface,
             border: Border(
-              bottom: BorderSide(
-                color: AppColors.border,
-                width: 1,
-              ),
+              bottom: BorderSide(color: AppColors.border, width: 1),
             ),
           ),
           child: Center(
@@ -161,9 +160,7 @@ class _AppGNBState extends State<AppGNB> {
       ),
       child: Text(
         label,
-        style: AppTextStyles.bodyLarge.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+        style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -182,12 +179,7 @@ class _AppGNBState extends State<AppGNB> {
     }
 
     // 로그인 후
-    return _buildLoggedInActions(
-      context,
-      authService,
-      gnbProvider,
-      isHostMode,
-    );
+    return _buildLoggedInActions(context, authService, gnbProvider, isHostMode);
   }
 
   /// 게스트 모드 - 로그인 전 액션
@@ -207,9 +199,7 @@ class _AppGNBState extends State<AppGNB> {
               horizontal: AppSpacing.lg,
               vertical: AppSpacing.md,
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.radiusMd,
-            ),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
           ),
           child: Text(
             '호스트 모드로 전환',
@@ -231,9 +221,7 @@ class _AppGNBState extends State<AppGNB> {
               horizontal: AppSpacing.lg,
               vertical: AppSpacing.md,
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.radiusMd,
-            ),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
             elevation: 0,
           ),
           child: Text(
@@ -267,9 +255,7 @@ class _AppGNBState extends State<AppGNB> {
               horizontal: AppSpacing.lg,
               vertical: AppSpacing.md,
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.radiusMd,
-            ),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
           ),
           child: Text(
             isHostMode ? '게스트 모드로 전환' : '호스트 모드로 전환',
@@ -307,10 +293,7 @@ class _AppGNBState extends State<AppGNB> {
         SizedBox(width: AppSpacing.sm),
 
         // 메뉴 드롭다운
-        GNBMenuDropdown(
-          authService: authService,
-          isHostMode: isHostMode,
-        ),
+        GNBMenuDropdown(authService: authService, isHostMode: isHostMode),
       ],
     );
   }
@@ -330,13 +313,11 @@ class _AppGNBState extends State<AppGNB> {
         ),
         content: Text(
           isCurrentlyHostMode
-              ? '게스트 모드로 전환하시겠습니까?\n숙소 검색 및 예약 기능을 사용할 수 있습니다.'
-              : '호스트 모드로 전환하시겠습니까?\n숙소 등록 및 관리 기능을 사용할 수 있습니다.',
+              ? '게스트 모드로 전환하시겠습니까?\n방 검색 및 예약 기능을 사용할 수 있습니다.'
+              : '호스트 모드로 전환하시겠습니까?\n방 등록 및 관리 기능을 사용할 수 있습니다.',
           style: AppTextStyles.bodyMedium,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.radiusMd,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -350,7 +331,9 @@ class _AppGNBState extends State<AppGNB> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              final newMode = isCurrentlyHostMode ? UserMode.guest : UserMode.host;
+              final newMode = isCurrentlyHostMode
+                  ? UserMode.guest
+                  : UserMode.host;
 
               // 게스트→호스트 전환 시 체크
               if (!isCurrentlyHostMode && newMode == UserMode.host) {
@@ -401,9 +384,7 @@ class _AppGNBState extends State<AppGNB> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary500,
               foregroundColor: AppColors.neutral0,
-              shape: RoundedRectangleBorder(
-                borderRadius: AppRadius.radiusSm,
-              ),
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusSm),
             ),
             child: Text(
               '전환하기',

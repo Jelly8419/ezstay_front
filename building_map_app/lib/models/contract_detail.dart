@@ -192,23 +192,55 @@ class ContractDetail {
     // nested guest 객체 파싱
     final guest = json['guest'] as Map<String, dynamic>?;
 
-    // rentalItems 파싱 (recommendedItems.items 우선 사용)
+    // rentalItems 파싱 (rentalOrders.activeItems 우선 사용)
     List<ContractRentalItem> parsedRentalItems = [];
 
-    // 1. recommendedItems.items 확인 (완전한 정보 포함)
-    final recommendedItemsData = json['recommendedItems'];
-    if (recommendedItemsData is Map && recommendedItemsData['items'] is List) {
-      final itemsList = recommendedItemsData['items'] as List;
-      parsedRentalItems = itemsList
-          .map((e) => ContractRentalItem.fromJson(e as Map<String, dynamic>))
-          .toList();
+    // 1. rentalOrders.activeItems 확인 (실제 활성 주문 아이템)
+    final rentalOrdersData = json['rentalOrders'];
+    if (rentalOrdersData is Map && rentalOrdersData['activeItems'] is List) {
+      final activeItems = rentalOrdersData['activeItems'] as List;
+      parsedRentalItems = activeItems.map((e) {
+        final item = e as Map<String, dynamic>;
+        // activeItems 필드명 → ContractRentalItem 필드명 매핑
+        return ContractRentalItem.fromJson({
+          'id': item['rentalItemId'],
+          'name': item['name'],
+          'description': item['description'],
+          'price': item['pricePerItem'],
+          'quantity': item['quantity'],
+          'imageUrl': item['imageUrl'],
+        });
+      }).toList();
     } else {
-      // 2. rentalItems 사용 (간소화된 정보)
-      final rentalItemsData = json['rentalItems'];
-      if (rentalItemsData is List) {
-        parsedRentalItems = rentalItemsData
-            .map((e) => ContractRentalItem.fromJson(e as Map<String, dynamic>))
+      // 2. recommendedItems.items fallback
+      final recommendedItemsData = json['recommendedItems'];
+      if (recommendedItemsData is Map &&
+          recommendedItemsData['items'] is List) {
+        final itemsList = recommendedItemsData['items'] as List;
+        parsedRentalItems = itemsList
+            .map(
+              (e) => ContractRentalItem.fromJson(e as Map<String, dynamic>),
+            )
             .toList();
+      } else {
+        // 3. rentalItems 사용 (JSON 문자열 또는 List)
+        final rentalItemsData = json['rentalItems'];
+        List<dynamic>? itemsList;
+        if (rentalItemsData is List) {
+          itemsList = rentalItemsData;
+        } else if (rentalItemsData is String && rentalItemsData.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(rentalItemsData);
+            if (decoded is List) itemsList = decoded;
+          } catch (_) {}
+        }
+        if (itemsList != null) {
+          parsedRentalItems = itemsList
+              .map(
+                (e) => ContractRentalItem.fromJson(e as Map<String, dynamic>),
+              )
+              .toList();
+        }
       }
     }
 

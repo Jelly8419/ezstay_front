@@ -47,6 +47,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ScaffoldMessenger.of(context).clearSnackBars();
+    });
     _loadContracts();
   }
 
@@ -326,6 +329,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
   /// 옵션 편집 시작 (API에서 이용 가능한 렌탈 아이템 조회)
   Future<void> _handleEditButtonClick(ContractListItem contract) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     // 먼저 편집 모드 진입 (로딩 표시용)
     setState(() {
       _editingContractId = contract.id;
@@ -389,7 +393,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         _editingContractId = null;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('옵션 목록을 불러오는데 실패했습니다: $e'),
           backgroundColor: const Color(0xFFDC2626),
@@ -419,6 +423,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     final modifiedItems = _modifiedOptions[contract.id];
     if (modifiedItems == null) return;
 
+    // async 갭 전에 ScaffoldMessenger 미리 캡처
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     // 결제 전 상태인지 확인 (승인대기 또는 승인됨)
     // - PENDING_APPROVAL: 호스트 승인 대기 중
     // - APPROVED: 호스트 승인됨, 게스트 결제 대기 중
@@ -427,11 +434,27 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         contract.status == ContractStatus.approved;
 
     if (isBeforePayment) {
+      // 결제 전 상태: 총 옵션 금액 최소 10,000원 검증
+      final totalOptionsFee = modifiedItems.fold(
+        0,
+        (sum, item) => sum + item.price * item.quantity,
+      );
+      if (totalOptionsFee > 0 && totalOptionsFee < 10000) {
+        scaffoldMessenger
+          ..clearSnackBars()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('옵션 상품 총액은 최소 10,000원 이상이어야 합니다.'),
+              backgroundColor: Color(0xFFEF4444),
+            ),
+          );
+        return;
+      }
       // 결제 전 상태: 장바구니처럼 렌탈 아이템만 업데이트 (결제 없음)
-      await _updatePendingRentalItems(contract, modifiedItems);
+      await _updatePendingRentalItems(contract, modifiedItems, scaffoldMessenger);
     } else {
       // 결제 후 상태 (PAYMENT_COMPLETED, IN_PROGRESS): 추가 결제 플로우 진행
-      await _createRentalOrderWithPayment(contract, modifiedItems);
+      await _createRentalOrderWithPayment(contract, modifiedItems, scaffoldMessenger);
     }
   }
 
@@ -441,6 +464,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   Future<void> _updatePendingRentalItems(
     ContractListItem contract,
     List<RentalItem> modifiedItems,
+    ScaffoldMessengerState scaffoldMessenger,
   ) async {
     // 전체 아이템 목록 생성 (수량 0 제외)
     final itemsToUpdate = <RentalOrderItem>[];
@@ -472,7 +496,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           ? '옵션 상품이 저장되었습니다. 승인 후 결제 시 반영됩니다.'
           : '옵션 상품이 저장되었습니다. 결제 시 반영됩니다.';
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text(message),
           backgroundColor: const Color(0xFF10B981),
@@ -488,7 +512,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     } catch (e) {
       debugPrint('❌ [UPDATE BEFORE_PAYMENT] Error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('옵션 저장 중 오류가 발생했습니다: $e'),
           backgroundColor: const Color(0xFFDC2626),
@@ -502,6 +526,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   Future<void> _createRentalOrderWithPayment(
     ContractListItem contract,
     List<RentalItem> modifiedItems,
+    ScaffoldMessengerState scaffoldMessenger,
   ) async {
     // 변경사항 계산: 추가된 아이템만 (기존 대비 수량 증가분)
     final itemsToOrder = <RentalOrderItem>[];
@@ -534,11 +559,11 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     );
 
     try {
-      await _processRentalOrderPayment(contract, itemsToOrder);
+      await _processRentalOrderPayment(contract, itemsToOrder, scaffoldMessenger);
     } catch (e) {
       debugPrint('❌ [SAVE OPTIONS] Error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('옵션 저장 중 오류가 발생했습니다: $e'),
           backgroundColor: const Color(0xFFDC2626),
@@ -551,6 +576,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   Future<void> _processRentalOrderPayment(
     ContractListItem contract,
     List<RentalOrderItem> itemsToOrder,
+    ScaffoldMessengerState scaffoldMessenger,
   ) async {
     // 1단계: 렌탈 주문 생성 (PENDING 상태)
     final orderResponse = await _rentalOrderService.createRentalOrder(
@@ -565,7 +591,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     if (orderResponse.totalAmount == 0) {
       // 결제 불필요 (무료 아이템 등)
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('옵션이 추가되었습니다.'),
           backgroundColor: Color(0xFF10B981),
@@ -615,6 +641,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       customerName: customerName,
       customerEmail: customerEmail,
       customerPhone: customerPhone,
+      scaffoldMessenger: scaffoldMessenger,
     );
   }
 
@@ -632,6 +659,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     String? customerName,
     String? customerEmail,
     String? customerPhone,
+    required ScaffoldMessengerState scaffoldMessenger,
   }) async {
     try {
       if (kIsWeb) {
@@ -666,7 +694,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
           if (!mounted) return;
 
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             const SnackBar(
               content: Text('옵션 상품 결제가 완료되었습니다!'),
               backgroundColor: Color(0xFF10B981),
@@ -700,7 +728,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('결제 처리 중 오류가 발생했습니다: $e'),
           backgroundColor: const Color(0xFFDC2626),

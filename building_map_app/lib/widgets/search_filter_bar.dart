@@ -83,6 +83,13 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
   }
 
   void _removeOverlay() {
+    // 오버레이가 열려있을 때만 롤백 (적용 버튼은 먼저 _currentFilters를 업데이트하므로 안전)
+    if (_overlayEntry != null) {
+      setState(() {
+        _initializeFromFilters();
+      });
+    }
+
     try {
       _overlayEntry?.remove();
       _overlayEntry = null;
