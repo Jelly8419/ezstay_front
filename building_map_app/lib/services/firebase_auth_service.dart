@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
@@ -25,7 +26,6 @@ class FirebaseAuthService {
   /// 이 토큰은 Firestore 보안 규칙 적용을 위해 필요합니다.
   Future<firebase_auth.User?> signInWithCustomToken() async {
     try {
-      debugPrint('🔐 [FIREBASE_AUTH] Custom Token 발급 요청 중...');
 
       // 1. 액세스 토큰 가져오기
       final accessToken = await TokenService.getValidAccessToken(autoRefresh: true);
@@ -56,29 +56,21 @@ class FirebaseAuthService {
       final customToken = response['data']['customToken'] as String;
       final uid = response['data']['uid'].toString();
 
-      debugPrint('✅ [FIREBASE_AUTH] Custom Token 발급 성공: UID=$uid');
-      debugPrint('🔑 [FIREBASE_AUTH] Custom Token 길이: ${customToken.length}자');
-      debugPrint('🔑 [FIREBASE_AUTH] Custom Token 앞부분: ${customToken.substring(0, customToken.length > 50 ? 50 : customToken.length)}...');
 
       // 3. Custom Token으로 Firebase Authentication 로그인
       try {
         final userCredential =
             await _firebaseAuth.signInWithCustomToken(customToken);
 
-        debugPrint(
-            '✅ [FIREBASE_AUTH] Firebase 로그인 성공: ${userCredential.user?.uid}');
 
         return userCredential.user;
       } on firebase_auth.FirebaseAuthException catch (e) {
-        debugPrint('❌ [FIREBASE_AUTH] FirebaseAuthException 발생');
-        debugPrint('   - 코드: ${e.code}');
-        debugPrint('   - 메시지: ${e.message}');
-        debugPrint('   - 상세: ${e.toString()}');
+        AppLogger.e('❌ [FIREBASE_AUTH] FirebaseAuthException 발생');
         rethrow;
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ [FIREBASE_AUTH] Firebase 로그인 실패: $e');
-      debugPrint('❌ [FIREBASE_AUTH] StackTrace: $stackTrace');
+      AppLogger.e('❌ [FIREBASE_AUTH] Firebase 로그인 실패: $e');
+      AppLogger.e('❌ [FIREBASE_AUTH] StackTrace: $stackTrace');
       rethrow;
     }
   }
@@ -87,9 +79,8 @@ class FirebaseAuthService {
   Future<void> signOut() async {
     try {
       await _firebaseAuth.signOut();
-      debugPrint('✅ [FIREBASE_AUTH] Firebase 로그아웃 완료');
     } catch (e) {
-      debugPrint('❌ [FIREBASE_AUTH] Firebase 로그아웃 실패: $e');
+      AppLogger.e('❌ [FIREBASE_AUTH] Firebase 로그아웃 실패: $e');
       rethrow;
     }
   }
@@ -100,11 +91,9 @@ class FirebaseAuthService {
   /// Firebase 인증 확인 및 필요시 재로그인
   Future<void> ensureAuthenticated() async {
     if (!isSignedIn) {
-      debugPrint('⚠️ [FIREBASE_AUTH] Firebase 미인증 상태 - 재로그인 시도');
+      AppLogger.w('⚠️ [FIREBASE_AUTH] Firebase 미인증 상태 - 재로그인 시도');
       await signInWithCustomToken();
     } else {
-      debugPrint(
-          '✅ [FIREBASE_AUTH] Firebase 인증 상태 확인: ${currentUser?.uid}');
     }
   }
 

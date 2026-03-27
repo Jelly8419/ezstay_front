@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -45,7 +46,6 @@ class ChatService {
   ///   - REJECTED: 승인거절
   Future<List<ChatRoom>> getChatRooms({String? status, String? userMode}) async {
     try {
-      debugPrint('📋 [CHAT] 채팅방 목록 조회 시작 (status: $status, userMode: $userMode)');
 
       final headers = await _getAuthHeaders();
 
@@ -74,13 +74,11 @@ class ChatService {
       final List<dynamic> roomsJson = data['data']['chatRooms'];
       final chatRooms = roomsJson.map((json) => ChatRoom.fromJson(json)).toList();
 
-      debugPrint('✅ [CHAT] 채팅방 ${chatRooms.length}개 조회 완료');
       for (final room in chatRooms) {
-        debugPrint('🔢 [CHAT] ${room.firebaseChatRoomId} unreadCount=${room.unreadCount}');
       }
       return chatRooms;
     } catch (e) {
-      debugPrint('❌ [CHAT] 채팅방 목록 조회 실패: $e');
+      AppLogger.e('❌ [CHAT] 채팅방 목록 조회 실패: $e');
       rethrow;
     }
   }
@@ -88,7 +86,6 @@ class ChatService {
   /// 채팅방 상세 정보 조회 (백엔드 API)
   Future<ChatRoom> getChatRoomDetail(String firebaseChatRoomId) async {
     try {
-      debugPrint('📋 [CHAT] 채팅방 상세 조회: $firebaseChatRoomId');
 
       final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/chats/rooms/$firebaseChatRoomId');
@@ -105,10 +102,9 @@ class ChatService {
       }
 
       final chatRoom = ChatRoom.fromJson(data['data']['chatRoom']);
-      debugPrint('✅ [CHAT] 채팅방 상세 조회 완료');
       return chatRoom;
     } catch (e) {
-      debugPrint('❌ [CHAT] 채팅방 상세 조회 실패: $e');
+      AppLogger.e('❌ [CHAT] 채팅방 상세 조회 실패: $e');
       rethrow;
     }
   }
@@ -116,7 +112,6 @@ class ChatService {
   /// 채팅방 생성 (백엔드 API) - 수동 생성
   Future<ChatRoom> createChatRoom(int contractId) async {
     try {
-      debugPrint('🆕 [CHAT] 채팅방 생성: contractId=$contractId');
 
       final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/chats/rooms');
@@ -137,10 +132,9 @@ class ChatService {
       }
 
       final chatRoom = ChatRoom.fromJson(data['data']['chatRoom']);
-      debugPrint('✅ [CHAT] 채팅방 생성 완료: ${chatRoom.firebaseChatRoomId}');
       return chatRoom;
     } catch (e) {
-      debugPrint('❌ [CHAT] 채팅방 생성 실패: $e');
+      AppLogger.e('❌ [CHAT] 채팅방 생성 실패: $e');
       rethrow;
     }
   }
@@ -156,10 +150,9 @@ class ChatService {
       final headers = await _getAuthHeaders();
       final url = Uri.parse(ApiConfig.chatNotifyUrl(chatRoomId));
       await _apiClient.post(url, headers: headers);
-      debugPrint('🔔 [CHAT] 알림 요청 완료: $chatRoomId');
     } catch (e) {
       // fire-and-forget: 실패해도 무시
-      debugPrint('⚠️ [CHAT] 알림 요청 실패 (무시): $e');
+      AppLogger.w('⚠️ [CHAT] 알림 요청 실패 (무시): $e');
     }
   }
 
@@ -171,10 +164,9 @@ class ChatService {
       final headers = await _getAuthHeaders();
       final url = Uri.parse(ApiConfig.chatReadUrl(chatRoomId));
       await _apiClient.post(url, headers: headers);
-      debugPrint('👁️ [CHAT] 서버 읽음 처리 완료: $chatRoomId');
     } catch (e) {
       // 실패해도 무시 (최악의 경우 알림이 한 번 더 갈 뿐)
-      debugPrint('⚠️ [CHAT] 서버 읽음 처리 실패 (무시): $e');
+      AppLogger.w('⚠️ [CHAT] 서버 읽음 처리 실패 (무시): $e');
     }
   }
 
@@ -194,7 +186,6 @@ class ChatService {
       // Firebase 인증 확인
       await _firebaseAuth.ensureAuthenticated();
 
-      debugPrint('💬 [CHAT] 메시지 전송: $chatRoomId');
 
       final message = ChatMessage(
         id: '', // Firestore가 자동 생성
@@ -221,9 +212,8 @@ class ChatService {
         lastMessageSenderId: senderId,
       );
 
-      debugPrint('✅ [CHAT] 메시지 전송 완료');
     } catch (e) {
-      debugPrint('❌ [CHAT] 메시지 전송 실패: $e');
+      AppLogger.e('❌ [CHAT] 메시지 전송 실패: $e');
       rethrow;
     }
   }
@@ -241,15 +231,12 @@ class ChatService {
       final fileName = '${timestamp}_${imageFile.name}';
       final storagePath = 'chat_images/$chatRoomId/$fileName';
 
-      debugPrint('📤 [CHAT] 이미지 업로드 시작: $storagePath');
 
       // 1. 바이트 읽기
       final bytes = await imageFile.readAsBytes();
-      debugPrint('📤 [CHAT] 바이트 읽기 완료: ${bytes.length} bytes');
 
       // 2. Storage ref 생성
       final ref = FirebaseStorage.instance.ref().child(storagePath);
-      debugPrint('📤 [CHAT] Storage ref 생성 완료, bucket: ${FirebaseStorage.instance.bucket}');
 
       // 3. contentType 결정
       final contentType = switch (extension) {
@@ -259,7 +246,6 @@ class ChatService {
         _ => 'image/jpeg',
       };
       final metadata = SettableMetadata(contentType: contentType);
-      debugPrint('📤 [CHAT] 업로드 시작 (contentType: $contentType)...');
 
       // 4. 업로드
       final uploadTask = ref.putData(bytes, metadata);
@@ -268,23 +254,20 @@ class ChatService {
       uploadTask.snapshotEvents.listen(
         (snapshot) {
           final progress = snapshot.bytesTransferred / snapshot.totalBytes;
-          debugPrint('📤 [CHAT] 업로드 진행: ${(progress * 100).toStringAsFixed(1)}% (${snapshot.state})');
         },
         onError: (e) {
-          debugPrint('❌ [CHAT] 업로드 스냅샷 에러: $e');
+          AppLogger.e('❌ [CHAT] 업로드 스냅샷 에러: $e');
         },
       );
 
       await uploadTask;
-      debugPrint('📤 [CHAT] putData 완료, URL 가져오는 중...');
 
       // 5. 다운로드 URL
       final downloadUrl = await ref.getDownloadURL();
-      debugPrint('✅ [CHAT] 이미지 업로드 완료: $downloadUrl');
       return downloadUrl;
     } catch (e) {
-      debugPrint('❌ [CHAT] 이미지 업로드 실패: $e');
-      debugPrint('❌ [CHAT] 에러 타입: ${e.runtimeType}');
+      AppLogger.e('❌ [CHAT] 이미지 업로드 실패: $e');
+      AppLogger.e('❌ [CHAT] 에러 타입: ${e.runtimeType}');
       rethrow;
     }
   }
@@ -324,7 +307,6 @@ class ChatService {
 
   /// 메시지 수신 (Firestore - 실시간 스트림)
   Stream<List<ChatMessage>> getMessages(String chatRoomId) {
-    debugPrint('📨 [CHAT] getMessages 스트림 시작: chatRoomId=$chatRoomId');
     return _firestore
         .collection('chatRooms')
         .doc(chatRoomId)
@@ -332,13 +314,12 @@ class ChatService {
         .orderBy('timestamp', descending: false)
         .snapshots()
         .map((snapshot) {
-      debugPrint('📨 [CHAT] 메시지 스냅샷 수신: ${snapshot.docs.length}개 문서');
       final messages = <ChatMessage>[];
       for (final doc in snapshot.docs) {
         try {
           messages.add(ChatMessage.fromFirestore(doc));
         } catch (e) {
-          debugPrint('⚠️ [CHAT] 메시지 파싱 실패 (docId: ${doc.id}): $e');
+          AppLogger.w('⚠️ [CHAT] 메시지 파싱 실패 (docId: ${doc.id}): $e');
         }
       }
       return messages;
@@ -353,14 +334,13 @@ class ChatService {
     try {
       await _firebaseAuth.ensureAuthenticated();
 
-      debugPrint('✅ [CHAT] 읽음 처리: $chatRoomId, user=$userId');
 
       // 채팅방 메타데이터에서 unreadCount 초기화
       await _firestore.collection('chatRooms').doc(chatRoomId).update({
         'unreadCount.$userId': 0,
       });
     } catch (e) {
-      debugPrint('❌ [CHAT] 읽음 처리 실패: $e');
+      AppLogger.e('❌ [CHAT] 읽음 처리 실패: $e');
       rethrow;
     }
   }
@@ -380,7 +360,7 @@ class ChatService {
         return metadata.getUnreadCountForUser(userId);
       });
     } catch (e) {
-      debugPrint('❌ [CHAT] 안읽은 메시지 카운트 에러: $e');
+      AppLogger.e('❌ [CHAT] 안읽은 메시지 카운트 에러: $e');
       return Stream.value(0);
     }
   }
@@ -396,7 +376,7 @@ class ChatService {
       final snapshot = await chatRoomRef.get();
 
       if (!snapshot.exists) {
-        debugPrint('⚠️ [CHAT] 채팅방 메타데이터 없음: $chatRoomId');
+        AppLogger.w('⚠️ [CHAT] 채팅방 메타데이터 없음: $chatRoomId');
         return;
       }
 
@@ -420,9 +400,8 @@ class ChatService {
         'unreadCount': newUnreadCount,
       });
 
-      debugPrint('✅ [CHAT] 메타데이터 업데이트 완료');
     } catch (e) {
-      debugPrint('❌ [CHAT] 메타데이터 업데이트 실패: $e');
+      AppLogger.e('❌ [CHAT] 메타데이터 업데이트 실패: $e');
     }
   }
 
@@ -440,7 +419,7 @@ class ChatService {
         return ChatRoomMetadata.fromFirestore(data);
       });
     } catch (e) {
-      debugPrint('❌ [CHAT] 메타데이터 스트림 에러: $e');
+      AppLogger.e('❌ [CHAT] 메타데이터 스트림 에러: $e');
       return Stream.value(null);
     }
   }

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
@@ -68,10 +69,6 @@ class _PaymentCallbackPageState extends State<PaymentCallbackPage> {
         throw Exception('결제 정보가 올바르지 않습니다.');
       }
 
-      debugPrint('✅ [PaymentCallback] 결제 승인 요청');
-      debugPrint('  - contractId: $contractId');
-      debugPrint('  - orderId: $orderId');
-      debugPrint('  - amount: $amount');
 
       await _paymentService.confirmPayment(
         contractId: contractId,
@@ -85,11 +82,10 @@ class _PaymentCallbackPageState extends State<PaymentCallbackPage> {
         _isProcessing = false;
       });
 
-      debugPrint('✅ [PaymentCallback] 결제 승인 완료');
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ [PaymentCallback] 결제 승인 실패: $e');
+      AppLogger.e('❌ [PaymentCallback] 결제 승인 실패: $e');
       setState(() {
         _isProcessing = false;
         _errorMessage = e.toString();

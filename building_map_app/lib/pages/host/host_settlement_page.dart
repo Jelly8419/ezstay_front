@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:html' as html;
@@ -71,10 +72,9 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
   }
 
   Future<void> _loadSettlements({bool loadMore = false}) async {
-    debugPrint('🔄 [SETTLEMENT PAGE] _loadSettlements 호출 (loadMore: $loadMore)');
 
     if (_isLoading) {
-      debugPrint('⚠️ [SETTLEMENT PAGE] 이미 로딩 중, 스킵');
+      AppLogger.w('⚠️ [SETTLEMENT PAGE] 이미 로딩 중, 스킵');
       return;
     }
 
@@ -87,7 +87,6 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
       }
     });
 
-    debugPrint('📡 [SETTLEMENT PAGE] API 호출 시작: tab=$_activeTab, roomId=$_selectedRoomId');
 
     try {
       final response = await _settlementService.getSettlements(
@@ -99,11 +98,8 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
         limit: _itemsPerPage,
       );
 
-      debugPrint('📡 [SETTLEMENT PAGE] API 응답 수신: ${response != null ? '성공' : '실패'}');
 
       if (response != null) {
-        debugPrint('📊 [SETTLEMENT PAGE] 정산 건수: ${response.settlements.length}');
-        debugPrint('📊 [SETTLEMENT PAGE] 방 목록: ${response.rooms.length}개');
         setState(() {
           if (loadMore) {
             _settlements.addAll(response.settlements);
@@ -117,13 +113,13 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
           _rooms = response.rooms;
         });
       } else {
-        debugPrint('❌ [SETTLEMENT PAGE] response가 null');
+        AppLogger.e('❌ [SETTLEMENT PAGE] response가 null');
         setState(() {
           _error = '정산 내역을 불러오는데 실패했습니다.';
         });
       }
     } catch (e) {
-      debugPrint('❌ [SETTLEMENT PAGE] Exception: $e');
+      AppLogger.e('❌ [SETTLEMENT PAGE] Exception: $e');
       setState(() {
         _error = '정산 내역을 불러오는데 실패했습니다.';
       });

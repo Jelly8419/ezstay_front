@@ -1,4 +1,5 @@
 import 'dart:html' as html;
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 
 /// 웹 전용 localStorage 기반 저장소
@@ -8,7 +9,6 @@ class WebStorageService {
   static Future<void> saveAccessToken(String token) async {
     if (kIsWeb) {
       html.window.localStorage['access_token'] = token;
-      debugPrint('💾 [WEB_STORAGE] Access Token 저장 완료');
     }
   }
 
@@ -16,7 +16,6 @@ class WebStorageService {
   static Future<void> saveRefreshToken(String token) async {
     if (kIsWeb) {
       html.window.localStorage['refresh_token'] = token;
-      debugPrint('💾 [WEB_STORAGE] Refresh Token 저장 완료');
     }
   }
 
@@ -24,7 +23,6 @@ class WebStorageService {
   static Future<String?> getAccessToken() async {
     if (kIsWeb) {
       final token = html.window.localStorage['access_token'];
-      debugPrint('🔍 [WEB_STORAGE] Access Token - ${token != null ? "있음" : "없음"}');
       return token;
     }
     return null;
@@ -34,7 +32,6 @@ class WebStorageService {
   static Future<String?> getRefreshToken() async {
     if (kIsWeb) {
       final token = html.window.localStorage['refresh_token'];
-      debugPrint('🔍 [WEB_STORAGE] Refresh Token - ${token != null ? "있음" : "없음"}');
       return token;
     }
     return null;
@@ -45,7 +42,6 @@ class WebStorageService {
     if (kIsWeb) {
       html.window.localStorage.remove('access_token');
       html.window.localStorage.remove('refresh_token');
-      debugPrint('🗑️ [WEB_STORAGE] 토큰 삭제 완료');
     }
   }
 
@@ -55,7 +51,6 @@ class WebStorageService {
       userInfo.forEach((key, value) {
         html.window.localStorage['user_$key'] = value;
       });
-      debugPrint('💾 [WEB_STORAGE] 사용자 정보 저장 완료');
     }
   }
 
@@ -83,7 +78,6 @@ class WebStorageService {
       html.window.localStorage.remove('user_mode');
       html.window.localStorage.remove('user_provider');
       html.window.localStorage.remove('user_profileImageUrl');
-      debugPrint('🗑️ [WEB_STORAGE] 사용자 정보 삭제 완료');
     }
   }
 }

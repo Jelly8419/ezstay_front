@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
@@ -115,14 +116,12 @@ class _HostMyPageState extends State<HostMyPage> {
       try {
         account = await _bankAccountService.getBankAccount();
         if (account != null) {
-          debugPrint('✅ [HostMyPage] 계좌 정보 로드 성공: ${account.bankName}');
         } else {
-          debugPrint('ℹ️ [HostMyPage] 계좌 미등록');
         }
       } on UnauthorizedException {
         if (mounted) context.go('/login');
       } catch (e) {
-        debugPrint('⚠️ [HostMyPage] 계좌 정보 로드 실패 (무시): $e');
+        AppLogger.w('⚠️ [HostMyPage] 계좌 정보 로드 실패 (무시): $e');
         // 계좌 정보 로드 실패는 무시하고 계속 진행
       }
 
@@ -131,14 +130,12 @@ class _HostMyPageState extends State<HostMyPage> {
       try {
         receipt = await _receiptService.getReceipt();
         if (receipt != null) {
-          debugPrint('✅ [HostMyPage] 영수증 설정 로드 성공');
         } else {
-          debugPrint('ℹ️ [HostMyPage] 영수증 설정 없음');
         }
       } on UnauthorizedException {
         if (mounted) context.go('/login');
       } catch (e) {
-        debugPrint('⚠️ [HostMyPage] 영수증 설정 로드 실패 (무시): $e');
+        AppLogger.w('⚠️ [HostMyPage] 영수증 설정 로드 실패 (무시): $e');
       }
 
       setState(() {
@@ -245,14 +242,12 @@ class _HostMyPageState extends State<HostMyPage> {
   /// 연락처 변경 (본인인증 SDK 호출)
   void _handlePhoneChange() {
     // TODO: 외부 본인인증 SDK 호출 (PASS, NICE 등)
-    debugPrint('📱 [HostMyPage] 본인인증 SDK 호출');
 
     _showInfoDialog('준비 중입니다', '본인인증 기능은 준비 중입니다.');
   }
 
   /// 계좌 정보 수정
   Future<void> _handleAccountEdit() async {
-    debugPrint('🏦 [HostMyPage] 계좌 정보 수정 페이지로 이동');
     final result =
         await context.push<dynamic>('/host/my-page/settlement-account');
     if (result != null && mounted) {

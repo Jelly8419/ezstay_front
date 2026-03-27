@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/search_filters.dart';
@@ -101,7 +102,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
       );
       coordinator.exitMode();
     } catch (e) {
-      debugPrint('⚠️ Overlay 제거 중 에러: $e');
+      AppLogger.w('⚠️ Overlay 제거 중 에러: $e');
       _overlayEntry = null;
 
       // 🎯 Coordinator: 에러 시에도 idle 모드 복귀

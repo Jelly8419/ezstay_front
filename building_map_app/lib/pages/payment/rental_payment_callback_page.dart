@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/rental_order_service.dart';
@@ -58,11 +59,8 @@ class _RentalPaymentCallbackPageState extends State<RentalPaymentCallbackPage> {
       if (widget.rentalOrderId != null) {
         try {
           await _rentalOrderService.cancelPendingOrder(widget.rentalOrderId!);
-          debugPrint(
-            '🗑️ [RentalPaymentCallback] 미결제 주문 취소: ${widget.rentalOrderId}',
-          );
         } catch (e) {
-          debugPrint('⚠️ [RentalPaymentCallback] 주문 취소 실패: $e');
+          AppLogger.w('⚠️ [RentalPaymentCallback] 주문 취소 실패: $e');
         }
       }
       return;
@@ -82,15 +80,9 @@ class _RentalPaymentCallbackPageState extends State<RentalPaymentCallbackPage> {
         throw Exception('결제 정보가 올바르지 않습니다.');
       }
 
-      debugPrint('✅ [RentalPaymentCallback] 렌탈 결제 승인 요청');
-      debugPrint('  - rentalOrderId: $rentalOrderId');
-      debugPrint('  - paymentKey: $paymentKey');
-      debugPrint('  - orderId: $orderId');
-      debugPrint('  - amount: $amount');
-
       await _rentalOrderService.confirmPayment(
         rentalOrderId: rentalOrderId,
-        paymentKey: paymentKey,
+        recvPayparam: paymentKey,
         orderId: orderId,
         amount: int.parse(amount),
       );
@@ -98,10 +90,8 @@ class _RentalPaymentCallbackPageState extends State<RentalPaymentCallbackPage> {
       setState(() {
         _isProcessing = false;
       });
-
-      debugPrint('✅ [RentalPaymentCallback] 렌탈 결제 승인 완료');
     } catch (e) {
-      debugPrint('❌ [RentalPaymentCallback] 렌탈 결제 승인 실패: $e');
+      AppLogger.e('❌ [RentalPaymentCallback] 렌탈 결제 승인 실패: $e');
       setState(() {
         _isProcessing = false;
         _errorMessage = e.toString();
@@ -169,10 +159,7 @@ class _RentalPaymentCallbackPageState extends State<RentalPaymentCallbackPage> {
         const SizedBox(height: 24),
         Text('옵션 상품 결제가 완료되었습니다!', style: AppTextStyles.headingMedium),
         const SizedBox(height: 12),
-        Text(
-          '추가 주문이 성공적으로 처리되었습니다.',
-          style: AppTextStyles.bodyMediumSecondary,
-        ),
+        Text('추가 주문이 성공적으로 처리되었습니다.', style: AppTextStyles.bodyMediumSecondary),
         const SizedBox(height: 48),
         SizedBox(
           width: double.infinity,

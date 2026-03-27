@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../../core/exceptions.dart';
@@ -217,7 +218,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               } on UnauthorizedException {
                 if (mounted) context.go('/login');
               } catch (e) {
-                debugPrint('❌ basicOptions JSON 파싱 실패: $e');
+                AppLogger.e('❌ basicOptions JSON 파싱 실패: $e');
               }
             }
 
@@ -240,7 +241,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               } on UnauthorizedException {
                 if (mounted) context.go('/login');
               } catch (e) {
-                debugPrint('❌ additionalOptions JSON 파싱 실패: $e');
+                AppLogger.e('❌ additionalOptions JSON 파싱 실패: $e');
               }
             }
 
@@ -263,7 +264,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               } on UnauthorizedException {
                 if (mounted) context.go('/login');
               } catch (e) {
-                debugPrint('❌ convenienceOptions JSON 파싱 실패: $e');
+                AppLogger.e('❌ convenienceOptions JSON 파싱 실패: $e');
               }
             }
           }
@@ -304,7 +305,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           // Step 4: 이지스테이 관리 서비스 (API ezServices 객체에서 가져오기)
           if (roomData['ezServices'] != null && roomData['ezServices'] is Map) {
             final ezServices = roomData['ezServices'] as Map<String, dynamic>;
-            debugPrint('📦 ezServices 데이터: $ezServices');
 
             // API 필드명 → Frontend 필드명 매핑
             _formData['cleaningService'] =
@@ -315,7 +315,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
             _formData['servicePassword'] =
                 ezServices['roomPassword'] ?? ''; // API: roomPassword
 
-            debugPrint('✅ servicePassword 로드: ${_formData['servicePassword']}');
           }
 
           // Step 4: 방 소개
@@ -329,12 +328,11 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           _currentStep = widget.initialStep ?? _calculateCurrentStep(roomData);
         });
 
-        debugPrint('✅ 저장된 등록 데이터 복원 완료 - roomId: $_currentRoomId');
       }
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ 등록 중인 데이터 불러오기 실패: $e');
+      AppLogger.e('❌ 등록 중인 데이터 불러오기 실패: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -346,7 +344,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
     // registrationProgress가 없으면 1단계부터 시작
     if (progress == null) {
-      debugPrint('📍 registrationProgress 없음 → Step 1부터 시작');
       return 1;
     }
 
@@ -354,26 +351,20 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
     // steps 정보가 없으면 1단계부터 시작
     if (steps == null) {
-      debugPrint('📍 steps 정보 없음 → Step 1부터 시작');
       return 1;
     }
 
     // 완료되지 않은 첫 번째 단계를 찾음
     if (steps['basicInfo'] == false) {
-      debugPrint('📍 basicInfo 미완료 → Step 1로 이동');
       return 1;
     } else if (steps['photosAndAmenities'] == false) {
-      debugPrint('📍 photosAndAmenities 미완료 → Step 2로 이동');
       return 2;
     } else if (steps['pricing'] == false) {
-      debugPrint('📍 pricing 미완료 → Step 3으로 이동');
       return 3;
     } else if (steps['description'] == false) {
-      debugPrint('📍 description 미완료 → Step 4로 이동');
       return 4;
     } else {
       // 모든 단계 완료 → 마지막 단계로 이동 (재확인용)
-      debugPrint('📍 모든 단계 완료 → Step 4로 이동 (재확인)');
       return 4;
     }
   }
@@ -586,7 +577,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           final result = await _roomService.createRoom(basicInfoData);
           if (result != null) {
             _currentRoomId = result['roomId'];
-            debugPrint('✅ Step 1 저장 완료 - 새 roomId: $_currentRoomId');
           } else {
             throw Exception('방 생성 실패');
           }
@@ -599,7 +589,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           if (result == null) {
             throw Exception('방 수정 실패');
           }
-          debugPrint('✅ Step 1 저장 완료 - roomId: $_currentRoomId');
         }
         break;
 
@@ -616,21 +605,18 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         final deletedPhotoIds =
             _formData['deletedPhotoIds'] as List<int>? ?? [];
         if (deletedPhotoIds.isNotEmpty) {
-          debugPrint('🗑️ 사진 삭제 시작: ${deletedPhotoIds.length}개');
           for (final photoId in deletedPhotoIds) {
             final deleteResult = await _roomService.deletePhoto(
               _currentRoomId!,
               photoId,
             );
             if (!deleteResult) {
-              debugPrint('⚠️ 사진 삭제 실패: photoId=$photoId');
+              AppLogger.w('⚠️ 사진 삭제 실패: photoId=$photoId');
             } else {
-              debugPrint('✅ 사진 삭제 성공: photoId=$photoId');
             }
           }
           // 삭제 완료 후 deletedPhotoIds 초기화
           _formData['deletedPhotoIds'] = [];
-          debugPrint('✅ 사진 삭제 완료: ${deletedPhotoIds.length}개');
         }
 
         // 2. 사진 업로드 API 호출 (새로 추가된 이미지만)
@@ -661,9 +647,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
             .toList();
 
         if (newXFiles.isNotEmpty) {
-          debugPrint(
-            '📸 새 이미지 업로드 시작: ${newXFiles.length}개 (전체: ${uploadedImages.length}개)',
-          );
           final photoResult = await _roomService.uploadPhotos(
             _currentRoomId!,
             newXFiles,
@@ -685,11 +668,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           }
           _formData['uploadedPhotos'] = uploadedPhotos;
 
-          debugPrint(
-            '✅ 사진 업로드 성공: ${photoResult.length}개 (중복 방지: uploadedXFiles 초기화)',
-          );
         } else {
-          debugPrint('⚠️ 새로 추가된 사진이 없습니다 (기존: $existingImageCount개)');
+          AppLogger.w('⚠️ 새로 추가된 사진이 없습니다 (기존: $existingImageCount개)');
         }
 
         // 2. 편의시설 데이터 변환 (한글 → 영문 필드명)
@@ -805,7 +785,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           'wifiPassword': _formData['wifiPassword'],
         };
 
-        debugPrint('📤 편의시설 API 요청 데이터: $amenitiesData');
 
         // 4. 편의시설 저장 API 호출
         amenitiesSuccess = await _roomService.updateAmenities(
@@ -817,14 +796,12 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           throw Exception('편의시설 설정 실패');
         }
 
-        debugPrint('✅ 편의시설 설정 성공');
 
         // 5. 사진과 편의시설 모두 성공한 경우에만 진행
         if (!photosSuccess || !amenitiesSuccess) {
           throw Exception('사진 업로드 또는 편의시설 설정 실패');
         }
 
-        debugPrint('✅ Step 2 저장 완료 (사진 + 편의시설 모두 성공)');
         break;
 
       case 3:
@@ -882,7 +859,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         if (!servicesSuccess) {
           throw Exception('청소 서비스 설정 실패');
         }
-        debugPrint('✅ Step 3 저장 완료 (요금 + 청소서비스)');
         break;
 
       case 4:
@@ -907,7 +883,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         if (!descriptionSuccess) {
           throw Exception('방 소개 설정 실패');
         }
-        debugPrint('✅ Step 4 저장 완료');
         break;
     }
   }
@@ -927,7 +902,6 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
         throw Exception('심사 요청 API 호출 실패');
       }
 
-      debugPrint('✅ 심사 요청 완료 - roomId: $_currentRoomId');
 
       if (!mounted) return;
 
@@ -1021,7 +995,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ 심사 요청 실패: $e');
+      AppLogger.e('❌ 심사 요청 실패: $e');
       _showErrorSnackBar('심사 요청 중 오류가 발생했습니다: $e');
     }
   }

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/exceptions.dart';
@@ -1490,7 +1491,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ [GuestContractDetail] 결제 오류: $e');
+      AppLogger.e('❌ [GuestContractDetail] 결제 오류: $e');
       _showErrorDialog('결제 중 오류가 발생했습니다.\n${e.toString()}');
     } finally {
       if (mounted) {

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../config/api_config.dart';
@@ -42,7 +43,7 @@ class SupportService extends ChangeNotifier {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (json['success'] != true) {
-        debugPrint('❌ [SupportService] getNotices 실패: ${json['message']}');
+        AppLogger.e('❌ [SupportService] getNotices 실패: ${json['message']}');
         return null;
       }
 
@@ -66,7 +67,7 @@ class SupportService extends ChangeNotifier {
 
       return (items: items, pagination: pagination);
     } catch (e) {
-      debugPrint('❌ [SupportService] getNotices 에러: $e');
+      AppLogger.e('❌ [SupportService] getNotices 에러: $e');
       return null;
     }
   }
@@ -82,13 +83,13 @@ class SupportService extends ChangeNotifier {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (json['success'] != true) {
-        debugPrint('❌ [SupportService] getNoticeDetail 실패: ${json['message']}');
+        AppLogger.e('❌ [SupportService] getNoticeDetail 실패: ${json['message']}');
         return null;
       }
 
       return Notice.fromJson(json['data'] as Map<String, dynamic>);
     } catch (e) {
-      debugPrint('❌ [SupportService] getNoticeDetail 에러: $e');
+      AppLogger.e('❌ [SupportService] getNoticeDetail 에러: $e');
       return null;
     }
   }
@@ -115,7 +116,7 @@ class SupportService extends ChangeNotifier {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (json['success'] != true) {
-        debugPrint('❌ [SupportService] getFAQCategories 실패: ${json['message']}');
+        AppLogger.e('❌ [SupportService] getFAQCategories 실패: ${json['message']}');
         return null;
       }
 
@@ -124,7 +125,7 @@ class SupportService extends ChangeNotifier {
           .map((e) => FAQCategory.fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      debugPrint('❌ [SupportService] getFAQCategories 에러: $e');
+      AppLogger.e('❌ [SupportService] getFAQCategories 에러: $e');
       return null;
     }
   }
@@ -159,7 +160,7 @@ class SupportService extends ChangeNotifier {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (json['success'] != true) {
-        debugPrint('❌ [SupportService] getFAQs 실패: ${json['message']}');
+        AppLogger.e('❌ [SupportService] getFAQs 실패: ${json['message']}');
         return null;
       }
 
@@ -168,7 +169,7 @@ class SupportService extends ChangeNotifier {
           .map((e) => FAQ.fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      debugPrint('❌ [SupportService] getFAQs 에러: $e');
+      AppLogger.e('❌ [SupportService] getFAQs 에러: $e');
       return null;
     }
   }
@@ -184,13 +185,13 @@ class SupportService extends ChangeNotifier {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (json['success'] != true) {
-        debugPrint('❌ [SupportService] getFAQDetail 실패: ${json['message']}');
+        AppLogger.e('❌ [SupportService] getFAQDetail 실패: ${json['message']}');
         return null;
       }
 
       return FAQ.fromJson(json['data'] as Map<String, dynamic>);
     } catch (e) {
-      debugPrint('❌ [SupportService] getFAQDetail 에러: $e');
+      AppLogger.e('❌ [SupportService] getFAQDetail 에러: $e');
       return null;
     }
   }
@@ -203,7 +204,7 @@ class SupportService extends ChangeNotifier {
   Future<Map<String, String>?> _getAuthHeaders() async {
     final token = await TokenService.getValidAccessToken();
     if (token == null) {
-      debugPrint('❌ [SupportService] Access Token이 없습니다');
+      AppLogger.e('❌ [SupportService] Access Token이 없습니다');
       return null;
     }
     return {
@@ -251,7 +252,7 @@ class SupportService extends ChangeNotifier {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (json['success'] != true) {
-        debugPrint('❌ [SupportService] getMyInquiries 실패: ${json['message']}');
+        AppLogger.e('❌ [SupportService] getMyInquiries 실패: ${json['message']}');
         return null;
       }
 
@@ -275,7 +276,7 @@ class SupportService extends ChangeNotifier {
 
       return (items: items, pagination: pagination);
     } catch (e) {
-      debugPrint('❌ [SupportService] getMyInquiries 에러: $e');
+      AppLogger.e('❌ [SupportService] getMyInquiries 에러: $e');
       return null;
     }
   }
@@ -294,13 +295,13 @@ class SupportService extends ChangeNotifier {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (json['success'] != true) {
-        debugPrint('❌ [SupportService] getInquiryDetail 실패: ${json['message']}');
+        AppLogger.e('❌ [SupportService] getInquiryDetail 실패: ${json['message']}');
         return null;
       }
 
       return Inquiry.fromJson(json['data'] as Map<String, dynamic>);
     } catch (e) {
-      debugPrint('❌ [SupportService] getInquiryDetail 에러: $e');
+      AppLogger.e('❌ [SupportService] getInquiryDetail 에러: $e');
       return null;
     }
   }
@@ -323,13 +324,13 @@ class SupportService extends ChangeNotifier {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (json['success'] != true) {
-        debugPrint('❌ [SupportService] createInquiry 실패: ${json['message']}');
+        AppLogger.e('❌ [SupportService] createInquiry 실패: ${json['message']}');
         return null;
       }
 
       return Inquiry.fromJson(json['data'] as Map<String, dynamic>);
     } catch (e) {
-      debugPrint('❌ [SupportService] createInquiry 에러: $e');
+      AppLogger.e('❌ [SupportService] createInquiry 에러: $e');
       return null;
     }
   }
@@ -353,13 +354,13 @@ class SupportService extends ChangeNotifier {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (json['success'] != true) {
-        debugPrint('❌ [SupportService] updateInquiry 실패: ${json['message']}');
+        AppLogger.e('❌ [SupportService] updateInquiry 실패: ${json['message']}');
         return null;
       }
 
       return Inquiry.fromJson(json['data'] as Map<String, dynamic>);
     } catch (e) {
-      debugPrint('❌ [SupportService] updateInquiry 에러: $e');
+      AppLogger.e('❌ [SupportService] updateInquiry 에러: $e');
       return null;
     }
   }
@@ -379,7 +380,7 @@ class SupportService extends ChangeNotifier {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       return json['success'] == true;
     } catch (e) {
-      debugPrint('❌ [SupportService] deleteInquiry 에러: $e');
+      AppLogger.e('❌ [SupportService] deleteInquiry 에러: $e');
       return false;
     }
   }

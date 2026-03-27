@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -179,9 +180,10 @@ class RentalOrderService {
   /// POST /api/rental-orders/:rentalOrderId/confirm-payment
   Future<Map<String, dynamic>> confirmPayment({
     required int rentalOrderId,
-    required String paymentKey,
+    required String recvPayparam,
     required String orderId,
     required int amount,
+    String? payType,
   }) async {
     final token = await _getToken();
     final url = Uri.parse(
@@ -189,9 +191,10 @@ class RentalOrderService {
     );
 
     final body = {
-      'paymentKey': paymentKey,
+      'recvPayparam': recvPayparam,
       'orderId': orderId,
       'amount': amount,
+      if (payType != null) 'payType': payType,
     };
 
     final response = await http
@@ -278,7 +281,7 @@ class RentalOrderService {
   Future<String> _getToken() async {
     var token = await TokenService.getValidAccessToken(autoRefresh: true);
     if (token == null && !ApiConfig.isProduction) {
-      debugPrint('⚠️ [RENTAL_ORDER] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+      AppLogger.w('⚠️ [RENTAL_ORDER] 토큰 갱신 실패, skipExpiryCheck로 재시도');
       token = await TokenService.getAccessToken(skipExpiryCheck: true);
     }
 

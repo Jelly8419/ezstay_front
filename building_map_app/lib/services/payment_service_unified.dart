@@ -1,6 +1,8 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 
 import 'payment_service.dart';
+import 'rental_order_service.dart';
 import 'payment_service_web.dart'
     if (dart.library.io) 'payment_service_stub.dart';
 
@@ -11,6 +13,7 @@ import 'payment_service_web.dart'
 /// - 모바일: WebView 사용
 class PaymentServiceUnified {
   final PaymentService _apiService = PaymentService();
+  final RentalOrderService _rentalOrderService = RentalOrderService();
   PaymentServiceWeb? _webService;
 
   /// 생성자 - 웹 환경에서 자동으로 SDK 초기화
@@ -18,9 +21,8 @@ class PaymentServiceUnified {
     if (kIsWeb) {
       try {
         _webService = PaymentServiceWeb();
-        debugPrint('✅ [PaymentServiceUnified] 웹 SDK 자동 초기화 완료');
       } catch (e) {
-        debugPrint('⚠️ [PaymentServiceUnified] 웹 SDK 초기화 실패: $e');
+        AppLogger.w('⚠️ [PaymentServiceUnified] 웹 SDK 초기화 실패: $e');
         _webService = null;
       }
     }
@@ -76,13 +78,6 @@ class PaymentServiceUnified {
     // PG SDK 호출 금액: 백엔드에서 pgAmount를 내려주면 해당 값 사용, 없으면 실제 금액
     final sdkAmount = pgAmount ?? actualAmount;
 
-    debugPrint('🌐 [PaymentServiceUnified] 웹 결제 요청');
-    debugPrint('  - contractId: $contractId');
-    debugPrint('  - orderId: $orderId');
-    debugPrint('  - actualAmount: $actualAmount');
-    debugPrint('  - pgAmount: $pgAmount');
-    debugPrint('  - sdkAmount: $sdkAmount (pgAmount ${pgAmount != null ? "사용" : "없음, actualAmount 사용"})');
-    debugPrint('  - payType: $payType');
 
     try {
       // PayTag SDK 호출 → 콜백으로 즉시 결과 수신
@@ -100,8 +95,6 @@ class PaymentServiceUnified {
 
       if (response.isSuccess && response.recvPayparam != null) {
         // 결제 인증 성공 → 백엔드 승인 API 호출 (실제 금액으로 전달)
-        debugPrint('✅ [PaymentServiceUnified] PayTag 인증 성공, 백엔드 승인 요청...');
-        debugPrint('  - 백엔드 전달 금액: $actualAmount');
         final confirmResult = await _apiService.confirmPayment(
           contractId: contractId,
           recvPayparam: response.recvPayparam!,
@@ -115,7 +108,7 @@ class PaymentServiceUnified {
         throw Exception(response.errmsg);
       }
     } catch (e) {
-      debugPrint('❌ [PaymentServiceUnified] 웹 결제 실패: $e');
+      AppLogger.e('❌ [PaymentServiceUnified] 웹 결제 실패: $e');
       rethrow;
     }
   }
@@ -125,7 +118,6 @@ class PaymentServiceUnified {
     required int contractId,
     required Map<String, dynamic> paymentInfo,
   }) async {
-    debugPrint('📱 [PaymentServiceUnified] 모바일 결제 요청');
 
     // TODO: 모바일 WebView 구현
     throw UnimplementedError('모바일 결제는 PaymentWebView 위젯을 직접 사용하세요.');
@@ -187,18 +179,12 @@ class PaymentServiceUnified {
       throw Exception('웹 결제 서비스가 초기화되지 않았습니다.');
     }
 
-    debugPrint('💳 [PaymentServiceUnified] 렌탈 추가 결제 요청');
-    debugPrint('  - rentalOrderId: $rentalOrderId');
-    debugPrint('  - orderId: $orderId');
-    debugPrint('  - amount: $amount');
 
     try {
-      // 렌탈 결제도 동일하게 pgAmount 우선 사용
-      final sdkAmount = amount;
       final response = await _webService!.requestRentalPayment(
         rentalOrderId: rentalOrderId,
         orderId: orderId,
-        amount: sdkAmount,
+        amount: amount,
         orderName: orderName,
         payType: payType,
         customerName: customerName,
@@ -207,18 +193,20 @@ class PaymentServiceUnified {
       );
 
       if (response.isSuccess && response.recvPayparam != null) {
-        // 렌탈 결제는 paymentKey 필드에 recv_payparam을 넣어서 전달 (API 호환성)
-        return {
-          'recvPayparam': response.recvPayparam,
-          'payType': response.payType ?? 'CARD',
-          'orderId': orderId,
-          'amount': amount,
-        };
+        // SDK 인증 성공 → 백엔드 승인 API 호출 (일반 결제와 동일한 방식)
+        final confirmResult = await _rentalOrderService.confirmPayment(
+          rentalOrderId: rentalOrderId,
+          recvPayparam: response.recvPayparam!,
+          orderId: orderId,
+          amount: amount,
+          payType: response.payType,
+        );
+        return confirmResult;
       } else {
         throw Exception(response.errmsg);
       }
     } catch (e) {
-      debugPrint('❌ [PaymentServiceUnified] 렌탈 결제 요청 실패: $e');
+      AppLogger.e('❌ [PaymentServiceUnified] 렌탈 결제 요청 실패: $e');
       rethrow;
     }
   }

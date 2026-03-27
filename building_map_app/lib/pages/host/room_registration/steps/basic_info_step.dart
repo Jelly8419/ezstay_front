@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -667,7 +668,6 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 label: '있음',
                 selected: password.isNotEmpty,
                 onTap: () {
-                  debugPrint('Entrance password toggle: 있음 selected');
                   // 비밀번호가 비어있으면 공백 문자를 저장해서 UI를 표시
                   _updateFormData(
                     'entrancePassword',

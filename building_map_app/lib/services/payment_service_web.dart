@@ -1,6 +1,7 @@
 @JS()
 library;
 
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:async';
 import 'dart:js_util';
 import 'package:js/js.dart';
@@ -99,13 +100,12 @@ class PaymentServiceWeb {
       final tag = _tagGlobal;
       if (tag != null) {
         _isInitialized = true;
-        debugPrint('✅ [PaymentServiceWeb] PayTag SDK 확인 완료');
       } else {
-        debugPrint('⚠️ [PaymentServiceWeb] PayTag SDK가 로드되지 않았습니다.');
+        AppLogger.w('⚠️ [PaymentServiceWeb] PayTag SDK가 로드되지 않았습니다.');
         _isInitialized = false;
       }
     } catch (e) {
-      debugPrint('⚠️ [PaymentServiceWeb] PayTag SDK 확인 실패: $e');
+      AppLogger.w('⚠️ [PaymentServiceWeb] PayTag SDK 확인 실패: $e');
       _isInitialized = false;
     }
   }
@@ -129,15 +129,14 @@ class PaymentServiceWeb {
     try {
       final popup = _windowOpen('about:blank', '_blank', 'width=1,height=1');
       if (popup == null) {
-        debugPrint('⚠️ [PaymentServiceWeb] 팝업이 차단되었습니다');
+        AppLogger.w('⚠️ [PaymentServiceWeb] 팝업이 차단되었습니다');
         return true;
       }
       // 테스트 팝업 즉시 닫기
       callMethod(popup, 'close', []);
-      debugPrint('✅ [PaymentServiceWeb] 팝업 허용 상태 확인됨');
       return false;
     } catch (e) {
-      debugPrint('⚠️ [PaymentServiceWeb] 팝업 차단 감지 중 오류: $e');
+      AppLogger.w('⚠️ [PaymentServiceWeb] 팝업 차단 감지 중 오류: $e');
       return true;
     }
   }
@@ -172,11 +171,6 @@ class PaymentServiceWeb {
       throw PopupBlockedException();
     }
 
-    debugPrint('💳 [PaymentServiceWeb] PayTag 결제 요청');
-    debugPrint('  - orderId: $orderId');
-    debugPrint('  - amount: $amount');
-    debugPrint('  - payType: $payType');
-    debugPrint('  - orderName: $orderName');
 
     final completer = Completer<PayTagResponse>();
 
@@ -204,26 +198,22 @@ class PaymentServiceWeb {
       final callback = allowInterop((dynamic resp) {
         try {
           final response = PayTagResponse.fromJs(resp);
-          debugPrint('📥 [PaymentServiceWeb] PayTag 응답: resultcode=${response.resultcode}');
 
           if (response.isSuccess) {
-            debugPrint('✅ [PaymentServiceWeb] 결제 인증 성공');
-            debugPrint('  - payType: ${response.payType}');
-            debugPrint('  - recvPayparam: ${response.recvPayparam?.substring(0, 20)}...');
           } else {
-            debugPrint('❌ [PaymentServiceWeb] 결제 실패: ${response.errmsg}');
+            AppLogger.e('❌ [PaymentServiceWeb] 결제 실패: ${response.errmsg}');
           }
 
           completer.complete(response);
         } catch (e) {
-          debugPrint('❌ [PaymentServiceWeb] 응답 파싱 실패: $e');
+          AppLogger.e('❌ [PaymentServiceWeb] 응답 파싱 실패: $e');
           completer.completeError(e);
         }
       });
 
       _tagRequestPay(params, callback);
     } catch (e) {
-      debugPrint('❌ [PaymentServiceWeb] Tag.requestPay 호출 실패: $e');
+      AppLogger.e('❌ [PaymentServiceWeb] Tag.requestPay 호출 실패: $e');
       completer.completeError(e);
     }
 
@@ -245,7 +235,6 @@ class PaymentServiceWeb {
     String? customerPhone,
     String? customerEmail,
   }) async {
-    debugPrint('💳 [PaymentServiceWeb] 계약 결제 요청 (contractId: $contractId)');
 
     return requestPayment(
       orderId: orderId,
@@ -273,7 +262,6 @@ class PaymentServiceWeb {
     String? customerPhone,
     String? customerEmail,
   }) async {
-    debugPrint('💳 [PaymentServiceWeb] 렌탈 결제 요청 (rentalOrderId: $rentalOrderId)');
 
     return requestPayment(
       orderId: orderId,

@@ -1,5 +1,6 @@
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:js' as js;
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -41,8 +42,6 @@ class _KmcCallbackPageState extends State<KmcCallbackPage> {
     final apiToken = widget.apiToken ?? '';
     final certNum = widget.certNum ?? '';
 
-    debugPrint(
-        '📨 [KMC Callback] 결과 수신 - apiToken: ${apiToken.isNotEmpty ? "있음" : "없음"}, certNum: ${certNum.isNotEmpty ? "있음" : "없음"}');
 
     try {
       js.context.callMethod('eval', [
@@ -88,7 +87,7 @@ class _KmcCallbackPageState extends State<KmcCallbackPage> {
       '''
       ]);
     } catch (e) {
-      debugPrint('❌ [KMC Callback] 결과 전달 에러: $e');
+      AppLogger.e('❌ [KMC Callback] 결과 전달 에러: $e');
     }
   }
 

@@ -1,5 +1,7 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/format_utils.dart';
@@ -90,7 +92,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       final rentalItemsResponse = await _contractService.getAllRentalItems();
 
       if (rentalItemsResponse == null) {
-        debugPrint('⚠️ [RENTAL_ITEMS] Failed to fetch rental items from API');
+        AppLogger.w('⚠️ [RENTAL_ITEMS] Failed to fetch rental items from API');
         return;
       }
 
@@ -110,18 +112,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             'availableStock': item['availableStock'] ?? 0,
             'imageUrl': item['imageUrl'],
           };
-          debugPrint(
-            '📦 [RENTAL_ITEMS] Added item: id=$id, name=${item['name']}, price=${item['price']}',
-          );
         }
       }
 
-      debugPrint(
-        '✅ [RENTAL_ITEMS] Loaded ${allRentalItems.length} rental items from API',
-      );
-      debugPrint(
-        '📋 [RENTAL_ITEMS] Available IDs: ${allRentalItems.keys.toList()}',
-      );
 
       // 각 계약의 렌탈 아이템을 완전한 데이터로 변환
       for (final contract in contracts) {
@@ -129,24 +122,15 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           continue;
         }
 
-        debugPrint(
-          '🔍 [RENTAL_ITEMS] Contract ${contract.id}: Processing ${contract.rentalItems!.length} items',
-        );
         final completeRentalItems = <RentalItem>[];
 
         for (final contractItem in contract.rentalItems!) {
-          debugPrint(
-            '🔍 [RENTAL_ITEMS] Looking for item ID: "${contractItem.id}" (type: ${contractItem.id.runtimeType})',
-          );
 
           // API에서 가져온 렌탈 아이템 데이터 찾기
           // ✅ FIX: ID를 String으로 변환하여 Map 조회 (allRentalItems의 키가 String이므로)
           final itemData = allRentalItems[contractItem.id.toString()];
 
           if (itemData != null) {
-            debugPrint(
-              '✅ [RENTAL_ITEMS] Found match: ${itemData['name']} (${itemData['price']}원)',
-            );
             // 완전한 데이터로 RentalItem 생성
             completeRentalItems.add(
               RentalItem(
@@ -159,12 +143,6 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
               ),
             );
           } else {
-            debugPrint(
-              '⚠️ [RENTAL_ITEMS] Item ${contractItem.id} not found in API response',
-            );
-            debugPrint(
-              '⚠️ [RENTAL_ITEMS] Current item: name="${contractItem.name}", price=${contractItem.price}',
-            );
             // API에서 찾지 못한 경우 기존 데이터 유지
             completeRentalItems.add(contractItem);
           }
@@ -177,13 +155,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         contract.rentalItems?.clear();
         contract.rentalItems?.addAll(completeRentalItems);
 
-        debugPrint(
-          '✅ [RENTAL_ITEMS] Contract ${contract.id}: Populated ${completeRentalItems.length} items',
-        );
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ [RENTAL_ITEMS] Failed to fetch rental items: $e');
-      debugPrint('📍 Stack trace: $stackTrace');
+      AppLogger.e('❌ [RENTAL_ITEMS] Failed to fetch rental items: $e');
+      AppLogger.e('📍 Stack trace: $stackTrace');
     }
   }
 
@@ -196,7 +171,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       try {
         return double.parse(price).toInt();
       } catch (e) {
-        debugPrint('⚠️ [PRICE_PARSE] Failed to parse price: $price');
+        AppLogger.w('⚠️ [PRICE_PARSE] Failed to parse price: $price');
         return 0;
       }
     }
@@ -344,9 +319,6 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         contract.id,
       );
 
-      debugPrint(
-        '📦 [AVAILABLE ITEMS] Contract ID: ${contract.id}, Items: ${availableItems.length}',
-      );
 
       if (!mounted) return;
 
@@ -389,7 +361,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ [AVAILABLE ITEMS] Error: $e');
+      AppLogger.e('❌ [AVAILABLE ITEMS] Error: $e');
 
       if (!mounted) return;
 
@@ -482,9 +454,6 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       );
     }
 
-    debugPrint(
-      '🛒 [UPDATE BEFORE_PAYMENT] Contract ID: ${contract.id}, Status: ${contract.status}, Items: ${itemsToUpdate.length}',
-    );
 
     try {
       await _rentalOrderService.updatePendingRentalItems(
@@ -492,7 +461,6 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         items: itemsToUpdate,
       );
 
-      debugPrint('✅ [UPDATE BEFORE_PAYMENT] Success');
 
       if (!mounted) return;
 
@@ -517,7 +485,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ [UPDATE BEFORE_PAYMENT] Error: $e');
+      AppLogger.e('❌ [UPDATE BEFORE_PAYMENT] Error: $e');
       if (!mounted) return;
       scaffoldMessenger.showSnackBar(
         SnackBar(
@@ -561,16 +529,13 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       return;
     }
 
-    debugPrint(
-      '💾 [SAVE OPTIONS] Contract ID: ${contract.id}, Items to add: ${itemsToOrder.length}',
-    );
 
     try {
       await _processRentalOrderPayment(contract, itemsToOrder, scaffoldMessenger);
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ [SAVE OPTIONS] Error: $e');
+      AppLogger.e('❌ [SAVE OPTIONS] Error: $e');
       if (!mounted) return;
       scaffoldMessenger.showSnackBar(
         SnackBar(
@@ -593,9 +558,6 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       items: itemsToOrder,
     );
 
-    debugPrint(
-      '✅ [RENTAL ORDER] Created: ${orderResponse.orderId}, Amount: ${orderResponse.totalAmount}',
-    );
 
     if (orderResponse.totalAmount == 0) {
       // 결제 불필요 (무료 아이템 등)
@@ -626,9 +588,6 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     final customerEmail = paymentInfo['customerEmail'] as String?;
     final customerPhone = paymentInfo['customerPhone'] as String?;
 
-    debugPrint(
-      '💳 [PAYMENT INFO] Retrieved for order: $orderId, amount: $amount',
-    );
 
     // 3단계: 결제수단 선택 모달
     if (!mounted) return;
@@ -675,10 +634,6 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         // 웹: PayTag JavaScript SDK 직접 호출
         final paymentService = PaymentServiceUnified();
 
-        debugPrint('🌐 [RENTAL PAYMENT] Web - Calling PayTag SDK');
-        debugPrint('  - rentalOrderId: $rentalOrderId');
-        debugPrint('  - orderId: $orderId');
-        debugPrint('  - amount: $amount');
 
         // PayTag SDK 호출 (렌탈 결제)
         final payResult = await paymentService.requestRentalPayment(
@@ -692,30 +647,17 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           customerPhone: customerPhone,
         );
 
-        if (payResult != null) {
-          // 렌탈 결제 승인 (paymentKey 필드에 recv_payparam 전달 - API 호환)
-          await _rentalOrderService.confirmPayment(
-            rentalOrderId: rentalOrderId,
-            paymentKey: payResult['recvPayparam'] as String,
-            orderId: orderId,
-            amount: amount,
-          );
-
-          if (!mounted) return;
-
-          scaffoldMessenger.showSnackBar(
-            const SnackBar(
-              content: Text('옵션 상품 결제가 완료되었습니다!'),
-              backgroundColor: Color(0xFF10B981),
-            ),
-          );
-        }
-
         setState(() {
           _editingContractId = null;
           _modifiedOptions.remove(contract.id);
         });
-        _loadContracts();
+
+        if (payResult != null) {
+          if (!mounted) return;
+          _showRentalPaymentSuccessDialog(payResult, onConfirm: _loadContracts);
+        } else {
+          _loadContracts();
+        }
       } else {
         // 모바일: 현재 웹 전용
         // TODO: 모바일 PayTag WebView 렌탈 결제 구현
@@ -724,18 +666,12 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ [RENTAL PAYMENT] Error: $e');
+      AppLogger.e('❌ [RENTAL PAYMENT] Error: $e');
 
       // 미결제 주문 취소 시도
       try {
         await _rentalOrderService.cancelPendingOrder(rentalOrderId);
-        debugPrint(
-          '🗑️ [RENTAL PAYMENT] Cancelled pending order: $rentalOrderId',
-        );
       } catch (cancelError) {
-        debugPrint(
-          '⚠️ [RENTAL PAYMENT] Failed to cancel pending order: $cancelError',
-        );
       }
 
       if (!mounted) return;
@@ -760,6 +696,74 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   bool _isAfterPayment(ContractListItem contract) {
     return contract.status == ContractStatus.paymentCompleted ||
         contract.status == ContractStatus.inProgress;
+  }
+
+  /// 렌탈 결제 완료 다이얼로그
+  void _showRentalPaymentSuccessDialog(Map<String, dynamic> result, {VoidCallback? onConfirm}) {
+    final paidAmount = result['paidAmount'] as int?;
+    final receiptUrl = result['receiptUrl'] as String?;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: AppColors.success500, size: 28),
+            const SizedBox(width: 8),
+            const Text('결제 완료'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('옵션 상품 결제가 완료되었습니다!'),
+            if (paidAmount != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                '결제 금액: ${_formatAmount(paidAmount)}원',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+            if (receiptUrl != null && receiptUrl.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => launchUrl(
+                  Uri.parse(receiptUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
+                child: Text(
+                  '영수증 확인',
+                  style: TextStyle(
+                    color: AppColors.primary500,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onConfirm?.call();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary500,
+            ),
+            child: const Text('확인', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatAmount(int amount) {
+    return amount.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
   }
 
   /// 활성 렌탈 아이템이 있는지 확인
@@ -822,7 +826,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ [DEPOSIT AGREEMENT] Error: $e');
+      AppLogger.e('❌ [DEPOSIT AGREEMENT] Error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -837,11 +841,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   /// PATCH /api/contracts/:contractId/cancel
   Future<void> _cancelPendingContract(int contractId) async {
     try {
-      debugPrint('🚫 [CANCEL] Cancelling pending contract: $contractId');
 
       await _contractService.withdrawContract(contractId, '게스트 요청 취소');
 
-      debugPrint('✅ [CANCEL] Contract cancelled successfully');
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -855,7 +857,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ [CANCEL] Error: $e');
+      AppLogger.e('❌ [CANCEL] Error: $e');
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1934,7 +1936,6 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
               IconButton(
                 onPressed: () {
                   final path = '/guest/contracts/${contract.id}';
-                  debugPrint('🔍 [CONTRACTS] Navigating to: $path');
                   context.go(path);
                 },
                 icon: const Icon(Icons.article_outlined),

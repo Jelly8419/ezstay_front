@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../config/api_config.dart';
@@ -20,7 +21,7 @@ class NotificationService {
     try {
       final token = await TokenService.getValidAccessToken();
       if (token == null) {
-        debugPrint('❌ [NotificationService] 토큰 없음');
+        AppLogger.e('❌ [NotificationService] 토큰 없음');
         return const NotificationListResponse(
           notifications: [],
           pagination: NotificationPagination(),
@@ -40,7 +41,7 @@ class NotificationService {
       );
 
       if (response == null) {
-        debugPrint('❌ [NotificationService] 응답 없음');
+        AppLogger.e('❌ [NotificationService] 응답 없음');
         return const NotificationListResponse(
           notifications: [],
           pagination: NotificationPagination(),
@@ -51,17 +52,16 @@ class NotificationService {
         final jsonData = json.decode(response.body) as Map<String, dynamic>;
         final result = NotificationListResponse.fromJson(jsonData);
 
-        debugPrint('✅ [NotificationService] 알림 ${result.notifications.length}개 조회');
         return result;
       }
 
-      debugPrint('❌ [NotificationService] 조회 실패: ${response.statusCode}');
+      AppLogger.e('❌ [NotificationService] 조회 실패: ${response.statusCode}');
       return const NotificationListResponse(
         notifications: [],
         pagination: NotificationPagination(),
       );
     } catch (e) {
-      debugPrint('❌ [NotificationService] 에러: $e');
+      AppLogger.e('❌ [NotificationService] 에러: $e');
       return const NotificationListResponse(
         notifications: [],
         pagination: NotificationPagination(),
@@ -75,7 +75,7 @@ class NotificationService {
     try {
       final token = await TokenService.getValidAccessToken();
       if (token == null) {
-        debugPrint('❌ [NotificationService] 토큰 없음');
+        AppLogger.e('❌ [NotificationService] 토큰 없음');
         return false;
       }
 
@@ -95,14 +95,13 @@ class NotificationService {
       );
 
       if (response != null && response.statusCode >= 200 && response.statusCode < 300) {
-        debugPrint('✅ [NotificationService] 전체 읽음 처리 완료');
         return true;
       }
 
-      debugPrint('❌ [NotificationService] 읽음 처리 실패: ${response?.statusCode}');
+      AppLogger.e('❌ [NotificationService] 읽음 처리 실패: ${response?.statusCode}');
       return false;
     } catch (e) {
-      debugPrint('❌ [NotificationService] 읽음 처리 에러: $e');
+      AppLogger.e('❌ [NotificationService] 읽음 처리 에러: $e');
       return false;
     }
   }
@@ -138,7 +137,7 @@ class NotificationService {
 
       return const UnreadCountResponse(singleModeCount: 0);
     } catch (e) {
-      debugPrint('❌ [NotificationService] 미읽음 개수 조회 에러: $e');
+      AppLogger.e('❌ [NotificationService] 미읽음 개수 조회 에러: $e');
       return const UnreadCountResponse(singleModeCount: 0);
     }
   }
@@ -167,7 +166,7 @@ class NotificationService {
 
       return GnbBadgeStatusResponse.empty;
     } catch (e) {
-      debugPrint('❌ [NotificationService] GNB 배지 상태 조회 에러: $e');
+      AppLogger.e('❌ [NotificationService] GNB 배지 상태 조회 에러: $e');
       return GnbBadgeStatusResponse.empty;
     }
   }

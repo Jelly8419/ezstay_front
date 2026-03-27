@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -25,7 +26,6 @@ class RefundAccountService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('🏦 [RefundAccountService] 환급 계좌 조회 시작');
 
     try {
       final response = await http.get(
@@ -36,7 +36,6 @@ class RefundAccountService {
         },
       ).timeout(ApiConfig.timeout);
 
-      debugPrint('📥 [RefundAccountService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -44,12 +43,10 @@ class RefundAccountService {
           final account = BankAccount.fromJson(
             data['data']['account'] as Map<String, dynamic>,
           );
-          debugPrint('✅ [RefundAccountService] 환급 계좌 조회 성공: ${account.bankName}');
           return account;
         }
         return null;
       } else if (response.statusCode == 404) {
-        debugPrint('ℹ️ [RefundAccountService] 환급 계좌 미등록 (404)');
         return null;
       } else if (response.statusCode == 401) {
         throw const UnauthorizedException();
@@ -80,7 +77,6 @@ class RefundAccountService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('🏦 [RefundAccountService] 환급 계좌 저장 시작');
 
     try {
       final response = await http.post(
@@ -96,7 +92,6 @@ class RefundAccountService {
         }),
       ).timeout(ApiConfig.timeout);
 
-      debugPrint('📥 [RefundAccountService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -104,7 +99,6 @@ class RefundAccountService {
           final account = BankAccount.fromJson(
             data['data']['account'] as Map<String, dynamic>,
           );
-          debugPrint('✅ [RefundAccountService] 환급 계좌 저장 성공');
           return account;
         }
         throw Exception('응답 형식이 올바르지 않습니다.');
@@ -137,7 +131,6 @@ class RefundAccountService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('🏦 [RefundAccountService] 예금주 확인 시작');
 
     try {
       final response = await http.post(
@@ -153,14 +146,12 @@ class RefundAccountService {
         }),
       ).timeout(ApiConfig.timeout);
 
-      debugPrint('📥 [RefundAccountService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         if (data['success'] == true && data['data'] != null) {
           final verified = data['data']['verified'] as bool? ?? false;
           final actualName = data['data']['accountHolderName'] as String?;
-          debugPrint('✅ [RefundAccountService] 예금주 확인: verified=$verified, name=$actualName');
           return {
             'verified': verified,
             'accountHolderName': actualName ?? accountHolderName,
@@ -190,7 +181,6 @@ class RefundAccountService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('🏦 [RefundAccountService] 환급 계좌 삭제 시작');
 
     try {
       final response = await http.delete(
@@ -201,10 +191,8 @@ class RefundAccountService {
         },
       ).timeout(ApiConfig.timeout);
 
-      debugPrint('📥 [RefundAccountService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        debugPrint('✅ [RefundAccountService] 환급 계좌 삭제 성공');
       } else if (response.statusCode == 401) {
         throw const UnauthorizedException();
       } else {

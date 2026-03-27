@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import '../constants/fee_constants.dart';
 import '../models/room.dart';
@@ -66,18 +67,11 @@ class PriceCalculator {
     // 3. 청소비
     // - ez_services에서 cleaningService 신청했으면: 기본 5만원 + 10평 초과시 10평당 2만원 추가
     // - 그렇지 않으면 호스트가 설정한 청소비
-    debugPrint('🧹 청소비 계산 디버그:');
-    debugPrint('  - room.ezService: ${room.ezService}');
-    debugPrint('  - room.ezService?.cleaningService: ${room.ezService?.cleaningService}');
-    debugPrint('  - room.cleaningFee (호스트 설정): ${room.cleaningFee}');
-    debugPrint('  - room.area (평수): ${room.area}');
 
     final cleaningFee = (room.ezService?.cleaningService == true)
         ? calculateEzCleaningFee(room.area)
         : room.cleaningFee;
 
-    debugPrint('  - 최종 청소비: $cleaningFee');
-    debugPrint('  - 조건: cleaningService 신청 ${room.ezService?.cleaningService == true ? "O (평수 기반 계산)" : "X (호스트 설정값)"}');
 
     // 4. 보증금 (고정)
     final deposit = room.deposit;
@@ -292,11 +286,9 @@ class PriceCalculator {
     // 평수 파싱
     final pyeong = double.tryParse(areaString) ?? 0;
 
-    debugPrint('  - 평수: ${pyeong.toStringAsFixed(1)}평');
 
     // 10평 이하: 기본 5만원
     if (pyeong <= 10) {
-      debugPrint('  - EZ청소비: $baseFee원 (10평 이하, 기본금)');
       return baseFee;
     }
 
@@ -305,7 +297,6 @@ class PriceCalculator {
     final additionalUnits = (excessPyeong / pyeongPerUnit).ceil();
     final totalFee = baseFee + (additionalUnits * additionalFeePerUnit);
 
-    debugPrint('  - EZ청소비: $totalFee원 (10평 초과 ${excessPyeong.toStringAsFixed(1)}평 → $additionalUnits단위 추가)');
     return totalFee;
   }
 }

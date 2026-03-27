@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -21,45 +22,41 @@ class ApiClient {
   }) async {
     try {
       if (!ApiConfig.isProduction) {
-        debugPrint('🌐 [API] $method: $url');
         if (body != null) {
-          debugPrint('📦 [API] Body: $body');
         }
       }
 
       final response = await request();
 
       if (!ApiConfig.isProduction) {
-        debugPrint('📡 [API] Response: ${response.statusCode}');
       }
 
       return _handleResponse(response, showErrorDialog);
     } on TimeoutException {
-      debugPrint('⏱️ [API] Timeout: $url');
       if (showErrorDialog) {
         _errorHandler.handleTimeoutError();
       }
       return null;
     } on SocketException catch (e) {
-      debugPrint('❌ [API] Network Error: $e');
+      AppLogger.e('❌ [API] Network Error: $e');
       if (showErrorDialog) {
         _errorHandler.handleNetworkError();
       }
       return null;
     } on HttpException catch (e) {
-      debugPrint('❌ [API] HTTP Exception: $e');
+      AppLogger.e('❌ [API] HTTP Exception: $e');
       if (showErrorDialog) {
         _errorHandler.handleException(e);
       }
       return null;
     } on FormatException catch (e) {
-      debugPrint('❌ [API] Format Exception: $e');
+      AppLogger.e('❌ [API] Format Exception: $e');
       if (showErrorDialog) {
         _errorHandler.handleException(e);
       }
       return null;
     } catch (e) {
-      debugPrint('❌ [API] Unknown Error: $e');
+      AppLogger.e('❌ [API] Unknown Error: $e');
       if (showErrorDialog) {
         _errorHandler.handleUnknownError(e);
       }
@@ -160,7 +157,7 @@ class ApiClient {
       return response;
     }
 
-    debugPrint('⚠️ [API_CLIENT] 에러 응답 감지 - statusCode: ${response.statusCode}');
+    AppLogger.w('⚠️ [API_CLIENT] 에러 응답 감지 - statusCode: ${response.statusCode}');
 
     // 401: 인증 실패 → UnauthorizedException throw (항상, showErrorDialog 무관)
     if (response.statusCode == 401) {
@@ -171,13 +168,12 @@ class ApiClient {
         if (rawCode != null) code = rawCode.toString();
       } catch (_) {}
 
-      debugPrint('🔒 [API_CLIENT] 인증 에러 (code=$code) → UnauthorizedException throw');
       throw UnauthorizedException(_authMessage(code));
     }
 
     // 나머지 에러
     if (showErrorDialog) {
-      debugPrint('🔔 [API_CLIENT] ErrorHandler 호출');
+      AppLogger.e('🔔 [API_CLIENT] ErrorHandler 호출');
       _errorHandler.handleHttpError(response.statusCode, response.body);
     }
 

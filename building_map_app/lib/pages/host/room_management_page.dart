@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -107,34 +108,26 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
         search: _searchQuery.isEmpty ? null : _searchQuery,
       );
 
-      debugPrint('🔵 [ROOM_MANAGEMENT] API 응답 data: ${data != null ? "있음" : "null"}');
 
       if (data != null) {
         final rooms = _roomService.parseRooms(data);
-        debugPrint('✅ [ROOM_MANAGEMENT] 로드된 방 개수: ${rooms.length}');
 
         if (rooms.isNotEmpty) {
-          debugPrint('📋 [ROOM_MANAGEMENT] 첫 번째 방 정보:');
-          debugPrint('  - 이름: ${rooms.first.roomName}');
-          debugPrint('  - status: ${rooms.first.status}');
-          debugPrint('  - isActive: ${rooms.first.isActive}');
         }
 
         setState(() {
           _rooms = rooms;
         });
 
-        debugPrint('🔍 [ROOM_MANAGEMENT] 필터링 조건: $_selectedStatus');
-        debugPrint('✅ [ROOM_MANAGEMENT] 필터링된 방 개수: ${_filteredRooms.length}');
 
         if (_filteredRooms.isEmpty && rooms.isNotEmpty) {
-          debugPrint('⚠️ [ROOM_MANAGEMENT] 필터링으로 모든 방이 제외됨!');
+          AppLogger.w('⚠️ [ROOM_MANAGEMENT] 필터링으로 모든 방이 제외됨!');
         }
       } else {
-        debugPrint('❌ [ROOM_MANAGEMENT] API 응답 data가 null입니다');
+        AppLogger.e('❌ [ROOM_MANAGEMENT] API 응답 data가 null입니다');
       }
     } catch (e) {
-      debugPrint('❌ [RoomManagementPage] 방 목록 로드 실패: $e');
+      AppLogger.e('❌ [RoomManagementPage] 방 목록 로드 실패: $e');
     } finally {
       setState(() {
         _isLoading = false;

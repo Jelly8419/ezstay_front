@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../core/theme/app_colors.dart';
@@ -51,7 +52,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
             setState(() => _isLoading = false);
           },
           onWebResourceError: (error) {
-            debugPrint('❌ [PaymentWebView] 로드 에러: ${error.description}');
+            AppLogger.e('❌ [PaymentWebView] 로드 에러: ${error.description}');
           },
         ),
       )
@@ -60,7 +61,6 @@ class _PaymentWebViewState extends State<PaymentWebView> {
 
   /// PayTag SDK 결과 처리 (JavaScript → Flutter)
   void _handlePayTagResult(String message) {
-    debugPrint('📥 [PaymentWebView] PayTag 결과 수신: $message');
 
     try {
       // JSON 파싱하여 결과 처리
@@ -89,7 +89,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
         });
       }
     } catch (e) {
-      debugPrint('❌ [PaymentWebView] 결과 파싱 실패: $e');
+      AppLogger.e('❌ [PaymentWebView] 결과 파싱 실패: $e');
       Navigator.of(context).pop({
         'success': false,
         'errorMessage': '결제 결과 처리 중 오류가 발생했습니다.',

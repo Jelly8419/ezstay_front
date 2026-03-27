@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
@@ -90,7 +91,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ [CONTRACT_START] 환불 정책 로드 실패: $e');
+      AppLogger.e('❌ [CONTRACT_START] 환불 정책 로드 실패: $e');
       if (mounted) {
         setState(() {
           _isLoadingPolicy = false;

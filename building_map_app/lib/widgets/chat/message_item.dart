@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -300,7 +301,6 @@ class MessageItem extends StatelessWidget {
   /// 채팅 이미지 위젯 (웹 CORS 호환)
   Widget _buildChatImage(BuildContext context, String imageUrl) {
     final url = ContractUtils.getFullImageUrl(imageUrl);
-    debugPrint('🖼️ [CHAT] 이미지 로딩: $url');
 
     return GestureDetector(
       onTap: () => _showFullScreenImage(context, url),
@@ -323,8 +323,8 @@ class MessageItem extends StatelessWidget {
               );
             },
             errorBuilder: (context, error, stackTrace) {
-              debugPrint('❌ [CHAT] 이미지 로딩 실패: $error');
-              debugPrint('❌ [CHAT] URL: $url');
+              AppLogger.e('❌ [CHAT] 이미지 로딩 실패: $error');
+              AppLogger.e('❌ [CHAT] URL: $url');
               return Container(
                 width: 200,
                 height: 150,

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -55,7 +56,7 @@ class _AutoMessageManagementPageState extends State<AutoMessageManagementPage> {
         _error = e.toString();
         _isLoading = false;
       });
-      debugPrint('❌ [AUTO_MSG_PAGE] 데이터 로드 실패: $e');
+      AppLogger.e('❌ [AUTO_MSG_PAGE] 데이터 로드 실패: $e');
     }
   }
 

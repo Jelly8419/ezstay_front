@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/room.dart';
@@ -89,7 +90,7 @@ class GuestRoomService {
       // API 실패 시 빈 배열 반환
       return [];
     } catch (e) {
-      debugPrint('Failed to search rooms: $e');
+      AppLogger.e('Failed to search rooms: $e');
       return [];
     }
   }
@@ -107,22 +108,20 @@ class GuestRoomService {
             jsonData['data'] as Map<String, dynamic>;
 
         // 🔍 상세 파싱 로그 (필드별 타입 확인)
-        debugPrint('🔍 [Room $roomId] 필드 검사 시작...');
         _logFieldTypes(roomData);
 
         try {
           return Room.fromJson(roomData);
         } catch (parseError, stackTrace) {
-          debugPrint('❌ Room.fromJson 파싱 에러: $parseError');
-          debugPrint('📍 스택 트레이스:\n$stackTrace');
+          AppLogger.e('❌ Room.fromJson 파싱 에러: $parseError');
           rethrow;
         }
       }
 
       return null;
     } catch (e, stackTrace) {
-      debugPrint('Failed to get room detail: $e');
-      debugPrint('Stack trace: $stackTrace');
+      AppLogger.e('Failed to get room detail: $e');
+      AppLogger.e('Stack trace: $stackTrace');
       return null;
     }
   }
@@ -150,20 +149,15 @@ class GuestRoomService {
     for (final field in intFields) {
       final value = data[field];
       if (value == null) {
-        debugPrint('  ⚠️ $field: null');
       } else {
-        debugPrint('  ✓ $field: $value (${value.runtimeType})');
       }
     }
 
     // photos 배열 검사
     if (data['photos'] != null) {
       final photos = data['photos'] as List<dynamic>;
-      debugPrint('  📷 photos: ${photos.length}개');
       for (var i = 0; i < photos.length; i++) {
         final photo = photos[i] as Map<String, dynamic>;
-        debugPrint(
-            '    [$i] order: ${photo['order']} (${photo['order']?.runtimeType})');
       }
     }
   }

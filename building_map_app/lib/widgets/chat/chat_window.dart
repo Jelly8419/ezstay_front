@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -96,7 +97,7 @@ class _ChatWindowState extends State<ChatWindow> {
         });
       }
     } catch (e) {
-      debugPrint('Error picking images: $e');
+      AppLogger.e('Error picking images: $e');
     }
   }
 

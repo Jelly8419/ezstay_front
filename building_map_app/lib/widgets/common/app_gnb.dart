@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -49,10 +50,6 @@ class _AppGNBState extends State<AppGNB> {
         }
 
         // 🐛 디버깅: 사용자 상태 로그
-        debugPrint('🔍 [GNB] isLoggedIn: $isLoggedIn, isHostMode: $isHostMode');
-        debugPrint(
-          '🔍 [GNB] currentUser: ${authService.currentUser?.email}, mode: ${authService.currentUser?.mode}',
-        );
 
         return Container(
           height: 64,
@@ -342,7 +339,6 @@ class _AppGNBState extends State<AppGNB> {
                 if (currentUser != null) {
                   // 1. 본인인증 완료 + 계좌 등록 완료 → 바로 호스트 홈으로
                   if (currentUser.phoneVerified && currentUser.hasBank) {
-                    debugPrint('✅ [GNB] 본인인증+계좌 모두 완료 → 호스트 모드 전환');
                     await authService.switchUserMode(newMode);
                     // 모드 전환 후 배지 상태 재체크
                     if (context.mounted) {
@@ -354,7 +350,7 @@ class _AppGNBState extends State<AppGNB> {
 
                   // 2. 본인인증 완료 + 계좌 미등록 → 계좌 입력 페이지
                   if (currentUser.phoneVerified && !currentUser.hasBank) {
-                    debugPrint('⚠️ [GNB] 본인인증 완료, 계좌 미등록 → 계좌 입력 페이지');
+                    AppLogger.w('⚠️ [GNB] 본인인증 완료, 계좌 미등록 → 계좌 입력 페이지');
                     if (context.mounted) {
                       context.go('/host/account-setup-standalone');
                     }
@@ -363,7 +359,7 @@ class _AppGNBState extends State<AppGNB> {
                 }
 
                 // 3. 본인인증 필요 → 호스트 가입 플로우로 이동
-                debugPrint('⚠️ [GNB] 본인인증 필요 → 호스트 가입 플로우');
+                AppLogger.w('⚠️ [GNB] 본인인증 필요 → 호스트 가입 플로우');
                 if (context.mounted) {
                   context.go('/register/host/kakao');
                 }

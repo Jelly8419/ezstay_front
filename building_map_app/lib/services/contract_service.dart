@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -176,7 +177,7 @@ class ContractService {
       // 개발 환경에서는 skipExpiryCheck도 시도
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -185,7 +186,6 @@ class ContractService {
       }
 
       if (!ApiConfig.isProduction) {
-        debugPrint('✅ [CONTRACT] 토큰 확보 성공 (${token.length}자)');
       }
 
       final queryParams = status != null ? '?status=$status' : '';
@@ -212,7 +212,6 @@ class ContractService {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
 
         if (!ApiConfig.isProduction) {
-          debugPrint('📦 [CONTRACT_GUEST] 응답 데이터 구조: ${responseData.keys}');
         }
 
         // 백엔드 응답 구조: { success, message, data: { contracts: [...] } }
@@ -229,7 +228,6 @@ class ContractService {
         }
 
         if (!ApiConfig.isProduction) {
-          debugPrint('📦 [CONTRACT_GUEST] 계약 개수: ${contractsList.length}');
         }
 
         // 각 계약 파싱 시도 (하나 실패해도 나머지는 계속 처리)
@@ -239,23 +237,15 @@ class ContractService {
             final contract = ContractListItem.fromJson(contractsList[i]);
             parsedContracts.add(contract);
             if (!ApiConfig.isProduction) {
-              debugPrint(
-                '✅ [CONTRACT_PARSE] 계약 #${i + 1} 파싱 성공: ID=${contract.id}, status=${contract.status}',
-              );
             }
           } catch (e, stackTrace) {
-            debugPrint('❌ [CONTRACT_PARSE] 계약 #${i + 1} 파싱 실패: $e');
-            debugPrint('📍 [CONTRACT_PARSE] JSON: ${contractsList[i]}');
-            debugPrint('📍 [CONTRACT_PARSE] Stack trace: $stackTrace');
+            AppLogger.e('❌ [CONTRACT_PARSE] 계약 #${i + 1} 파싱 실패: $e');
             // 파싱 실패한 계약은 건너뛰고 계속 진행
             continue;
           }
         }
 
         if (!ApiConfig.isProduction) {
-          debugPrint(
-            '📦 [CONTRACT_GUEST] 최종 파싱된 계약 개수: ${parsedContracts.length}/${contractsList.length}',
-          );
         }
 
         return parsedContracts;
@@ -285,7 +275,7 @@ class ContractService {
       // 개발 환경에서는 skipExpiryCheck도 시도
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -294,7 +284,6 @@ class ContractService {
       }
 
       if (!ApiConfig.isProduction) {
-        debugPrint('✅ [CONTRACT] 토큰 확보 성공 (${token.length}자)');
       }
 
       final queryParams = status != null ? '?status=$status' : '';
@@ -321,7 +310,6 @@ class ContractService {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
 
         if (!ApiConfig.isProduction) {
-          debugPrint('📦 [CONTRACT_HOST] 응답 데이터 구조: ${responseData.keys}');
         }
 
         // 백엔드 응답 구조: { success, message, data: { contracts: [...] } }
@@ -338,7 +326,6 @@ class ContractService {
         }
 
         if (!ApiConfig.isProduction) {
-          debugPrint('📦 [CONTRACT_HOST] 계약 개수: ${contractsList.length}');
         }
 
         return contractsList
@@ -370,7 +357,7 @@ class ContractService {
       // 개발 환경에서는 skipExpiryCheck도 시도
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -379,7 +366,6 @@ class ContractService {
       }
 
       if (!ApiConfig.isProduction) {
-        debugPrint('✅ [CONTRACT] 토큰 확보 성공 (${token.length}자)');
       }
 
       final url = Uri.parse('${ApiConfig.baseUrl}/api/contracts/$contractId');
@@ -403,7 +389,6 @@ class ContractService {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
 
         if (!ApiConfig.isProduction) {
-          debugPrint('📦 [CONTRACT_DETAIL] 응답 데이터 구조: ${responseData.keys}');
         }
 
         // 백엔드 응답 구조: { success, message, data: { contract: {...} } } 또는 { contract: {...} }
@@ -426,7 +411,6 @@ class ContractService {
         }
 
         if (!ApiConfig.isProduction) {
-          debugPrint('📦 [CONTRACT_DETAIL] 계약 ID: ${contractData['id']}');
         }
 
         return Contract.fromJson(contractData);
@@ -464,7 +448,7 @@ class ContractService {
       // 개발 환경에서는 skipExpiryCheck도 시도
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -505,7 +489,6 @@ class ContractService {
       if (response.statusCode == 200) {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
         if (!ApiConfig.isProduction) {
-          debugPrint('✅ [CONTRACT_APPROVE] 계약 승인 성공: $contractId');
         }
         return responseData['data'] ?? responseData;
       } else if (response.statusCode == 400) {
@@ -544,7 +527,7 @@ class ContractService {
       // 개발 환경에서는 skipExpiryCheck도 시도
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -611,7 +594,7 @@ class ContractService {
       // 개발 환경에서는 skipExpiryCheck도 시도
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -679,7 +662,7 @@ class ContractService {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -754,7 +737,7 @@ class ContractService {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -844,7 +827,6 @@ class ContractService {
       if (response.statusCode == 200) {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
         if (!ApiConfig.isProduction) {
-          debugPrint('✅ [CHECKOUT] 게스트 퇴실 확인 성공: $contractId');
         }
         return responseData['data'] ?? responseData;
       } else if (response.statusCode == 400) {
@@ -899,7 +881,6 @@ class ContractService {
       if (response.statusCode == 200) {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
         if (!ApiConfig.isProduction) {
-          debugPrint('✅ [CHECKOUT] 호스트 퇴실 확인 성공: $contractId');
         }
         return responseData['data'] ?? responseData;
       } else if (response.statusCode == 400) {
@@ -967,7 +948,7 @@ class ContractService {
       // 개발 환경에서는 skipExpiryCheck도 시도
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [RENTAL_ITEMS] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [RENTAL_ITEMS] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -976,7 +957,6 @@ class ContractService {
       }
 
       if (!ApiConfig.isProduction) {
-        debugPrint('✅ [RENTAL_ITEMS] 토큰 확보 성공 (${token.length}자)');
       }
 
       // 쿼리 파라미터 구성
@@ -1008,7 +988,6 @@ class ContractService {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
 
         if (!ApiConfig.isProduction) {
-          debugPrint('📦 [RENTAL_ITEMS] 응답 데이터 구조: ${responseData.keys}');
         }
 
         // 백엔드 응답 구조: { success: true, data: [...], message: "..." }
@@ -1016,7 +995,6 @@ class ContractService {
           final List<dynamic> itemsList = responseData['data'];
 
           if (!ApiConfig.isProduction) {
-            debugPrint('📦 [RENTAL_ITEMS] 렌탈 아이템 개수: ${itemsList.length}');
           }
 
           return itemsList;
@@ -1053,7 +1031,7 @@ class ContractService {
       // 유효한 토큰 가져오기
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT_DETAIL] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT_DETAIL] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -1062,8 +1040,6 @@ class ContractService {
       }
 
       if (!ApiConfig.isProduction) {
-        debugPrint('✅ [CONTRACT_DETAIL] 토큰 확보 성공');
-        debugPrint('🔍 [CONTRACT_DETAIL] 계약 ID: $contractId');
       }
 
       final url = Uri.parse('${ApiConfig.baseUrl}/api/contracts/$contractId');
@@ -1087,7 +1063,6 @@ class ContractService {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
 
         if (!ApiConfig.isProduction) {
-          debugPrint('📦 [CONTRACT_DETAIL] 응답 데이터 구조: ${responseData.keys}');
         }
 
         // 백엔드 응답 구조: { success: true, data: { contract: {...} }, message: "..." }
@@ -1100,9 +1075,6 @@ class ContractService {
               : data;
 
           if (!ApiConfig.isProduction) {
-            debugPrint(
-              '✅ [CONTRACT_DETAIL] 계약 상세 조회 성공: ID=${contractData['id']}',
-            );
           }
 
           return ContractDetail.fromJson(contractData);
@@ -1138,7 +1110,7 @@ class ContractService {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -1207,7 +1179,7 @@ class ContractService {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -1280,7 +1252,7 @@ class ContractService {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -1348,7 +1320,7 @@ class ContractService {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -1379,7 +1351,6 @@ class ContractService {
       if (response.statusCode == 200) {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
         if (!ApiConfig.isProduction) {
-          debugPrint('✅ [CONTRACT] 호스트 계약 취소 성공: $contractId');
         }
         return responseData['data'] ?? responseData;
       } else if (response.statusCode == 400 ||
@@ -1429,7 +1400,7 @@ class ContractService {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -1460,7 +1431,6 @@ class ContractService {
       if (response.statusCode == 200) {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
         if (!ApiConfig.isProduction) {
-          debugPrint('✅ [CONTRACT] 취소 요청 성공: $contractId');
         }
         return responseData['data'] ?? responseData;
       } else if (response.statusCode == 400) {
@@ -1503,7 +1473,7 @@ class ContractService {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -1537,7 +1507,6 @@ class ContractService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
         if (!ApiConfig.isProduction) {
-          debugPrint('✅ [CONTRACT] 보증금 합의 제출 성공: $contractId');
         }
         return responseData['data'] ?? responseData;
       } else if (response.statusCode == 400) {
@@ -1572,7 +1541,7 @@ class ContractService {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -1639,7 +1608,7 @@ class ContractService {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -1702,7 +1671,7 @@ class ContractService {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
-        debugPrint('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
         token = await TokenService.getAccessToken(skipExpiryCheck: true);
       }
 
@@ -1732,7 +1701,6 @@ class ContractService {
       if (response.statusCode == 200) {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
         if (!ApiConfig.isProduction) {
-          debugPrint('✅ [CONTRACT] 퇴실 요청 성공: $contractId');
         }
         return responseData['data'] ?? responseData;
       } else if (response.statusCode == 400) {

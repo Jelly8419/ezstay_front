@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
@@ -49,12 +50,10 @@ class AuthService extends ChangeNotifier {
   ///
   /// Returns: 로그인 성공 여부
   Future<bool> loginWithDevBypass(String userId, {String? key}) async {
-    debugPrint('🚀 [DEV_BYPASS] 개발자 바이패스 로그인 시작 - User ID: $userId');
     _setLoading(true);
 
     try {
       final backendUrl = ApiConfig.authDevBypassUrl(userId, key: key);
-      debugPrint('🌐 [DEV_BYPASS] 요청 URL: $backendUrl');
 
       final response = await http
           .get(
@@ -63,12 +62,9 @@ class AuthService extends ChangeNotifier {
           )
           .timeout(ApiConfig.timeout);
 
-      debugPrint('📡 [DEV_BYPASS] 응답 상태: ${response.statusCode}');
-      debugPrint('📄 [DEV_BYPASS] 응답 내용: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint('✅ [DEV_BYPASS] 로그인 성공');
 
         // JWT 토큰 저장
         String? accessToken;
@@ -83,24 +79,13 @@ class AuthService extends ChangeNotifier {
         }
 
         if (accessToken != null) {
-          debugPrint('🔑 [DEV_BYPASS] Access Token 저장');
-          debugPrint('🔑 [DEV_BYPASS] Access Token 길이: ${accessToken.length}');
-          debugPrint(
-            '🔑 [DEV_BYPASS] Access Token 앞부분: ${accessToken.substring(0, accessToken.length > 30 ? 30 : accessToken.length)}...',
-          );
           await _saveTokens(accessToken, refreshToken);
 
           // 저장 확인
           final savedToken = await TokenService.getAccessToken(
             skipExpiryCheck: true,
           );
-          debugPrint(
-            '🔍 [DEV_BYPASS] 저장 후 토큰 확인: ${savedToken != null ? "성공 (${savedToken.length}자)" : "실패 ⚠️"}',
-          );
           if (savedToken != null) {
-            debugPrint(
-              '🔍 [DEV_BYPASS] 저장된 토큰 앞부분: ${savedToken.substring(0, savedToken.length > 30 ? 30 : savedToken.length)}...',
-            );
           }
 
           // 사용자 정보 추출
@@ -117,12 +102,6 @@ class AuthService extends ChangeNotifier {
             // 🔍 디버그: phoneVerified 값 추적
             final rawPhoneVerified = userInfo['phoneVerified'];
             final rawHasBank = userInfo['hasBank'];
-            debugPrint(
-              '🔍 [DEV_BYPASS] 백엔드 응답 phoneVerified: $rawPhoneVerified (타입: ${rawPhoneVerified.runtimeType})',
-            );
-            debugPrint(
-              '🔍 [DEV_BYPASS] 백엔드 응답 hasBank: $rawHasBank (타입: ${rawHasBank.runtimeType})',
-            );
 
             // phoneVerified 값 안전하게 파싱 (bool, int, String 모두 처리)
             bool phoneVerifiedValue = true; // bypass 기본값은 true
@@ -151,8 +130,6 @@ class AuthService extends ChangeNotifier {
               }
             }
 
-            debugPrint('✅ [DEV_BYPASS] 파싱된 phoneVerified: $phoneVerifiedValue');
-            debugPrint('✅ [DEV_BYPASS] 파싱된 hasBank: $hasBankValue');
 
             _currentUser = User(
               id: userInfo['id'].toString(),
@@ -171,27 +148,17 @@ class AuthService extends ChangeNotifier {
 
             // 사용자 정보 저장
             await UserRepository.saveUser(_currentUser!);
-            debugPrint('✅ [DEV_BYPASS] 사용자 정보 저장 완료');
-            debugPrint(
-              '👤 [DEV_BYPASS] 사용자: ${_currentUser!.email} (${_currentUser!.mode.name})',
-            );
-            debugPrint(
-              '📊 [DEV_BYPASS] phoneVerified: ${_currentUser!.phoneVerified}, hasBank: ${_currentUser!.hasBank}',
-            );
           }
         }
 
         _setLoading(false);
         return true;
       } else {
-        debugPrint(
-          '❌ [DEV_BYPASS] 로그인 실패: ${response.statusCode} - ${response.body}',
-        );
         _setLoading(false);
         return false;
       }
     } catch (e) {
-      debugPrint('❌ [DEV_BYPASS] 로그인 에러: $e');
+      AppLogger.e('❌ [DEV_BYPASS] 로그인 에러: $e');
       _setLoading(false);
       return false;
     }
@@ -205,9 +172,6 @@ class AuthService extends ChangeNotifier {
     String password,
     UserMode? mode,
   ) async {
-    debugPrint(
-      '🚀 [LOGIN] 로그인 시작 - Email: $email, Mode: ${mode?.name ?? 'null'}',
-    );
     _setLoading(true);
 
     try {
@@ -220,8 +184,6 @@ class AuthService extends ChangeNotifier {
         if (mode != null) 'user_mode': mode.name, // mode가 null이 아닐 때만 포함
       });
 
-      debugPrint('🌐 [LOGIN] 백엔드 요청 시작 - URL: $backendUrl');
-      debugPrint('📦 [LOGIN] 요청 데이터: $requestBody');
 
       final response = await http
           .post(
@@ -231,14 +193,9 @@ class AuthService extends ChangeNotifier {
           )
           .timeout(ApiConfig.timeout);
 
-      debugPrint('📡 [LOGIN] 백엔드 응답 받음 - Status: ${response.statusCode}');
-      debugPrint('📄 [LOGIN] 응답 내용: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint('✅ [LOGIN] 로그인 성공');
-        debugPrint('📦 [LOGIN] 응답 데이터 구조: ${data.keys}');
-        debugPrint('📦 [LOGIN] 전체 응답: $data');
 
         // JWT 토큰 저장 - 다양한 응답 구조 처리
         String? accessToken;
@@ -249,28 +206,21 @@ class AuthService extends ChangeNotifier {
           // { success: true, data: { accessToken, refreshToken, user } } 구조
           accessToken = data['data']['accessToken'];
           refreshToken = data['data']['refreshToken'];
-          debugPrint('🔑 [LOGIN] 토큰 위치: data 객체 내부');
         } else if (data['accessToken'] != null) {
           // { accessToken, refreshToken, user } 구조
           accessToken = data['accessToken'];
           refreshToken = data['refreshToken'];
-          debugPrint('🔑 [LOGIN] 토큰 위치: 최상위');
         }
 
         if (accessToken != null) {
-          debugPrint(
-            '🔑 [LOGIN] Access Token 발견: ${accessToken.substring(0, 20)}...',
-          );
           await _saveTokens(accessToken, refreshToken);
 
           // 사용자 정보 추출
           Map<String, dynamic>? userInfo;
           if (data['data'] != null && data['data']['user'] != null) {
             userInfo = data['data']['user'];
-            debugPrint('👤 [LOGIN] 사용자 정보 위치: data.user');
           } else if (data['user'] != null) {
             userInfo = data['user'];
-            debugPrint('👤 [LOGIN] 사용자 정보 위치: user');
           }
 
           // 사용자 정보 설정
@@ -306,7 +256,6 @@ class AuthService extends ChangeNotifier {
 
           // 사용자 정보도 저장
           await UserRepository.saveUser(_currentUser!);
-          debugPrint('✅ [LOGIN] 토큰 및 사용자 정보 저장 완료');
         } else {
           // 토큰이 없으면 기본 사용자 정보만 설정
           _currentUser = User(
@@ -327,7 +276,7 @@ class AuthService extends ChangeNotifier {
         // PRD 5.2.1: 이메일/비밀번호 에러 분리
         final data = json.decode(response.body);
         final errorCode = data['code'];
-        debugPrint('로그인 실패: 에러코드=$errorCode');
+        AppLogger.e('로그인 실패: 에러코드=$errorCode');
         _setLoading(false);
 
         if (errorCode == 4001) {
@@ -341,7 +290,7 @@ class AuthService extends ChangeNotifier {
         // PRD 5.3: 계정 상태별 처리
         final data = json.decode(response.body);
         final errorCode = data['code'];
-        debugPrint('로그인 차단: 에러코드=$errorCode');
+        AppLogger.e('로그인 차단: 에러코드=$errorCode');
         _setLoading(false);
 
         if (errorCode == 4031) {
@@ -351,12 +300,11 @@ class AuthService extends ChangeNotifier {
         }
         return LoginResult.unknownError;
       } else {
-        debugPrint('로그인 실패: ${response.statusCode} - ${response.body}');
         _setLoading(false);
         return LoginResult.unknownError;
       }
     } catch (e) {
-      debugPrint('❌ [LOGIN] 로그인 에러 발생: $e');
+      AppLogger.e('❌ [LOGIN] 로그인 에러 발생: $e');
 
       if (ApiConfig.isProduction) {
         // 프로덕션 환경에서는 네트워크 에러로 처리
@@ -364,7 +312,7 @@ class AuthService extends ChangeNotifier {
         return LoginResult.networkError;
       }
 
-      debugPrint('⚠️ [LOGIN] 백엔드 연결 실패 - 시뮬레이션 모드로 전환');
+      AppLogger.w('⚠️ [LOGIN] 백엔드 연결 실패 - 시뮬레이션 모드로 전환');
       // 백엔드 연결 실패 시 시뮬레이션으로 처리 (개발 환경)
       await Future.delayed(const Duration(seconds: 1));
 
@@ -380,7 +328,6 @@ class AuthService extends ChangeNotifier {
       final simToken =
           'sim_${DateTime.now().millisecondsSinceEpoch}_${email.hashCode}';
       await _saveTokens(simToken, simToken);
-      debugPrint('💾 [LOGIN] 시뮬레이션 토큰 저장 완료');
 
       // 사용자 정보 저장
       await UserRepository.saveUser(_currentUser!);
@@ -419,14 +366,11 @@ class AuthService extends ChangeNotifier {
   ///
   /// PRD v2.0 섹션 5.2.2에 따라 실패 케이스별 [LoginResult]를 반환합니다.
   Future<LoginResult> loginWithKakao(UserMode? mode) async {
-    debugPrint('🚀 [KAKAO] 로그인 시작');
-    debugPrint('🔧 [KAKAO] Redirect URL: ${KakaoConfig.redirectUrl}');
     _setLoading(true);
 
     try {
       if (kIsWeb) {
         // 웹에서는 브라우저에서 직접 OAuth URL 열기
-        debugPrint('웹 환경: 브라우저에서 카카오 로그인 페이지 열기');
         html.window.location.href = KakaoConfig.authUrl;
         // 웹에서는 리다이렉트로 처리되므로 여기서는 unknownError 반환 (페이지 이동됨)
         _setLoading(false);
@@ -436,7 +380,7 @@ class AuthService extends ChangeNotifier {
         return await _loginWithKakaoMobile(mode);
       }
     } catch (error) {
-      debugPrint('카카오 로그인 에러: $error');
+      AppLogger.e('카카오 로그인 에러: $error');
       _setLoading(false);
       return LoginResult.kakaoOAuthFailed;
     }
@@ -453,9 +397,8 @@ class AuthService extends ChangeNotifier {
         try {
           // 카카오톡으로 로그인
           token = await kakao.UserApi.instance.loginWithKakaoTalk();
-          debugPrint('카카오톡으로 로그인 성공');
         } catch (error) {
-          debugPrint('카카오톡으로 로그인 실패 $error');
+          AppLogger.e('카카오톡으로 로그인 실패 $error');
 
           // 사용자가 카카오톡 설치 후 디바이스 권한 요청 화면에서 로그인을 취소한 경우,
           // 의도적인 로그인 취소로 보고 카카오계정으로 로그인 시도 없이 로그인 취소로 처리 (예: 뒤로 가기)
@@ -466,9 +409,7 @@ class AuthService extends ChangeNotifier {
           // 카카오톡에 연결된 카카오계정이 없는 경우, 카카오계정으로 로그인
           try {
             token = await kakao.UserApi.instance.loginWithKakaoAccount();
-            debugPrint('카카오계정으로 로그인 성공');
           } catch (error) {
-            debugPrint('카카오계정으로 로그인 실패 $error');
             _setLoading(false);
             return LoginResult.kakaoOAuthFailed;
           }
@@ -477,9 +418,7 @@ class AuthService extends ChangeNotifier {
         try {
           // 카카오계정으로 로그인
           token = await kakao.UserApi.instance.loginWithKakaoAccount();
-          debugPrint('카카오계정으로 로그인 성공');
         } catch (error) {
-          debugPrint('카카오계정으로 로그인 실패 $error');
           _setLoading(false);
           return LoginResult.kakaoOAuthFailed;
         }
@@ -488,7 +427,6 @@ class AuthService extends ChangeNotifier {
       // 2. 사용자 정보 가져오기
       final kakaoUser = await kakao.UserApi.instance.me();
 
-      debugPrint('카카오 사용자 정보: ${kakaoUser.toString()}');
 
       // 3. 백엔드에 토큰 전송 및 인증 처리
       final backendResult = await _authenticateWithBackend(
@@ -517,7 +455,6 @@ class AuthService extends ChangeNotifier {
         return backendResult;
       }
     } catch (error) {
-      debugPrint('모바일 카카오 로그인 에러: $error');
       _setLoading(false);
       // PRD 5.2.2: 연동 실패 vs OAuth 실패 구분
       if (error.toString().contains('network') ||
@@ -554,23 +491,21 @@ class AuthService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint('✅ [KAKAO_AUTH] 백엔드 인증 응답: $data');
 
         // JWT 토큰 저장
         final accessToken = data['accessToken'];
         final refreshToken = data['refreshToken'];
 
         if (accessToken != null && refreshToken != null) {
-          debugPrint('🔐 [KAKAO_AUTH] JWT 토큰 저장');
           await _saveTokens(accessToken, refreshToken);
           return LoginResult.success;
         }
 
-        debugPrint('⚠️ [KAKAO_AUTH] 응답에 토큰 정보가 없습니다');
+        AppLogger.w('⚠️ [KAKAO_AUTH] 응답에 토큰 정보가 없습니다');
         return LoginResult.unknownError;
       } else if (response.statusCode == 409) {
         // PRD 8: 이메일 중복 - 카카오 이메일이 기존 이메일 계정과 동일
-        debugPrint('❌ [KAKAO_AUTH] 이메일 중복: ${response.body}');
+        AppLogger.e('❌ [KAKAO_AUTH] 이메일 중복: ${response.body}');
         return LoginResult.kakaoEmailDuplicate;
       } else if (response.statusCode == 403) {
         final data = json.decode(response.body);
@@ -579,13 +514,10 @@ class AuthService extends ChangeNotifier {
         if (errorCode == 4032) return LoginResult.accountWithdrawn;
         return LoginResult.unknownError;
       } else {
-        debugPrint(
-          '❌ [KAKAO_AUTH] 백엔드 인증 실패: ${response.statusCode} - ${response.body}',
-        );
         return LoginResult.kakaoConnectionFailed;
       }
     } catch (e) {
-      debugPrint('❌ [KAKAO_AUTH] 백엔드 인증 에러: $e');
+      AppLogger.e('❌ [KAKAO_AUTH] 백엔드 인증 에러: $e');
       return LoginResult.kakaoConnectionFailed;
     }
   }
@@ -615,16 +547,13 @@ class AuthService extends ChangeNotifier {
 
     try {
       final uri = Uri.parse(html.window.location.href);
-      debugPrint('🔍 [CALLBACK] 현재 URL: ${uri.toString()}');
-      debugPrint('🔍 [CALLBACK] 경로: ${uri.path}');
-      debugPrint('🔍 [CALLBACK] 쿼리 파라미터: ${uri.queryParameters}');
 
       // /auth/callback 경로 체크
       if (uri.path == '/auth/callback') {
         // 에러 파라미터 체크
         final errorParam = uri.queryParameters['error'];
         if (errorParam != null) {
-          debugPrint('❌ 카카오 로그인 에러: $errorParam');
+          AppLogger.e('❌ 카카오 로그인 에러: $errorParam');
           html.window.history.replaceState({}, '', '/');
           return false;
         }
@@ -634,11 +563,7 @@ class AuthService extends ChangeNotifier {
         final refreshToken = uri.queryParameters['refresh'];
 
         if (accessToken != null) {
-          debugPrint('🔐 Access Token 발견: ${accessToken.substring(0, 20)}...');
           if (refreshToken != null) {
-            debugPrint(
-              '🔄 Refresh Token 발견: ${refreshToken.substring(0, 20)}...',
-            );
           }
 
           // 토큰들 저장
@@ -650,10 +575,9 @@ class AuthService extends ChangeNotifier {
           if (success) {
             // URL에서 파라미터 제거
             html.window.history.replaceState({}, '', '/');
-            debugPrint('✅ 카카오 로그인 성공');
             return true;
           } else {
-            debugPrint('❌ 사용자 정보 가져오기 실패');
+            AppLogger.e('❌ 사용자 정보 가져오기 실패');
             await _clearTokens();
             html.window.history.replaceState({}, '', '/');
             return false;
@@ -664,13 +588,12 @@ class AuthService extends ChangeNotifier {
       // 카카오 인증 코드 처리 (기존 방식 - 하위 호환성)
       final code = uri.queryParameters['code'];
       if (code != null) {
-        debugPrint('🔑 카카오 인증 코드 발견: $code');
         return await _handleKakaoAuthCode(code);
       }
 
       return false;
     } catch (error) {
-      debugPrint('❌ 웹 카카오 콜백 처리 에러: $error');
+      AppLogger.e('❌ 웹 카카오 콜백 처리 에러: $error');
       html.window.history.replaceState({}, '', '/');
       return false;
     }
@@ -682,9 +605,6 @@ class AuthService extends ChangeNotifier {
     String refreshToken,
   ) async {
     try {
-      debugPrint('✅ [AUTH_CALLBACK] OAuth 콜백 처리 시작');
-      debugPrint('🔐 Access Token: ${accessToken.substring(0, 20)}...');
-      debugPrint('🔄 Refresh Token: ${refreshToken.substring(0, 20)}...');
 
       // 토큰들 저장
       await _saveTokens(accessToken, refreshToken);
@@ -693,15 +613,14 @@ class AuthService extends ChangeNotifier {
       final success = await _authenticateWithToken(accessToken);
 
       if (success) {
-        debugPrint('✅ [AUTH_CALLBACK] 인증 성공');
         return true;
       } else {
-        debugPrint('❌ [AUTH_CALLBACK] 사용자 정보 가져오기 실패');
+        AppLogger.e('❌ [AUTH_CALLBACK] 사용자 정보 가져오기 실패');
         await _clearTokens();
         return false;
       }
     } catch (error) {
-      debugPrint('❌ [AUTH_CALLBACK] 에러: $error');
+      AppLogger.e('❌ [AUTH_CALLBACK] 에러: $error');
       await _clearTokens();
       return false;
     }
@@ -712,7 +631,7 @@ class AuthService extends ChangeNotifier {
     try {
       // 토큰 기본 검증 (형식 확인)
       if (!_isValidTokenFormat(token)) {
-        debugPrint('❌ 토큰 형식이 유효하지 않음');
+        AppLogger.e('❌ 토큰 형식이 유효하지 않음');
         return false;
       }
 
@@ -728,9 +647,7 @@ class AuthService extends ChangeNotifier {
           .timeout(ApiConfig.timeout);
 
       if (response.statusCode == 200) {
-        debugPrint('🔍 서버 응답: ${response.body}');
         final data = json.decode(response.body);
-        debugPrint('🔍 파싱된 데이터: $data');
 
         if (data['success'] == true &&
             data['data'] != null &&
@@ -739,7 +656,7 @@ class AuthService extends ChangeNotifier {
 
           // 사용자 데이터 유효성 검증
           if (!_isValidUserData(user)) {
-            debugPrint('❌ 서버에서 받은 사용자 데이터가 유효하지 않음');
+            AppLogger.e('❌ 서버에서 받은 사용자 데이터가 유효하지 않음');
             return false;
           }
 
@@ -747,24 +664,15 @@ class AuthService extends ChangeNotifier {
           String userMode;
           if (user['mode'] != null) {
             userMode = user['mode'];
-            debugPrint('🔍 [USER_MODE] user[mode]에서 가져옴: $userMode');
           } else if (user['userMode'] != null) {
             userMode = user['userMode'];
-            debugPrint('🔍 [USER_MODE] user[userMode]에서 가져옴: $userMode');
           } else {
             // 백엔드가 userMode를 보내주지 않는 경우: 기본값 guest
             // (hasBank로 추론하면 계좌 등록한 게스트가 호스트로 잘못 인식됨)
             userMode = 'guest';
-            debugPrint('⚠️ [USER_MODE] 서버 응답에 userMode 없음 - 기본값 guest로 설정');
-            debugPrint(
-              '⚠️ [USER_MODE] 백엔드에 userMode 필드 추가 필요! (hasBank=${user['hasBank']})',
-            );
+            AppLogger.w('⚠️ [USER_MODE] 서버 응답에 userMode 없음 - 기본값 guest로 설정');
           }
 
-          debugPrint('🎯 [USER_MODE] 최종 결정된 userMode: $userMode');
-          debugPrint(
-            '📊 [USER_MODE] 사용자 정보: phoneVerified=${user['phoneVerified']}, hasBank=${user['hasBank']}',
-          );
 
           _currentUser = User(
             id: user['id'].toString(),
@@ -785,15 +693,12 @@ class AuthService extends ChangeNotifier {
           await TokenService.saveTokens(token, data['refreshToken']);
 
           notifyListeners();
-          debugPrint(
-            '✅ 서버 검증 완료 - 사용자: ${user['name']} (닉네임: ${user['nickname']})',
-          );
           return true;
         } else {
-          debugPrint('❌ 서버 응답 데이터 형식 오류');
+          AppLogger.e('❌ 서버 응답 데이터 형식 오류');
         }
       } else if (response.statusCode == 401) {
-        debugPrint('❌ 토큰이 유효하지 않음 (401) - refresh 토큰으로 갱신 시도');
+        AppLogger.e('❌ 토큰이 유효하지 않음 (401) - refresh 토큰으로 갱신 시도');
 
         // Refresh 토큰으로 갱신 시도
         final refreshSuccess = await _refreshAccessToken();
@@ -807,17 +712,17 @@ class AuthService extends ChangeNotifier {
 
         return false;
       } else if (response.statusCode == 403) {
-        debugPrint('❌ 접근 권한 없음 (403)');
+        AppLogger.e('❌ 접근 권한 없음 (403)');
       } else {
-        debugPrint('❌ 서버 오류: ${response.statusCode} - ${response.body}');
+        AppLogger.e('❌ 서버 오류: ${response.statusCode} - ${response.body}');
       }
 
       return false;
     } on TimeoutException {
-      debugPrint('❌ 서버 요청 타임아웃 (네트워크 문제)');
+      AppLogger.e('❌ 서버 요청 타임아웃 (네트워크 문제)');
       rethrow; // 네트워크 오류는 호출자가 판단하도록 전파
     } on FormatException catch (e) {
-      debugPrint('❌ JSON 파싱 오류: $e');
+      AppLogger.e('❌ JSON 파싱 오류: $e');
       return false;
     } catch (error) {
       // 네트워크 관련 에러인지 확인
@@ -826,10 +731,10 @@ class AuthService extends ChangeNotifier {
           errorStr.contains('connection') ||
           errorStr.contains('network') ||
           errorStr.contains('handshake')) {
-        debugPrint('❌ 네트워크 연결 오류: $error');
+        AppLogger.e('❌ 네트워크 연결 오류: $error');
         rethrow; // 네트워크 오류는 호출자가 판단하도록 전파
       }
-      debugPrint('❌ 토큰 인증 에러: $error');
+      AppLogger.e('❌ 토큰 인증 에러: $error');
       return false;
     }
   }
@@ -876,7 +781,7 @@ class AuthService extends ChangeNotifier {
 
       return false;
     } catch (error) {
-      debugPrint('❌ 카카오 코드 처리 에러: $error');
+      AppLogger.e('❌ 카카오 코드 처리 에러: $error');
       return false;
     }
   }
@@ -885,19 +790,12 @@ class AuthService extends ChangeNotifier {
   Future<void> tryAutoLogin() async {
     try {
       if (!ApiConfig.isProduction) {
-        debugPrint('');
-        debugPrint('═══════════════════════════════════════════════');
-        debugPrint('🔄 [AUTO_LOGIN] 자동 로그인 프로세스 시작 (백그라운드)');
-        debugPrint('═══════════════════════════════════════════════');
       }
 
       // 자동 갱신 활성화하여 토큰 가져오기
       final accessToken = await getAccessToken(autoRefresh: true);
 
       if (!ApiConfig.isProduction) {
-        debugPrint(
-          '📊 [AUTO_LOGIN] Access Token 상태: ${accessToken != null ? "✅ 있음" : "❌ 없음"}',
-        );
       }
 
       if (accessToken != null) {
@@ -907,14 +805,13 @@ class AuthService extends ChangeNotifier {
 
           if (success) {
             if (!ApiConfig.isProduction) {
-              debugPrint('✅ [AUTO_LOGIN] 자동 로그인 성공');
             }
             return;
           } else {
             // 인증 실패 (401, 403 등 서버가 토큰을 거부) - 토큰 및 사용자 정보 모두 제거
             // 반로그인 상태 방지: 토큰 없이 사용자 정보만 남으면 isLoggedIn=true인데 API는 모두 실패
             if (!ApiConfig.isProduction) {
-              debugPrint('⚠️ [AUTO_LOGIN] 서버 인증 실패 - 토큰 및 사용자 정보 제거');
+              AppLogger.w('⚠️ [AUTO_LOGIN] 서버 인증 실패 - 토큰 및 사용자 정보 제거');
             }
             await _clearTokens();
             await _clearUserInfo();
@@ -922,15 +819,14 @@ class AuthService extends ChangeNotifier {
         } catch (e) {
           // 네트워크 오류 (타임아웃, 연결 실패 등) - 토큰은 유지하고 저장된 사용자 정보로 복원
           if (!ApiConfig.isProduction) {
-            debugPrint('⚠️ [AUTO_LOGIN] 네트워크 오류로 서버 검증 불가 - 토큰 유지, 오프라인 모드');
-            debugPrint('⚠️ [AUTO_LOGIN] 에러: $e');
+            AppLogger.w('⚠️ [AUTO_LOGIN] 네트워크 오류로 서버 검증 불가 - 토큰 유지, 오프라인 모드');
+            AppLogger.w('⚠️ [AUTO_LOGIN] 에러: $e');
           }
           // 토큰은 삭제하지 않고, 저장된 사용자 정보로 복원
           final userInfo = await UserRepository.loadUser();
           if (userInfo != null) {
             _currentUser = userInfo;
             if (!ApiConfig.isProduction) {
-              debugPrint('✅ [AUTO_LOGIN] 오프라인 복원 성공: ${userInfo.email}');
             }
           }
           return;
@@ -939,17 +835,15 @@ class AuthService extends ChangeNotifier {
 
       // 토큰이 없는 경우에만 여기 도달 (토큰 삭제 후 또는 처음부터 없었던 경우)
       if (!ApiConfig.isProduction) {
-        debugPrint('ℹ️ [AUTO_LOGIN] 유효한 토큰 없음 - 로그인 필요');
       }
     } catch (e) {
-      debugPrint('❌ [AUTO_LOGIN] 자동 로그인 실패: $e');
+      AppLogger.e('❌ [AUTO_LOGIN] 자동 로그인 실패: $e');
     } finally {
       // 🔥 성공/실패 무관하게 초기화 완료 표시 (앱 시작 보장)
       _isInitialized = true;
       notifyListeners();
 
       if (!ApiConfig.isProduction) {
-        debugPrint('✅ [AUTO_LOGIN] 초기화 완료');
       }
     }
   }
@@ -981,7 +875,6 @@ class AuthService extends ChangeNotifier {
     String? gender,
     String? di,
   }) async {
-    debugPrint('🚀 [SIGNUP] 회원가입 시작 - Email: $email, Mode: ${mode.name}');
     _setLoading(true);
 
     try {
@@ -1000,7 +893,6 @@ class AuthService extends ChangeNotifier {
       };
       final requestBody = json.encode(bodyMap);
 
-      debugPrint('📦 [SIGNUP] 요청 데이터: $requestBody');
 
       final response = await http
           .post(
@@ -1012,10 +904,6 @@ class AuthService extends ChangeNotifier {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
-        debugPrint('회원가입 성공: $data');
-        debugPrint(
-          '🔍 [SIGNUP] 백엔드에서 받은 userMode: ${data['data']['user']['userMode']}',
-        );
 
         // 회원가입 성공 시 JWT 토큰이 반환되면 저장
         if (data['data']['accessToken'] != null) {
@@ -1040,8 +928,6 @@ class AuthService extends ChangeNotifier {
           // 사용자 정보 저장
           await UserRepository.saveUser(_currentUser!);
 
-          debugPrint('✅ [SIGNUP] 생성된 사용자 모드: ${_currentUser?.mode.name}');
-          debugPrint('✅ [SIGNUP] 현재 로그인 상태: $isLoggedIn');
         } else {
           // 토큰이 없으면 기본 사용자 정보만 설정
           _currentUser = User(
@@ -1059,12 +945,10 @@ class AuthService extends ChangeNotifier {
         _setLoading(false);
         return true;
       } else {
-        debugPrint('회원가입 실패: ${response.statusCode} - ${response.body}');
         _setLoading(false);
         return false;
       }
     } catch (e) {
-      debugPrint('회원가입 에러: $e');
       // 백엔드 연결 실패 시 시뮬레이션으로 처리 (개발 환경)
       await Future.delayed(const Duration(seconds: 1));
 
@@ -1103,7 +987,7 @@ class AuthService extends ChangeNotifier {
         );
       }
     } catch (e) {
-      debugPrint('⚠️ 서버 로그아웃 요청 실패: $e');
+      AppLogger.w('⚠️ 서버 로그아웃 요청 실패: $e');
     }
 
     // 로컬 상태, 토큰 및 사용자 정보 정리
@@ -1111,7 +995,6 @@ class AuthService extends ChangeNotifier {
     await _clearTokens();
     await _clearUserInfo();
     notifyListeners();
-    debugPrint('👋 로그아웃 완료');
   }
 
   /// 사용자 모드 변경
@@ -1132,7 +1015,6 @@ class AuthService extends ChangeNotifier {
       );
       await UserRepository.updateUserMode(newMode);
       notifyListeners();
-      debugPrint('✅ [AUTH] 사용자 모드 변경: ${newMode.name}');
     }
   }
 }

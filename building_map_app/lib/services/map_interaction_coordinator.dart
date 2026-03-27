@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 
@@ -141,7 +142,6 @@ class MapInteractionCoordinator extends ChangeNotifier {
     notifyListeners();
 
     if (kDebugMode) {
-      debugPrint('🎯 [COORDINATOR] 모드 전환: $_currentMode${lockDuration != null ? ' (잠금: ${lockDuration.inMilliseconds}ms)' : ''}');
     }
   }
 
@@ -154,7 +154,6 @@ class MapInteractionCoordinator extends ChangeNotifier {
     notifyListeners();
 
     if (kDebugMode) {
-      debugPrint('🎯 [COORDINATOR] 모드 복귀: idle');
     }
   }
 
@@ -171,12 +170,10 @@ class MapInteractionCoordinator extends ChangeNotifier {
       notifyListeners();
 
       if (kDebugMode) {
-        debugPrint('🔓 [COORDINATOR] 이벤트 잠금 해제');
       }
     });
 
     if (kDebugMode) {
-      debugPrint('🔒 [COORDINATOR] 이벤트 잠금: ${duration.inMilliseconds}ms');
     }
   }
 
@@ -204,7 +201,6 @@ class MapInteractionCoordinator extends ChangeNotifier {
     // 이벤트 잠금 중이면 모든 이벤트 차단
     if (_isEventLocked) {
       if (kDebugMode) {
-        debugPrint('🚫 [COORDINATOR] 이벤트 차단 (잠금 중): $eventType');
       }
       return false;
     }
@@ -213,7 +209,6 @@ class MapInteractionCoordinator extends ChangeNotifier {
     final allowed = _allowedEvents[_currentMode]?.contains(eventType) ?? false;
 
     if (!allowed && kDebugMode) {
-      debugPrint('🚫 [COORDINATOR] 이벤트 차단 (모드: $_currentMode): $eventType');
     }
 
     return allowed;
@@ -224,10 +219,6 @@ class MapInteractionCoordinator extends ChangeNotifier {
   /// 개발 환경에서만 동작합니다.
   void debugPrintState() {
     if (kDebugMode) {
-      debugPrint('📊 [COORDINATOR] 현재 상태:');
-      debugPrint('   - 모드: $_currentMode');
-      debugPrint('   - 잠금: $_isEventLocked');
-      debugPrint('   - 허용 이벤트: ${_allowedEvents[_currentMode]}');
     }
   }
 

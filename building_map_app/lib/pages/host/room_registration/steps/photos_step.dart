@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -152,7 +153,6 @@ class _PhotosStepState extends State<PhotosStep> {
         }
       }
     } catch (e) {
-      debugPrint('이미지 업로드 에러: $e');
     }
   }
 
@@ -185,7 +185,6 @@ class _PhotosStepState extends State<PhotosStep> {
         deletedPhotoIds.add(photoObject['id'] as int);
         _updateFormData('deletedPhotoIds', deletedPhotoIds);
 
-        debugPrint('🗑️ 사진 삭제 예약: photoId=${photoObject['id']}, url=$removedImageUrl');
       }
 
       // uploadedPhotos 리스트에서도 제거

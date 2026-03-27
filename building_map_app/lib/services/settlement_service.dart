@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -31,8 +32,6 @@ class SettlementService {
     int page = 1,
     int limit = 20,
   }) async {
-    debugPrint('🚀 [SETTLEMENT SERVICE] getSettlements 호출');
-    debugPrint('   - tab: $tab, roomId: $roomId, page: $page');
 
     try {
       final queryParams = <String, String>{
@@ -51,30 +50,25 @@ class SettlementService {
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/host/settlements')
           .replace(queryParameters: queryParams);
 
-      debugPrint('📡 [SETTLEMENT SERVICE] GET $uri');
 
       final headers = await _getHeaders();
-      debugPrint('📡 [SETTLEMENT SERVICE] Headers: $headers');
 
       final response = await http.get(uri, headers: headers).timeout(
             ApiConfig.timeout,
           );
 
-      debugPrint('📡 [SETTLEMENT SERVICE] Status: ${response.statusCode}');
-      debugPrint('📡 [SETTLEMENT SERVICE] Body 길이: ${response.body.length}');
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
-        debugPrint('✅ [SETTLEMENT SERVICE] JSON 파싱 성공');
         return SettlementListResponse.fromJson(json);
       } else {
-        debugPrint('❌ [SETTLEMENT SERVICE] Error: ${response.statusCode}');
-        debugPrint('❌ [SETTLEMENT SERVICE] Body: ${response.body}');
+        AppLogger.e('❌ [SETTLEMENT SERVICE] Error: ${response.statusCode}');
+        AppLogger.e('❌ [SETTLEMENT SERVICE] Body: ${response.body}');
         return null;
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ [SETTLEMENT SERVICE] Exception: $e');
-      debugPrint('❌ [SETTLEMENT SERVICE] StackTrace: $stackTrace');
+      AppLogger.e('❌ [SETTLEMENT SERVICE] Exception: $e');
+      AppLogger.e('❌ [SETTLEMENT SERVICE] StackTrace: $stackTrace');
       return null;
     }
   }
@@ -93,20 +87,18 @@ class SettlementService {
           );
 
       if (!ApiConfig.isProduction) {
-        debugPrint('📡 [SETTLEMENT] GET $uri');
-        debugPrint('📡 [SETTLEMENT] Status: ${response.statusCode}');
       }
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         return SettlementDetail.fromJson(json);
       } else {
-        debugPrint('❌ [SETTLEMENT] Error: ${response.statusCode}');
-        debugPrint('❌ [SETTLEMENT] Body: ${response.body}');
+        AppLogger.e('❌ [SETTLEMENT] Error: ${response.statusCode}');
+        AppLogger.e('❌ [SETTLEMENT] Body: ${response.body}');
         return null;
       }
     } catch (e) {
-      debugPrint('❌ [SETTLEMENT] Exception: $e');
+      AppLogger.e('❌ [SETTLEMENT] Exception: $e');
       return null;
     }
   }
@@ -158,18 +150,16 @@ class SettlementService {
           );
 
       if (!ApiConfig.isProduction) {
-        debugPrint('📡 [SETTLEMENT] GET $uri');
-        debugPrint('📡 [SETTLEMENT] Status: ${response.statusCode}');
       }
 
       if (response.statusCode == 200) {
         return response;
       } else {
-        debugPrint('❌ [SETTLEMENT] Export Error: ${response.statusCode}');
+        AppLogger.e('❌ [SETTLEMENT] Export Error: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      debugPrint('❌ [SETTLEMENT] Export Exception: $e');
+      AppLogger.e('❌ [SETTLEMENT] Export Exception: $e');
       return null;
     }
   }

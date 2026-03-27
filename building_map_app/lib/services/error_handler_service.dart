@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:convert';
@@ -13,7 +14,6 @@ class ErrorHandlerService {
   /// 현재 BuildContext 설정
   void setContext(BuildContext context) {
     _context = context;
-    debugPrint('✅ [ERROR_HANDLER] Context 설정됨');
   }
 
   /// HTTP 응답 에러 처리
@@ -24,11 +24,9 @@ class ErrorHandlerService {
   ///   401 + code INVALID_TOKEN(1002) → 토큰 위조  → /login
   ///   403 + code FORBIDDEN(2001)    → 권한 없음  → 다이얼로그만
   void handleHttpError(int statusCode, String responseBody, {String? defaultMessage}) {
-    debugPrint('🔔 [ERROR_HANDLER] handleHttpError 호출됨 - statusCode: $statusCode');
-    debugPrint('🔔 [ERROR_HANDLER] context: $_context, mounted: ${_context?.mounted}');
 
     if (_context == null || !_context!.mounted) {
-      debugPrint('❌ [ERROR_HANDLER] Context가 없거나 mounted되지 않음');
+      AppLogger.e('❌ [ERROR_HANDLER] Context가 없거나 mounted되지 않음');
       return;
     }
 
@@ -51,7 +49,7 @@ class ErrorHandlerService {
         errorMessage = responseData['error'];
       }
     } catch (e) {
-      debugPrint('❌ [ERROR] JSON 파싱 실패: $e');
+      AppLogger.e('❌ [ERROR] JSON 파싱 실패: $e');
     }
 
     // 인증 실패 여부 판단: 401이거나 인증 관련 에러코드
@@ -117,7 +115,7 @@ class ErrorHandlerService {
 
     String errorMessage = customMessage ?? '예기치 않은 오류가 발생했습니다.';
 
-    debugPrint('❌ [ERROR] Exception: $exception');
+    AppLogger.e('❌ [ERROR] Exception: $exception');
 
     _showErrorDialog(errorMessage, null);
   }
@@ -146,7 +144,7 @@ class ErrorHandlerService {
 
     String errorMessage = customMessage ?? '예기치 않은 오류가 발생했습니다.';
 
-    debugPrint('❌ [ERROR] Unknown Error: $error');
+    AppLogger.e('❌ [ERROR] Unknown Error: $error');
 
     _showErrorDialog(errorMessage, null);
   }
@@ -209,7 +207,6 @@ class ErrorHandlerService {
                 Navigator.of(dialogContext).pop();
 
                 if (shouldRedirect && _context != null && _context!.mounted) {
-                  debugPrint('🔄 [ERROR_HANDLER] 인증 에러 - 로그인 페이지로 이동');
                   _context!.go('/login');
                 }
               },

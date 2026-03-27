@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -207,7 +208,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
 
       if (!mounted) return;
 
-      debugPrint('❌ [REGISTER] 에러: $e');
+      AppLogger.e('❌ [REGISTER] 에러: $e');
       _showErrorDialog(
         widget.isStandaloneMode
             ? '호스트 전환에 실패했습니다.\n${e.toString()}'
@@ -219,7 +220,6 @@ class _HostAccountStepState extends State<HostAccountStep> {
   /// 게스트→호스트 전환 (Standalone 모드)
   /// POST /api/account - 계좌 정보만 추가/수정
   Future<void> _upgradeToHost() async {
-    debugPrint('🔄 [UPGRADE] 게스트→호스트 전환 시작');
 
     final token = await TokenService.getAccessToken();
     if (token == null) {
@@ -244,8 +244,6 @@ class _HostAccountStepState extends State<HostAccountStep> {
         )
         .timeout(ApiConfig.timeout);
 
-    debugPrint('📡 [UPGRADE] 응답 상태: ${response.statusCode}');
-    debugPrint('📄 [UPGRADE] 응답 내용: ${response.body}');
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       final data = jsonDecode(response.body);
@@ -260,15 +258,12 @@ class _HostAccountStepState extends State<HostAccountStep> {
     }
 
     // 성공 시 다음 단계로 이동 (AuthService는 /host 페이지 진입 시 자동으로 프로필 새로고침)
-    debugPrint('✅ [UPGRADE] 게스트→호스트 전환 완료 (계좌 등록)');
-    debugPrint('📋 [UPGRADE] 계좌 정보: ${responseData['data']?['account']}');
     widget.onNext();
   }
 
   /// 소셜 로그인 호스트: 본인인증+계좌+약관 저장
   /// POST /api/user/host/verification (로그인 토큰 필요)
   Future<void> _verifySocialHost() async {
-    debugPrint('📝 [VERIFY] 소셜 로그인 호스트: 본인인증+계좌 저장 API 호출');
 
     final token = await TokenService.getAccessToken(skipExpiryCheck: true);
     if (token == null) {
@@ -291,7 +286,6 @@ class _HostAccountStepState extends State<HostAccountStep> {
         'age_confirmed': true,
       },
     };
-    debugPrint('📦 [VERIFY] 요청 데이터: $verifyBody');
 
     final response = await http
         .post(
@@ -304,8 +298,6 @@ class _HostAccountStepState extends State<HostAccountStep> {
         )
         .timeout(ApiConfig.timeout);
 
-    debugPrint('📡 [VERIFY] 응답 상태: ${response.statusCode}');
-    debugPrint('📄 [VERIFY] 응답 내용: ${response.body}');
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       final data = jsonDecode(response.body);
@@ -326,10 +318,8 @@ class _HostAccountStepState extends State<HostAccountStep> {
         responseData['data']['accessToken'],
         responseData['data']['refreshToken'],
       );
-      debugPrint('✅ [VERIFY] 토큰 갱신 완료');
     }
 
-    debugPrint('✅ [VERIFY] 소셜 로그인 호스트 본인인증+계좌 저장 완료');
     widget.onNext();
   }
 
@@ -344,7 +334,6 @@ class _HostAccountStepState extends State<HostAccountStep> {
     }
 
     // Step 1: 회원가입 API 호출 (이메일, 비밀번호, user_mode + KMC 본인인증 데이터)
-    debugPrint('📝 [REGISTER] Step 1: 회원가입 API 호출');
     final registerBody = {
       'email': widget.email,
       'password': widget.password,
@@ -364,7 +353,6 @@ class _HostAccountStepState extends State<HostAccountStep> {
         'age_confirmed': true,
       },
     };
-    debugPrint('📦 [REGISTER] 회원가입 요청 데이터: $registerBody');
     final registerResponse = await http
         .post(
           Uri.parse(ApiConfig.authRegisterUrl),
@@ -373,8 +361,6 @@ class _HostAccountStepState extends State<HostAccountStep> {
         )
         .timeout(ApiConfig.timeout);
 
-    debugPrint('📡 [REGISTER] 회원가입 응답 상태: ${registerResponse.statusCode}');
-    debugPrint('📄 [REGISTER] 회원가입 응답 내용: ${registerResponse.body}');
 
     if (registerResponse.statusCode != 200 &&
         registerResponse.statusCode != 201) {
@@ -390,7 +376,6 @@ class _HostAccountStepState extends State<HostAccountStep> {
     }
 
     // Step 2: JWT 토큰 추출 및 저장
-    debugPrint('🔑 [REGISTER] Step 2: JWT 토큰 저장');
     String? accessToken;
     String? refreshToken;
 
@@ -408,11 +393,8 @@ class _HostAccountStepState extends State<HostAccountStep> {
     }
 
     await TokenService.saveTokens(accessToken, refreshToken);
-    debugPrint('✅ [REGISTER] JWT 토큰 저장 완료');
 
     // Step 3: 성공 - register API에서 본인인증+계좌+약관 모두 처리 완료
-    debugPrint('✅ [REGISTER] 회원가입 완료 (본인인증+계좌+약관동의 포함)');
-    debugPrint('✅ [REGISTER] 호스트 회원가입 완료');
     widget.onNext();
   }
 

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -53,7 +54,7 @@ class _InquiriesPageState extends State<InquiriesPage> {
         });
       }
     } catch (e) {
-      debugPrint('Failed to fetch inquiries: $e');
+      AppLogger.e('Failed to fetch inquiries: $e');
       setState(() {
         _errorMessage = '문의 목록을 불러오는데 실패했습니다';
       });

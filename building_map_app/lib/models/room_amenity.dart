@@ -23,10 +23,6 @@ class RoomAmenity {
 
   factory RoomAmenity.fromJson(Map<String, dynamic> json) {
     // 🔍 디버그: 원본 JSON 데이터 확인
-    debugPrint('=== RoomAmenity.fromJson Raw Data ===');
-    debugPrint('basicOptions RAW: ${json['basicOptions']} (${json['basicOptions'].runtimeType})');
-    debugPrint('additionalOptions RAW: ${json['additionalOptions']} (${json['additionalOptions'].runtimeType})');
-    debugPrint('convenienceOptions RAW: ${json['convenienceOptions']} (${json['convenienceOptions'].runtimeType})');
 
     // additionalOptions에서 petsAllowed 추출 (백엔드가 잘못된 위치에 넣음)
     bool petsAllowed = false;
@@ -56,7 +52,6 @@ class RoomAmenity {
 
   /// JSON 문자열을 Map<String, bool>로 파싱
   static Map<String, bool> _parseOptions(dynamic options) {
-    debugPrint('🔍 _parseOptions INPUT: $options (${options.runtimeType})');
     if (options == null) return {};
 
     Map<String, dynamic> source;
@@ -64,18 +59,14 @@ class RoomAmenity {
     if (options is String) {
       final decoded = jsonDecode(options);
       source = Map<String, dynamic>.from(decoded as Map);
-      debugPrint('  → Decoded from String: $source');
     } else if (options is Map) {
       source = Map<String, dynamic>.from(options);
-      debugPrint('  → Copied from Map: $source');
     } else {
-      debugPrint('  → Unknown type, returning empty');
       return {};
     }
 
     // petsAllowed 키 제거 (별도 필드로 처리)
     source.remove('petsAllowed');
-    debugPrint('  → After removing petsAllowed: $source');
 
     // int 값을 bool로 변환 (1 → true, 0 → false)
     final result = source.map((key, value) {
@@ -87,7 +78,6 @@ class RoomAmenity {
       return MapEntry(key, false);
     });
 
-    debugPrint('  → RESULT: $result');
     return result;
   }
 

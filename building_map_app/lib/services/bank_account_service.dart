@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../config/api_config.dart';
@@ -22,7 +23,6 @@ class BankAccountService {
   /// - Exception: 서버 에러 또는 네트워크 에러
   Future<BankAccount?> getBankAccount() async {
     try {
-      debugPrint('🏦 [BankAccountService] 계좌 정보 조회 시작');
 
       // 액세스 토큰 가져오기
       final accessToken = await TokenService.getValidAccessToken();
@@ -44,7 +44,6 @@ class BankAccountService {
         throw Exception('네트워크 연결을 확인해주세요.');
       }
 
-      debugPrint('🏦 [BankAccountService] 응답 상태: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -53,24 +52,22 @@ class BankAccountService {
           final accountData = data['data']['account'] as Map<String, dynamic>;
           final bankAccount = BankAccount.fromJson(accountData);
 
-          debugPrint('✅ [BankAccountService] 계좌 정보 조회 성공: ${bankAccount.bankName}');
           return bankAccount;
         } else {
-          debugPrint('⚠️ [BankAccountService] 응답 형식 오류: $data');
+          AppLogger.w('⚠️ [BankAccountService] 응답 형식 오류: $data');
           throw Exception('계좌 정보를 불러올 수 없습니다.');
         }
       } else if (response.statusCode == 404) {
         // 계좌 미등록 (정상 케이스)
-        debugPrint('ℹ️ [BankAccountService] 계좌 미등록 (404)');
         return null;
       } else {
         final errorData = json.decode(response.body);
         final errorMessage = errorData['message'] ?? '계좌 정보 조회 실패';
-        debugPrint('❌ [BankAccountService] 에러: $errorMessage');
+        AppLogger.e('❌ [BankAccountService] 에러: $errorMessage');
         throw Exception(errorMessage);
       }
     } catch (e) {
-      debugPrint('❌ [BankAccountService] 예외 발생: $e');
+      AppLogger.e('❌ [BankAccountService] 예외 발생: $e');
       rethrow;
     }
   }
@@ -86,7 +83,7 @@ class BankAccountService {
       final account = await getBankAccount();
       return account != null;
     } catch (e) {
-      debugPrint('❌ [BankAccountService] 계좌 등록 여부 확인 실패: $e');
+      AppLogger.e('❌ [BankAccountService] 계좌 등록 여부 확인 실패: $e');
       return false;
     }
   }
@@ -103,7 +100,6 @@ class BankAccountService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('🏦 [BankAccountService] 정산계좌 저장 시작');
 
     final response = await _apiClient.post(
       Uri.parse(ApiConfig.hostSettlementAccountUrl),
@@ -122,7 +118,6 @@ class BankAccountService {
       throw Exception('네트워크 연결을 확인해주세요.');
     }
 
-    debugPrint('🏦 [BankAccountService] 정산계좌 저장 응답: ${response.statusCode}');
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       final data = json.decode(utf8.decode(response.bodyBytes));
@@ -130,7 +125,6 @@ class BankAccountService {
         final account = BankAccount.fromJson(
           data['data']['account'] as Map<String, dynamic>,
         );
-        debugPrint('✅ [BankAccountService] 정산계좌 저장 성공: ${account.bankName}');
         return account;
       }
       throw Exception('응답 형식이 올바르지 않습니다.');
@@ -154,7 +148,6 @@ class BankAccountService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('🏦 [BankAccountService] 예금주 확인 시작');
 
     final response = await _apiClient.post(
       Uri.parse(ApiConfig.hostSettlementAccountVerifyUrl),
@@ -173,7 +166,6 @@ class BankAccountService {
       throw Exception('네트워크 연결을 확인해주세요.');
     }
 
-    debugPrint('🏦 [BankAccountService] 예금주 확인 응답: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       final data = json.decode(utf8.decode(response.bodyBytes));
