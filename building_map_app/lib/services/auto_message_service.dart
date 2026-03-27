@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/auto_message_template.dart';
@@ -45,7 +46,6 @@ class AutoMessageService extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      debugPrint('📋 [AUTO_MSG] 자동 메시지 목록 조회 시작');
 
       final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/host/auto-messages');
@@ -65,13 +65,12 @@ class AutoMessageService extends ChangeNotifier {
       _templates =
           templatesJson.map((json) => AutoMessageTemplate.fromJson(json)).toList();
 
-      debugPrint('✅ [AUTO_MSG] 자동 메시지 ${_templates.length}개 조회 완료');
 
       _isLoading = false;
       notifyListeners();
       return _templates;
     } catch (e) {
-      debugPrint('❌ [AUTO_MSG] 자동 메시지 목록 조회 실패: $e');
+      AppLogger.e('❌ [AUTO_MSG] 자동 메시지 목록 조회 실패: $e');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
@@ -82,7 +81,6 @@ class AutoMessageService extends ChangeNotifier {
   /// 템플릿 상세 조회
   Future<AutoMessageTemplate> getAutoMessageDetail(String id) async {
     try {
-      debugPrint('📋 [AUTO_MSG] 자동 메시지 상세 조회: $id');
 
       final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/host/auto-messages/$id');
@@ -99,10 +97,9 @@ class AutoMessageService extends ChangeNotifier {
       }
 
       final template = AutoMessageTemplate.fromJson(data['data']['template']);
-      debugPrint('✅ [AUTO_MSG] 자동 메시지 상세 조회 완료');
       return template;
     } catch (e) {
-      debugPrint('❌ [AUTO_MSG] 자동 메시지 상세 조회 실패: $e');
+      AppLogger.e('❌ [AUTO_MSG] 자동 메시지 상세 조회 실패: $e');
       rethrow;
     }
   }
@@ -113,7 +110,6 @@ class AutoMessageService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      debugPrint('🆕 [AUTO_MSG] 자동 메시지 생성');
 
       final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/host/auto-messages');
@@ -138,13 +134,12 @@ class AutoMessageService extends ChangeNotifier {
       // 로컬 목록에 추가
       _templates = [..._templates, newTemplate];
 
-      debugPrint('✅ [AUTO_MSG] 자동 메시지 생성 완료: ${newTemplate.id}');
 
       _isLoading = false;
       notifyListeners();
       return newTemplate;
     } catch (e) {
-      debugPrint('❌ [AUTO_MSG] 자동 메시지 생성 실패: $e');
+      AppLogger.e('❌ [AUTO_MSG] 자동 메시지 생성 실패: $e');
       _isLoading = false;
       notifyListeners();
       rethrow;
@@ -157,7 +152,6 @@ class AutoMessageService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      debugPrint('✏️ [AUTO_MSG] 자동 메시지 수정: ${template.id}');
 
       final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/host/auto-messages/${template.id}');
@@ -187,13 +181,12 @@ class AutoMessageService extends ChangeNotifier {
         return t;
       }).toList();
 
-      debugPrint('✅ [AUTO_MSG] 자동 메시지 수정 완료');
 
       _isLoading = false;
       notifyListeners();
       return updatedTemplate;
     } catch (e) {
-      debugPrint('❌ [AUTO_MSG] 자동 메시지 수정 실패: $e');
+      AppLogger.e('❌ [AUTO_MSG] 자동 메시지 수정 실패: $e');
       _isLoading = false;
       notifyListeners();
       rethrow;
@@ -206,7 +199,6 @@ class AutoMessageService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      debugPrint('🗑️ [AUTO_MSG] 자동 메시지 삭제: $id');
 
       final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/host/auto-messages/$id');
@@ -225,12 +217,11 @@ class AutoMessageService extends ChangeNotifier {
       // 로컬 목록에서 제거
       _templates = _templates.where((t) => t.id != id).toList();
 
-      debugPrint('✅ [AUTO_MSG] 자동 메시지 삭제 완료');
 
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ [AUTO_MSG] 자동 메시지 삭제 실패: $e');
+      AppLogger.e('❌ [AUTO_MSG] 자동 메시지 삭제 실패: $e');
       _isLoading = false;
       notifyListeners();
       rethrow;
@@ -240,7 +231,6 @@ class AutoMessageService extends ChangeNotifier {
   /// 템플릿 활성화 토글
   Future<void> toggleAutoMessage(String id) async {
     try {
-      debugPrint('🔄 [AUTO_MSG] 자동 메시지 토글: $id');
 
       final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/host/auto-messages/$id/toggle');
@@ -264,10 +254,9 @@ class AutoMessageService extends ChangeNotifier {
         return t;
       }).toList();
 
-      debugPrint('✅ [AUTO_MSG] 자동 메시지 토글 완료');
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ [AUTO_MSG] 자동 메시지 토글 실패: $e');
+      AppLogger.e('❌ [AUTO_MSG] 자동 메시지 토글 실패: $e');
       rethrow;
     }
   }
@@ -279,7 +268,6 @@ class AutoMessageService extends ChangeNotifier {
   /// 호스트의 방 목록 조회
   Future<List<PropertyInfo>> getHostProperties() async {
     try {
-      debugPrint('📋 [AUTO_MSG] 호스트 방 목록 조회');
 
       final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/host/rooms');
@@ -298,11 +286,10 @@ class AutoMessageService extends ChangeNotifier {
       final List<dynamic> roomsJson = data['data']['rooms'] ?? [];
       _properties = roomsJson.map((json) => PropertyInfo.fromJson(json)).toList();
 
-      debugPrint('✅ [AUTO_MSG] 방 ${_properties.length}개 조회 완료');
       notifyListeners();
       return _properties;
     } catch (e) {
-      debugPrint('❌ [AUTO_MSG] 방 목록 조회 실패: $e');
+      AppLogger.e('❌ [AUTO_MSG] 방 목록 조회 실패: $e');
       rethrow;
     }
   }
@@ -310,7 +297,6 @@ class AutoMessageService extends ChangeNotifier {
   /// 특정 방의 자동 메시지 목록 조회
   Future<List<AutoMessageTemplate>> getAutoMessagesForRoom(String roomId) async {
     try {
-      debugPrint('📋 [AUTO_MSG] 방별 자동 메시지 조회: $roomId');
 
       final headers = await _getAuthHeaders();
       final url = Uri.parse('${ApiConfig.baseUrl}/api/host/rooms/$roomId/auto-messages');
@@ -330,10 +316,9 @@ class AutoMessageService extends ChangeNotifier {
       final templates =
           templatesJson.map((json) => AutoMessageTemplate.fromJson(json)).toList();
 
-      debugPrint('✅ [AUTO_MSG] 방별 자동 메시지 ${templates.length}개 조회 완료');
       return templates;
     } catch (e) {
-      debugPrint('❌ [AUTO_MSG] 방별 자동 메시지 조회 실패: $e');
+      AppLogger.e('❌ [AUTO_MSG] 방별 자동 메시지 조회 실패: $e');
       rethrow;
     }
   }

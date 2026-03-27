@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -83,7 +84,7 @@ class AppRouter {
         await loadLibrary();
         return;
       } catch (e) {
-        debugPrint('⚠️ [Deferred] 로딩 재시도 ${i + 1}/$maxRetries: $e');
+        AppLogger.w('⚠️ [Deferred] 로딩 재시도 ${i + 1}/$maxRetries: $e');
         if (i == maxRetries - 1) rethrow;
         await Future.delayed(Duration(milliseconds: 500 * (i + 1)));
       }
@@ -138,7 +139,7 @@ class AppRouter {
       future: _loadWithRetry(loadLibrary),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          debugPrint('❌ [Deferred] 라이브러리 로딩 최종 실패: ${snapshot.error}');
+          AppLogger.e('❌ [Deferred] 라이브러리 로딩 최종 실패: ${snapshot.error}');
           return Scaffold(
             body: Center(
               child: _buildDeferredErrorContent(context, snapshot.error!),
@@ -162,7 +163,7 @@ class AppRouter {
       future: _loadWithRetry(loadLibrary),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          debugPrint('❌ [Deferred] 라이브러리 로딩 최종 실패: ${snapshot.error}');
+          AppLogger.e('❌ [Deferred] 라이브러리 로딩 최종 실패: ${snapshot.error}');
           return Center(
             child: _buildDeferredErrorContent(context, snapshot.error!),
           );
@@ -697,7 +698,7 @@ class AppRouter {
 
             // 토큰이 없으면 로그인 페이지로 리다이렉트
             if (token == null || refreshToken == null) {
-              debugPrint('❌ [AUTH_CALLBACK] 토큰이 없습니다.');
+              AppLogger.e('❌ [AUTH_CALLBACK] 토큰이 없습니다.');
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (context.mounted) {
                   context.go('/login');
@@ -725,7 +726,6 @@ class AppRouter {
                 if (success && context.mounted) {
                   final user = authService.currentUser;
                   if (user != null) {
-                    debugPrint('✅ [AUTH_CALLBACK] 로그인 완료: ${user.email}');
 
                     // 사용자 모드에 따라 적절한 페이지로 리다이렉트
                     if (user.mode == UserMode.host) {
@@ -737,11 +737,11 @@ class AppRouter {
                     context.go('/login');
                   }
                 } else if (context.mounted) {
-                  debugPrint('❌ [AUTH_CALLBACK] 인증 실패');
+                  AppLogger.e('❌ [AUTH_CALLBACK] 인증 실패');
                   context.go('/login');
                 }
               } catch (e) {
-                debugPrint('❌ [AUTH_CALLBACK] 에러: $e');
+                AppLogger.e('❌ [AUTH_CALLBACK] 에러: $e');
                 if (context.mounted) {
                   context.go('/login');
                 }

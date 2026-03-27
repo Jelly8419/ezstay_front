@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../config/api_config.dart';
@@ -16,12 +17,10 @@ class RefundPolicyService {
   Future<List<RefundPolicy>> getRefundPolicies() async {
     // 캐시가 있으면 반환
     if (_cachedPolicies != null && _cachedPolicies!.isNotEmpty) {
-      debugPrint('✅ [REFUND_POLICY] Using cached policies (${_cachedPolicies!.length} items)');
       return _cachedPolicies!;
     }
 
     try {
-      debugPrint('🔍 [REFUND_POLICY] Fetching refund policies from API...');
 
       final response = await _apiClient.get(
         Uri.parse('${ApiConfig.baseUrl}/api/refund-policies'),
@@ -31,7 +30,6 @@ class RefundPolicyService {
         throw Exception('API 응답이 없습니다.');
       }
 
-      debugPrint('✅ [REFUND_POLICY] API Response Status: ${response.statusCode}');
 
       if (response.statusCode != 200) {
         throw Exception('API 요청 실패: ${response.statusCode}');
@@ -47,14 +45,13 @@ class RefundPolicyService {
             .map((json) => RefundPolicy.fromJson(json as Map<String, dynamic>))
             .toList();
 
-        debugPrint('✅ [REFUND_POLICY] Loaded ${_cachedPolicies!.length} policies');
         return _cachedPolicies!;
       }
 
       throw Exception('환불 정책 데이터를 불러올 수 없습니다.');
     } catch (e, stackTrace) {
-      debugPrint('❌ [REFUND_POLICY] Error fetching policies: $e');
-      debugPrint('❌ [REFUND_POLICY] StackTrace: $stackTrace');
+      AppLogger.e('❌ [REFUND_POLICY] Error fetching policies: $e');
+      AppLogger.e('❌ [REFUND_POLICY] StackTrace: $stackTrace');
       rethrow;
     }
   }
@@ -80,17 +77,15 @@ class RefundPolicyService {
         },
       );
 
-      debugPrint('✅ [REFUND_POLICY] Found policy: ${policy.policyType}');
       return policy;
     } catch (e) {
-      debugPrint('❌ [REFUND_POLICY] Error finding policy by type: $e');
+      AppLogger.e('❌ [REFUND_POLICY] Error finding policy by type: $e');
       rethrow;
     }
   }
 
   /// 캐시 초기화 (필요 시)
   void clearCache() {
-    debugPrint('🗑️ [REFUND_POLICY] Cache cleared');
     _cachedPolicies = null;
   }
 

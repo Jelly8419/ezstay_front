@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -101,7 +102,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         _errorMessage = '방 정보를 불러오는데 실패했습니다.';
         _isLoading = false;
       });
-      debugPrint('❌ 방 상세 정보 로드 실패: $e');
+      AppLogger.e('❌ 방 상세 정보 로드 실패: $e');
     }
   }
 
@@ -115,7 +116,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         _refundPolicy = policy;
       });
     } catch (e) {
-      debugPrint('❌ [ROOM_DETAIL] 환불 정책 로드 실패: $e');
+      AppLogger.e('❌ [ROOM_DETAIL] 환불 정책 로드 실패: $e');
       // 에러 발생 시에도 기존 문자열 표시는 유지됨
     }
   }
@@ -227,7 +228,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
     // go_router를 사용하여 URL이 변경되도록 명시적 호출
     final targetPath = '/contract/request/${widget.roomId}';
-    debugPrint('🚀 Navigating to $targetPath');
 
     // push 대신 go 사용하여 URL 변경 테스트
     context.go(

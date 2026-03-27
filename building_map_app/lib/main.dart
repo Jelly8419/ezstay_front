@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -34,7 +35,7 @@ class SafeFocusTraversalPolicy extends ReadingOrderTraversalPolicy {
       return super.sortDescendants(descendants, currentNode);
     } catch (e) {
       // inactive element 에러 무시하고 빈 리스트 반환
-      debugPrint('⚠️ [SafeFocusTraversalPolicy] Focus 정렬 중 에러 무시: $e');
+      AppLogger.w('⚠️ [SafeFocusTraversalPolicy] Focus 정렬 중 에러 무시: $e');
       return <FocusNode>[];
     }
   }
@@ -45,7 +46,7 @@ class SafeFocusTraversalPolicy extends ReadingOrderTraversalPolicy {
       return super.findFirstFocus(currentNode, ignoreCurrentFocus: ignoreCurrentFocus);
     } catch (e) {
       // inactive element 에러 무시
-      debugPrint('⚠️ [SafeFocusTraversalPolicy] 첫 Focus 찾기 중 에러 무시: $e');
+      AppLogger.w('⚠️ [SafeFocusTraversalPolicy] 첫 Focus 찾기 중 에러 무시: $e');
       return null;
     }
   }
@@ -64,15 +65,13 @@ Future<void> main() async {
           ? '.env.test'
           : '.env';
 
-  debugPrint('🔧 [ENV] 환경: $environment, 로드할 파일: $envFile');
 
   // .env 파일 로드 시도 (실패해도 계속 진행)
   // 프로덕션 빌드에서는 --dart-define으로 전달된 값 사용
   try {
     await dotenv.load(fileName: envFile);
-    debugPrint('✅ [ENV] $envFile 파일 로드 성공');
   } catch (e) {
-    debugPrint('⚠️ [ENV] $envFile 파일 로드 실패 (--dart-define 값 사용): $e');
+    AppLogger.w('⚠️ [ENV] $envFile 파일 로드 실패 (--dart-define 값 사용): $e');
   }
 
   // 한국어 날짜 포맷 초기화 (intl 패키지)
@@ -95,9 +94,7 @@ Future<void> main() async {
 
   // API 키 유효성 검사
   if (!KakaoConfig.isApiKeyValid()) {
-    debugPrint('경고: Kakao API 키가 설정되지 않았거나 유효하지 않습니다.');
-    debugPrint('REST API 키: ${KakaoConfig.restApiKey}');
-    debugPrint('JavaScript 키: ${KakaoConfig.javascriptKey}');
+    AppLogger.w('경고: Kakao API 키가 설정되지 않았거나 유효하지 않습니다.');
   }
 
   // AuthService 생성 및 초기화
@@ -113,10 +110,9 @@ Future<void> main() async {
   if (kIsWeb) {
     try {
       PaymentServiceUnified(); // 생성자에서 PayTag SDK 자동 초기화
-      debugPrint('✅ [MAIN] PayTag 웹 SDK 초기화 완료');
     } catch (e) {
-      debugPrint('⚠️ [MAIN] PayTag SDK 초기화 실패: $e');
-      debugPrint('⚠️ [MAIN] 결제 기능이 비활성화됩니다. 앱은 계속 작동합니다.');
+      AppLogger.w('⚠️ [MAIN] PayTag SDK 초기화 실패: $e');
+      AppLogger.w('⚠️ [MAIN] 결제 기능이 비활성화됩니다. 앱은 계속 작동합니다.');
     }
   }
 
@@ -142,12 +138,10 @@ Future<void> main() async {
 
 /// Firebase 초기화를 별도 함수로 분리 (백그라운드 실행)
 Future<FirebaseApp> _initializeFirebase() async {
-  debugPrint('🔥 [MAIN] Firebase 초기화 시작 (백그라운드)...');
   try {
     late FirebaseApp app;
     if (kIsWeb) {
       // 웹에서는 명시적으로 설정 전달
-      debugPrint('🔥 [MAIN] 웹 플랫폼 감지 - 수동 Firebase 초기화');
       app = await Firebase.initializeApp(
         options: const FirebaseOptions(
           apiKey: 'AIzaSyBDwxJU7ivdjfdMOJeA7N_buRjdJLfdKUs',
@@ -160,15 +154,13 @@ Future<FirebaseApp> _initializeFirebase() async {
         ),
       );
     } else {
-      debugPrint('🔥 [MAIN] 네이티브 플랫폼 - 기본 Firebase 초기화');
       app = await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
-    debugPrint('✅ [MAIN] Firebase 초기화 완료 (백그라운드)');
     return app;
   } catch (e) {
-    debugPrint('❌ [MAIN] Firebase 초기화 실패: $e');
+    AppLogger.e('❌ [MAIN] Firebase 초기화 실패: $e');
     rethrow;
   }
 }
@@ -272,7 +264,7 @@ class _MapScreenState extends State<MapScreen> {
         });
       }
     } catch (e) {
-      debugPrint('❌ [MAP] 방 목록 로드 실패: $e');
+      AppLogger.e('❌ [MAP] 방 목록 로드 실패: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -481,7 +473,6 @@ class _MapScreenState extends State<MapScreen> {
 
   /// 웹용 지도 (HTML 기반 카카오 지도)
   Widget _buildWebMap() {
-    debugPrint('🗺️ [MapScreen] _buildWebMap 호출됨, 방 개수: ${_rooms.length}');
 
     if (_isLoading) {
       return const Center(

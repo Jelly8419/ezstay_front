@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -49,10 +50,8 @@ class _HostHomePageState extends State<HostHomePage> {
 
   /// 등록 중인 방 확인
   Future<void> _checkInProgressRooms() async {
-    debugPrint('🏠 [HOST] 등록 중인 방 확인 시작');
 
     final rooms = await _roomService.getInProgressRooms();
-    debugPrint('🏠 [HOST] getInProgressRooms 결과: $rooms');
 
     if (rooms != null && rooms.isNotEmpty) {
       List<Map<String, dynamic>> fetchedRooms = [];
@@ -81,7 +80,6 @@ class _HostHomePageState extends State<HostHomePage> {
       }
     }
 
-    debugPrint('🏠 [HOST] 등록 중인 방 개수: ${_inProgressRooms.length}');
   }
 
   /// 진행 중인 단계에 따라 페이지 이동
@@ -299,11 +297,9 @@ class _HostHomePageState extends State<HostHomePage> {
     final photos = room['photos'] as List<dynamic>?;
     String photoUrl = '';
 
-    debugPrint('🖼️ [HOST] photos 데이터: $photos');
 
     if (photos != null && photos.isNotEmpty) {
       final firstPhoto = photos.first;
-      debugPrint('🖼️ [HOST] firstPhoto 타입: ${firstPhoto.runtimeType}, 값: $firstPhoto');
 
       if (firstPhoto is String) {
         // 문자열인 경우 (URL 직접)
@@ -316,7 +312,6 @@ class _HostHomePageState extends State<HostHomePage> {
       // 상대 경로를 절대 URL로 변환
       photoUrl = ContractUtils.getFullImageUrl(photoUrl);
 
-      debugPrint('🖼️ [HOST] 추출된 photoUrl: $photoUrl');
     }
 
     final hasPhoto = photoUrl.isNotEmpty;
@@ -366,8 +361,7 @@ class _HostHomePageState extends State<HostHomePage> {
                                     ),
                                   ),
                                   errorWidget: (context, url, error) {
-                                    debugPrint('🖼️ [HOST] 이미지 로딩 실패: $url');
-                                    debugPrint('🖼️ [HOST] 에러: $error');
+                                    AppLogger.e('🖼️ [HOST] 에러: $error');
                                     return Container(
                                       color: AppColors.neutral100,
                                       child: Column(

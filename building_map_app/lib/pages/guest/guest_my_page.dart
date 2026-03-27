@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
@@ -89,14 +90,12 @@ class _GuestMyPageState extends State<GuestMyPage> {
       try {
         refundAccount = await _refundAccountService.getRefundAccount();
         if (refundAccount != null) {
-          debugPrint('✅ [GuestMyPage] 환급 계좌 로드 성공: ${refundAccount.bankName}');
         } else {
-          debugPrint('ℹ️ [GuestMyPage] 환급 계좌 미등록');
         }
       } on UnauthorizedException {
         if (mounted) context.go('/login');
       } catch (e) {
-        debugPrint('⚠️ [GuestMyPage] 환급 계좌 로드 실패 (무시): $e');
+        AppLogger.w('⚠️ [GuestMyPage] 환급 계좌 로드 실패 (무시): $e');
       }
 
       setState(() {
@@ -201,7 +200,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
 
   /// 연락처 변경 (본인인증 SDK 호출)
   void _handlePhoneChange() {
-    debugPrint('📱 [GuestMyPage] 본인인증 SDK 호출');
     _showInfoDialog('준비 중입니다', '본인인증 기능은 준비 중입니다.');
   }
 

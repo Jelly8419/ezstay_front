@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -165,10 +166,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
     try {
       // 등록 중에는 JWT 토큰이 아직 없으므로, 계좌 확인은 등록 후에 가능
       // 임시로 입력값만 검증
-      debugPrint('🏦 [ACCOUNT] 계좌 정보 검증 시작');
-      debugPrint('은행: $_selectedBank');
-      debugPrint('계좌번호: ${_accountController.text}');
-      debugPrint('예금주: ${_accountHolderController.text}');
 
       // TODO: 실제 계좌 확인 API 호출은 JWT 토큰 발급 후 가능
       // 현재는 입력값 형식만 검증
@@ -190,7 +187,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         _showErrorDialog('네트워크 연결을 확인해주세요');
       }
     } catch (e) {
-      debugPrint('❌ [ACCOUNT] 계좌 확인 에러: $e');
+      AppLogger.e('❌ [ACCOUNT] 계좌 확인 에러: $e');
       if (mounted) {
         setState(() {
           _isVerifying = false;
@@ -279,7 +276,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
   ///
   /// 로컬 개발 환경에서 KMC 없이 테스트용 더미 데이터로 인증을 완료합니다.
   Future<void> _handleMockVerification() async {
-    debugPrint('🧪 [KMC Mock] 로컬 환경 - Mock 본인인증 처리');
 
     try {
       // 0.5초 딜레이로 API 호출 시뮬레이션
@@ -291,7 +287,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       // 만 19세 이상 검증 (Mock 생년월일: 1990-01-01)
       final birthDate = DateTime(1990, 1, 1);
       final age = _calculateAge(birthDate);
-      debugPrint('🧪 [KMC Mock] Mock 나이: $age세');
 
       if (age < 19) {
         if (mounted) {
@@ -311,10 +306,9 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
           _isVerified = true;
           _isVerifying = false;
         });
-        debugPrint('✅ [KMC Mock] Mock 본인인증 완료 (이름: $mockName, 전화번호: $mockPhone)');
       }
     } catch (e) {
-      debugPrint('❌ [KMC Mock] Mock 본인인증 에러: $e');
+      AppLogger.e('❌ [KMC Mock] Mock 본인인증 에러: $e');
       if (mounted) {
         setState(() => _isVerifying = false);
         _showErrorDialog('본인인증 처리 중 오류가 발생했습니다');
@@ -329,12 +323,10 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
   /// 3. 인증 결과(apiToken, certNum) 수신
   /// 4. 백엔드에서 결과 검증 → 실명/전화번호 반환
   Future<void> _handleKmcVerification() async {
-    debugPrint('🔐 [KMC] 실서버 KMC 본인인증 시작');
 
     try {
       // Step 1: 백엔드에서 인증 요청 데이터 생성
       final requestResult = await KmcService.requestVerification();
-      debugPrint('✅ [KMC] 인증 요청 데이터 수신 (certNum: ${requestResult.certNum})');
 
       if (!mounted) return;
 
@@ -348,7 +340,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
 
       if (popupResult == null) {
         // 사용자가 인증 취소하거나 팝업 닫음
-        debugPrint('ℹ️ [KMC] 사용자가 인증을 취소했습니다');
         setState(() => _isVerifying = false);
         return;
       }
@@ -371,7 +362,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       final birthDate = verifyResult.birthDate;
       if (birthDate != null) {
         final age = _calculateAge(birthDate);
-        debugPrint('🎂 [KMC] 생년월일: ${verifyResult.birth}, 만 나이: $age세');
 
         if (age < 19) {
           setState(() => _isVerifying = false);
@@ -391,15 +381,14 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         _isVerifying = false;
       });
 
-      debugPrint('✅ [KMC] 본인인증 완료 (이름: ${verifyResult.name}, 전화번호: ${verifyResult.phoneNumber})');
     } on KmcException catch (e) {
-      debugPrint('❌ [KMC] 인증 에러: [${e.code}] ${e.message}');
+      AppLogger.e('❌ [KMC] 인증 에러: [${e.code}] ${e.message}');
       if (mounted) {
         setState(() => _isVerifying = false);
         _showErrorDialog(KmcService.getErrorMessage(e.code));
       }
     } catch (e) {
-      debugPrint('❌ [KMC] 예기치 않은 에러: $e');
+      AppLogger.e('❌ [KMC] 예기치 않은 에러: $e');
       if (mounted) {
         setState(() => _isVerifying = false);
         _showErrorDialog('본인인증 중 오류가 발생했습니다. 다시 시도해주세요.');
@@ -497,9 +486,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
 
     // 본인인증만 하는 단계일 때는 API 호출 없이 바로 다음 단계로 이동
     if (widget.isPhoneVerificationOnly) {
-      debugPrint('📞 [REGISTER] 본인인증만 완료 - 다음 단계로 이동 (API 호출 없음)');
-      debugPrint('실명: ${_nameController.text}');
-      debugPrint('휴대폰: ${_phoneController.text}');
 
       // 실명과 전화번호, KMC 본인인증 데이터를 onNext 콜백으로 전달
       widget.onNext(
@@ -546,19 +532,15 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
 
       if (widget.isSocialLogin) {
         // 소셜 로그인 (카카오) - 이미 토큰이 저장되어 있음
-        debugPrint('🔑 [REGISTER] 카카오 사용자: 저장된 JWT 토큰 확인');
         accessToken = await TokenService.getAccessToken(skipExpiryCheck: true);
 
         if (accessToken == null) {
           throw Exception('저장된 JWT 토큰을 찾을 수 없습니다. 다시 로그인해주세요.');
         }
 
-        debugPrint('✅ [REGISTER] 저장된 JWT 토큰 확인 완료');
 
         // 소셜 로그인 게스트: 본인인증+약관 데이터를 전용 API로 전송
         if (!widget.isPhoneVerificationOnly) {
-          debugPrint(
-              '📝 [VERIFY] 소셜 로그인 게스트: 본인인증 저장 API 호출');
           final verifyBody = {
             'name': _nameController.text,
             'phone_number': _phoneController.text,
@@ -572,7 +554,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
               'age_confirmed': true,
             },
           };
-          debugPrint('📦 [VERIFY] 요청 데이터: $verifyBody');
           final verifyResponse = await http
               .post(
                 Uri.parse(ApiConfig.guestVerificationUrl),
@@ -584,9 +565,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
               )
               .timeout(ApiConfig.timeout);
 
-          debugPrint(
-              '📡 [VERIFY] 응답 상태: ${verifyResponse.statusCode}');
-          debugPrint('📄 [VERIFY] 응답 내용: ${verifyResponse.body}');
 
           if (verifyResponse.statusCode != 200 &&
               verifyResponse.statusCode != 201) {
@@ -608,15 +586,12 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
             accessToken = verifyData['data']['accessToken'];
             refreshToken = verifyData['data']['refreshToken'];
             await TokenService.saveTokens(accessToken!, refreshToken);
-            debugPrint('✅ [VERIFY] 토큰 갱신 완료');
           }
 
-          debugPrint('✅ [VERIFY] 소셜 로그인 게스트 본인인증 저장 완료');
         }
       } else {
         // 일반 회원가입: Step 1, 2 진행
         // Step 1: 회원가입 API 호출 (이메일, 비밀번호, user_mode만)
-        debugPrint('📝 [REGISTER] Step 1: 회원가입 API 호출');
         final registerBody = {
           'email': widget.email,
           'password': widget.password,
@@ -633,7 +608,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
             'age_confirmed': true,
           },
         };
-        debugPrint('📦 [REGISTER] 회원가입 요청 데이터: $registerBody');
         final registerResponse = await http
             .post(
               Uri.parse(ApiConfig.authRegisterUrl),
@@ -642,8 +616,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
             )
             .timeout(ApiConfig.timeout);
 
-        debugPrint('📡 [REGISTER] 회원가입 응답 상태: ${registerResponse.statusCode}');
-        debugPrint('📄 [REGISTER] 회원가입 응답 내용: ${registerResponse.body}');
 
         if (registerResponse.statusCode != 200 &&
             registerResponse.statusCode != 201) {
@@ -659,7 +631,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         }
 
         // Step 2: JWT 토큰 추출 및 저장
-        debugPrint('🔑 [REGISTER] Step 2: JWT 토큰 저장');
 
         if (registerData['data'] != null &&
             registerData['data']['accessToken'] != null) {
@@ -675,12 +646,10 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         }
 
         await TokenService.saveTokens(accessToken, refreshToken);
-        debugPrint('✅ [REGISTER] JWT 토큰 저장 완료');
       }
 
       // 본인인증만 하는 단계인 경우 다음 단계로 이동
       if (widget.isPhoneVerificationOnly) {
-        debugPrint('✅ [REGISTER] 본인인증 완료 - 다음 단계로 이동');
         if (mounted) {
           setState(() {
             _isRegistering = false;
@@ -697,7 +666,6 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       }
 
       // 전체 단계: register API에서 본인인증+약관 모두 처리 완료
-      debugPrint('✅ [REGISTER] 회원가입 완료 (본인인증+약관동의 포함)');
 
       if (mounted) {
         setState(() {
@@ -726,7 +694,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         _showErrorDialog('서버에 연결할 수 없습니다');
       }
     } catch (e) {
-      debugPrint('❌ [REGISTER] 에러: $e');
+      AppLogger.e('❌ [REGISTER] 에러: $e');
       if (mounted) {
         setState(() {
           _isRegistering = false;

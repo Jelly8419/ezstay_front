@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -94,7 +95,7 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
         });
       }
     } catch (e) {
-      debugPrint('Failed to fetch notices: $e');
+      AppLogger.e('Failed to fetch notices: $e');
       setState(() {
         _noticesError = '공지사항을 불러오는데 실패했습니다';
       });
@@ -117,7 +118,7 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
         });
       }
     } catch (e) {
-      debugPrint('Failed to fetch FAQ categories: $e');
+      AppLogger.e('Failed to fetch FAQ categories: $e');
     }
   }
 
@@ -143,7 +144,7 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
         });
       }
     } catch (e) {
-      debugPrint('Failed to fetch FAQs: $e');
+      AppLogger.e('Failed to fetch FAQs: $e');
       setState(() {
         _faqsError = 'FAQ를 불러오는데 실패했습니다';
       });
@@ -177,7 +178,7 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
         });
       }
     } catch (e) {
-      debugPrint('Failed to fetch inquiries: $e');
+      AppLogger.e('Failed to fetch inquiries: $e');
       setState(() {
         _inquiriesError = '문의 내역을 불러오는데 실패했습니다';
       });

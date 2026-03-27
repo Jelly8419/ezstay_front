@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../config/api_config.dart';
@@ -65,50 +66,41 @@ class RoomManagementService {
         queryParameters: queryParams,
       );
 
-      debugPrint('🌐 [ROOM_MGMT_SERVICE] API 요청: $uri');
       final response = await _apiClient.get(uri, headers: headers);
 
       if (response == null) {
-        debugPrint('❌ [ROOM_MGMT_SERVICE] API 응답이 null');
+        AppLogger.e('❌ [ROOM_MGMT_SERVICE] API 응답이 null');
         return null;
       }
 
-      debugPrint('📡 [ROOM_MGMT_SERVICE] 응답 상태 코드: ${response.statusCode}');
       final data = jsonDecode(utf8.decode(response.bodyBytes));
 
-      debugPrint('📦 [ROOM_MGMT_SERVICE] 응답 전체 구조: ${data.keys}');
 
       // API 응답 구조 확인 및 정규화
       Map<String, dynamic> normalizedData;
 
       if (data['data'] != null && data['data']['rooms'] != null) {
         // 구조: { data: { rooms: [...] } }
-        debugPrint('✅ [ROOM_MGMT_SERVICE] 응답 구조: data.rooms');
         normalizedData = {
           'rooms': data['data']['rooms'],
         };
       } else if (data['rooms'] != null) {
         // 구조: { rooms: [...] }
-        debugPrint('✅ [ROOM_MGMT_SERVICE] 응답 구조: rooms');
         normalizedData = data;
       } else {
-        debugPrint('❌ [ROOM_MGMT_SERVICE] rooms 배열을 찾을 수 없음');
+        AppLogger.e('❌ [ROOM_MGMT_SERVICE] rooms 배열을 찾을 수 없음');
         return null;
       }
 
       final rooms = normalizedData['rooms'] as List;
-      debugPrint('✅ [ROOM_MGMT_SERVICE] 방 목록 조회 성공: ${rooms.length}개');
 
       if (rooms.isNotEmpty) {
         final firstRoom = rooms[0];
-        debugPrint('📋 [ROOM_MGMT_SERVICE] 첫 번째 방 원본 데이터:');
-        debugPrint('  - status: ${firstRoom['status']}');
-        debugPrint('  - isActive: ${firstRoom['isActive']}');
       }
 
       return normalizedData;
     } catch (e) {
-      debugPrint('❌ [RoomManagementService] 방 목록 조회 실패: $e');
+      AppLogger.e('❌ [RoomManagementService] 방 목록 조회 실패: $e');
       return null;
     }
   }
@@ -137,12 +129,11 @@ class RoomManagementService {
       }
 
       if (!ApiConfig.isProduction) {
-        debugPrint('✅ [RoomManagementService] 게시 상태 변경 성공: roomId=$roomId, isActive=$isActive');
       }
 
       return true;
     } catch (e) {
-      debugPrint('❌ [RoomManagementService] 게시 상태 변경 실패: $e');
+      AppLogger.e('❌ [RoomManagementService] 게시 상태 변경 실패: $e');
       return false;
     }
   }
@@ -166,12 +157,11 @@ class RoomManagementService {
       }
 
       if (!ApiConfig.isProduction) {
-        debugPrint('✅ [RoomManagementService] 방 삭제 성공: roomId=$roomId');
       }
 
       return true;
     } catch (e) {
-      debugPrint('❌ [RoomManagementService] 방 삭제 실패: $e');
+      AppLogger.e('❌ [RoomManagementService] 방 삭제 실패: $e');
       return false;
     }
   }
@@ -221,12 +211,11 @@ class RoomManagementService {
       final roomName = data?['roomName'] as String? ?? '복제된 방';
 
       if (!ApiConfig.isProduction) {
-        debugPrint('✅ [RoomManagementService] 방 복제 성공: 원본=$roomId, 복제=${data?['roomId']}');
       }
 
       return roomName;
     } catch (e) {
-      debugPrint('❌ [RoomManagementService] 방 복제 실패: $e');
+      AppLogger.e('❌ [RoomManagementService] 방 복제 실패: $e');
       return null;
     }
   }
@@ -239,25 +228,21 @@ class RoomManagementService {
   /// - Room 객체 리스트
   List<Room> parseRooms(Map<String, dynamic>? data) {
     if (data == null || data['rooms'] == null) {
-      debugPrint('⚠️ [ROOM_MGMT_SERVICE] parseRooms: data 또는 rooms가 null');
+      AppLogger.w('⚠️ [ROOM_MGMT_SERVICE] parseRooms: data 또는 rooms가 null');
       return [];
     }
 
     try {
       final List<dynamic> roomsJson = data['rooms'];
-      debugPrint('🔄 [ROOM_MGMT_SERVICE] parseRooms: ${roomsJson.length}개 파싱 시작');
 
       final rooms = roomsJson.map((json) => Room.fromJson(json)).toList();
 
       if (rooms.isNotEmpty) {
-        debugPrint('✅ [ROOM_MGMT_SERVICE] parseRooms 완료:');
-        debugPrint('  - 첫 번째 방 status (정규화 후): ${rooms.first.status}');
-        debugPrint('  - 첫 번째 방 isActive: ${rooms.first.isActive}');
       }
 
       return rooms;
     } catch (e) {
-      debugPrint('❌ [RoomManagementService] 방 목록 파싱 실패: $e');
+      AppLogger.e('❌ [RoomManagementService] 방 목록 파싱 실패: $e');
       return [];
     }
   }

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../../../../constants/fee_constants.dart';
 import '../../../../utils/format_utils.dart';
@@ -180,7 +181,7 @@ class _PricingStepState extends State<PricingStep> {
         _isLoadingPolicies = false;
         _policyLoadError = '환불 정책을 불러오는데 실패했습니다: $e';
       });
-      debugPrint('❌ [PRICING_STEP] Failed to load refund policies: $e');
+      AppLogger.e('❌ [PRICING_STEP] Failed to load refund policies: $e');
     }
   }
 

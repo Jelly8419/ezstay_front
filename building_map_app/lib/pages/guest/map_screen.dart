@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
@@ -137,9 +138,6 @@ class _MapScreenState extends State<MapScreen> {
     final shouldEnableDrag = coordinator.currentMode == InteractionMode.idle;
     _mapController.setMapDraggable(shouldEnableDrag);
 
-    debugPrint(
-      '🎯 [COORDINATOR→MAP] 모드: ${coordinator.currentMode}, 지도 드래그: ${shouldEnableDrag ? "활성화" : "비활성화"}',
-    );
   }
 
   @override
@@ -163,8 +161,6 @@ class _MapScreenState extends State<MapScreen> {
         _initializeFiltersFromParams();
       });
 
-      debugPrint('📅 [MAP] 전달받은 필터 - 체크인: $_checkInDate, 체크아웃: $_checkOutDate');
-      debugPrint('💰 [MAP] 전달받은 필터 - 최소금액: $_minPrice, 최대금액: $_maxPrice');
     }
   }
 
@@ -174,9 +170,6 @@ class _MapScreenState extends State<MapScreen> {
     DateRange? dateRange;
     if (_checkInDate != null && _checkOutDate != null) {
       dateRange = DateRange(startDate: _checkInDate!, endDate: _checkOutDate!);
-      debugPrint(
-        '📅 [MAP] DateRange 초기화: ${dateRange.startDate} ~ ${dateRange.endDate}',
-      );
     }
 
     // PriceRange 생성 (원 단위를 만원 단위로 변환)
@@ -187,9 +180,6 @@ class _MapScreenState extends State<MapScreen> {
       priceRange = PriceRange(
         minPrice: minPriceManWon,
         maxPrice: maxPriceManWon,
-      );
-      debugPrint(
-        '💰 [MAP] PriceRange 초기화: ${priceRange.minPrice}만원 ~ ${priceRange.maxPrice ?? "전체"}만원',
       );
     }
 
@@ -206,16 +196,10 @@ class _MapScreenState extends State<MapScreen> {
     int? zoom,
     bool forceRefresh = false,
   }) async {
-    debugPrint(
-      '🎯 [MAP] _loadRoomsByBounds 호출됨! bounds: ($swLat,$swLng) ~ ($neLat,$neLng), zoom: $zoom',
-    );
     try {
-      debugPrint('🗺️ [MAP] 지도 영역 변경 - 방 검색 시작');
-      debugPrint('🔍 [MAP] 받은 줌 레벨: ${zoom ?? "null"}');
 
       // 줌 레벨 6 이상이면 리스트 비우기
       if (zoom != null && zoom >= 6) {
-        debugPrint('🚫 [MAP] 줌 레벨 $zoom - 리스트 비우기');
         setState(() {
           _roomsForMap = [];
           _selectedRoom = null;
@@ -226,9 +210,8 @@ class _MapScreenState extends State<MapScreen> {
       }
 
       if (zoom != null) {
-        debugPrint('✅ [MAP] 줌 레벨 전달됨: $zoom');
       } else {
-        debugPrint('⚠️ [MAP] 줌 레벨이 null입니다!');
+        AppLogger.w('⚠️ [MAP] 줌 레벨이 null입니다!');
       }
 
       // 현재 지도 bounds 및 줌 레벨 저장 (변경되었을 때만)
@@ -241,7 +224,6 @@ class _MapScreenState extends State<MapScreen> {
 
       // 변경 없으면 스킵 (forceRefresh 시 강제 호출)
       if (!boundsChanged && !forceRefresh) {
-        debugPrint('⏭️ [MAP] Bounds/Zoom 변경 없음 - 스킵');
         return; // 변경 없으면 조기 리턴
       }
 
@@ -265,11 +247,6 @@ class _MapScreenState extends State<MapScreen> {
       }
 
       // 디버그: API 요청 파라미터 확인
-      debugPrint('📡 [MAP] API 요청 파라미터:');
-      debugPrint('  - bounds: ($swLat,$swLng) ~ ($neLat,$neLng)');
-      debugPrint('  - zoom: $zoom');
-      debugPrint('  - checkIn: $checkInStr');
-      debugPrint('  - checkOut: $checkOutStr');
 
       final result = await _roomService.getRoomsByMapBounds(
         swLat: swLat,
@@ -291,34 +268,21 @@ class _MapScreenState extends State<MapScreen> {
         }
 
         // 디버그: API 응답 데이터 확인
-        debugPrint('📊 [MAP] API 응답 받음 - 방 개수: ${rooms.length}');
         bool hasPhotos = false;
         if (rooms.isNotEmpty) {
           final firstRoom = rooms.first;
-          debugPrint('🏠 [MAP] 첫 번째 방 데이터:');
-          debugPrint('  - ID: ${firstRoom['id']}');
-          debugPrint('  - 이름: ${firstRoom['roomName']}');
-          debugPrint('  - photos 필드 존재: ${firstRoom.containsKey('photos')}');
           if (firstRoom.containsKey('photos')) {
             final photos = firstRoom['photos'];
-            debugPrint('  - photos 타입: ${photos.runtimeType}');
-            debugPrint(
-              '  - photos 길이: ${photos is List ? photos.length : 'N/A'}',
-            );
             if (photos is List && photos.isNotEmpty) {
-              debugPrint('  - 첫 번째 사진 데이터: ${photos[0]}');
               hasPhotos = true;
             } else {
-              debugPrint('  ⚠️ photos 배열이 비어있음!');
             }
           } else {
-            debugPrint('  ⚠️ photos 필드 없음!');
           }
         }
 
         // photos 누락 시 자동 재시도 (초기 로드 시 한 번만)
         if (!hasPhotos && !_hasRetriedForPhotos && rooms.isNotEmpty) {
-          debugPrint('🔄 [MAP] photos 누락 감지 - 자동 재시도 시작 (1초 후)');
           _hasRetriedForPhotos = true;
 
           // 1초 대기 후 동일한 파라미터로 재호출
@@ -328,7 +292,6 @@ class _MapScreenState extends State<MapScreen> {
                 _currentSwLng != null &&
                 _currentNeLat != null &&
                 _currentNeLng != null) {
-              debugPrint('🔄 [MAP] photos 재시도 API 호출');
               _loadRoomsByBounds(
                 _currentSwLat!,
                 _currentSwLng!,
@@ -344,13 +307,12 @@ class _MapScreenState extends State<MapScreen> {
           _roomsForMap = rooms;
           _isLoading = false;
         });
-        debugPrint('✅ [MAP] 방 ${_roomsForMap.length}개 로드 완료');
       } else {
         setState(() {
           _roomsForMap = [];
           _isLoading = false;
         });
-        debugPrint('⚠️ [MAP] 검색 결과 없음 또는 백엔드 오류');
+        AppLogger.w('⚠️ [MAP] 검색 결과 없음 또는 백엔드 오류');
 
         // 사용자에게 알림
         if (mounted) {
@@ -364,7 +326,7 @@ class _MapScreenState extends State<MapScreen> {
         }
       }
     } catch (e) {
-      debugPrint('❌ [MAP] 방 검색 실패: $e');
+      AppLogger.e('❌ [MAP] 방 검색 실패: $e');
       setState(() {
         _roomsForMap = [];
         _isLoading = false;
@@ -374,7 +336,6 @@ class _MapScreenState extends State<MapScreen> {
 
   /// 초기 로드 (지도가 초기화되면 자동으로 bounds_changed 이벤트 발생)
   Future<void> _loadRooms() async {
-    debugPrint('🚀 [MAP] _loadRooms 호출됨! 초기 로드 시작');
 
     // 초기 상태 설정 (빈 배열로 시작, 로딩 종료하여 지도 렌더링 허용)
     setState(() {
@@ -384,7 +345,6 @@ class _MapScreenState extends State<MapScreen> {
 
     // JavaScript 지도 초기화 후 bounds_changed 이벤트가 자동으로 발생하여
     // 실제 지도 범위 내의 방만 로드됨
-    debugPrint('📍 [MAP] 초기 로드 완료 - 지도 렌더링 시작, bounds_changed 이벤트 대기 중');
   }
 
   /// 클러스터 클릭 이벤트 리스너 설정
@@ -402,11 +362,9 @@ class _MapScreenState extends State<MapScreen> {
         final clusterRoomIds =
             (data['clusterRoomIds'] as List?)?.cast<int>() ?? [];
 
-        debugPrint('🎯 [MAP] 클러스터 클릭, 방 개수: ${clusterRoomIds.length}');
 
         // 빈 배열인 경우: 클러스터 필터링 해제 (전체 매물 표시)
         if (clusterRoomIds.isEmpty) {
-          debugPrint('🔄 [MAP] 클러스터 필터링 해제 - 전체 매물 표시 + 카드 리스트 숨김');
           setState(() {
             _filteredByCluster = false;
             _clusterRoomIds = [];
@@ -419,7 +377,6 @@ class _MapScreenState extends State<MapScreen> {
           if (_isMobile &&
               _mobileCardController.hasClients) {
             _mobileCardController.jumpToPage(0);
-            debugPrint('📱 [MAP] 클러스터 필터링 해제 - PageView 첫 번째 카드로 이동');
           }
           return;
         }
@@ -427,16 +384,10 @@ class _MapScreenState extends State<MapScreen> {
         // 개별 마커(클러스터 크기 1)는 onMarkerTap 콜백이 처리하므로 여기서는 스킵
         // (중복 토글 방지: 이 리스너와 onMarkerTap 콜백이 동시에 토글하는 버그 수정)
         if (clusterRoomIds.length == 1) {
-          debugPrint(
-            '📍 [MAP] 개별 마커 감지 (클러스터 크기 1) - onMarkerTap 콜백이 처리 예정, 여기서는 스킵',
-          );
           return;
         }
 
         // 클러스터 필터링 활성화 (클러스터 크기 >= 2)
-        debugPrint(
-          '📱 [MAP] 클러스터 필터링 활성화 - 모바일 리스트 토글 및 ${clusterRoomIds.length}개 매물 표시',
-        );
 
         // 🎯 Coordinator: 클러스터 클릭 이벤트 처리 가능 여부 확인
         final coordinator = Provider.of<MapInteractionCoordinator>(
@@ -444,7 +395,6 @@ class _MapScreenState extends State<MapScreen> {
           listen: false,
         );
         if (!coordinator.canProcessEvent(EventType.clusterClick)) {
-          debugPrint('🚫 [MAP] 클러스터 클릭 차단 - 다른 인터랙션 진행 중');
           return;
         }
 
@@ -463,14 +413,12 @@ class _MapScreenState extends State<MapScreen> {
         // 클러스터 마커 선택 (파란색으로 표시)
         if (clickedRoomId != null) {
           _mapController.selectMarker(clickedRoomId);
-          debugPrint('🔵 [MAP] 클러스터 마커 선택 - roomId: $clickedRoomId');
         }
 
         // 모바일 PageView를 첫 번째 카드로 이동
         if (_isMobile &&
             _mobileCardController.hasClients) {
           _mobileCardController.jumpToPage(0);
-          debugPrint('📱 [MAP] 모바일 PageView를 첫 번째 카드로 이동');
         }
       }
     };
@@ -491,7 +439,7 @@ class _MapScreenState extends State<MapScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Failed to load saved filters: $e');
+      AppLogger.e('Failed to load saved filters: $e');
     }
     _loadRooms();
   }
@@ -501,11 +449,9 @@ class _MapScreenState extends State<MapScreen> {
     if (_filters.dateRange != null) {
       _checkInDate = _filters.dateRange!.startDate;
       _checkOutDate = _filters.dateRange!.endDate;
-      debugPrint('📅 [MAP] 필터 날짜 동기화 - 체크인: $_checkInDate, 체크아웃: $_checkOutDate');
     } else {
       _checkInDate = null;
       _checkOutDate = null;
-      debugPrint('📅 [MAP] 필터 날짜 초기화 (날짜 없음)');
     }
   }
 
@@ -515,7 +461,7 @@ class _MapScreenState extends State<MapScreen> {
       final filtersJson = json.encode(filters.toJson());
       await _storage.write(key: 'guest_search_filters', value: filtersJson);
     } catch (e) {
-      debugPrint('Failed to save filters: $e');
+      AppLogger.e('Failed to save filters: $e');
     }
   }
 
@@ -530,7 +476,6 @@ class _MapScreenState extends State<MapScreen> {
     // 날짜 필터가 변경된 경우 → API 재호출 (isAvailable 갱신 필요)
     if (dateChanged) {
       _syncDatesFromFilters();
-      debugPrint('📅 [MAP] 날짜 필터 변경 → API 재호출');
       if (_currentSwLat != null &&
           _currentSwLng != null &&
           _currentNeLat != null &&
@@ -587,9 +532,6 @@ class _MapScreenState extends State<MapScreen> {
     bool focusMap = false,
     bool shouldScroll = true,
   }) {
-    debugPrint(
-      '🔵 [SELECTION] _onRoomSelected 호출 - roomId: ${room?.id}, focusMap: $focusMap',
-    );
 
     setState(() {
       _selectedRoom = room;
@@ -598,7 +540,6 @@ class _MapScreenState extends State<MapScreen> {
     // 지도 포커싱 및 마커 선택
     if (room != null) {
       // 마커 선택 (흰색 → 파란색)
-      debugPrint('🔵 [SELECTION] 마커 선택 - roomId: ${room.id}');
       _mapController.selectMarker(room.id);
 
       // 지도 포커싱
@@ -616,7 +557,6 @@ class _MapScreenState extends State<MapScreen> {
       }
     } else {
       // room이 null인 경우 마커 선택 해제 (파란색 → 흰색)
-      debugPrint('⚪ [SELECTION] 마커 선택 해제');
       _mapController.selectMarker(-1);
     }
   }
@@ -920,7 +860,6 @@ class _MapScreenState extends State<MapScreen> {
   List<Map<String, dynamic>> _getFilteredRoomsForList() {
     // 클러스터 필터링이 활성화된 경우 (최우선)
     if (_filteredByCluster && _clusterRoomIds.isNotEmpty) {
-      debugPrint('🎯 [LIST] 클러스터 필터링 활성화: ${_clusterRoomIds.length}개 방');
       final clusterRooms = _roomsForMap.where((room) {
         final roomId = room['id'] as int?;
         return roomId != null && _clusterRoomIds.contains(roomId);
@@ -970,11 +909,7 @@ class _MapScreenState extends State<MapScreen> {
 
             // 디버그: 개별 방의 photos 데이터 확인 (첫 번째 방만)
             if (index == 0) {
-              debugPrint('🖼️ [LIST] 첫 번째 PropertyCard photos 파싱:');
-              debugPrint('  - photosData 존재: ${photosData != null}');
-              debugPrint('  - photosData 길이: ${photosData?.length ?? 0}');
               if (photosData != null && photosData.isNotEmpty) {
-                debugPrint('  - photosData[0]: ${photosData[0]}');
               }
             }
 
@@ -988,9 +923,7 @@ class _MapScreenState extends State<MapScreen> {
 
             // 디버그: 변환 후 photos 데이터 (첫 번째 방만)
             if (index == 0) {
-              debugPrint('  - 변환 후 photos 길이: ${photos.length}');
               if (photos.isNotEmpty) {
-                debugPrint('  - 변환 후 photos[0]: ${photos[0]}');
               }
             }
 
@@ -1038,13 +971,8 @@ class _MapScreenState extends State<MapScreen> {
 
             // 디버그: Room 모델 변환 후 photos 확인 (첫 번째 방만)
             if (index == 0) {
-              debugPrint('📸 [LIST] Room 모델 변환 완료:');
-              debugPrint('  - room.photos.length: ${room.photos.length}');
               if (room.photos.isNotEmpty) {
-                debugPrint('  - room.photos[0].url: ${room.photos[0].url}');
-                debugPrint('  - room.photos[0].order: ${room.photos[0].order}');
               } else {
-                debugPrint('  ⚠️ room.photos가 비어있음!');
               }
             }
 
@@ -1152,9 +1080,6 @@ class _MapScreenState extends State<MapScreen> {
                         // 지도의 모든 마커 선택 해제
                         _mapController.selectMarker(-1);
 
-                        debugPrint(
-                          '📱 [MOBILE] 매물 개수 뱃지 클릭 - 리스트 토글: $_showMobileCardList (마커 선택 해제)',
-                        );
                       }
                     : null,
                 child: Container(
@@ -1216,7 +1141,6 @@ class _MapScreenState extends State<MapScreen> {
               child: Listener(
                 onPointerDown: (_) {
                   // 🎯 Coordinator: PageView 드래그 시작 → 카드 슬라이드 모드 진입
-                  debugPrint('📱 [MOBILE] PageView 드래그 시작 - 카드 슬라이드 모드');
                   final coordinator = Provider.of<MapInteractionCoordinator>(
                     context,
                     listen: false,
@@ -1225,7 +1149,6 @@ class _MapScreenState extends State<MapScreen> {
                 },
                 onPointerUp: (_) {
                   // 🎯 Coordinator: PageView 드래그 종료 → idle 모드 복귀
-                  debugPrint('📱 [MOBILE] PageView 드래그 종료 - idle 모드 복귀');
                   final coordinator = Provider.of<MapInteractionCoordinator>(
                     context,
                     listen: false,
@@ -1234,7 +1157,6 @@ class _MapScreenState extends State<MapScreen> {
                 },
                 onPointerCancel: (_) {
                   // 🎯 Coordinator: 드래그 취소 시에도 idle 모드 복귀
-                  debugPrint('📱 [MOBILE] PageView 드래그 취소 - idle 모드 복귀');
                   final coordinator = Provider.of<MapInteractionCoordinator>(
                     context,
                     listen: false,
@@ -1329,7 +1251,6 @@ class _MapScreenState extends State<MapScreen> {
 
           // roomId: -1은 개별 마커 재클릭 (선택 해제) 이벤트
           if (roomId == -1) {
-            debugPrint('🔄 [MAP] 개별 마커 재클릭 - 선택 해제 + 전체 매물 표시 + 카드 리스트 숨김');
             setState(() {
               _selectedRoom = null;
               _filteredByCluster = false;
@@ -1342,7 +1263,6 @@ class _MapScreenState extends State<MapScreen> {
             if (!_isDesktop &&
                 _mobileCardController.hasClients) {
               _mobileCardController.jumpToPage(0);
-              debugPrint('📱 [MOBILE] PageView 첫 번째 카드로 리셋');
             }
             return;
           }
@@ -1350,7 +1270,6 @@ class _MapScreenState extends State<MapScreen> {
           // 반응형 동작 분기
           if (_isDesktop) {
             // 데스크톱: 개별 마커 클릭 시 해당 매물만 리스트에 표시
-            debugPrint('🖥️ [DESKTOP] 개별 마커 클릭 - 해당 매물만 리스트 표시: $roomId');
 
             // 개별 마커 클릭 시 해당 매물만 필터링하여 리스트 표시
             setState(() {
@@ -1422,12 +1341,10 @@ class _MapScreenState extends State<MapScreen> {
               listen: false,
             );
             if (!coordinator.canProcessEvent(EventType.markerClick)) {
-              debugPrint('🚫 [MOBILE] 마커 클릭 차단 - 다른 인터랙션 진행 중');
               return;
             }
 
             // 다른 마커 클릭: 해당 매물 선택 (상세 페이지 이동 제거)
-            debugPrint('📱 [MOBILE] 개별 마커 클릭 - 해당 매물만 카드 리스트 노출: $roomId');
 
             // 개별 마커 클릭 시 해당 매물만 필터링하여 카드 리스트 노출
             // (같은 마커 재클릭은 roomId: -1 이벤트로 별도 처리)
@@ -1497,7 +1414,6 @@ class _MapScreenState extends State<MapScreen> {
             if (_isMobile &&
                 _mobileCardController.hasClients) {
               _mobileCardController.jumpToPage(0);
-              debugPrint('📱 [MOBILE] 개별 마커 - PageView 첫 번째 카드로 이동');
             }
           }
         },
@@ -1513,7 +1429,6 @@ class _MapScreenState extends State<MapScreen> {
 
           // 모바일 환경에서 슬라이드 카드가 표시 중이면 숨김 (지도 드래그 시)
           if (_isMobile && _showMobileCardList) {
-            debugPrint('📱 [MOBILE] 지도 드래그 감지 - 슬라이드 카드 숨김 및 매물 개수 뱃지 재표시');
             setState(() {
               _showMobileCardList = false;
             });
@@ -1521,7 +1436,6 @@ class _MapScreenState extends State<MapScreen> {
 
           // 선택된 마커가 있으면 해제 (UX 개선: 지도 드래그 시 선택 초기화)
           if (_selectedRoom != null || _filteredByCluster) {
-            debugPrint('🗺️ [MAP] 지도 드래그 감지 - 선택 해제 및 전체 매물 표시');
 
             setState(() {
               _selectedRoom = null;
@@ -1537,7 +1451,6 @@ class _MapScreenState extends State<MapScreen> {
             if (!_isDesktop &&
                 _mobileCardController.hasClients) {
               _mobileCardController.jumpToPage(0);
-              debugPrint('📱 [MOBILE] PageView 첫 번째 카드로 리셋');
             }
           }
 

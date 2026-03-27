@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:html' as html show window;
@@ -41,7 +42,6 @@ class UserRepository {
   /// 사용자 정보 저장
   static Future<void> saveUser(User user) async {
     if (!ApiConfig.isProduction) {
-      debugPrint('💾 [USER_REPO] 사용자 정보 저장 중...');
     }
 
     await _writeSecure('user_id', user.id);
@@ -61,14 +61,12 @@ class UserRepository {
     }
 
     if (!ApiConfig.isProduction) {
-      debugPrint('✅ [USER_REPO] 사용자 정보 저장 완료');
     }
   }
 
   /// 저장된 사용자 정보 불러오기
   static Future<User?> loadUser() async {
     if (!ApiConfig.isProduction) {
-      debugPrint('🔍 [USER_REPO] 사용자 정보 불러오기 시도...');
     }
 
     final id = await _readSecure('user_id');
@@ -81,7 +79,7 @@ class UserRepository {
 
     if (id == null || email == null || name == null || modeStr == null || providerStr == null) {
       if (!ApiConfig.isProduction) {
-        debugPrint('⚠️ [USER_REPO] 저장된 사용자 정보 없음');
+        AppLogger.w('⚠️ [USER_REPO] 저장된 사용자 정보 없음');
       }
       return null;
     }
@@ -103,7 +101,6 @@ class UserRepository {
     );
 
     if (!ApiConfig.isProduction) {
-      debugPrint('✅ [USER_REPO] 사용자 정보 불러오기 성공: ${user.email}');
     }
 
     return user;
@@ -112,7 +109,6 @@ class UserRepository {
   /// 사용자 정보 삭제
   static Future<void> clearUser() async {
     if (!ApiConfig.isProduction) {
-      debugPrint('🗑️ [USER_REPO] 사용자 정보 삭제 중...');
     }
 
     await _deleteSecure('user_id');
@@ -124,7 +120,6 @@ class UserRepository {
     await _deleteSecure('user_profile_image');
 
     if (!ApiConfig.isProduction) {
-      debugPrint('✅ [USER_REPO] 사용자 정보 삭제 완료');
     }
   }
 
@@ -133,7 +128,6 @@ class UserRepository {
     await _writeSecure('user_mode', mode.name);
 
     if (!ApiConfig.isProduction) {
-      debugPrint('✅ [USER_REPO] 사용자 모드 업데이트: ${mode.name}');
     }
   }
 
@@ -146,7 +140,6 @@ class UserRepository {
     }
 
     if (!ApiConfig.isProduction) {
-      debugPrint('✅ [USER_REPO] 프로필 이미지 업데이트');
     }
   }
 
@@ -155,7 +148,6 @@ class UserRepository {
     await _writeSecure('user_name', name);
 
     if (!ApiConfig.isProduction) {
-      debugPrint('✅ [USER_REPO] 사용자 이름 업데이트: $name');
     }
   }
 
@@ -168,7 +160,6 @@ class UserRepository {
     }
 
     if (!ApiConfig.isProduction) {
-      debugPrint('✅ [USER_REPO] 사용자 닉네임 업데이트: $nickname');
     }
   }
 

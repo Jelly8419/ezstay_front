@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui_web' as ui_web;
 // ignore: avoid_web_libraries_in_flutter
@@ -63,7 +64,7 @@ class _SimpleKakaoMapState extends State<SimpleKakaoMap> {
           if (attempts < 20) {
             Future.delayed(Duration(milliseconds: 300), tryInit);
           } else {
-            debugPrint('❌ kakao.maps 로드 타임아웃');
+            AppLogger.e('❌ kakao.maps 로드 타임아웃');
           }
           return;
         }
@@ -71,16 +72,14 @@ class _SimpleKakaoMapState extends State<SimpleKakaoMap> {
         // DOM에 컨테이너가 추가될 때까지 대기
         final container = html.document.getElementById(_viewId);
         if (container == null) {
-          debugPrint('⏳ 컨테이너 대기 중... (시도 $attempts)');
           if (attempts < 20) {
             Future.delayed(Duration(milliseconds: 300), tryInit);
           } else {
-            debugPrint('❌ 컨테이너 타임아웃: $_viewId');
+            AppLogger.e('❌ 컨테이너 타임아웃: $_viewId');
           }
           return;
         }
 
-        debugPrint('✅ SimpleKakaoMap 컨테이너 발견, 지도 생성 중...');
 
         // JavaScript로 지도 생성 및 단일 마커 추가
         final jsCode = '''
@@ -150,7 +149,7 @@ class _SimpleKakaoMapState extends State<SimpleKakaoMap> {
 
         js.context.callMethod('eval', [jsCode]);
       } catch (e) {
-        debugPrint('❌ SimpleKakaoMap 초기화 실패: $e');
+        AppLogger.e('❌ SimpleKakaoMap 초기화 실패: $e');
       }
     }
 

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -100,7 +101,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         _error = e.toString();
         _isLoading = false;
       });
-      debugPrint('❌ [CHAT_DETAIL] 초기화 실패: $e');
+      AppLogger.e('❌ [CHAT_DETAIL] 초기화 실패: $e');
     }
   }
 
@@ -140,7 +141,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       // 스크롤을 최하단으로 이동
       _scrollToBottom();
     } catch (e) {
-      debugPrint('❌ [CHAT_DETAIL] 메시지 전송 실패: $e');
+      AppLogger.e('❌ [CHAT_DETAIL] 메시지 전송 실패: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

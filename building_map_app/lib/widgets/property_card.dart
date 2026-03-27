@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../models/room.dart';
 import '../utils/contract_utils.dart';
@@ -185,9 +186,8 @@ class _PropertyCardState extends State<PropertyCard> {
 
     // 디버그: PropertyCard에서 받은 photos 확인 (첫 렌더링만)
     if (_currentPhotoIndex == 0 && !hasPhotos) {
-      debugPrint('⚠️ [CARD] PropertyCard - photos 없음 (room.id: ${widget.room.id})');
+      AppLogger.w('⚠️ [CARD] PropertyCard - photos 없음 (room.id: ${widget.room.id})');
     } else if (_currentPhotoIndex == 0 && hasPhotos) {
-      debugPrint('✅ [CARD] PropertyCard - photos 존재 (room.id: ${widget.room.id}, 개수: ${widget.room.photos.length})');
     }
 
     return AspectRatio(

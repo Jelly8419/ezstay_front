@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
 
@@ -21,19 +22,17 @@ class PaymentConfig {
     // 1순위: --dart-define으로 주입된 값 (빌드 시 고정)
     const dartDefineValue = String.fromEnvironment('PAYTAG_SHOPCODE');
     if (dartDefineValue.isNotEmpty) {
-      debugPrint('✅ [PaymentConfig] PAYTAG_SHOPCODE from --dart-define');
       return dartDefineValue;
     }
 
     // 2순위: .env 파일의 값 (런타임)
     final dotenvValue = dotenv.env['PAYTAG_SHOPCODE'];
     if (dotenvValue != null && dotenvValue.isNotEmpty) {
-      debugPrint('✅ [PaymentConfig] PAYTAG_SHOPCODE from .env');
       return dotenvValue;
     }
 
     // 3순위: 기본 테스트 값
-    debugPrint('⚠️ [PaymentConfig] PAYTAG_SHOPCODE 없음 → 기본 테스트 값 사용');
+    AppLogger.w('⚠️ [PaymentConfig] PAYTAG_SHOPCODE 없음 → 기본 테스트 값 사용');
     return _defaultTestShopcode;
   }
 
@@ -54,7 +53,7 @@ class PaymentConfig {
     }
 
     // 3순위: 기본값
-    debugPrint('⚠️ [PaymentConfig] API_BASE_URL 없음 → localhost 사용');
+    AppLogger.w('⚠️ [PaymentConfig] API_BASE_URL 없음 → localhost 사용');
     return 'http://localhost:8080';
   }
 

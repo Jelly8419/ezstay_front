@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -18,7 +19,6 @@ class KmcService {
   ///
   /// Returns: [KmcRequestResult] 암호화된 인증 요청 데이터
   static Future<KmcRequestResult> requestVerification() async {
-    debugPrint('🔐 [KMC] 본인인증 요청 데이터 생성 시작');
 
     try {
       final headers = <String, String>{
@@ -36,13 +36,11 @@ class KmcService {
         headers: headers,
       ).timeout(ApiConfig.timeout);
 
-      debugPrint('📡 [KMC] 요청 응답 상태: ${response.statusCode}');
 
       final data = json.decode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         final result = KmcRequestResult.fromJson(data['data']);
-        debugPrint('✅ [KMC] 인증 요청 데이터 생성 성공 (certNum: ${result.certNum})');
         return result;
       } else {
         final code = data['code']?.toString() ?? '';
@@ -55,7 +53,7 @@ class KmcService {
       throw KmcException(code: 'NETWORK', message: '서버에 연결할 수 없습니다.');
     } catch (e) {
       if (e is KmcException) rethrow;
-      debugPrint('❌ [KMC] 인증 요청 에러: $e');
+      AppLogger.e('❌ [KMC] 인증 요청 에러: $e');
       throw KmcException(code: 'UNKNOWN', message: '인증 요청 중 오류가 발생했습니다.');
     }
   }
@@ -73,7 +71,6 @@ class KmcService {
     required String apiToken,
     required String certNum,
   }) async {
-    debugPrint('🔍 [KMC] 인증 결과 검증 시작');
 
     try {
       final headers = <String, String>{
@@ -95,13 +92,11 @@ class KmcService {
         }),
       ).timeout(const Duration(seconds: 20)); // KMC 서버 연동이므로 타임아웃 여유있게
 
-      debugPrint('📡 [KMC] 검증 응답 상태: ${response.statusCode}');
 
       final data = json.decode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         final result = KmcVerifyResult.fromJson(data['data']);
-        debugPrint('✅ [KMC] 인증 결과 검증 성공 (이름: ${result.name})');
         return result;
       } else {
         final code = data['code']?.toString() ?? '';
@@ -114,7 +109,7 @@ class KmcService {
       throw KmcException(code: 'NETWORK', message: '서버에 연결할 수 없습니다.');
     } catch (e) {
       if (e is KmcException) rethrow;
-      debugPrint('❌ [KMC] 인증 검증 에러: $e');
+      AppLogger.e('❌ [KMC] 인증 검증 에러: $e');
       throw KmcException(code: 'UNKNOWN', message: '인증 결과 검증 중 오류가 발생했습니다.');
     }
   }

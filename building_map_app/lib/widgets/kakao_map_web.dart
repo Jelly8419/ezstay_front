@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui_web' as ui_web;
 // ignore: avoid_web_libraries_in_flutter
@@ -70,9 +71,7 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🎬 [MAP WEB] initState 호출됨! 위젯 초기화 시작');
     _viewId = 'kakao-map-${_idCounter++}';
-    debugPrint('🆔 [MAP WEB] View ID 생성: $_viewId');
 
     // 컨트롤러에 state 연결
     widget.controller?._attach(this);
@@ -82,7 +81,6 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
       ..id = _viewId
       ..style.width = '100%'
       ..style.height = '100%';
-    debugPrint('📦 [MAP WEB] HTML DivElement 생성 완료 (ID: $_viewId)');
 
     // ViewFactory 등록
     // ignore: undefined_prefixed_name
@@ -90,7 +88,6 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
       _viewId,
       (int viewId) => _mapElement,
     );
-    debugPrint('🏭 [MAP WEB] ViewFactory 등록 완료');
 
     // bounds_changed 이벤트 리스너 등록
     _boundsChangedListener = (html.Event event) {
@@ -143,7 +140,6 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
         // → map_screen.dart의 _setupClusterClickListener()가 처리
         // 개별 마커는 클러스터 크기가 1이므로 onMarkerTap 호출해야 함
         if (clusterRoomIds != null && clusterRoomIds.length > 1) {
-          debugPrint('🎯 [MAP WEB] 클러스터 이벤트 감지 (${clusterRoomIds.length}개) - onMarkerTap 스킵');
           return;
         }
 
@@ -153,7 +149,6 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
         // roomId: -1인 경우 → 개별 마커 재클릭 (선택 해제)
         if (roomId == -1) {
-          debugPrint('🔄 [MAP WEB] 개별 마커 재클릭 감지 (roomId: -1) - 선택 해제');
           if (widget.onMarkerTap != null) {
             widget.onMarkerTap!({'id': -1}); // 특수 마커로 재클릭 이벤트 전달
           }
@@ -167,20 +162,16 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
         );
 
         if (clickedRoom.isNotEmpty && widget.onMarkerTap != null) {
-          debugPrint('📍 [MAP WEB] 개별 마커 클릭 - roomId: $roomId');
           widget.onMarkerTap!(clickedRoom);
         }
       }
     };
     html.window.addEventListener('message', _markerClickListener);
-    debugPrint('🔔 [MAP WEB] 이벤트 리스너 등록 완료 (bounds_changed, marker_click)');
 
     // 지도 초기화
-    debugPrint('⏰ [MAP WEB] addPostFrameCallback 등록 (다음 프레임에서 _initMap 호출 예정)');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 🔒 위젯이 dispose된 후에는 초기화하지 않음
       if (!mounted) return;
-      debugPrint('▶️ [MAP WEB] PostFrameCallback 실행됨! _initMap 호출 시작');
       _initMap();
     });
   }
@@ -199,10 +190,6 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
         !_listEquals(oldRoomKeys, newRoomKeys);
 
     if (roomsChanged) {
-      debugPrint('🔄 [Dart] 방 데이터 변경 감지 - 마커 업데이트 시작');
-      debugPrint(
-        '🔄 [Dart] 이전: ${oldWidget.rooms.length}개, 현재: ${widget.rooms.length}개',
-      );
 
       // 지도 초기화를 기다린 후 마커 업데이트 (약간의 딜레이)
       Future.delayed(Duration(milliseconds: 500), () {
@@ -211,7 +198,6 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
         }
       });
     } else {
-      debugPrint('⏭️ [Dart] 방 데이터 변경 없음 - 마커 업데이트 스킵');
     }
   }
 
@@ -238,7 +224,6 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
   /// 마커 업데이트 (기존 마커 제거 후 새로 생성)
   void _updateMarkers() {
-    debugPrint('🔄 [Dart] _updateMarkers 호출됨 - 방 ${widget.rooms.length}개');
 
     // 방 데이터를 JavaScript로 전달하여 마커 재생성
     final roomsJsonString = widget.rooms
@@ -536,48 +521,39 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
   }
 
   void _initMap() {
-    debugPrint('🚀 [MAP WEB] _initMap 호출됨! 지도 초기화 시작');
     int attempts = 0;
 
     void tryInit() {
       // 🔒 위젯이 dispose된 후에는 초기화 중단
       if (!mounted) {
-        debugPrint('⏹️ [MAP WEB] 위젯 dispose됨 - 초기화 중단');
         return;
       }
 
       attempts++;
-      debugPrint('🔄 [MAP WEB] tryInit 시도 #$attempts - Kakao SDK 확인 중...');
 
       try {
         final kakaoMaps = js.context['kakao']?['maps'];
         if (kakaoMaps == null) {
-          debugPrint('⏳ [MAP WEB] Kakao SDK 아직 로드 안됨 (시도 $attempts/20)');
           if (attempts < 20) {
             Future.delayed(Duration(milliseconds: 300), tryInit);
           } else {
-            debugPrint('❌ [MAP WEB] kakao.maps 로드 타임아웃 (20회 시도 실패)');
+            AppLogger.e('❌ [MAP WEB] kakao.maps 로드 타임아웃 (20회 시도 실패)');
           }
           return;
         }
 
-        debugPrint('✅ [MAP WEB] Kakao SDK 로드 완료!');
 
         // DOM에 컨테이너가 추가될 때까지 대기
         final container = html.document.getElementById(_viewId);
         if (container == null) {
-          debugPrint(
-            '⏳ [MAP WEB] 컨테이너 대기 중... (시도 $attempts/20, ID: $_viewId)',
-          );
           if (attempts < 20) {
             Future.delayed(Duration(milliseconds: 300), tryInit);
           } else {
-            debugPrint('❌ [MAP WEB] 컨테이너 타임아웃: $_viewId (20회 시도 실패)');
+            AppLogger.e('❌ [MAP WEB] 컨테이너 타임아웃: $_viewId (20회 시도 실패)');
           }
           return;
         }
 
-        debugPrint('✅ [MAP WEB] 컨테이너 발견! 지도 생성 중... (ID: $_viewId)');
 
         // 첫 번째 방의 좌표를 중심으로 설정 (없으면 서울시청)
         double centerLat = 37.5665;
@@ -879,11 +855,9 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
           })();
         ''';
 
-        debugPrint('📝 [MAP WEB] JavaScript 코드 실행 시작...');
         js.context.callMethod('eval', [jsCode]);
-        debugPrint('✅ [MAP WEB] JavaScript 코드 실행 완료! (지도 초기화 요청됨)');
       } catch (e) {
-        debugPrint('❌ [MAP WEB] 지도 초기화 실패: $e');
+        AppLogger.e('❌ [MAP WEB] 지도 초기화 실패: $e');
       }
     }
 

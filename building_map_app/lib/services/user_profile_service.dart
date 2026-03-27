@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -34,7 +35,6 @@ class UserProfileService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('📋 [UserProfileService] 프로필 조회 시작');
 
     try {
       final response = await http.get(
@@ -45,11 +45,9 @@ class UserProfileService {
         },
       ).timeout(const Duration(seconds: 10));
 
-      debugPrint('📥 [UserProfileService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        debugPrint('✅ [UserProfileService] 프로필 조회 성공');
         return UserProfile.fromJson(data['data'] as Map<String, dynamic>);
       } else if (response.statusCode == 401) {
         throw const UnauthorizedException();
@@ -89,7 +87,6 @@ class UserProfileService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('🔐 [UserProfileService] 비밀번호 변경 시작');
 
     try {
       final response = await http.patch(
@@ -104,10 +101,8 @@ class UserProfileService {
         }),
       ).timeout(const Duration(seconds: 10));
 
-      debugPrint('📥 [UserProfileService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        debugPrint('✅ [UserProfileService] 비밀번호 변경 성공');
       } else if (response.statusCode == 401) {
         throw const UnauthorizedException();
       } else if (response.statusCode == 400) {
@@ -145,7 +140,6 @@ class UserProfileService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('📱 [UserProfileService] 연락처 변경 시작');
 
     try {
       final response = await http.patch(
@@ -159,10 +153,8 @@ class UserProfileService {
         }),
       ).timeout(const Duration(seconds: 10));
 
-      debugPrint('📥 [UserProfileService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        debugPrint('✅ [UserProfileService] 연락처 변경 성공');
       } else if (response.statusCode == 401) {
         throw const UnauthorizedException();
       } else if (response.statusCode == 400) {
@@ -225,7 +217,6 @@ class UserProfileService {
       throw Exception('닉네임은 2~20자로 입력해주세요.');
     }
 
-    debugPrint('✏️ [UserProfileService] 닉네임 변경 시작: $trimmedNickname');
 
     try {
       final response = await http.patch(
@@ -239,12 +230,10 @@ class UserProfileService {
         }),
       ).timeout(const Duration(seconds: 10));
 
-      debugPrint('📥 [UserProfileService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         final newNickname = data['data']['nickname'] as String;
-        debugPrint('✅ [UserProfileService] 닉네임 변경 성공: $newNickname');
         return newNickname;
       } else if (response.statusCode == 401) {
         throw const UnauthorizedException();
@@ -274,7 +263,6 @@ class UserProfileService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('🚪 [UserProfileService] 회원 탈퇴 시작');
 
     try {
       final response = await http.delete(
@@ -285,10 +273,8 @@ class UserProfileService {
         },
       ).timeout(const Duration(seconds: 10));
 
-      debugPrint('📥 [UserProfileService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        debugPrint('✅ [UserProfileService] 회원 탈퇴 성공');
       } else if (response.statusCode == 401) {
         throw const UnauthorizedException();
       } else if (response.statusCode == 400) {

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
@@ -27,9 +28,6 @@ enum ContractStatus {
     return ContractStatus.values.firstWhere(
       (status) => status.value == value,
       orElse: () {
-        debugPrint(
-          '⚠️ [CONTRACT_STATUS] Unknown status: $value, defaulting to pendingApproval',
-        );
         return ContractStatus.pendingApproval;
       },
     );
@@ -56,9 +54,6 @@ enum CheckoutStatus {
     return CheckoutStatus.values.firstWhere(
       (status) => status.value == value,
       orElse: () {
-        debugPrint(
-          '⚠️ [CHECKOUT_STATUS] Unknown status: $value, defaulting to notStarted',
-        );
         return CheckoutStatus.notStarted;
       },
     );
@@ -92,9 +87,6 @@ enum DepositStatus {
     return DepositStatus.values.firstWhere(
       (status) => status.value == value,
       orElse: () {
-        debugPrint(
-          '⚠️ [DEPOSIT_STATUS] Unknown status: $value, defaulting to held',
-        );
         return DepositStatus.held;
       },
     );
@@ -813,9 +805,6 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
         if (item is Map<String, dynamic>) {
           items.add(RentalItem.fromJson(item));
         } else {
-          debugPrint(
-            '⚠️ [PARSE_ERROR] List item is not a Map: ${item.runtimeType} = $item',
-          );
         }
       }
       return items.isEmpty ? null : items;
@@ -829,17 +818,11 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
       if (rentalItemsJson.containsKey('items') &&
           rentalItemsJson['items'] is List) {
         final itemsList = rentalItemsJson['items'] as List;
-        debugPrint(
-          '✅ [PARSE_RENTAL_ITEMS] Found ${itemsList.length} items in new API format',
-        );
 
         for (final item in itemsList) {
           if (item is Map<String, dynamic>) {
             items.add(RentalItem.fromJson(item));
           } else {
-            debugPrint(
-              '⚠️ [PARSE_ERROR] Item in items array is not a Map: ${item.runtimeType}',
-            );
           }
         }
         return items.isEmpty ? null : items;
@@ -863,22 +846,16 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
             final itemType = key.substring(0, key.length - 2); // 'Id' 제거
             itemMap[itemType] ??= {};
             itemMap[itemType]!['id'] = value.toString();
-            debugPrint(
-              '⚠️ [PARSE_NONSTANDARD] Detected ${itemType}Id = $value',
-            );
           }
           // {itemType}Quantity 형식 (예: beddingSetQuantity: 1)
           else if (key.endsWith('Quantity')) {
             final itemType = key.substring(0, key.length - 8); // 'Quantity' 제거
             itemMap[itemType] ??= {};
             itemMap[itemType]!['quantity'] = value;
-            debugPrint(
-              '⚠️ [PARSE_NONSTANDARD] Detected ${itemType}Quantity = $value',
-            );
           }
           // 기타 int 값 (key를 id로 사용)
           else {
-            debugPrint('⚠️ [PARSE_WARNING] Simplified format: $key = $value');
+            AppLogger.w('⚠️ [PARSE_WARNING] Simplified format: $key = $value');
             items.add(
               RentalItem(
                 id: key,
@@ -894,13 +871,7 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
         else if (key == 'totalPaid' ||
             key == 'totalRefunded' ||
             key == 'netAmount') {
-          debugPrint(
-            'ℹ️ [PARSE_RENTAL_ITEMS] Skipping metadata field: $key = $value',
-          );
         } else {
-          debugPrint(
-            '⚠️ [PARSE_ERROR] Map value is unexpected type: ${value.runtimeType} = $value',
-          );
         }
       }
 
@@ -919,9 +890,6 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
               deliveryStatus: DeliveryStatus.pending,
             ),
           );
-          debugPrint(
-            '✅ [PARSE_NONSTANDARD] Created RentalItem: id=${itemData['id']}, quantity=${itemData['quantity'] ?? 1}, type=$itemType',
-          );
         }
       }
 
@@ -936,22 +904,16 @@ List<RentalItem>? _parseRentalItems(dynamic rentalItemsJson) {
           return _parseRentalItems(decoded);
         }
       } catch (_) {
-        debugPrint(
-          '⚠️ [PARSE_ERROR] Failed to decode rentalItems string: $rentalItemsJson',
-        );
       }
       return null;
     }
 
     // 예상치 못한 형식
-    debugPrint(
-      '⚠️ [PARSE_ERROR] Unexpected rentalItems format: ${rentalItemsJson.runtimeType}',
-    );
-    debugPrint('⚠️ [PARSE_ERROR] Content: $rentalItemsJson');
+    AppLogger.w('⚠️ [PARSE_ERROR] Content: $rentalItemsJson');
     return null;
   } catch (e, stackTrace) {
-    debugPrint('⚠️ [PARSE_ERROR] Failed to parse rentalItems: $e');
-    debugPrint('⚠️ [PARSE_ERROR] Stack trace: $stackTrace');
+    AppLogger.w('⚠️ [PARSE_ERROR] Failed to parse rentalItems: $e');
+    AppLogger.w('⚠️ [PARSE_ERROR] Stack trace: $stackTrace');
     return null;
   }
 }

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
@@ -110,31 +111,26 @@ class _ChatListPageState extends State<ChatListPage> {
       }
 
       // 3. 계약 ID로 채팅방 찾아서 선택 및 URL 업데이트
-      debugPrint('📱 [CHAT_LIST] initialContractId: ${widget.initialContractId}, _selectedChatId: $_selectedChatId');
-      debugPrint('📱 [CHAT_LIST] 로드된 채팅방 수: ${chatRooms.length}');
       for (var room in chatRooms) {
-        debugPrint('📱 [CHAT_LIST] 채팅방 - contractId: ${room.contractId}, firebaseChatRoomId: ${room.firebaseChatRoomId}');
       }
 
       if (widget.initialContractId != null && _selectedChatId == null) {
         final matchingRoom = chatRooms.where(
           (room) => room.contractId == widget.initialContractId,
         ).toList();
-        debugPrint('📱 [CHAT_LIST] 매칭된 채팅방 수: ${matchingRoom.length}');
 
         if (matchingRoom.isNotEmpty) {
           final chatRoomId = matchingRoom.first.firebaseChatRoomId;
           setState(() {
             _selectedChatId = chatRoomId;
           });
-          debugPrint('📱 [CHAT_LIST] 계약 ID ${widget.initialContractId}에 해당하는 채팅방 선택: $chatRoomId');
 
           // URL을 /chat-list/{chatRoomId} 형태로 업데이트 (replace로 히스토리 교체)
           if (mounted) {
             context.replace('/chat-list/$chatRoomId');
           }
         } else {
-          debugPrint('⚠️ [CHAT_LIST] 계약 ID ${widget.initialContractId}에 해당하는 채팅방을 찾을 수 없습니다.');
+          AppLogger.w('⚠️ [CHAT_LIST] 계약 ID ${widget.initialContractId}에 해당하는 채팅방을 찾을 수 없습니다.');
         }
       }
     } catch (e) {
@@ -142,7 +138,7 @@ class _ChatListPageState extends State<ChatListPage> {
         _error = e.toString();
         _isLoading = false;
       });
-      debugPrint('❌ [CHAT_LIST] 초기화 실패: $e');
+      AppLogger.e('❌ [CHAT_LIST] 초기화 실패: $e');
     }
   }
 
@@ -256,7 +252,7 @@ class _ChatListPageState extends State<ChatListPage> {
         );
       }
     } catch (e) {
-      debugPrint('❌ [CHAT_LIST] 계약 상세 조회 실패: $e');
+      AppLogger.e('❌ [CHAT_LIST] 계약 상세 조회 실패: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -571,22 +567,19 @@ class _ChatListPageState extends State<ChatListPage> {
     final currentUserId = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
     final firebaseChatRoomId = _selectedChat!.firebaseChatRoomId;
 
-    debugPrint('💬 [CHAT_WINDOW] firebaseChatRoomId: $firebaseChatRoomId, currentUserId: $currentUserId');
 
     // Firebase에서 실시간 메시지 로드
     return StreamBuilder<List<ChatMessage>>(
       stream: _chatService.getMessages(firebaseChatRoomId),
       builder: (context, snapshot) {
-        debugPrint('💬 [CHAT_WINDOW] StreamBuilder - connectionState: ${snapshot.connectionState}, hasData: ${snapshot.hasData}, hasError: ${snapshot.hasError}');
 
         if (snapshot.hasError) {
-          debugPrint('❌ [CHAT_WINDOW] 메시지 스트림 에러: ${snapshot.error}');
+          AppLogger.e('❌ [CHAT_WINDOW] 메시지 스트림 에러: ${snapshot.error}');
         }
 
         // 새 데이터가 오면 캐시 업데이트
         if (snapshot.hasData) {
           _messageCache[firebaseChatRoomId] = snapshot.data!;
-          debugPrint('💬 [CHAT_WINDOW] 메시지 ${snapshot.data!.length}개 수신');
         }
 
         // 캐시된 메시지 사용 (깜빡임 방지)
@@ -631,7 +624,7 @@ class _ChatListPageState extends State<ChatListPage> {
       // 알림톡 요청 (fire-and-forget)
       _chatService.notifyChatMessage(chatRoomId);
     } catch (e) {
-      debugPrint('❌ [CHAT_LIST] 메시지 전송 실패: $e');
+      AppLogger.e('❌ [CHAT_LIST] 메시지 전송 실패: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

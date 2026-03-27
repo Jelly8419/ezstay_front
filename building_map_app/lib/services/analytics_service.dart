@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 
@@ -30,9 +31,8 @@ class AnalyticsService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      debugPrint('📊 [Analytics] home_view_guest 이벤트 기록');
     } catch (e) {
-      debugPrint('❌ [Analytics] home_view_guest 이벤트 기록 실패: $e');
+      AppLogger.e('❌ [Analytics] home_view_guest 이벤트 기록 실패: $e');
     }
   }
 
@@ -47,9 +47,8 @@ class AnalyticsService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      debugPrint('📊 [Analytics] home_view_host 이벤트 기록');
     } catch (e) {
-      debugPrint('❌ [Analytics] home_view_host 이벤트 기록 실패: $e');
+      AppLogger.e('❌ [Analytics] home_view_host 이벤트 기록 실패: $e');
     }
   }
 
@@ -76,9 +75,8 @@ class AnalyticsService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      debugPrint('📊 [Analytics] home_select_period 이벤트 기록: ${numberOfDays}일');
     } catch (e) {
-      debugPrint('❌ [Analytics] home_select_period 이벤트 기록 실패: $e');
+      AppLogger.e('❌ [Analytics] home_select_period 이벤트 기록 실패: $e');
     }
   }
 
@@ -96,9 +94,8 @@ class AnalyticsService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      debugPrint('📊 [Analytics] home_go_map 이벤트 기록 (날짜 선택: $hasDateSelected)');
     } catch (e) {
-      debugPrint('❌ [Analytics] home_go_map 이벤트 기록 실패: $e');
+      AppLogger.e('❌ [Analytics] home_go_map 이벤트 기록 실패: $e');
     }
   }
 
@@ -117,9 +114,8 @@ class AnalyticsService {
         screenName: screenName,
         screenClass: screenClass,
       );
-      debugPrint('📊 [Analytics] 화면 조회: $screenName');
     } catch (e) {
-      debugPrint('❌ [Analytics] 화면 조회 기록 실패: $e');
+      AppLogger.e('❌ [Analytics] 화면 조회 기록 실패: $e');
     }
   }
 
@@ -142,9 +138,8 @@ class AnalyticsService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      debugPrint('📊 [Analytics] view_room_detail 이벤트 기록: roomId=$roomId');
     } catch (e) {
-      debugPrint('❌ [Analytics] view_room_detail 이벤트 기록 실패: $e');
+      AppLogger.e('❌ [Analytics] view_room_detail 이벤트 기록 실패: $e');
     }
   }
 
@@ -167,9 +162,8 @@ class AnalyticsService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      debugPrint('📊 [Analytics] click_open_pricing_sheet 이벤트 기록: roomId=$roomId');
     } catch (e) {
-      debugPrint('❌ [Analytics] click_open_pricing_sheet 이벤트 기록 실패: $e');
+      AppLogger.e('❌ [Analytics] click_open_pricing_sheet 이벤트 기록 실패: $e');
     }
   }
 
@@ -203,9 +197,8 @@ class AnalyticsService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      debugPrint('📊 [Analytics] click_request_contract 이벤트 기록: roomId=$roomId, days=$numberOfDays');
     } catch (e) {
-      debugPrint('❌ [Analytics] click_request_contract 이벤트 기록 실패: $e');
+      AppLogger.e('❌ [Analytics] click_request_contract 이벤트 기록 실패: $e');
     }
   }
 }

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:async';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:js' as js;
@@ -53,7 +54,7 @@ class KmcWebViewHelper {
       ]);
 
       if (popupRef == null) {
-        debugPrint('⚠️ [KMC] 팝업 차단됨');
+        AppLogger.w('⚠️ [KMC] 팝업 차단됨');
         if (!completer.isCompleted) {
           completer.complete(null);
         }
@@ -98,7 +99,6 @@ class KmcWebViewHelper {
               final apiToken = jsObj['apiToken']?.toString() ?? '';
               final certNum = jsObj['certNum']?.toString() ?? '';
 
-              debugPrint('✅ [KMC] postMessage로 인증 결과 수신');
 
               cleanup();
 
@@ -117,7 +117,7 @@ class KmcWebViewHelper {
             }
           }
         } catch (e) {
-          debugPrint('❌ [KMC] postMessage 파싱 에러: $e');
+          AppLogger.e('❌ [KMC] postMessage 파싱 에러: $e');
         }
       };
 
@@ -179,7 +179,6 @@ class KmcWebViewHelper {
             // 팝업이 실제로 닫힘 → BroadcastChannel 결과 대기 (3초)
             Timer(const Duration(seconds: 3), () {
               if (!completer.isCompleted) {
-                debugPrint('ℹ️ [KMC] 팝업 닫힘 (사용자 취소 또는 완료)');
                 cleanup();
                 completer.complete(null);
               }
@@ -194,7 +193,6 @@ class KmcWebViewHelper {
       // 5분 타임아웃
       timeoutTimer = Timer(const Duration(minutes: 5), () {
         if (!completer.isCompleted) {
-          debugPrint('⏰ [KMC] 인증 타임아웃 (5분)');
           cleanup();
           try {
             popupRef.callMethod('close', []);
@@ -203,7 +201,7 @@ class KmcWebViewHelper {
         }
       });
     } catch (e) {
-      debugPrint('❌ [KMC] 팝업 열기 에러: $e');
+      AppLogger.e('❌ [KMC] 팝업 열기 에러: $e');
       if (!completer.isCompleted) {
         completer.complete(null);
       }

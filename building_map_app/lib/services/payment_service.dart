@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -23,7 +24,6 @@ class PaymentService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('📡 [PaymentService] 결제 정보 요청: contractId=$contractId');
 
     try {
       final response = await http.get(
@@ -34,11 +34,9 @@ class PaymentService {
         },
       ).timeout(const Duration(seconds: 10));
 
-      debugPrint('📥 [PaymentService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        debugPrint('✅ [PaymentService] 결제 정보 조회 성공');
         return data['data'] as Map<String, dynamic>;
       } else if (response.statusCode == 404) {
         throw Exception('계약을 찾을 수 없습니다.');
@@ -73,11 +71,6 @@ class PaymentService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('📡 [PaymentService] 결제 승인 요청');
-    debugPrint('  - contractId: $contractId');
-    debugPrint('  - orderId: $orderId');
-    debugPrint('  - amount: $amount');
-    debugPrint('  - payType: $payType');
 
     try {
       final response = await http.post(
@@ -94,11 +87,9 @@ class PaymentService {
         }),
       ).timeout(const Duration(seconds: 15));
 
-      debugPrint('📥 [PaymentService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        debugPrint('✅ [PaymentService] 결제 승인 성공');
         return data['data'] as Map<String, dynamic>;
       } else if (response.statusCode == 400) {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
@@ -129,7 +120,6 @@ class PaymentService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('📡 [PaymentService] 호스트 위약금 결제 정보 요청: contractId=$contractId');
 
     try {
       final response = await http.get(
@@ -140,11 +130,9 @@ class PaymentService {
         },
       ).timeout(const Duration(seconds: 10));
 
-      debugPrint('📥 [PaymentService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        debugPrint('✅ [PaymentService] 호스트 위약금 정보 조회 성공');
         return data['data'] as Map<String, dynamic>;
       } else if (response.statusCode == 404) {
         throw Exception('계약을 찾을 수 없습니다.');
@@ -180,9 +168,6 @@ class PaymentService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('📡 [PaymentService] 호스트 위약금 결제 승인 요청');
-    debugPrint('  - contractId: $contractId');
-    debugPrint('  - amount: $amount');
 
     try {
       final response = await http.post(
@@ -199,11 +184,9 @@ class PaymentService {
         }),
       ).timeout(const Duration(seconds: 15));
 
-      debugPrint('📥 [PaymentService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        debugPrint('✅ [PaymentService] 호스트 위약금 결제 승인 성공');
         return data['data'] as Map<String, dynamic>;
       } else if (response.statusCode == 400) {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
@@ -236,11 +219,6 @@ class PaymentService {
       throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
-    debugPrint('🎭 [PaymentService] Mock 결제 승인 요청');
-    debugPrint('  - contractId: $contractId');
-    debugPrint('  - orderId: $orderId');
-    debugPrint('  - amount: $amount');
-    debugPrint('  - simulateFailure: $simulateFailure');
 
     try {
       final response = await http.post(
@@ -256,11 +234,9 @@ class PaymentService {
         }),
       ).timeout(const Duration(seconds: 10));
 
-      debugPrint('📥 [PaymentService] 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        debugPrint('✅ [PaymentService] Mock 결제 승인 성공');
         return data['data'] as Map<String, dynamic>;
       } else {
         final error = jsonDecode(utf8.decode(response.bodyBytes));

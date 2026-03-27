@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../../core/exceptions.dart';
 import 'package:flutter/gestures.dart';
@@ -67,14 +68,9 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         status: _selectedStatus,
       );
 
-      debugPrint('📋 [HOST_CONTRACTS] Loaded ${contracts.length} contracts');
-      debugPrint('📋 [HOST_CONTRACTS] _selectedTab: $_selectedTab');
 
       // 각 계약의 실제 상태값 로깅
       for (var i = 0; i < contracts.length; i++) {
-        debugPrint(
-          '📋 [CONTRACT $i] ID: ${contracts[i].id}, Status: ${contracts[i].status}, Status String: ${contracts[i].status.toString()}',
-        );
       }
 
       setState(() {
@@ -84,7 +80,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {
-      debugPrint('❌ [HOST_CONTRACTS] Error loading contracts: $e');
+      AppLogger.e('❌ [HOST_CONTRACTS] Error loading contracts: $e');
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
@@ -94,9 +90,6 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
   // 필터링된 계약 목록 (게스트 페이지와 동일한 구조)
   List<ContractListItem> get _filteredContracts {
-    debugPrint(
-      '🔍 [FILTER] Starting filter - Total: ${_contracts.length}, Tab: $_selectedTab, Status: $_selectedStatus',
-    );
 
     // 1단계: 탭 기반 필터링
     List<ContractListItem> tabFiltered;
@@ -109,18 +102,12 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         ContractStatus.inProgress,
       ];
 
-      debugPrint(
-        '🔍 [FILTER] Checking in_progress tab. Expected statuses: ${expectedStatuses.map((s) => s.toString()).join(', ')}',
-      );
 
       // 각 계약에 대해 상태 매칭 확인
       for (var contract in _contracts) {
         final matches = expectedStatuses.contains(contract.status) ||
             (contract.status == ContractStatus.completed &&
                 !_isDepositRefundComplete(contract));
-        debugPrint(
-          '🔍 [FILTER] Contract ${contract.id}: status=${contract.status}, matches=$matches',
-        );
       }
 
       tabFiltered = _contracts
@@ -157,7 +144,6 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       tabFiltered = _contracts;
     }
 
-    debugPrint('🔍 [FILTER] After tab filter: ${tabFiltered.length}');
 
     // 2단계: 상태 필터 적용 (선택된 경우에만)
     if (_selectedStatus != null && _selectedStatus != 'all') {
@@ -175,11 +161,9 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         }
         return c.status.value == _selectedStatus;
       }).toList();
-      debugPrint('🔍 [FILTER] After status filter: ${statusFiltered.length}');
       return statusFiltered;
     }
 
-    debugPrint('🔍 [FILTER] Final result: ${tabFiltered.length}');
     return tabFiltered;
   }
 
@@ -1138,7 +1122,6 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
           const SizedBox(width: 8),
           InkWell(
             onTap: () {
-              debugPrint('💬 [HOST_CONTRACTS] 채팅방으로 이동: contractId=${contract.id}');
               context.go('/chat-list?contractId=${contract.id}');
             },
             borderRadius: BorderRadius.circular(4),

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -278,7 +279,7 @@ class RentalOrderService {
   Future<String> _getToken() async {
     var token = await TokenService.getValidAccessToken(autoRefresh: true);
     if (token == null && !ApiConfig.isProduction) {
-      debugPrint('⚠️ [RENTAL_ORDER] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+      AppLogger.w('⚠️ [RENTAL_ORDER] 토큰 갱신 실패, skipExpiryCheck로 재시도');
       token = await TokenService.getAccessToken(skipExpiryCheck: true);
     }
 

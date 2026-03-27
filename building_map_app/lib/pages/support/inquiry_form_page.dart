@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -82,7 +83,7 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
         });
       }
     } catch (e) {
-      debugPrint('Failed to fetch inquiry: $e');
+      AppLogger.e('Failed to fetch inquiry: $e');
       setState(() {
         _errorMessage = '문의 정보를 불러오는데 실패했습니다';
       });
@@ -198,7 +199,7 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
         }
       }
     } catch (e) {
-      debugPrint('Failed to submit inquiry: $e');
+      AppLogger.e('Failed to submit inquiry: $e');
       _showSnackBar('문의 등록에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setState(() {

@@ -1,3 +1,4 @@
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'dart:js' as js;
 import '../core/theme/app_text_styles.dart';
@@ -59,7 +60,6 @@ class _DaumPostcodeWebState extends State<DaumPostcodeWeb> {
             addressData['roadname'] = jsObj['roadname']?.toString() ?? '';
             addressData['roadnameEnglish'] = jsObj['roadnameEnglish']?.toString() ?? '';
           } catch (e) {
-            debugPrint('주소 데이터 파싱 오류: $e');
           }
         }
 
@@ -94,7 +94,6 @@ class _DaumPostcodeWebState extends State<DaumPostcodeWeb> {
         }
       ''']);
     } catch (e) {
-      debugPrint('다음 우편번호 API 실행 중 오류: $e');
       Navigator.of(context).pop();
     }
   }
@@ -138,7 +137,6 @@ class _DaumPostcodeWebState extends State<DaumPostcodeWeb> {
       js.context.deleteProperty('onAddressComplete');
       js.context.deleteProperty('onAddressClose');
     } catch (e) {
-      debugPrint('JavaScript 콜백 정리 중 오류: $e');
     }
     super.dispose();
   }
