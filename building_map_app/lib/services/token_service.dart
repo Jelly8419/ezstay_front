@@ -302,9 +302,11 @@ class TokenService {
         if (newAccessToken != null) {
           await saveAccessToken(newAccessToken);
 
-          // 새로운 Refresh Token도 제공되면 저장
+          // 새로운 Refresh Token 저장 (필수 - 저장 안 하면 다음 갱신 시 403)
           if (newRefreshToken != null) {
             await saveRefreshToken(newRefreshToken);
+          } else {
+            debugPrint('⚠️ [TOKEN] 서버가 새 Refresh Token을 반환하지 않음 - 다음 갱신 시 403 발생 가능');
           }
 
           if (!ApiConfig.isProduction) {
