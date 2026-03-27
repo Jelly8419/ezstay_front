@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/exceptions.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -64,6 +65,8 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
           _isLoading = false;
         });
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -117,6 +120,8 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
             : '예금주 정보가 일치하지 않습니다.';
         _showErrorSnackBar(message);
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         setState(() => _isVerifying = false);
@@ -158,6 +163,8 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
       );
 
       context.pop(account);
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);

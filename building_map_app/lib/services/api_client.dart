@@ -1,9 +1,11 @@
 import 'package:http/http.dart' as http;
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'error_handler_service.dart';
 import '../config/api_config.dart';
+import '../core/exceptions.dart';
 
 /// HTTP 요청을 래핑하고 에러 핸들링을 자동화하는 API 클라이언트
 class ApiClient {
@@ -149,25 +151,53 @@ class ApiClient {
   }
 
   /// 응답 처리 및 에러 핸들링
+  ///
+  /// 401 응답 → UnauthorizedException throw (showErrorDialog 값 무관)
+  /// 나머지 에러 → showErrorDialog=true 이면 다이얼로그, false 이면 null 반환
   http.Response? _handleResponse(http.Response response, bool showErrorDialog) {
     // 성공 응답 (200-299)
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return response;
     }
 
-    // 에러 응답
     debugPrint('⚠️ [API_CLIENT] 에러 응답 감지 - statusCode: ${response.statusCode}');
-    debugPrint('⚠️ [API_CLIENT] showErrorDialog: $showErrorDialog');
 
+    // 401: 인증 실패 → UnauthorizedException throw (항상, showErrorDialog 무관)
+    if (response.statusCode == 401) {
+      String? code;
+      try {
+        final data = json.decode(response.body);
+        final rawCode = data['code'];
+        if (rawCode != null) code = rawCode.toString();
+      } catch (_) {}
+
+      debugPrint('🔒 [API_CLIENT] 인증 에러 (code=$code) → UnauthorizedException throw');
+      throw UnauthorizedException(_authMessage(code));
+    }
+
+    // 나머지 에러
     if (showErrorDialog) {
-      debugPrint('🔔 [API_CLIENT] ErrorHandler 호출 시작');
-      _errorHandler.handleHttpError(
-        response.statusCode,
-        response.body,
-      );
-      debugPrint('🔔 [API_CLIENT] ErrorHandler 호출 완료');
+      debugPrint('🔔 [API_CLIENT] ErrorHandler 호출');
+      _errorHandler.handleHttpError(response.statusCode, response.body);
     }
 
     return null;
+  }
+
+  /// 에러코드별 메시지
+  String _authMessage(String? code) {
+    switch (code) {
+      case 'TOKEN_EXPIRED':
+      case '1003':
+        return '세션이 만료되었습니다. 다시 로그인해주세요.';
+      case 'UNAUTHORIZED':
+      case '1001':
+        return '로그인이 필요합니다.';
+      case 'INVALID_TOKEN':
+      case '1002':
+        return '인증 정보가 유효하지 않습니다. 다시 로그인해주세요.';
+      default:
+        return '인증이 만료되었습니다. 다시 로그인해주세요.';
+    }
   }
 }

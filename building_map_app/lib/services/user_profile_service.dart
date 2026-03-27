@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../config/api_config.dart';
 import '../models/user_profile.dart';
 import 'auth_service.dart';
+import '../core/exceptions.dart';
 
 /// 사용자 프로필 서비스
 class UserProfileService {
@@ -30,7 +31,7 @@ class UserProfileService {
     final accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('📋 [UserProfileService] 프로필 조회 시작');
@@ -51,7 +52,7 @@ class UserProfileService {
         debugPrint('✅ [UserProfileService] 프로필 조회 성공');
         return UserProfile.fromJson(data['data'] as Map<String, dynamic>);
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다. 다시 로그인해주세요.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 404) {
         throw Exception('사용자 정보를 찾을 수 없습니다.');
       } else {
@@ -85,7 +86,7 @@ class UserProfileService {
     final accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('🔐 [UserProfileService] 비밀번호 변경 시작');
@@ -108,7 +109,7 @@ class UserProfileService {
       if (response.statusCode == 200) {
         debugPrint('✅ [UserProfileService] 비밀번호 변경 성공');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 400) {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '비밀번호 형식이 올바르지 않습니다.');
@@ -141,7 +142,7 @@ class UserProfileService {
     final accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('📱 [UserProfileService] 연락처 변경 시작');
@@ -163,7 +164,7 @@ class UserProfileService {
       if (response.statusCode == 200) {
         debugPrint('✅ [UserProfileService] 연락처 변경 성공');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 400) {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '연락처 변경 실패');
@@ -210,7 +211,7 @@ class UserProfileService {
     final accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     // 앞뒤 공백 자동 제거
@@ -246,7 +247,7 @@ class UserProfileService {
         debugPrint('✅ [UserProfileService] 닉네임 변경 성공: $newNickname');
         return newNickname;
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 400) {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '닉네임 형식이 올바르지 않습니다.');
@@ -270,7 +271,7 @@ class UserProfileService {
     final accessToken = await _authService.getAccessToken();
 
     if (accessToken == null) {
-      throw Exception('로그인이 필요합니다.');
+      throw const UnauthorizedException('로그인이 필요합니다.');
     }
 
     debugPrint('🚪 [UserProfileService] 회원 탈퇴 시작');
@@ -289,7 +290,7 @@ class UserProfileService {
       if (response.statusCode == 200) {
         debugPrint('✅ [UserProfileService] 회원 탈퇴 성공');
       } else if (response.statusCode == 401) {
-        throw Exception('인증이 만료되었습니다.');
+        throw const UnauthorizedException();
       } else if (response.statusCode == 400) {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '회원 탈퇴 실패');

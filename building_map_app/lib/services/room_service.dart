@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'api_client.dart';
 import 'token_service.dart';
 import '../config/api_config.dart';
+import '../core/exceptions.dart';
 
 /// 방 등록 API 서비스
 class RoomService {
@@ -110,8 +111,7 @@ class RoomService {
         debugPrint('✅ [PRICING] 요금 설정 성공');
         return true;
       } else if (response.statusCode == 401) {
-        debugPrint('❌ [PRICING] 인증 실패 (401) - 토큰이 유효하지 않거나 만료되었습니다.');
-        return false;
+        throw const UnauthorizedException();
       } else {
         debugPrint('❌ [PRICING] 요금 설정 실패: ${response.statusCode}');
         return false;
@@ -170,8 +170,7 @@ class RoomService {
         debugPrint('✅ [PHOTOS] 사진 업로드 성공');
         return List<Map<String, dynamic>>.from(data['data']['photoUrls']);
       } else if (response.statusCode == 401) {
-        debugPrint('❌ [PHOTOS] 인증 실패 (401) - 토큰이 유효하지 않거나 만료되었습니다.');
-        return null;
+        throw const UnauthorizedException();
       } else {
         debugPrint('❌ [PHOTOS] 사진 업로드 실패: ${response.statusCode}');
         return null;

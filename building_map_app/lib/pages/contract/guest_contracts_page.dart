@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/format_utils.dart';
 import '../../utils/contract_utils.dart';
@@ -70,6 +71,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         _allContracts = contracts;
         _isLoading = false;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -383,6 +386,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
         _modifiedOptions[contract.id] = allOptions;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [AVAILABLE ITEMS] Error: $e');
 
@@ -509,6 +514,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       });
 
       await _loadContracts();
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [UPDATE BEFORE_PAYMENT] Error: $e');
       if (!mounted) return;
@@ -560,6 +567,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
 
     try {
       await _processRentalOrderPayment(contract, itemsToOrder, scaffoldMessenger);
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [SAVE OPTIONS] Error: $e');
       if (!mounted) return;
@@ -712,6 +721,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         // TODO: 모바일 PayTag WebView 렌탈 결제 구현
         throw Exception('모바일에서는 아직 렌탈 추가 결제가 지원되지 않습니다.');
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [RENTAL PAYMENT] Error: $e');
 
@@ -793,6 +804,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                 ),
               );
               _loadContracts();
+            } on UnauthorizedException {
+              if (mounted) context.go('/login');
             } catch (e) {
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
@@ -806,6 +819,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           onClose: () => Navigator.of(context).pop(),
         ),
       );
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [DEPOSIT AGREEMENT] Error: $e');
       if (!mounted) return;
@@ -837,6 +852,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       );
 
       await _loadContracts();
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [CANCEL] Error: $e');
 
@@ -866,6 +883,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     try {
       final result = await _contractService.calculateRefund(contract.id);
       refundData = result['data'] as Map<String, dynamic>?;
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) Navigator.of(context, rootNavigator: false).pop();
       if (!mounted) return;
@@ -1109,6 +1128,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                     ),
                   );
                   _loadContracts();
+                } on UnauthorizedException {
+                  if (mounted) context.go('/login');
                 } catch (e) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -1557,6 +1578,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         );
         _loadContracts();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2052,6 +2075,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                               ),
                             );
                             _loadContracts();
+                          } on UnauthorizedException {
+                            if (mounted) context.go('/login');
                           } catch (e) {
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -2930,6 +2955,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       availableItems = await rentalOrderService.getAvailableRentalItems(
         contract.id,
       );
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
+      return;
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2965,6 +2993,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     try {
       final rentalOrderService = RentalOrderService();
       response = await rentalOrderService.getRentalOrders(contract.id);
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
+      return;
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -3057,6 +3088,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           customerPhone: paymentInfo['customerPhone'] as String?,
         );
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -3083,6 +3116,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       // 계약 목록 새로고침 (결과 알림은 모달 내 AlertDialog에서 처리)
       _loadContracts();
       return result;
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
+      return {};
     } catch (e) {
       rethrow;
     }
@@ -3175,6 +3211,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     } on PopupBlockedException {
       if (!mounted) return;
       _showPopupBlockedDialog();
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (!mounted) return;
 
@@ -4717,6 +4755,8 @@ class _CancelOptionModalState extends State<_CancelOptionModal> {
           _isProcessing = false;
         });
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       setState(() => _isProcessing = false);
       if (!mounted) return;

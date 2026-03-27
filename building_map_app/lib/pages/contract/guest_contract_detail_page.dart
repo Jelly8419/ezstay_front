@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/exceptions.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/format_utils.dart';
@@ -77,6 +79,8 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
         _contractDetail = detail;
         _isLoading = false;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -212,6 +216,8 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
         ).showSnackBar(const SnackBar(content: Text('퇴실 확인이 완료되었습니다.')));
         _loadContractDetail();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1481,6 +1487,8 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
         // 모바일: WebView로 결제창 열기
         await _processPaymentMobile(paymentInfo);
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [GuestContractDetail] 결제 오류: $e');
       _showErrorDialog('결제 중 오류가 발생했습니다.\n${e.toString()}');
@@ -1527,6 +1535,8 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
       if (mounted) {
         _showPopupBlockedDialog();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         _showErrorDialog('결제 실패: ${e.toString()}');
@@ -1595,6 +1605,8 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
             result?['errorMessage'] as String? ?? '결제가 취소되었습니다.';
         _showErrorDialog(errorMessage);
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         _showErrorDialog('결제 처리 실패: ${e.toString()}');
@@ -1621,6 +1633,8 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
         // 계약 상세 다시 로드
         await _loadContractDetail();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         _showErrorDialog('[Mock] 결제 실패: ${e.toString()}');
@@ -1653,6 +1667,8 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
         // 계약 상세 다시 로드
         await _loadContractDetail();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         _showErrorDialog('결제 승인 실패: ${e.toString()}');

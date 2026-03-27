@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/exceptions.dart';
 import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
 import '../../constants/fee_constants.dart';
@@ -80,6 +81,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         _contracts = contracts;
         _isLoading = false;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       debugPrint('❌ [HOST_CONTRACTS] Error loading contracts: $e');
       setState(() {
@@ -1794,6 +1797,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         );
         _loadContracts();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1845,6 +1850,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         );
         _loadContracts();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1893,6 +1900,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       setState(() {
         _selectedContractIdForCancellation = null;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1933,6 +1942,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       setState(() {
         _selectedContractForAgreement = null;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1957,6 +1968,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
           _existingAgreementText = agreement?.agreementText;
           _showDepositAgreementModal = true;
         });
+      } on UnauthorizedException {
+        if (mounted) context.go('/login');
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2070,6 +2083,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         );
         _loadContracts();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2102,6 +2117,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
         );
         _loadContracts();
       }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2184,6 +2201,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       setState(() {
         _selectedContractIdForApproval = null;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2218,6 +2237,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       setState(() {
         _selectedContractIdForRejection = null;
       });
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
