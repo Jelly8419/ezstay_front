@@ -180,9 +180,10 @@ class RentalOrderService {
   /// POST /api/rental-orders/:rentalOrderId/confirm-payment
   Future<Map<String, dynamic>> confirmPayment({
     required int rentalOrderId,
-    required String paymentKey,
+    required String recvPayparam,
     required String orderId,
     required int amount,
+    String? payType,
   }) async {
     final token = await _getToken();
     final url = Uri.parse(
@@ -190,9 +191,10 @@ class RentalOrderService {
     );
 
     final body = {
-      'paymentKey': paymentKey,
+      'recvPayparam': recvPayparam,
       'orderId': orderId,
       'amount': amount,
+      if (payType != null) 'payType': payType,
     };
 
     final response = await http

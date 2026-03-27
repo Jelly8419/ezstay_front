@@ -80,10 +80,9 @@ class _RentalPaymentCallbackPageState extends State<RentalPaymentCallbackPage> {
         throw Exception('결제 정보가 올바르지 않습니다.');
       }
 
-
       await _rentalOrderService.confirmPayment(
         rentalOrderId: rentalOrderId,
-        paymentKey: paymentKey,
+        recvPayparam: paymentKey,
         orderId: orderId,
         amount: int.parse(amount),
       );
@@ -91,7 +90,6 @@ class _RentalPaymentCallbackPageState extends State<RentalPaymentCallbackPage> {
       setState(() {
         _isProcessing = false;
       });
-
     } catch (e) {
       AppLogger.e('❌ [RentalPaymentCallback] 렌탈 결제 승인 실패: $e');
       setState(() {
@@ -161,10 +159,7 @@ class _RentalPaymentCallbackPageState extends State<RentalPaymentCallbackPage> {
         const SizedBox(height: 24),
         Text('옵션 상품 결제가 완료되었습니다!', style: AppTextStyles.headingMedium),
         const SizedBox(height: 12),
-        Text(
-          '추가 주문이 성공적으로 처리되었습니다.',
-          style: AppTextStyles.bodyMediumSecondary,
-        ),
+        Text('추가 주문이 성공적으로 처리되었습니다.', style: AppTextStyles.bodyMediumSecondary),
         const SizedBox(height: 48),
         SizedBox(
           width: double.infinity,

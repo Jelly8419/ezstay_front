@@ -1,6 +1,7 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/exceptions.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/format_utils.dart';
@@ -646,30 +647,17 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
           customerPhone: customerPhone,
         );
 
-        if (payResult != null) {
-          // 렌탈 결제 승인 (paymentKey 필드에 recv_payparam 전달 - API 호환)
-          await _rentalOrderService.confirmPayment(
-            rentalOrderId: rentalOrderId,
-            paymentKey: payResult['recvPayparam'] as String,
-            orderId: orderId,
-            amount: amount,
-          );
-
-          if (!mounted) return;
-
-          scaffoldMessenger.showSnackBar(
-            const SnackBar(
-              content: Text('옵션 상품 결제가 완료되었습니다!'),
-              backgroundColor: Color(0xFF10B981),
-            ),
-          );
-        }
-
         setState(() {
           _editingContractId = null;
           _modifiedOptions.remove(contract.id);
         });
-        _loadContracts();
+
+        if (payResult != null) {
+          if (!mounted) return;
+          _showRentalPaymentSuccessDialog(payResult, onConfirm: _loadContracts);
+        } else {
+          _loadContracts();
+        }
       } else {
         // 모바일: 현재 웹 전용
         // TODO: 모바일 PayTag WebView 렌탈 결제 구현
@@ -708,6 +696,74 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   bool _isAfterPayment(ContractListItem contract) {
     return contract.status == ContractStatus.paymentCompleted ||
         contract.status == ContractStatus.inProgress;
+  }
+
+  /// 렌탈 결제 완료 다이얼로그
+  void _showRentalPaymentSuccessDialog(Map<String, dynamic> result, {VoidCallback? onConfirm}) {
+    final paidAmount = result['paidAmount'] as int?;
+    final receiptUrl = result['receiptUrl'] as String?;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: AppColors.success500, size: 28),
+            const SizedBox(width: 8),
+            const Text('결제 완료'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('옵션 상품 결제가 완료되었습니다!'),
+            if (paidAmount != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                '결제 금액: ${_formatAmount(paidAmount)}원',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+            if (receiptUrl != null && receiptUrl.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => launchUrl(
+                  Uri.parse(receiptUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
+                child: Text(
+                  '영수증 확인',
+                  style: TextStyle(
+                    color: AppColors.primary500,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onConfirm?.call();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary500,
+            ),
+            child: const Text('확인', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatAmount(int amount) {
+    return amount.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
   }
 
   /// 활성 렌탈 아이템이 있는지 확인

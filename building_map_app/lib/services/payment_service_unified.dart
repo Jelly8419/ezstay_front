@@ -2,6 +2,7 @@ import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 
 import 'payment_service.dart';
+import 'rental_order_service.dart';
 import 'payment_service_web.dart'
     if (dart.library.io) 'payment_service_stub.dart';
 
@@ -12,6 +13,7 @@ import 'payment_service_web.dart'
 /// - 모바일: WebView 사용
 class PaymentServiceUnified {
   final PaymentService _apiService = PaymentService();
+  final RentalOrderService _rentalOrderService = RentalOrderService();
   PaymentServiceWeb? _webService;
 
   /// 생성자 - 웹 환경에서 자동으로 SDK 초기화
@@ -179,12 +181,10 @@ class PaymentServiceUnified {
 
 
     try {
-      // 렌탈 결제도 동일하게 pgAmount 우선 사용
-      final sdkAmount = amount;
       final response = await _webService!.requestRentalPayment(
         rentalOrderId: rentalOrderId,
         orderId: orderId,
-        amount: sdkAmount,
+        amount: amount,
         orderName: orderName,
         payType: payType,
         customerName: customerName,
@@ -193,13 +193,15 @@ class PaymentServiceUnified {
       );
 
       if (response.isSuccess && response.recvPayparam != null) {
-        // 렌탈 결제는 paymentKey 필드에 recv_payparam을 넣어서 전달 (API 호환성)
-        return {
-          'recvPayparam': response.recvPayparam,
-          'payType': response.payType ?? 'CARD',
-          'orderId': orderId,
-          'amount': amount,
-        };
+        // SDK 인증 성공 → 백엔드 승인 API 호출 (일반 결제와 동일한 방식)
+        final confirmResult = await _rentalOrderService.confirmPayment(
+          rentalOrderId: rentalOrderId,
+          recvPayparam: response.recvPayparam!,
+          orderId: orderId,
+          amount: amount,
+          payType: response.payType,
+        );
+        return confirmResult;
       } else {
         throw Exception(response.errmsg);
       }
