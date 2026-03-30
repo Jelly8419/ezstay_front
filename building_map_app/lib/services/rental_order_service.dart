@@ -216,7 +216,107 @@ class RentalOrderService {
     throw Exception('결제 승인에 실패했습니다.');
   }
 
-  // ========== 7. 미결제 주문 취소 ==========
+  // ========== 7. 결제취소 (아이템 단위 즉시환불) ==========
+
+  /// 배송전 아이템을 선택해 즉시 PG 환불 처리
+  ///
+  /// POST /api/contracts/:contractId/rental-items/cancel
+  Future<RentalItemCancelResponse> cancelRentalItems({
+    required int contractId,
+    required List<int> itemIds,
+    String reason = '',
+  }) async {
+    final token = await _getToken();
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}/api/contracts/$contractId/rental-items/cancel',
+    );
+
+    final body = {
+      'itemIds': itemIds,
+      if (reason.isNotEmpty) 'reason': reason,
+    };
+
+    final response = await http
+        .post(url, headers: _buildHeaders(token), body: json.encode(body))
+        .timeout(Duration(seconds: ApiConfig.timeoutSeconds));
+
+    if (response.statusCode == 200) {
+      final responseData = json.decode(utf8.decode(response.bodyBytes));
+      if (responseData['success'] == true && responseData['data'] != null) {
+        return RentalItemCancelResponse.fromJson(responseData['data']);
+      }
+      throw Exception('예상하지 못한 응답 형식입니다.');
+    }
+    _handleErrorResponse(response);
+    throw Exception('결제 취소에 실패했습니다.');
+  }
+
+  // ========== 8. 반품 신청 ==========
+
+  /// 배송중/배송완료 아이템을 선택해 반품 신청 접수
+  /// 단일 주문 내 아이템만 가능 (주문 혼합 불가)
+  ///
+  /// POST /api/contracts/:contractId/rental-items/return-request
+  Future<void> returnRequestRentalItems({
+    required int contractId,
+    required List<int> itemIds,
+    required String reason,
+  }) async {
+    final token = await _getToken();
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}/api/contracts/$contractId/rental-items/return-request',
+    );
+
+    final body = {
+      'itemIds': itemIds,
+      'reason': reason,
+    };
+
+    final response = await http
+        .post(url, headers: _buildHeaders(token), body: json.encode(body))
+        .timeout(Duration(seconds: ApiConfig.timeoutSeconds));
+
+    if (response.statusCode == 200) {
+      final responseData = json.decode(utf8.decode(response.bodyBytes));
+      if (responseData['success'] == true) return;
+      throw Exception('예상하지 못한 응답 형식입니다.');
+    }
+    _handleErrorResponse(response);
+    throw Exception('반품 신청에 실패했습니다.');
+  }
+
+  // ========== 9. 반품 환불 예상 금액 조회 ==========
+
+  /// 반품 신청 전 예상 환불 금액 미리보기
+  /// 수거비 면제 여부를 서버에서 계산해 반환
+  ///
+  /// GET /api/contracts/:contractId/rental-items/return-preview?itemIds=12,13
+  Future<ReturnPreviewResponse> getReturnPreview({
+    required int contractId,
+    required List<int> itemIds,
+  }) async {
+    final token = await _getToken();
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}/api/contracts/$contractId/rental-items/return-preview'
+      '?itemIds=${itemIds.join(',')}',
+    );
+
+    final response = await http
+        .get(url, headers: _buildHeaders(token))
+        .timeout(Duration(seconds: ApiConfig.timeoutSeconds));
+
+    if (response.statusCode == 200) {
+      final responseData = json.decode(utf8.decode(response.bodyBytes));
+      if (responseData['success'] == true && responseData['data'] != null) {
+        return ReturnPreviewResponse.fromJson(responseData['data']);
+      }
+      throw Exception('예상하지 못한 응답 형식입니다.');
+    }
+    _handleErrorResponse(response);
+    throw Exception('환불 예상 금액 조회에 실패했습니다.');
+  }
+
+  // ========== 10. 미결제 주문 취소 ==========
 
   /// 미결제 렌탈 주문 취소
   ///
@@ -299,15 +399,34 @@ class RentalOrderService {
     };
   }
 
+  /// 렌탈 아이템 에러 코드 → 사용자 친화적 메시지
+  static const _rentalErrorMessages = <int, String>{
+    4421: '취소 가능 기간이 지났습니다. (입주 후 7일 초과)',
+    4424: '이미 반품 신청된 상품입니다.',
+    4425: '배송이 시작된 상품은 결제 취소가 불가합니다.\n반품 신청을 이용해 주세요.',
+    4460: '존재하지 않는 상품입니다. 새로고침 후 다시 시도해 주세요.',
+    4461: '다른 계약의 상품이 포함되어 있습니다.',
+    4462: '이미 취소/환불된 상품이 포함되어 있습니다.',
+    4463: '환불 불가 상태의 주문입니다.',
+    4470: '배송 전 상품은 반품 신청 대신 결제 취소를 이용해 주세요.',
+    4471: '반품 신청은 주문별로 각각 진행해 주세요.\n(여러 주문을 한 번에 신청할 수 없습니다)',
+  };
+
   /// 에러 응답 처리
   void _handleErrorResponse(http.Response response) {
     try {
       final error = json.decode(utf8.decode(response.bodyBytes));
-      final message = error['message'] ?? '알 수 없는 오류가 발생했습니다.';
+      final serverMessage = error['message'] ?? '알 수 없는 오류가 발생했습니다.';
+      final errorCode = error['code'] as int?;
+
+      // 렌탈 아이템 전용 에러 코드 우선 매핑
+      if (errorCode != null && _rentalErrorMessages.containsKey(errorCode)) {
+        throw Exception(_rentalErrorMessages[errorCode]);
+      }
 
       switch (response.statusCode) {
         case 400:
-          throw Exception(message);
+          throw Exception(serverMessage);
         case 401:
           throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
         case 403:
@@ -315,9 +434,9 @@ class RentalOrderService {
         case 404:
           throw Exception('요청한 리소스를 찾을 수 없습니다.');
         case 409:
-          throw Exception(message);
+          throw Exception(serverMessage);
         default:
-          throw Exception(message);
+          throw Exception(serverMessage);
       }
     } on FormatException {
       throw Exception('서버 응답을 처리할 수 없습니다.');
@@ -607,6 +726,134 @@ class RentalOrderResponse {
           [],
       requiresPayment: json['requiresPayment'] ?? false,
       paymentUrl: json['paymentUrl'],
+    );
+  }
+}
+
+// ========== 결제취소 응답 모델 ==========
+
+class RentalItemCancelResponse {
+  final List<CancelSucceededOrder> succeeded;
+  final List<CancelFailedOrder> failed;
+  final int totalRefunded;
+
+  RentalItemCancelResponse({
+    required this.succeeded,
+    required this.failed,
+    required this.totalRefunded,
+  });
+
+  bool get hasFailures => failed.isNotEmpty;
+
+  factory RentalItemCancelResponse.fromJson(Map<String, dynamic> json) {
+    return RentalItemCancelResponse(
+      succeeded: (json['succeeded'] as List<dynamic>? ?? [])
+          .map((e) => CancelSucceededOrder.fromJson(e))
+          .toList(),
+      failed: (json['failed'] as List<dynamic>? ?? [])
+          .map((e) => CancelFailedOrder.fromJson(e))
+          .toList(),
+      totalRefunded: json['totalRefunded'] ?? 0,
+    );
+  }
+}
+
+class CancelSucceededOrder {
+  final String orderId;
+  final int refundAmount;
+
+  CancelSucceededOrder({required this.orderId, required this.refundAmount});
+
+  factory CancelSucceededOrder.fromJson(Map<String, dynamic> json) {
+    return CancelSucceededOrder(
+      orderId: json['orderId'] ?? '',
+      refundAmount: json['refundAmount'] ?? 0,
+    );
+  }
+}
+
+class CancelFailedOrder {
+  final String orderId;
+  final String reason;
+
+  CancelFailedOrder({required this.orderId, required this.reason});
+
+  factory CancelFailedOrder.fromJson(Map<String, dynamic> json) {
+    return CancelFailedOrder(
+      orderId: json['orderId'] ?? '',
+      reason: json['reason'] ?? '처리 중 오류가 발생했습니다.',
+    );
+  }
+}
+
+// ========== 반품 예상 금액 조회 응답 모델 ==========
+
+class ReturnPreviewResponse {
+  final List<ReturnOrderPreview> orderPreviews;
+  final ReturnPreviewSummary summary;
+
+  ReturnPreviewResponse({required this.orderPreviews, required this.summary});
+
+  factory ReturnPreviewResponse.fromJson(Map<String, dynamic> json) {
+    return ReturnPreviewResponse(
+      orderPreviews: (json['orderPreviews'] as List<dynamic>? ?? [])
+          .map((e) => ReturnOrderPreview.fromJson(e))
+          .toList(),
+      summary: ReturnPreviewSummary.fromJson(
+        json['summary'] as Map<String, dynamic>? ?? {},
+      ),
+    );
+  }
+}
+
+class ReturnOrderPreview {
+  final String orderId;
+  final int rentalOrderId;
+  final String deliveryStatus;
+  final int itemTotalAmount;
+  final int shippingDeduction;
+  final int refundAmount;
+  final String shippingDeductionReason;
+
+  ReturnOrderPreview({
+    required this.orderId,
+    required this.rentalOrderId,
+    required this.deliveryStatus,
+    required this.itemTotalAmount,
+    required this.shippingDeduction,
+    required this.refundAmount,
+    required this.shippingDeductionReason,
+  });
+
+  factory ReturnOrderPreview.fromJson(Map<String, dynamic> json) {
+    return ReturnOrderPreview(
+      orderId: json['orderId'] ?? '',
+      rentalOrderId: json['rentalOrderId'] ?? 0,
+      deliveryStatus: json['deliveryStatus'] ?? '',
+      itemTotalAmount: json['itemTotalAmount'] ?? 0,
+      shippingDeduction: json['shippingDeduction'] ?? 0,
+      refundAmount: json['refundAmount'] ?? 0,
+      shippingDeductionReason: json['shippingDeductionReason'] ?? '',
+    );
+  }
+}
+
+class ReturnPreviewSummary {
+  final int totalItemAmount;
+  final int totalShippingDeduction;
+  final int totalRefundAmount;
+
+  ReturnPreviewSummary({
+    required this.totalItemAmount,
+    required this.totalShippingDeduction,
+    required this.totalRefundAmount,
+  });
+
+  factory ReturnPreviewSummary.fromJson(Map<String, dynamic> json) {
+    return ReturnPreviewSummary(
+      totalItemAmount: json['totalItemAmount'] ?? 0,
+      totalShippingDeduction: json['totalShippingDeduction'] ?? 0,
+      totalRefundAmount: json['totalRefundAmount'] ?? 0,
     );
   }
 }
