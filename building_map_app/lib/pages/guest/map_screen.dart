@@ -5,21 +5,23 @@ import 'dart:convert';
 import 'dart:html' as html show window, EventListener, Event, MessageEvent;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
-import '../../utils/format_utils.dart';
 import '../../utils/contract_utils.dart';
+import '../../utils/format_utils.dart';
+import '../../utils/map_filter_utils.dart';
 import '../../models/room.dart';
 import '../../models/search_filters.dart';
 import '../../services/room_service.dart';
 import '../../widgets/kakao_map_web.dart';
-import '../../widgets/property_card.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../widgets/common/mobile_bottom_nav.dart';
 import '../../services/map_interaction_coordinator.dart';
+import '../../widgets/map/kakao_map_section.dart';
+import '../../widgets/map/map_only_layout.dart';
+import '../../widgets/map/property_list_panel.dart';
 import 'package:provider/provider.dart';
 
 /// 지도 기반 숙소 검색 화면
@@ -209,8 +211,7 @@ class _MapScreenState extends State<MapScreen> {
         return;
       }
 
-      if (zoom != null) {
-      } else {
+      if (zoom == null) {
         AppLogger.w('⚠️ [MAP] 줌 레벨이 null입니다!');
       }
 
@@ -246,8 +247,6 @@ class _MapScreenState extends State<MapScreen> {
         checkOutStr = FormatUtils.formatDateApi(_checkOutDate!);
       }
 
-      // 디버그: API 요청 파라미터 확인
-
       final result = await _roomService.getRoomsByMapBounds(
         swLat: swLat,
         swLng: swLng,
@@ -267,18 +266,10 @@ class _MapScreenState extends State<MapScreen> {
           }
         }
 
-        // 디버그: API 응답 데이터 확인
         bool hasPhotos = false;
         if (rooms.isNotEmpty) {
-          final firstRoom = rooms.first;
-          if (firstRoom.containsKey('photos')) {
-            final photos = firstRoom['photos'];
-            if (photos is List && photos.isNotEmpty) {
-              hasPhotos = true;
-            } else {
-            }
-          } else {
-          }
+          final photos = rooms.first['photos'];
+          hasPhotos = photos is List && photos.isNotEmpty;
         }
 
         // photos 누락 시 자동 재시도 (초기 로드 시 한 번만)
@@ -614,138 +605,7 @@ class _MapScreenState extends State<MapScreen> {
                         tablet: _buildMapOnly(),
 
                         // 데스크톱: 리스트 + 지도
-                        desktop: Row(
-                          children: [
-                            // 왼쪽: 매물 리스트 (반응형 너비: 화면의 30%, 최소 300px, 최대 450px)
-                            // 필터링된 결과가 있을 때만 표시
-                            if (_getFilteredRoomsForList().isNotEmpty)
-                              LayoutBuilder(
-                                builder: (context, constraints) {
-                                  // 부모의 너비를 기준으로 반응형 계산
-                                  final screenWidth = MediaQuery.of(
-                                    context,
-                                  ).size.width;
-                                  final listWidth = (screenWidth * 0.3).clamp(
-                                    300.0,
-                                    450.0,
-                                  );
-
-                                  return Container(
-                                    width: listWidth,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border(
-                                        right: BorderSide(
-                                          color: Colors.grey[300]!,
-                                        ),
-                                      ),
-                                    ),
-                                    child: _buildPropertyList(),
-                                  );
-                                },
-                              ),
-
-                            // 오른쪽: 지도
-                            Expanded(
-                              child: Stack(
-                                children: [
-                                  _buildMap(),
-
-                                  // 결과 없음 메시지 (줌 레벨에 따라 다른 메시지 표시)
-                                  if (_roomsForMap.isEmpty)
-                                    Positioned.fill(
-                                      child: Center(
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                            vertical: 16,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.95,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                            border: Border.all(
-                                              color: AppColors.border,
-                                              width: 2,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(
-                                                  alpha: 0.15,
-                                                ),
-                                                blurRadius: 20,
-                                                offset: const Offset(0, 10),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Text(
-                                            _currentZoomLevel != null &&
-                                                    _currentZoomLevel! >= 6
-                                                ? '지도를 확대해서 방을 찾아주세요.'
-                                                : '현재 위치에 조건이 일치하는 방이 없습니다.',
-                                            style: AppTextStyles.bodyLarge
-                                                .copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.textPrimary,
-                                                ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-
-                                  // 필터링 결과 없음 메시지 (전체 매물은 있지만 필터링으로 걸러진 경우)
-                                  if (!_isLoading &&
-                                      _getFilteredRoomsForList().isEmpty &&
-                                      _roomsForMap.isNotEmpty)
-                                    Positioned.fill(
-                                      child: Center(
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                            vertical: 16,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.95,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                            border: Border.all(
-                                              color: AppColors.border,
-                                              width: 2,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(
-                                                  alpha: 0.15,
-                                                ),
-                                                blurRadius: 20,
-                                                offset: const Offset(0, 10),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Text(
-                                            '일치하는 조건의 매물이 없습니다',
-                                            style: AppTextStyles.bodyLarge
-                                                .copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.textPrimary,
-                                                ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                        desktop: _buildDesktopLayout(),
                       ),
               ),
             ],
@@ -764,1067 +624,322 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  /// 데스크톱 레이아웃: 좌측 리스트 + 우측 지도
+  Widget _buildDesktopLayout() {
+    final filteredRooms = _getFilteredRoomsForList();
+    return Row(
+      children: [
+        // 왼쪽: 매물 리스트 (반응형 너비: 화면의 30%, 최소 300px, 최대 450px)
+        if (filteredRooms.isNotEmpty)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final listWidth = (screenWidth * 0.3).clamp(300.0, 450.0);
+              return Container(
+                width: listWidth,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                    right: BorderSide(color: Colors.grey[300]!),
+                  ),
+                ),
+                child: _buildPropertyList(),
+              );
+            },
+          ),
+
+        // 오른쪽: 지도
+        Expanded(
+          child: Stack(
+            children: [
+              _buildMap(),
+
+              // 결과 없음 메시지 (줌 레벨에 따라 다른 메시지 표시)
+              if (_roomsForMap.isEmpty)
+                Positioned.fill(
+                  child: Center(
+                    child: _buildEmptyMessage(
+                      _currentZoomLevel != null && _currentZoomLevel! >= 6
+                          ? '지도를 확대해서 방을 찾아주세요.'
+                          : '현재 위치에 조건이 일치하는 방이 없습니다.',
+                    ),
+                  ),
+                ),
+
+              // 필터링 결과 없음 메시지
+              if (!_isLoading &&
+                  filteredRooms.isEmpty &&
+                  _roomsForMap.isNotEmpty)
+                Positioned.fill(
+                  child: Center(
+                    child: _buildEmptyMessage('일치하는 조건의 매물이 없습니다'),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 데스크톱 지도 위 빈 상태 안내 메시지 컨테이너
+  Widget _buildEmptyMessage(String message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Text(
+        message,
+        style: AppTextStyles.bodyLarge.copyWith(
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
   /// 필터링된 방 목록 가져오기 (지도용 - 클러스터 필터링 제외)
   List<Map<String, dynamic>> _getFilteredRooms() {
-    // 1단계: 지도 영역 내 매물 필터링 (bounds 기반)
-    final visibleRooms = _roomsForMap.where((room) {
-      // 백엔드 응답에 위도/경도가 없으면 제외
-      if (room['latitude'] == null || room['longitude'] == null) return false;
-
-      final lat = double.tryParse(room['latitude'].toString());
-      final lng = double.tryParse(room['longitude'].toString());
-
-      if (lat == null || lng == null) return false;
-
-      // bounds가 아직 설정되지 않았으면 모두 표시 (초기 로딩)
-      if (_currentSwLat == null ||
-          _currentSwLng == null ||
-          _currentNeLat == null ||
-          _currentNeLng == null) {
-        return true;
-      }
-
-      // 실제 지도 bounds 내에 있는지 확인
-      final isInBounds =
-          lat >= _currentSwLat! &&
-          lat <= _currentNeLat! &&
-          lng >= _currentSwLng! &&
-          lng <= _currentNeLng!;
-
-      return isInBounds;
-    }).toList();
-
-    // 2단계: 검색 필터 적용
-    final filteredRooms = visibleRooms.where((room) {
-      // 건물 유형 필터
-      if (_filters.buildingTypes.isNotEmpty) {
-        final buildingType = room['buildingType']?.toString() ?? '';
-        if (!_filters.buildingTypes.contains(buildingType)) {
-          return false;
-        }
-      }
-
-      // 방 개수 필터
-      if (_filters.bedroomCounts.isNotEmpty) {
-        final roomCount = room['roomCount'] as int? ?? 1;
-        // 3은 "3개 이상" 의미
-        if (_filters.bedroomCounts.contains(3)) {
-          // 3개 이상 필터가 선택된 경우
-          if (roomCount >= 3) {
-            // roomCount가 3 이상이면 통과
-          } else if (!_filters.bedroomCounts.contains(roomCount)) {
-            // roomCount가 3 미만이고, 해당 개수가 선택되지 않았으면 제외
-            return false;
-          }
-        } else {
-          // 3개 이상 필터가 선택되지 않은 경우
-          if (!_filters.bedroomCounts.contains(roomCount)) {
-            return false;
-          }
-        }
-      }
-
-      // 가격 범위 필터 (SearchFilters)
-      if (!_filters.priceRange.isDefault) {
-        final dailyRent = room['dailyRent'] as int? ?? 0;
-        if (!_filters.priceRange.isInRange(dailyRent)) {
-          return false;
-        }
-      }
-
-      // 가격 범위 필터 (guest_home_page에서 전달받은 값, 주간 임대료 기준)
-      if (_minPrice != null || _maxPrice != null) {
-        final dailyRent = room['dailyRent'] as int? ?? 0;
-        final weeklyRent = dailyRent * 7; // 일일 임대료를 주간 임대료로 변환
-        if (_minPrice != null && weeklyRent < _minPrice!) {
-          return false;
-        }
-        if (_maxPrice != null && weeklyRent > _maxPrice!) {
-          return false;
-        }
-      }
-
-      // 주차 가능 필터
-      if (_filters.otherOptions.contains(OtherOptions.parking)) {
-        final parking = room['parkingAvailable'] as bool? ?? false;
-        if (!parking) return false;
-      }
-
-      return true;
-    }).toList();
-
-    return filteredRooms;
+    return MapFilterUtils.filterRooms(
+      rooms: _roomsForMap,
+      filters: _filters,
+      swLat: _currentSwLat,
+      swLng: _currentSwLng,
+      neLat: _currentNeLat,
+      neLng: _currentNeLng,
+      minPrice: _minPrice,
+      maxPrice: _maxPrice,
+    );
   }
 
   /// 리스트용 필터링 (클러스터 필터링 포함)
   List<Map<String, dynamic>> _getFilteredRoomsForList() {
-    // 클러스터 필터링이 활성화된 경우 (최우선)
-    if (_filteredByCluster && _clusterRoomIds.isNotEmpty) {
-      final clusterRooms = _roomsForMap.where((room) {
-        final roomId = room['id'] as int?;
-        return roomId != null && _clusterRoomIds.contains(roomId);
-      }).toList();
-      return clusterRooms;
-    }
-
-    // 클러스터 필터링이 비활성화된 경우 - 일반 필터링 적용
-    return _getFilteredRooms();
+    return MapFilterUtils.filterRoomsForList(
+      rooms: _roomsForMap,
+      filters: _filters,
+      filteredByCluster: _filteredByCluster,
+      clusterRoomIds: _clusterRoomIds,
+      swLat: _currentSwLat,
+      swLng: _currentSwLng,
+      neLat: _currentNeLat,
+      neLng: _currentNeLng,
+      minPrice: _minPrice,
+      maxPrice: _maxPrice,
+    );
   }
 
   Widget _buildPropertyList() {
-    final filteredRooms = _getFilteredRoomsForList();
-
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        // 🎯 Coordinator: 리스트 스크롤 모드 진입/종료
-        final coordinator = Provider.of<MapInteractionCoordinator>(
-          context,
-          listen: false,
-        );
-
-        if (notification is ScrollStartNotification) {
-          // 스크롤 시작 → 리스트 스크롤 모드 진입 (지도 드래그 자동 차단)
-          coordinator.enterMode(InteractionMode.listScrolling);
-        } else if (notification is ScrollEndNotification) {
-          // 스크롤 종료 → idle 모드 복귀 (지도 드래그 자동 허용)
-          coordinator.exitMode();
-        }
-        return true;
+    return PropertyListPanel(
+      filteredRooms: _getFilteredRoomsForList(),
+      selectedRoomId: _selectedRoom?.id,
+      scrollController: _listScrollController,
+      onSaveMapState: _saveMapState,
+      onRoomHover: (room) {
+        _onRoomSelected(room, focusMap: false, shouldScroll: false);
       },
-      child: Listener(
-        onPointerDown: (_) {},
-        onPointerMove: (_) {},
-        onPointerUp: (_) {},
-        behavior: HitTestBehavior.opaque,
-        child: ListView.builder(
-          controller: _listScrollController, // 스크롤 컨트롤러 추가
-          padding: const EdgeInsets.all(16),
-          itemCount: filteredRooms.length,
-          itemBuilder: (context, index) {
-            final roomData = filteredRooms[index];
-
-            // 백엔드 API 응답을 Room 모델 형식으로 변환
-            // photos 배열 파싱 (백엔드가 [{url, order}] 형식으로 제공, 상대경로)
-            final photosData = roomData['photos'] as List<dynamic>?;
-
-            // 디버그: 개별 방의 photos 데이터 확인 (첫 번째 방만)
-            if (index == 0) {
-              if (photosData != null && photosData.isNotEmpty) {
-              }
-            }
-
-            final photos = photosData != null && photosData.isNotEmpty
-                ? photosData.map((photo) {
-                    final relativeUrl = photo['url'] ?? '';
-                    final fullUrl = ContractUtils.getFullImageUrl(relativeUrl);
-                    return {'url': fullUrl, 'order': photo['order'] ?? 0};
-                  }).toList()
-                : <Map<String, dynamic>>[];
-
-            // 디버그: 변환 후 photos 데이터 (첫 번째 방만)
-            if (index == 0) {
-              if (photos.isNotEmpty) {
-              }
-            }
-
-            // discounts 객체에서 할인 정보 파싱
-            final discounts = roomData['discounts'] as Map<String, dynamic>?;
-
-            final roomJson = {
-              'id': roomData['id'] ?? 0,
-              'roomName': roomData['roomName'] ?? '',
-              'address': roomData['address'] ?? '',
-              'latitude': roomData['latitude'] ?? 0.0,
-              'longitude': roomData['longitude'] ?? 0.0,
-              'area': '0',
-              'floor': '1',
-              'buildingType': roomData['buildingType'] ?? '오피스텔',
-              'parkingAvailable': false,
-              'elevatorAvailable': false,
-              'roomCount': roomData['roomCount'] ?? 1,
-              'bathroomCount': roomData['bathroomCount'] ?? 1,
-              'livingRoomCount': 1,
-              'kitchenCount': 1,
-              'isDuplex': false,
-              'dailyRent': roomData['dailyRent'] ?? 0,
-              // discounts 객체에서 할인 정보 가져오기 (nullable 유지)
-              'discounts': discounts,
-              'dailyMaintenanceFee': 0,
-              'includeElectricity': false,
-              'includeWater': false,
-              'includeGas': false,
-              'includeInternet': false,
-              'cleaningFee': 0,
-              'minContractDays': 28,
-              'refundPolicy': 'moderate',
-              'createdAt': DateTime.now().toIso8601String(),
-              'updatedAt': DateTime.now().toIso8601String(),
-              'photos': photos, // 이미 올바른 형식으로 파싱됨
-              'isNearSubway': false,
-              'isAvailable': roomData['isAvailable'] ?? true,
-              'hostName': '호스트',
-              'hostId': 1,
-              'status': 'published',
-            };
-
-            final room = Room.fromJson(roomJson);
-
-            // 디버그: Room 모델 변환 후 photos 확인 (첫 번째 방만)
-            if (index == 0) {
-              if (room.photos.isNotEmpty) {
-              } else {
-              }
-            }
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: PropertyCard(
-                room: room,
-                isSelected: _selectedRoom?.id == room.id,
-                onTap: () {
-                  _saveMapState(room.id);
-                  context.go('/guest/room/detail/${room.id}');
-                },
-                onHover: (isHovered) {
-                  if (isHovered) {
-                    // 호버 시에는 스크롤 비활성화 (마커 선택만)
-                    _onRoomSelected(room, focusMap: false, shouldScroll: false);
-                  } else {
-                    _onRoomSelected(null, focusMap: false, shouldScroll: false);
-                  }
-                },
-              ),
-            );
-          },
-        ),
-      ),
     );
   }
 
   /// 지도만 표시 (모바일/태블릿용)
   Widget _buildMapOnly() {
-    final filteredRooms = _getFilteredRoomsForList();
-
-    return Stack(
-      children: [
-        _buildMap(),
-
-        // 필터링 결과가 없을 때 안내 메시지
-        if (!_isLoading && filteredRooms.isEmpty)
-          Positioned.fill(
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  '일치하는 조건의 매물이 없습니다',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
-
-        // 매물 개수 뱃지 (모바일: 하단 중앙, 데스크톱: 좌측 상단)
-        // 모바일에서는 슬라이드 카드 표시 시 비노출
-        if (filteredRooms.isNotEmpty &&
-            (!ResponsiveUtil.isMobile(context) || !_showMobileCardList))
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            // 모바일 환경에서는 하단 중앙, 데스크톱은 좌측 상단
-            top: ResponsiveUtil.isMobile(context) ? null : 16,
-            // 모바일: 네비게이션 위(80px)
-            bottom: ResponsiveUtil.isMobile(context) ? 80 : null,
-            left: ResponsiveUtil.isMobile(context) ? 0 : 16,
-            right: ResponsiveUtil.isMobile(context) ? 0 : null,
-            child: Center(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque, // 뱃지 클릭 우선 처리 (마커 클릭보다 우선)
-                onTap: ResponsiveUtil.isMobile(context)
-                    ? () {
-                        // 🎯 Coordinator: 마커 선택 모드 진입 + 300ms 이벤트 잠금
-                        final coordinator =
-                            Provider.of<MapInteractionCoordinator>(
-                              context,
-                              listen: false,
-                            );
-                        coordinator.enterMode(
-                          InteractionMode.markerSelecting,
-                          lockDuration: const Duration(milliseconds: 300),
-                        );
-
-                        setState(() {
-                          _showMobileCardList = !_showMobileCardList;
-                          // 뱃지 클릭 시 마커 선택 해제 (파란색 → 흰색)
-                          _selectedRoom = null;
-                        });
-
-                        // 지도의 모든 마커 선택 해제
-                        _mapController.selectMarker(-1);
-
-                      }
-                    : null,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '매물 ${filteredRooms.length}개',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1F2937),
-                        ),
-                      ),
-                      if (ResponsiveUtil.isMobile(context)) ...[
-                        const SizedBox(width: 8),
-                        Icon(
-                          _showMobileCardList
-                              ? Icons.keyboard_arrow_down
-                              : Icons.keyboard_arrow_up,
-                          size: 20,
-                          color: const Color(0xFF1F2937),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-        // 하단 슬라이드 카드 (모바일 전용 - 토글 상태에 따라 표시/숨김)
-        if (ResponsiveUtil.isMobile(context) && filteredRooms.isNotEmpty)
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            bottom: _showMobileCardList ? 80 : -320, // 숨김 시 화면 밖으로 (카드 높이만큼)
-            left: 0,
-            right: 0,
-            height: 320, // 카드 높이 축소 (이미지 180 + 패딩 26 + 텍스트 ~110)
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 300),
-              opacity: _showMobileCardList ? 1.0 : 0.0,
-              child: Listener(
-                onPointerDown: (_) {
-                  // 🎯 Coordinator: PageView 드래그 시작 → 카드 슬라이드 모드 진입
-                  final coordinator = Provider.of<MapInteractionCoordinator>(
-                    context,
-                    listen: false,
-                  );
-                  coordinator.enterMode(InteractionMode.cardSwiping);
-                },
-                onPointerUp: (_) {
-                  // 🎯 Coordinator: PageView 드래그 종료 → idle 모드 복귀
-                  final coordinator = Provider.of<MapInteractionCoordinator>(
-                    context,
-                    listen: false,
-                  );
-                  coordinator.exitMode();
-                },
-                onPointerCancel: (_) {
-                  // 🎯 Coordinator: 드래그 취소 시에도 idle 모드 복귀
-                  final coordinator = Provider.of<MapInteractionCoordinator>(
-                    context,
-                    listen: false,
-                  );
-                  coordinator.exitMode();
-                },
-                behavior: HitTestBehavior.opaque,
-                child: PageView.builder(
-                  controller: _mobileCardController,
-                  itemCount: filteredRooms.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentMobileCardIndex = index;
-                    });
-
-                    // 📱 모바일 카드 스와이프 시 지도 자동 이동 비활성화
-                    // - 사용자가 카드를 넘길 때마다 지도가 순간이동하는 것을 방지
-                    // - 필요 시 카드 탭 이벤트에서만 지도 포커싱 수행 가능
-
-                    //                   // 지도 포커싱
-                    //                   final roomData = filteredRooms[index];
-                    //                   final lat = double.tryParse(roomData['latitude'].toString());
-                    //                   final lng = double.tryParse(roomData['longitude'].toString());
-                    //                   if (lat != null && lng != null) {
-                    //                     _mapController.focusOnLocation(lat, lng, zoomLevel: 3);
-                    //                   }
-                  },
-                  itemBuilder: (context, index) {
-                    final roomData = filteredRooms[index];
-                    return _buildMobilePropertyCard(roomData);
-                  },
-                ),
-              ),
-            ),
-          ),
-
-        // 결과 없음 메시지
-        if (filteredRooms.isEmpty)
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                _currentZoomLevel != null && _currentZoomLevel! >= 6
-                    ? '지도를 확대해서 방을 찾아주세요.'
-                    : '현재 위치에 조건이 일치하는 방이 없습니다.',
-                style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
-              ),
-            ),
-          ),
-      ],
+    return MapOnlyLayout(
+      mapWidget: _buildMap(),
+      filteredRooms: _getFilteredRoomsForList(),
+      isLoading: _isLoading,
+      showMobileCardList: _showMobileCardList,
+      currentMobileCardIndex: _currentMobileCardIndex,
+      currentZoomLevel: _currentZoomLevel,
+      mobileCardController: _mobileCardController,
+      onBadgeTap: () {
+        setState(() {
+          _showMobileCardList = !_showMobileCardList;
+          _selectedRoom = null;
+        });
+      },
+      onPageChanged: (index) {
+        setState(() {
+          _currentMobileCardIndex = index;
+        });
+      },
+      onSaveMapState: _saveMapState,
+      onDeselectMarker: () {
+        _mapController.selectMarker(-1);
+      },
     );
   }
 
   Widget _buildMap() {
-    if (kIsWeb) {
-      // 필터링된 방 목록을 카카오맵에 맞게 변환
-      final filteredRooms = _getFilteredRooms();
-      final roomsForKakaoMap = filteredRooms.map((roomData) {
-        // dailyRent를 weeklyRent로 계산 (1000원 단위 반올림)
-        final dailyRent = roomData['dailyRent'] ?? 0;
-        final weeklyRent = ((dailyRent * 7) / 1000).round() * 1000;
+    return KakaoMapSection(
+      controller: _mapController,
+      rooms: _getFilteredRooms(),
+      isDesktop: _isDesktop,
+      isMobile: _isMobile,
+      onMarkerTap: _handleMarkerTap,
+      onBoundsChanged: _handleBoundsChanged,
+    );
+  }
 
-        return {
-          'id': roomData['id'],
-          'latitude': roomData['latitude'],
-          'longitude': roomData['longitude'],
-          'roomName': roomData['roomName'],
-          'weeklyRent': weeklyRent, // 계산된 주간 임대료
-          'isAvailable': roomData['isAvailable'] ?? true,
-        };
-      }).toList();
+  /// 마커 클릭 이벤트 처리 (roomId: -1 = 선택 해제)
+  void _handleMarkerTap(int roomId, Map<String, dynamic> roomData) {
+    if (!mounted) return;
 
-      return KakaoMapWeb(
-        controller: _mapController,
-        rooms: roomsForKakaoMap,
-        onMarkerTap: (roomData) {
-          // 🔒 위젯이 dispose된 후에는 콜백 처리하지 않음
-          if (!mounted) return;
+    if (roomId == -1) {
+      setState(() {
+        _selectedRoom = null;
+        _filteredByCluster = false;
+        _clusterRoomIds = [];
+        _currentMobileCardIndex = 0;
+        _showMobileCardList = false;
+      });
+      if (!_isDesktop && _mobileCardController.hasClients) {
+        _mobileCardController.jumpToPage(0);
+      }
+      return;
+    }
 
-          final roomId = roomData['id'] as int;
+    final filteredRooms = _getFilteredRooms();
+    final selectedRoomData = filteredRooms.firstWhere(
+      (r) => r['id'] == roomId,
+      orElse: () => filteredRooms.first,
+    );
 
-          // roomId: -1은 개별 마커 재클릭 (선택 해제) 이벤트
-          if (roomId == -1) {
-            setState(() {
-              _selectedRoom = null;
-              _filteredByCluster = false;
-              _clusterRoomIds = [];
-              _currentMobileCardIndex = 0;
-              _showMobileCardList = false; // 모바일 카드 리스트 숨김 (UX 개선)
-            });
-
-            // PageView를 첫 번째 카드로 리셋 (모바일/태블릿)
-            if (!_isDesktop &&
-                _mobileCardController.hasClients) {
-              _mobileCardController.jumpToPage(0);
-            }
-            return;
-          }
-
-          // 반응형 동작 분기
-          if (_isDesktop) {
-            // 데스크톱: 개별 마커 클릭 시 해당 매물만 리스트에 표시
-
-            // 개별 마커 클릭 시 해당 매물만 필터링하여 리스트 표시
-            setState(() {
-              _filteredByCluster = true; // 개별 매물 필터링 활성화
-              _clusterRoomIds = [roomId]; // 해당 매물만 표시
-            });
-
-            final selectedRoomData = filteredRooms.firstWhere(
-              (r) => r['id'] == roomId,
-              orElse: () => filteredRooms.first,
-            );
-
-            // Room 모델로 변환
-            // photos 배열 파싱 (백엔드가 [{url, order}] 형식으로 제공, 상대경로)
-            final photosData = selectedRoomData['photos'] as List<dynamic>?;
-            final photos = photosData != null && photosData.isNotEmpty
-                ? photosData.map((photo) {
-                    final relativeUrl = photo['url'] ?? '';
-                    final fullUrl = ContractUtils.getFullImageUrl(relativeUrl);
-                    return {'url': fullUrl, 'order': photo['order'] ?? 0};
-                  }).toList()
-                : <Map<String, dynamic>>[];
-
-            final roomJson = {
-              'id': selectedRoomData['id'] ?? 0,
-              'roomName': selectedRoomData['roomName'] ?? '',
-              'address': selectedRoomData['address'] ?? '',
-              'latitude': selectedRoomData['latitude'] ?? 0.0,
-              'longitude': selectedRoomData['longitude'] ?? 0.0,
-              'area': '0',
-              'floor': '1',
-              'buildingType': selectedRoomData['buildingType'] ?? '오피스텔',
-              'parkingAvailable': false,
-              'elevatorAvailable': false,
-              'roomCount': selectedRoomData['roomCount'] ?? 1,
-              'bathroomCount': selectedRoomData['bathroomCount'] ?? 1,
-              'livingRoomCount': 1,
-              'kitchenCount': 1,
-              'isDuplex': false,
-              'dailyRent': selectedRoomData['dailyRent'] ?? 0,
-              'longTermWeeks': 12,
-              'longTermDiscount': 0,
-              'quickMoveInDiscount': 0,
-              'dailyMaintenanceFee': 0,
-              'includeElectricity': false,
-              'includeWater': false,
-              'includeGas': false,
-              'includeInternet': false,
-              'cleaningFee': 0,
-              'minContractDays': 28,
-              'refundPolicy': 'moderate',
-              'createdAt': DateTime.now().toIso8601String(),
-              'updatedAt': DateTime.now().toIso8601String(),
-              'photos': photos, // 이미 올바른 형식으로 파싱됨
-              'isNearSubway': false,
-              'isAvailable': roomData['isAvailable'] ?? true,
-              'hostName': '호스트',
-              'hostId': 1,
-              'status': 'published',
-            };
-
-            _onRoomSelected(Room.fromJson(roomJson), focusMap: false);
-          } else {
-            // 모바일/태블릿: 마커 클릭 시 매물 선택 및 리스트 토글
-
-            // 🎯 Coordinator: 마커 클릭 이벤트 처리 가능 여부 확인
-            final coordinator = Provider.of<MapInteractionCoordinator>(
-              context,
-              listen: false,
-            );
-            if (!coordinator.canProcessEvent(EventType.markerClick)) {
-              return;
-            }
-
-            // 다른 마커 클릭: 해당 매물 선택 (상세 페이지 이동 제거)
-
-            // 개별 마커 클릭 시 해당 매물만 필터링하여 카드 리스트 노출
-            // (같은 마커 재클릭은 roomId: -1 이벤트로 별도 처리)
-            setState(() {
-              _showMobileCardList = true;
-              _filteredByCluster = true; // 개별 매물 필터링 활성화
-              _clusterRoomIds = [roomId]; // 해당 매물만 표시
-              _currentMobileCardIndex = 0; // 카드 인덱스 리셋
-            });
-
-            final selectedRoomData = filteredRooms.firstWhere(
-              (r) => r['id'] == roomId,
-              orElse: () => filteredRooms.first,
-            );
-
-            // Room 모델로 변환 (데스크탑과 동일한 로직)
-            final photosData = selectedRoomData['photos'] as List<dynamic>?;
-            final photos = photosData != null && photosData.isNotEmpty
-                ? photosData.map((photo) {
-                    final relativeUrl = photo['url'] ?? '';
-                    final fullUrl = ContractUtils.getFullImageUrl(relativeUrl);
-                    return {'url': fullUrl, 'order': photo['order'] ?? 0};
-                  }).toList()
-                : <Map<String, dynamic>>[];
-
-            final roomJson = {
-              'id': selectedRoomData['id'] ?? 0,
-              'roomName': selectedRoomData['roomName'] ?? '',
-              'address': selectedRoomData['address'] ?? '',
-              'latitude': selectedRoomData['latitude'] ?? 0.0,
-              'longitude': selectedRoomData['longitude'] ?? 0.0,
-              'area': '0',
-              'floor': '1',
-              'buildingType': selectedRoomData['buildingType'] ?? '오피스텔',
-              'parkingAvailable': false,
-              'elevatorAvailable': false,
-              'roomCount': selectedRoomData['roomCount'] ?? 1,
-              'bathroomCount': selectedRoomData['bathroomCount'] ?? 1,
-              'livingRoomCount': 1,
-              'kitchenCount': 1,
-              'isDuplex': false,
-              'dailyRent': selectedRoomData['dailyRent'] ?? 0,
-              'longTermWeeks': 12,
-              'longTermDiscount': 0,
-              'quickMoveInDiscount': 0,
-              'dailyMaintenanceFee': 0,
-              'includeElectricity': false,
-              'includeWater': false,
-              'includeGas': false,
-              'includeInternet': false,
-              'cleaningFee': 0,
-              'minContractDays': 28,
-              'refundPolicy': 'moderate',
-              'createdAt': DateTime.now().toIso8601String(),
-              'updatedAt': DateTime.now().toIso8601String(),
-              'photos': photos,
-              'isNearSubway': false,
-              'isAvailable': roomData['isAvailable'] ?? true,
-              'hostName': '호스트',
-              'hostId': 1,
-              'status': 'published',
-            };
-
-            _onRoomSelected(Room.fromJson(roomJson), focusMap: false);
-
-            // 모바일 PageView를 첫 번째 카드로 이동 (개별 마커는 1개만 있으므로 항상 0번째)
-            if (_isMobile &&
-                _mobileCardController.hasClients) {
-              _mobileCardController.jumpToPage(0);
-            }
-          }
-        },
-        onBoundsChanged: (swLat, swLng, neLat, neLng, zoom) {
-          // 🔒 위젯이 dispose된 후에는 콜백 처리하지 않음
-          if (!mounted) return;
-
-          // 카카오맵 초기화 완료 후 최초 1회: localStorage 지도 상태 복원
-          if (!_mapRestoreAttempted) {
-            _mapRestoreAttempted = true;
-            _restoreMapStateIfNeeded();
-          }
-
-          // 모바일 환경에서 슬라이드 카드가 표시 중이면 숨김 (지도 드래그 시)
-          if (_isMobile && _showMobileCardList) {
-            setState(() {
-              _showMobileCardList = false;
-            });
-          }
-
-          // 선택된 마커가 있으면 해제 (UX 개선: 지도 드래그 시 선택 초기화)
-          if (_selectedRoom != null || _filteredByCluster) {
-
-            setState(() {
-              _selectedRoom = null;
-              _filteredByCluster = false;
-              _clusterRoomIds = [];
-              _currentMobileCardIndex = 0;
-            });
-
-            // 마커 선택 해제 (파란색 → 흰색)
-            _mapController.selectMarker(-1);
-
-            // 모바일 PageView 첫 번째 카드로 리셋
-            if (!_isDesktop &&
-                _mobileCardController.hasClients) {
-              _mobileCardController.jumpToPage(0);
-            }
-          }
-
-          // 지도 영역 변경 시 백엔드 API 호출 (줌 레벨 포함)
-          _loadRoomsByBounds(swLat, swLng, neLat, neLng, zoom: zoom);
-        },
+    if (_isDesktop) {
+      setState(() {
+        _filteredByCluster = true;
+        _clusterRoomIds = [roomId];
+      });
+      _onRoomSelected(
+        Room.fromJson(_buildRoomJson(selectedRoomData, roomData)),
+        focusMap: false,
       );
     } else {
-      // 모바일 버전은 나중에 구현
-      return Center(
-        child: Text(
-          '모바일 지도는 준비 중입니다.',
-          style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[600]),
-        ),
+      // 🎯 Coordinator: 마커 클릭 이벤트 처리 가능 여부 확인
+      final coordinator = Provider.of<MapInteractionCoordinator>(
+        context,
+        listen: false,
       );
+      if (!coordinator.canProcessEvent(EventType.markerClick)) return;
+
+      setState(() {
+        _showMobileCardList = true;
+        _filteredByCluster = true;
+        _clusterRoomIds = [roomId];
+        _currentMobileCardIndex = 0;
+      });
+      _onRoomSelected(
+        Room.fromJson(_buildRoomJson(selectedRoomData, roomData)),
+        focusMap: false,
+      );
+      if (_isMobile && _mobileCardController.hasClients) {
+        _mobileCardController.jumpToPage(0);
+      }
     }
   }
 
-  /// 모바일 하단 슬라이드 카드
-  Widget _buildMobilePropertyCard(Map<String, dynamic> roomData) {
-    // photos 배열 파싱 (백엔드가 [{url, order}] 형식으로 제공, 상대경로)
-    final photosData = roomData['photos'] as List<dynamic>?;
-    String? firstPhotoUrl;
-    if (photosData != null && photosData.isNotEmpty) {
-      final relativeUrl = photosData[0]['url'] as String?;
-      final fullUrl = ContractUtils.getFullImageUrl(relativeUrl);
-      firstPhotoUrl = fullUrl.isNotEmpty ? fullUrl : null;
+  /// 지도 영역 변경 이벤트 처리
+  void _handleBoundsChanged(
+    double swLat,
+    double swLng,
+    double neLat,
+    double neLng,
+    int zoom,
+  ) {
+    if (!mounted) return;
+
+    // 카카오맵 초기화 완료 후 최초 1회: localStorage 지도 상태 복원
+    if (!_mapRestoreAttempted) {
+      _mapRestoreAttempted = true;
+      _restoreMapStateIfNeeded();
     }
 
-    final dailyRent = roomData['dailyRent'] ?? 0;
-    final roomName = roomData['roomName'] ?? '';
-    final address = roomData['address'] ?? '';
-    final roomId = roomData['id'] ?? 0;
-    final isAvailable = roomData['isAvailable'] as bool? ?? true;
+    // 모바일 환경에서 슬라이드 카드가 표시 중이면 숨김 (지도 드래그 시)
+    if (_isMobile && _showMobileCardList) {
+      setState(() {
+        _showMobileCardList = false;
+      });
+    }
 
-    // 할인 정보 파싱 (데스크톱과 동일)
-    final discounts = roomData['discounts'] as Map<String, dynamic>?;
-    final quickMoveInDays = discounts?['quickMoveInDays'] as int?;
-    final quickMoveInDiscount = discounts?['quickMoveInDiscount'] as int?;
-    final longTermWeeks = discounts?['longTermWeeks'] as int?;
-    final longTermDiscount = discounts?['longTermDiscount'] as int?;
+    // 선택된 마커가 있으면 해제 (UX 개선: 지도 드래그 시 선택 초기화)
+    if (_selectedRoom != null || _filteredByCluster) {
+      setState(() {
+        _selectedRoom = null;
+        _filteredByCluster = false;
+        _clusterRoomIds = [];
+        _currentMobileCardIndex = 0;
+      });
+      _mapController.selectMarker(-1);
+      if (!_isDesktop && _mobileCardController.hasClients) {
+        _mobileCardController.jumpToPage(0);
+      }
+    }
 
-    // 할인 여부 확인
-    final hasQuickMoveIn =
-        quickMoveInDays != null &&
-        quickMoveInDiscount != null &&
-        quickMoveInDiscount > 0;
-    final hasLongTerm =
-        longTermWeeks != null &&
-        longTermDiscount != null &&
-        longTermDiscount > 0;
-
-    return GestureDetector(
-      onTap: () {
-        _saveMapState(roomId);
-        context.go('/guest/room/detail/$roomId');
-      },
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 210, // 고정 너비 (4분의 1 축소)
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: isAvailable ? AppColors.surface : AppColors.neutral100,
-          borderRadius: BorderRadius.circular(16), // rounded-2xl
-          border: isAvailable
-              ? null
-              : Border.all(color: AppColors.neutral300, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ], // shadow-xl
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min, // Column 크기를 내용물에 맞춤
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 상단: 이미지 (180px 고정 높이)
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-              child: firstPhotoUrl != null && firstPhotoUrl.isNotEmpty
-                  ? Image.network(
-                      firstPhotoUrl,
-                      width: double.infinity,
-                      height: 180,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          width: double.infinity,
-                          height: 180,
-                          color: AppColors.neutral200,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.neutral400,
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: double.infinity,
-                          height: 180,
-                          color: AppColors.neutral200,
-                          child: Icon(
-                            Icons.home,
-                            size: 48,
-                            color: AppColors.neutral400,
-                          ),
-                        );
-                      },
-                    )
-                  : Container(
-                      width: double.infinity,
-                      height: 180,
-                      color: AppColors.neutral200,
-                      child: Icon(
-                        Icons.home,
-                        size: 48,
-                        color: AppColors.neutral400,
-                      ),
-                    ),
-            ),
-
-            // 하단: 방 정보 (p-4 = 16px, bottom padding 최소화)
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: 10, // bottom padding 최소화
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min, // Column 크기를 내용물에 맞춤
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 방 이름 (font-bold, text-gray-900, mb-1)
-                  Text(
-                    roomName,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isAvailable
-                          ? const Color(0xFF111827)
-                          : AppColors.neutral400,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4), // mb-1
-                  // 주소 (text-xs, text-gray-600, mb-2)
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 12,
-                        color: isAvailable
-                            ? const Color(0xFF4B5563)
-                            : AppColors.neutral400,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          address,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isAvailable
-                                ? const Color(0xFF4B5563)
-                                : AppColors.neutral400,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8), // mb-2
-                  // 예약 불가 배지
-                  if (!isAvailable) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.neutral200,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '예약 불가',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.neutral500,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                  ],
-                  // 가격 (font-bold, 비가용 시 회색)
-                  RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: isAvailable ? Colors.black : AppColors.neutral400,
-                        height: 1.2,
-                      ),
-                      children: [
-                        TextSpan(text: _formatPriceShort(dailyRent * 7)),
-                        const TextSpan(
-                          text: ' / 주',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // 할인 정보가 있을 때만 여백 추가 (간격 줄임)
-                  if (hasQuickMoveIn || hasLongTerm) const SizedBox(height: 4),
-
-                  // 할인 정보 (text-xs, text-blue-600, font-semibold)
-                  if (hasQuickMoveIn) ...[
-                    Text(
-                      '• $quickMoveInDays일 이내 ${_formatPriceShort(quickMoveInDiscount)} 할인',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF2563EB), // text-blue-600
-                        fontWeight: FontWeight.w600,
-                        height: 1.3, // line height 줄임
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                  ],
-                  if (hasLongTerm) ...[
-                    Text(
-                      '• $longTermWeeks주 이상 $longTermDiscount% 할인',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF2563EB), // text-blue-600
-                        fontWeight: FontWeight.w600,
-                        height: 1.3, // line height 줄임
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    _loadRoomsByBounds(swLat, swLng, neLat, neLng, zoom: zoom);
   }
 
-  /// 가격 포맷팅 (짧은 형식 - React formatCurrencyShort 동일)
-  String _formatPriceShort(int price) {
-    return FormatUtils.formatManWon(price);
+  /// 마커 클릭 시 Room.fromJson에 필요한 JSON 맵 빌드 (공통 헬퍼)
+  Map<String, dynamic> _buildRoomJson(
+    Map<String, dynamic> selectedRoomData,
+    Map<String, dynamic> rawMarkerData,
+  ) {
+    final photosData = selectedRoomData['photos'] as List<dynamic>?;
+    final photos = photosData != null && photosData.isNotEmpty
+        ? photosData.map((photo) {
+            final relativeUrl = photo['url'] ?? '';
+            final fullUrl = ContractUtils.getFullImageUrl(relativeUrl);
+            return {'url': fullUrl, 'order': photo['order'] ?? 0};
+          }).toList()
+        : <Map<String, dynamic>>[];
+
+    return {
+      'id': selectedRoomData['id'] ?? 0,
+      'roomName': selectedRoomData['roomName'] ?? '',
+      'address': selectedRoomData['address'] ?? '',
+      'latitude': selectedRoomData['latitude'] ?? 0.0,
+      'longitude': selectedRoomData['longitude'] ?? 0.0,
+      'area': '0',
+      'floor': '1',
+      'buildingType': selectedRoomData['buildingType'] ?? '오피스텔',
+      'parkingAvailable': false,
+      'elevatorAvailable': false,
+      'roomCount': selectedRoomData['roomCount'] ?? 1,
+      'bathroomCount': selectedRoomData['bathroomCount'] ?? 1,
+      'livingRoomCount': 1,
+      'kitchenCount': 1,
+      'isDuplex': false,
+      'dailyRent': selectedRoomData['dailyRent'] ?? 0,
+      'longTermWeeks': 12,
+      'longTermDiscount': 0,
+      'quickMoveInDiscount': 0,
+      'dailyMaintenanceFee': 0,
+      'includeElectricity': false,
+      'includeWater': false,
+      'includeGas': false,
+      'includeInternet': false,
+      'cleaningFee': 0,
+      'minContractDays': 28,
+      'refundPolicy': 'moderate',
+      'createdAt': DateTime.now().toIso8601String(),
+      'updatedAt': DateTime.now().toIso8601String(),
+      'photos': photos,
+      'isNearSubway': false,
+      'isAvailable': rawMarkerData['isAvailable'] ?? true,
+      'hostName': '호스트',
+      'hostId': 1,
+      'status': 'published',
+    };
   }
+
 
   /// 드래그 가능한 스크롤 인디케이터
-  Widget _buildDraggableScrollIndicator(int totalItems) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.space24,
-        vertical: AppSpacing.space12,
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final totalWidth = constraints.maxWidth;
-          final handleWidth = totalWidth / totalItems; // 각 아이템당 핸들 너비
-          final currentPosition = _currentMobileCardIndex * handleWidth;
-
-          return GestureDetector(
-            onHorizontalDragUpdate: (details) {
-              // 드래그 위치를 페이지 인덱스로 변환
-              final dragPosition = details.localPosition.dx.clamp(
-                0.0,
-                totalWidth,
-              );
-              final targetIndex = (dragPosition / handleWidth).floor().clamp(
-                0,
-                totalItems - 1,
-              );
-
-              // 현재 인덱스와 다를 때만 페이지 이동
-              if (targetIndex != _currentMobileCardIndex) {
-                _mobileCardController.animateToPage(
-                  targetIndex,
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOut,
-                );
-              }
-            },
-            onTapDown: (details) {
-              // 탭한 위치로 즉시 이동
-              final tapPosition = details.localPosition.dx.clamp(
-                0.0,
-                totalWidth,
-              );
-              final targetIndex = (tapPosition / handleWidth).floor().clamp(
-                0,
-                totalItems - 1,
-              );
-
-              _mobileCardController.animateToPage(
-                targetIndex,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            },
-            child: Container(
-              height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.neutral200,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-              child: Stack(
-                children: [
-                  // 현재 위치 핸들
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOut,
-                    left: currentPosition,
-                    top: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: handleWidth,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary500,
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary500.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${_currentMobileCardIndex + 1}/$totalItems',
-                          style: const TextStyle(
-                            color: AppColors.neutral0,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
 }

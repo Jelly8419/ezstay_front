@@ -10,7 +10,7 @@ import '../../models/user.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../shared/widgets/app_buttons.dart';
+import '../../widgets/common/app_buttons.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../utils/contract_utils.dart';

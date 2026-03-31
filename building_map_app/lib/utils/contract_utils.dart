@@ -1,4 +1,5 @@
 import '../config/api_config.dart';
+import '../models/contract.dart';
 import '../models/contract_detail.dart';
 
 /// 계약 관련 공통 유틸리티
@@ -51,6 +52,40 @@ class ContractUtils {
   /// 상세주소 비공개 안내 메시지 표시 여부
   static bool shouldShowAddressNotice(String status) {
     return status == 'PENDING_APPROVAL' || status == 'APPROVED';
+  }
+
+  /// 퇴실 시간 도래 여부 (ContractListItem 기준)
+  ///
+  /// checkOutDate + roomCheckoutTime(기본 11:00)을 합산해 현재 시각과 비교.
+  static bool isCheckoutTimeReached(ContractListItem contract) {
+    final checkOutDate = contract.checkOutDate;
+    final checkoutTimeStr = contract.roomCheckoutTime ?? '11:00';
+    final timeParts = checkoutTimeStr.split(':');
+    final checkoutHour = int.tryParse(timeParts[0]) ?? 11;
+    final checkoutMinute = timeParts.length > 1 ? (int.tryParse(timeParts[1]) ?? 0) : 0;
+    final checkoutDateTime = DateTime(
+      checkOutDate.year, checkOutDate.month, checkOutDate.day,
+      checkoutHour, checkoutMinute,
+    );
+    return DateTime.now().isAfter(checkoutDateTime);
+  }
+
+  /// 퇴실 시간 도래 여부 (ContractDetail 기준)
+  ///
+  /// checkOutDate(String) + roomCheckoutTime(기본 11:00)을 합산해 현재 시각과 비교.
+  static bool isCheckoutTimeReachedFromDetail(ContractDetail contract) {
+    final checkOutDate = DateTime.tryParse(contract.checkOutDate);
+    if (checkOutDate == null) return false;
+    final checkoutTimeStr = contract.roomCheckoutTime ?? '11:00';
+    final timeParts = checkoutTimeStr.split(':');
+    final checkoutHour = int.tryParse(timeParts[0]) ?? 11;
+    final checkoutMinute =
+        timeParts.length > 1 ? (int.tryParse(timeParts[1]) ?? 0) : 0;
+    final checkoutDateTime = DateTime(
+      checkOutDate.year, checkOutDate.month, checkOutDate.day,
+      checkoutHour, checkoutMinute,
+    );
+    return DateTime.now().isAfter(checkoutDateTime);
   }
 
   /// 날짜 포맷 (문자열 → yyyy-MM-dd 또는 원본 반환)

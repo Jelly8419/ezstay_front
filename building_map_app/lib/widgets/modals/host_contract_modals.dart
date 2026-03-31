@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../utils/format_utils.dart';
 
 /// 호스트 계약 관리 관련 모달 위젯 모음
 
@@ -766,21 +767,11 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
       } else if (amount < 0) {
         _amountError = '0 이상의 금액을 입력해주세요.';
       } else if (amount > widget.depositAmount) {
-        _amountError = '보증금(${_formatCurrency(widget.depositAmount)}원)을 초과할 수 없습니다.';
+        _amountError = '보증금(${FormatUtils.formatCurrency(widget.depositAmount)}원)을 초과할 수 없습니다.';
       } else {
         _amountError = null;
       }
     });
-  }
-
-  String _formatCurrency(int amount) {
-    final str = amount.toString();
-    final buffer = StringBuffer();
-    for (int i = 0; i < str.length; i++) {
-      if (i > 0 && (str.length - i) % 3 == 0) buffer.write(',');
-      buffer.write(str[i]);
-    }
-    return buffer.toString();
   }
 
   void _handleConfirm() {
@@ -953,7 +944,7 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                       ),
                     ),
                     Text(
-                      '${_formatCurrency(widget.depositAmount)}원',
+                      '${FormatUtils.formatCurrency(widget.depositAmount)}원',
                       style: AppTextStyles.bodyMedium.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
