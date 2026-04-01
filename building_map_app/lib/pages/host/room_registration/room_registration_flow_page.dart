@@ -177,13 +177,13 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               for (var e in optionMapping.entries) e.value: e.key,
             };
 
-            // basicOptions JSON 문자열 파싱
+            // basicOptions JSON 문자열 파싱 (이중 직렬화 대응)
             if (amenities['basicOptions'] != null &&
                 amenities['basicOptions'] is String) {
               try {
-                final basicOptionsMap =
-                    jsonDecode(amenities['basicOptions'])
-                        as Map<String, dynamic>;
+                dynamic decoded = jsonDecode(amenities['basicOptions']);
+                if (decoded is String) decoded = jsonDecode(decoded);
+                final basicOptionsMap = decoded as Map<String, dynamic>;
 
                 // 영어 필드명을 한글로 역변환
                 basicOptionsMap.forEach((englishKey, value) {
@@ -222,13 +222,13 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               }
             }
 
-            // additionalOptions JSON 문자열 파싱
+            // additionalOptions JSON 문자열 파싱 (이중 직렬화 대응)
             if (amenities['additionalOptions'] != null &&
                 amenities['additionalOptions'] is String) {
               try {
-                final additionalOptionsMap =
-                    jsonDecode(amenities['additionalOptions'])
-                        as Map<String, dynamic>;
+                dynamic decoded = jsonDecode(amenities['additionalOptions']);
+                if (decoded is String) decoded = jsonDecode(decoded);
+                final additionalOptionsMap = decoded as Map<String, dynamic>;
 
                 additionalOptionsMap.forEach((englishKey, value) {
                   if (value == true) {
@@ -245,13 +245,13 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               }
             }
 
-            // convenienceOptions JSON 문자열 파싱
+            // convenienceOptions JSON 문자열 파싱 (이중 직렬화 대응)
             if (amenities['convenienceOptions'] != null &&
                 amenities['convenienceOptions'] is String) {
               try {
-                final convenienceOptionsMap =
-                    jsonDecode(amenities['convenienceOptions'])
-                        as Map<String, dynamic>;
+                dynamic decoded = jsonDecode(amenities['convenienceOptions']);
+                if (decoded is String) decoded = jsonDecode(decoded);
+                final convenienceOptionsMap = decoded as Map<String, dynamic>;
 
                 convenienceOptionsMap.forEach((englishKey, value) {
                   if (value == true) {
