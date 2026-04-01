@@ -273,22 +273,22 @@ class RoomService {
     }
   }
 
-  /// 8. 심사 요청
-  Future<bool> submitReview(int roomId) async {
+  /// 8. 심사 요청 - 응답의 status 반환 (예: 'pending_review', 'published')
+  Future<String?> submitReview(int roomId) async {
     try {
-
       final response = await _apiClient.post(
         Uri.parse(ApiConfig.roomSubmitReviewUrl(roomId)),
         headers: await _getHeaders(),
       );
 
       if (response != null) {
-        return true;
+        final data = json.decode(response.body);
+        return data['data']?['status'] as String?;
       }
-      return false;
+      return null;
     } catch (e) {
       AppLogger.e('❌ [REVIEW] 심사 요청 에러: $e');
-      return false;
+      return null;
     }
   }
 

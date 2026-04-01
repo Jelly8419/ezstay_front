@@ -896,17 +896,18 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
     try {
       // API로 심사 요청
-      final success = await _roomService.submitReview(_currentRoomId!);
+      final resultStatus = await _roomService.submitReview(_currentRoomId!);
 
-      if (!success) {
+      if (resultStatus == null) {
         throw Exception('심사 요청 API 호출 실패');
       }
-
 
       if (!mounted) return;
 
       // 성공 토스트 표시
       CustomToast.success(context, '방 등록이 완료되었습니다!');
+
+      final isPendingReview = resultStatus == 'pending_review';
 
       // 성공 다이얼로그 표시
       showDialog(
@@ -949,13 +950,13 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
               const SizedBox(height: 12),
 
-              // 설명
-              const Text(
-                '방 등록이 완료되었습니다!\n\n'
-                '관리자 심사가 진행됩니다. (보통 1-2일 소요)\n'
-                '심사 승인 후 매물이 공개됩니다.',
+              // 설명 (pending_review일 때만 심사 안내 표시)
+              Text(
+                isPendingReview
+                    ? '방 등록이 완료되었습니다!\n\n관리자 심사가 진행됩니다. (보통 1-2일 소요)\n심사 승인 후 매물이 공개됩니다.'
+                    : '방 정보가 저장되었습니다!',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textSecondary,
