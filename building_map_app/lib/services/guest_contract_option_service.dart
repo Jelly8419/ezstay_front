@@ -164,7 +164,8 @@ class GuestContractOptionService {
   // ========== 옵션 변경사항 저장 ==========
 
   /// 옵션 변경사항 저장 (결제 전/후 분기)
-  Future<void> handleSaveOptionChanges({
+  /// 반환값: 추가결제 성공 시 결제 결과 Map, 그 외 null
+  Future<Map<String, dynamic>?> handleSaveOptionChanges({
     required ContractListItem contract,
     required List<RentalItem> modifiedItems,
     required Map<int, List<RentalItem>> savedRentalItems,
@@ -173,21 +174,19 @@ class GuestContractOptionService {
     required void Function(String message, bool isSuccess) onShowMessage,
     required void Function() onUnauthorized,
     required Future<String?> Function(int totalAmount) onSelectPaymentMethod,
-    required Future<void> Function(Map<String, dynamic> result, VoidCallback? onConfirm) onShowPaymentSuccess,
   }) async {
     final isBeforePayment =
         contract.status == ContractStatus.pendingApproval ||
         contract.status == ContractStatus.approved;
 
     if (isBeforePayment) {
-      // 결제 전: 총 옵션 금액 최소 10,000원 검증
       final totalOptionsFee = modifiedItems.fold(
         0,
         (sum, item) => sum + item.price * item.quantity,
       );
       if (totalOptionsFee > 0 && totalOptionsFee < 10000) {
         onShowMessage('옵션 상품 총액은 최소 10,000원 이상이어야 합니다.', false);
-        return;
+        return null;
       }
       await _updatePendingRentalItems(
         contract: contract,
@@ -197,9 +196,9 @@ class GuestContractOptionService {
         onShowMessage: onShowMessage,
         onUnauthorized: onUnauthorized,
       );
+      return null;
     } else {
-      // 결제 후: 추가 결제 플로우
-      await _createRentalOrderWithPayment(
+      return await _createRentalOrderWithPayment(
         contract: contract,
         modifiedItems: modifiedItems,
         savedRentalItems: savedRentalItems,
@@ -208,7 +207,6 @@ class GuestContractOptionService {
         onShowMessage: onShowMessage,
         onUnauthorized: onUnauthorized,
         onSelectPaymentMethod: onSelectPaymentMethod,
-        onShowPaymentSuccess: onShowPaymentSuccess,
       );
     }
   }
@@ -254,7 +252,7 @@ class GuestContractOptionService {
   }
 
   /// 승인 후 상태: 렌탈 주문 생성 및 결제 진행
-  Future<void> _createRentalOrderWithPayment({
+  Future<Map<String, dynamic>?> _createRentalOrderWithPayment({
     required ContractListItem contract,
     required List<RentalItem> modifiedItems,
     required Map<int, List<RentalItem>> savedRentalItems,
@@ -263,7 +261,6 @@ class GuestContractOptionService {
     required void Function(String message, bool isSuccess) onShowMessage,
     required void Function() onUnauthorized,
     required Future<String?> Function(int totalAmount) onSelectPaymentMethod,
-    required Future<void> Function(Map<String, dynamic> result, VoidCallback? onConfirm) onShowPaymentSuccess,
   }) async {
     final itemsToOrder = <RentalOrderItem>[];
 
@@ -282,11 +279,11 @@ class GuestContractOptionService {
 
     if (itemsToOrder.isEmpty) {
       onComplete();
-      return;
+      return null;
     }
 
     try {
-      await _processRentalOrderPayment(
+      return await _processRentalOrderPayment(
         contract: contract,
         itemsToOrder: itemsToOrder,
         onComplete: onComplete,
@@ -294,18 +291,19 @@ class GuestContractOptionService {
         onShowMessage: onShowMessage,
         onUnauthorized: onUnauthorized,
         onSelectPaymentMethod: onSelectPaymentMethod,
-        onShowPaymentSuccess: onShowPaymentSuccess,
       );
     } on UnauthorizedException {
       onUnauthorized();
+      return null;
     } catch (e) {
       AppLogger.e('❌ [SAVE OPTIONS] Error: $e');
       onShowMessage('옵션 저장 중 오류가 발생했습니다: $e', false);
+      return null;
     }
   }
 
   /// 렌탈 주문 생성 및 결제 진행
-  Future<void> _processRentalOrderPayment({
+  Future<Map<String, dynamic>?> _processRentalOrderPayment({
     required ContractListItem contract,
     required List<RentalOrderItem> itemsToOrder,
     required void Function() onComplete,
@@ -313,7 +311,6 @@ class GuestContractOptionService {
     required void Function(String message, bool isSuccess) onShowMessage,
     required void Function() onUnauthorized,
     required Future<String?> Function(int totalAmount) onSelectPaymentMethod,
-    required Future<void> Function(Map<String, dynamic> result, VoidCallback? onConfirm) onShowPaymentSuccess,
   }) async {
     // 1단계: 렌탈 주문 생성
     final orderResponse = await _rentalOrderService.createRentalOrder(
@@ -325,7 +322,7 @@ class GuestContractOptionService {
       onShowMessage('옵션이 추가되었습니다.', true);
       onComplete();
       await onReloadContracts();
-      return;
+      return null;
     }
 
     // 2단계: 결제 정보 조회
@@ -333,90 +330,63 @@ class GuestContractOptionService {
       orderResponse.rentalOrderId,
     );
 
-    final orderId = paymentInfo['orderId'] as String? ?? orderResponse.orderId;
-    final amount = paymentInfo['amount'] as int? ?? orderResponse.totalAmount;
-    final orderName = paymentInfo['orderName'] as String? ?? '렌탈 아이템 추가';
-    final customerName = paymentInfo['customerName'] as String?;
-    final customerEmail = paymentInfo['customerEmail'] as String?;
-    final customerPhone = paymentInfo['customerPhone'] as String?;
+    final amount = (paymentInfo['amount'] as num?)?.toInt() ?? orderResponse.totalAmount;
 
     // 3단계: 결제수단 선택
     final selectedMethod = await onSelectPaymentMethod(amount);
-    if (selectedMethod == null) return;
+    if (selectedMethod == null) return null;
 
     // 4단계: PayTag SDK 호출
-    await _processRentalPayment(
+    return await _processRentalPayment(
       contract: contract,
       rentalOrderId: orderResponse.rentalOrderId,
-      orderId: orderId,
-      amount: amount,
-      orderName: orderName,
+      paymentInfo: paymentInfo,
       payType: selectedMethod,
-      customerName: customerName,
-      customerEmail: customerEmail,
-      customerPhone: customerPhone,
       onComplete: onComplete,
       onReloadContracts: onReloadContracts,
       onShowMessage: onShowMessage,
       onUnauthorized: onUnauthorized,
-      onShowPaymentSuccess: onShowPaymentSuccess,
     );
   }
 
   /// PayTag 렌탈 결제 처리
-  Future<void> _processRentalPayment({
+  Future<Map<String, dynamic>?> _processRentalPayment({
     required ContractListItem contract,
     required int rentalOrderId,
-    required String orderId,
-    required int amount,
-    required String orderName,
+    required Map<String, dynamic> paymentInfo,
     required String payType,
-    String? customerName,
-    String? customerEmail,
-    String? customerPhone,
     required void Function() onComplete,
     required Future<void> Function() onReloadContracts,
     required void Function(String message, bool isSuccess) onShowMessage,
     required void Function() onUnauthorized,
-    required Future<void> Function(Map<String, dynamic> result, VoidCallback? onConfirm) onShowPaymentSuccess,
   }) async {
+    Map<String, dynamic>? payResult;
     try {
       if (kIsWeb) {
         final paymentService = PaymentServiceUnified();
-
-        final payResult = await paymentService.requestRentalPayment(
+        payResult = await paymentService.requestRentalPayment(
           rentalOrderId: rentalOrderId,
-          orderId: orderId,
-          amount: amount,
-          orderName: orderName,
+          paymentInfo: paymentInfo,
           payType: payType,
-          customerName: customerName,
-          customerEmail: customerEmail,
-          customerPhone: customerPhone,
         );
-
-        onComplete();
-
-        if (payResult != null) {
-          await onShowPaymentSuccess(payResult, onReloadContracts);
-        } else {
-          await onReloadContracts();
-        }
       } else {
         throw Exception('모바일에서는 아직 렌탈 추가 결제가 지원되지 않습니다.');
       }
     } on UnauthorizedException {
       onUnauthorized();
+      return null;
     } catch (e) {
       AppLogger.e('❌ [RENTAL PAYMENT] Error: $e');
-
       try {
         await _rentalOrderService.cancelPendingOrder(rentalOrderId);
       } catch (cancelError) {
         // ignore
       }
-
       onShowMessage('결제 처리 중 오류가 발생했습니다: $e', false);
+      return null;
     }
+
+    onComplete();
+    return payResult;
   }
 }

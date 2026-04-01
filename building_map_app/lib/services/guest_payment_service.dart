@@ -98,20 +98,15 @@ class GuestPaymentService {
   }
 
   /// 추가 옵션 웹 결제 요청 (PayTag SDK)
-  Future<void> requestAdditionalOptionWebPayment({
+  Future<Map<String, dynamic>?> requestAdditionalOptionWebPayment({
     required int rentalOrderId,
     required Map<String, dynamic> paymentInfo,
     required String payType,
   }) async {
-    await _paymentService.requestRentalPayment(
+    return await _paymentService.requestRentalPayment(
       rentalOrderId: rentalOrderId,
-      orderId: paymentInfo['orderId'] as String,
-      amount: paymentInfo['amount'] as int,
-      orderName: paymentInfo['orderName'] as String,
+      paymentInfo: paymentInfo,
       payType: payType,
-      customerName: paymentInfo['customerName'] as String?,
-      customerEmail: paymentInfo['customerEmail'] as String?,
-      customerPhone: paymentInfo['customerPhone'] as String?,
     );
   }
 }

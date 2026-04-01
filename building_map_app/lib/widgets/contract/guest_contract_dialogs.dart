@@ -83,10 +83,7 @@ void showPopupBlockedDialog(BuildContext context) {
         children: [
           Text('결제창을 열기 위해 팝업 차단을 해제해주세요.'),
           SizedBox(height: 12),
-          Text(
-            '해제 방법:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text('해제 방법:', style: TextStyle(fontWeight: FontWeight.bold)),
           SizedBox(height: 4),
           Text('• 주소창 오른쪽의 팝업 차단 아이콘 클릭'),
           Text('• "팝업 허용" 선택 후 페이지 새로고침'),
@@ -205,11 +202,13 @@ void showRefundInfoDialog(
 
       // 항목별 환불 금액
       final rentalFeeRefund = refundData?['rentalFeeRefundAmount'] ?? 0;
-      final maintenanceFeeRefund = refundData?['maintenanceFeeRefundAmount'] ?? 0;
+      final maintenanceFeeRefund =
+          refundData?['maintenanceFeeRefundAmount'] ?? 0;
       final cleaningFeeRefund = refundData?['cleaningFeeRefundAmount'] ?? 0;
       final rentalItemsRefund = refundData?['rentalItemsFeeRefundAmount'] ?? 0;
       final depositRefund = refundData?['depositRefundAmount'] ?? 0;
-      final guestServiceFeeRefunded = refundData?['guestServiceFeeRefunded'] ?? false;
+      final guestServiceFeeRefunded =
+          refundData?['guestServiceFeeRefunded'] ?? false;
 
       // 원금액
       final originalRentalFee = refundData?['originalRentalFee'] ?? 0;
@@ -285,38 +284,47 @@ void showRefundInfoDialog(
               RefundRow(
                 label: '임대료 ($refundRate% 환불)',
                 value: '${FormatUtils.formatCurrency(rentalFeeRefund as num)}원',
-                subLabel: '결제액 ${FormatUtils.formatCurrency(originalRentalFee as num)}원',
+                subLabel:
+                    '결제액 ${FormatUtils.formatCurrency(originalRentalFee as num)}원',
               ),
               if ((originalMaintenanceFee as num) > 0)
                 RefundRow(
                   label: '관리비',
-                  value: '${FormatUtils.formatCurrency(maintenanceFeeRefund as num)}원',
-                  subLabel: '결제액 ${FormatUtils.formatCurrency(originalMaintenanceFee)}원',
+                  value:
+                      '${FormatUtils.formatCurrency(maintenanceFeeRefund as num)}원',
+                  subLabel:
+                      '결제액 ${FormatUtils.formatCurrency(originalMaintenanceFee)}원',
                 ),
               if ((originalCleaningFee as num) > 0)
                 RefundRow(
                   label: '청소비',
-                  value: '${FormatUtils.formatCurrency(cleaningFeeRefund as num)}원',
-                  subLabel: '결제액 ${FormatUtils.formatCurrency(originalCleaningFee)}원',
+                  value:
+                      '${FormatUtils.formatCurrency(cleaningFeeRefund as num)}원',
+                  subLabel:
+                      '결제액 ${FormatUtils.formatCurrency(originalCleaningFee)}원',
                 ),
               if ((originalRentalItemsFee as num) > 0)
                 RefundRow(
                   label: '옵션상품',
-                  value: '${FormatUtils.formatCurrency(rentalItemsRefund as num)}원',
-                  subLabel: '결제액 ${FormatUtils.formatCurrency(originalRentalItemsFee)}원',
+                  value:
+                      '${FormatUtils.formatCurrency(rentalItemsRefund as num)}원',
+                  subLabel:
+                      '결제액 ${FormatUtils.formatCurrency(originalRentalItemsFee)}원',
                 ),
               if ((originalDeposit as num) > 0)
                 RefundRow(
                   label: '보증금',
                   value: '${FormatUtils.formatCurrency(depositRefund as num)}원',
-                  subLabel: '결제액 ${FormatUtils.formatCurrency(originalDeposit)}원',
+                  subLabel:
+                      '결제액 ${FormatUtils.formatCurrency(originalDeposit)}원',
                 ),
               RefundRow(
                 label: '서비스 수수료',
                 value: guestServiceFeeRefunded
                     ? '${FormatUtils.formatCurrency(originalPlatformFee as num)}원'
                     : '환불 없음',
-                subLabel: '결제액 ${FormatUtils.formatCurrency(originalPlatformFee as num)}원',
+                subLabel:
+                    '결제액 ${FormatUtils.formatCurrency(originalPlatformFee as num)}원',
                 isWarning: !guestServiceFeeRefunded,
               ),
               const Divider(height: 20),
@@ -419,8 +427,7 @@ void showRefundInfoDialog(
 /// 반품 preview 확인 다이얼로그 content 위젯
 Widget buildReturnPreviewConfirmContent(ReturnPreviewResponse? preview) {
   if (preview == null) {
-    return const Text(
-        '선택한 상품의 반품을 신청하시겠습니까?\n\n실제 환불 금액은 관리자 처리 후 최종 확정됩니다.');
+    return const Text('선택한 상품의 반품을 신청하시겠습니까?\n\n실제 환불 금액은 관리자 처리 후 최종 확정됩니다.');
   }
   final summary = preview.summary;
   return Column(
@@ -430,10 +437,14 @@ Widget buildReturnPreviewConfirmContent(ReturnPreviewResponse? preview) {
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('상품 금액',
-              style: TextStyle(fontSize: 13, color: AppColors.neutral600)),
-          Text('${FormatUtils.formatCurrency(summary.totalItemAmount)}원',
-              style: const TextStyle(fontSize: 13)),
+          Text(
+            '상품 금액',
+            style: TextStyle(fontSize: 13, color: AppColors.neutral600),
+          ),
+          Text(
+            '${FormatUtils.formatCurrency(summary.totalItemAmount)}원',
+            style: const TextStyle(fontSize: 13),
+          ),
         ],
       ),
       if (summary.totalShippingDeduction > 0) ...[
@@ -441,38 +452,51 @@ Widget buildReturnPreviewConfirmContent(ReturnPreviewResponse? preview) {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('수거비 차감',
-                style: TextStyle(fontSize: 13, color: AppColors.error600)),
-            Text('-${FormatUtils.formatCurrency(summary.totalShippingDeduction)}원',
-                style: TextStyle(fontSize: 13, color: AppColors.error600)),
+            Text(
+              '수거비 차감',
+              style: TextStyle(fontSize: 13, color: AppColors.error600),
+            ),
+            Text(
+              '-${FormatUtils.formatCurrency(summary.totalShippingDeduction)}원',
+              style: TextStyle(fontSize: 13, color: AppColors.error600),
+            ),
           ],
         ),
       ],
       ...preview.orderPreviews
           .where((op) => op.shippingDeductionReason.isNotEmpty)
-          .map((op) => Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text('※ ${op.shippingDeductionReason}',
-                    style: TextStyle(
-                        fontSize: 11, color: AppColors.neutral500)),
-              )),
+          .map(
+            (op) => Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                '※ ${op.shippingDeductionReason}',
+                style: TextStyle(fontSize: 11, color: AppColors.neutral500),
+              ),
+            ),
+          ),
       const Divider(height: 16),
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('예상 환불 합계',
-              style: TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w600)),
-          Text('${FormatUtils.formatCurrency(summary.totalRefundAmount)}원',
-              style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.blue600)),
+          const Text(
+            '예상 환불 합계',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          Text(
+            '${FormatUtils.formatCurrency(summary.totalRefundAmount)}원',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.blue600,
+            ),
+          ),
         ],
       ),
       const SizedBox(height: 8),
-      Text('* 실제 환불 금액은 관리자 처리 후 최종 확정됩니다.',
-          style: TextStyle(fontSize: 11, color: AppColors.neutral500)),
+      Text(
+        '* 실제 환불 금액은 관리자 처리 후 최종 확정됩니다.',
+        style: TextStyle(fontSize: 11, color: AppColors.neutral500),
+      ),
     ],
   );
 }
@@ -487,10 +511,8 @@ Future<void> showErrorDialog(BuildContext context, String message) async {
       actions: [
         ElevatedButton(
           onPressed: () => Navigator.pop(ctx),
-          style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error600),
-          child: const Text('확인',
-              style: TextStyle(color: Colors.white)),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.error600),
+          child: const Text('확인', style: TextStyle(color: Colors.white)),
         ),
       ],
     ),

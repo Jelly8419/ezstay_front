@@ -163,13 +163,8 @@ class PaymentServiceUnified {
   /// 성공 시 백엔드 승인까지 자동 처리합니다.
   Future<Map<String, dynamic>?> requestRentalPayment({
     required int rentalOrderId,
-    required String orderId,
-    required int amount,
-    required String orderName,
+    required Map<String, dynamic> paymentInfo,
     required String payType,
-    String? customerName,
-    String? customerEmail,
-    String? customerPhone,
   }) async {
     if (!kIsWeb) {
       throw Exception('렌탈 추가 결제는 현재 웹에서만 지원됩니다.');
@@ -179,12 +174,22 @@ class PaymentServiceUnified {
       throw Exception('웹 결제 서비스가 초기화되지 않았습니다.');
     }
 
+    final orderId = paymentInfo['orderId'] as String;
+    final actualAmount = (paymentInfo['amount'] as num).toInt();
+    final pgAmount = paymentInfo['pgAmount'] == null ? null : (paymentInfo['pgAmount'] as num).toInt();
+    final orderName = paymentInfo['orderName'] as String? ?? '렌탈 아이템 추가';
+    final customerName = paymentInfo['customerName'] as String?;
+    final customerEmail = paymentInfo['customerEmail'] as String?;
+    final customerPhone = paymentInfo['customerPhone'] as String?;
+
+    // PG SDK 호출 금액: pgAmount가 있으면 사용, 없으면 실제 금액
+    final sdkAmount = pgAmount ?? actualAmount;
 
     try {
       final response = await _webService!.requestRentalPayment(
         rentalOrderId: rentalOrderId,
         orderId: orderId,
-        amount: amount,
+        amount: sdkAmount,
         orderName: orderName,
         payType: payType,
         customerName: customerName,
@@ -193,12 +198,12 @@ class PaymentServiceUnified {
       );
 
       if (response.isSuccess && response.recvPayparam != null) {
-        // SDK 인증 성공 → 백엔드 승인 API 호출 (일반 결제와 동일한 방식)
+        // SDK 인증 성공 → 백엔드 승인 API 호출 (실제 금액으로 전달)
         final confirmResult = await _rentalOrderService.confirmPayment(
           rentalOrderId: rentalOrderId,
           recvPayparam: response.recvPayparam!,
           orderId: orderId,
-          amount: amount,
+          amount: actualAmount,
           payType: response.payType,
         );
         return confirmResult;

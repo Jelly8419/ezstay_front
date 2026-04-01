@@ -171,10 +171,12 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   }
 
   Future<void> _handleSaveOptionChanges(ContractListItem contract) async {
+    AppLogger.d('🔥 [_handleSaveOptionChanges] start, contractId=${contract.id}');
     final modifiedItems = _modifiedOptions[contract.id];
+    AppLogger.d('🔥 [_handleSaveOptionChanges] modifiedItems=$modifiedItems');
     if (modifiedItems == null) return;
 
-    await _optionService.handleSaveOptionChanges(
+    final payResult = await _optionService.handleSaveOptionChanges(
       contract: contract,
       modifiedItems: modifiedItems,
       savedRentalItems: _savedRentalItems,
@@ -204,20 +206,14 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         if (!mounted) return null;
         return selected?.value;
       },
-      onShowPaymentSuccess: (result, onConfirm) async {
-        if (!mounted) return;
-        _showRentalPaymentSuccessDialog(result, onConfirm: onConfirm);
-      },
     );
+
+    AppLogger.d('🎉 [page] payResult=$payResult, mounted=$mounted');
+    if (payResult != null && mounted) {
+      showRentalPaymentSuccessDialog(context, result: payResult, onConfirm: _loadContracts);
+    }
   }
 
-  void _showRentalPaymentSuccessDialog(Map<String, dynamic> result, {VoidCallback? onConfirm}) {
-    showRentalPaymentSuccessDialog(
-      context,
-      result: result,
-      onConfirm: onConfirm,
-    );
-  }
 
   /// 보증금 합의 확인 모달 표시 (게스트)
   Future<void> _showDepositAgreementReviewModal(
@@ -724,11 +720,14 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         );
         if (selectedMethod == null || !mounted) return;
 
-        await _paymentService.requestAdditionalOptionWebPayment(
+        final payResult = await _paymentService.requestAdditionalOptionWebPayment(
           rentalOrderId: data.rentalOrderId,
           paymentInfo: data.paymentInfo,
           payType: selectedMethod.value,
         );
+        if (payResult != null && mounted) {
+          showRentalPaymentSuccessDialog(context, result: payResult, onConfirm: _loadContracts);
+        }
       }
     } on UnauthorizedException {
       if (mounted) context.go('/login');
