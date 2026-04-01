@@ -1,49 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../utils/format_utils.dart';
 
-/// 옵션 환불 확인 모달
+/// 옵션 결제 취소 완료 모달
 ///
-/// 결제 완료 후 옵션 수량을 감소시켜 환불이 발생하는 경우 표시되는 확인 모달입니다.
-///
-/// **사용 시나리오:**
-/// - 게스트가 결제 완료 후 옵션 상품 수량을 감소시킴
-/// - 감소로 인해 환불이 발생하는 경우
-/// - 환불 금액과 처리 안내를 표시
-///
-/// **기능:**
-/// - 환불 금액 표시
-/// - 환불 처리 안내 (영업일 기준 3-5일)
-/// - 확인/취소 버튼
-///
-/// **사용 예시:**
-/// ```dart
-/// showDialog(
-///   context: context,
-///   builder: (context) => OptionRefundModal(
-///     refundAmount: 15000,
-///     onConfirm: () {
-///       // API 호출 및 상태 업데이트
-///     },
-///     onClose: () {
-///       Navigator.of(context).pop();
-///     },
-///   ),
-/// );
-/// ```
+/// 옵션 결제 취소 후 환불 금액과 처리 소요일 안내를 표시합니다.
 class OptionRefundModal extends StatelessWidget {
   /// 환불 금액
   final int refundAmount;
 
   /// 확인 버튼 콜백
-  final VoidCallback onConfirm;
-
-  /// 취소/닫기 버튼 콜백
   final VoidCallback onClose;
 
   const OptionRefundModal({
     super.key,
     required this.refundAmount,
-    required this.onConfirm,
     required this.onClose,
   });
 
@@ -96,7 +66,6 @@ class OptionRefundModal extends StatelessWidget {
                             color: Color(0xFF4B5563), // gray-600
                           ),
                           children: [
-                            const TextSpan(text: '옵션 수량을 변경하고 '),
                             TextSpan(
                               text: FormatUtils.formatKRW(refundAmount),
                               style: const TextStyle(
@@ -104,7 +73,7 @@ class OptionRefundModal extends StatelessWidget {
                                 color: Color(0xFFDC2626), // red-600
                               ),
                             ),
-                            const TextSpan(text: '을 환불받으시겠습니까?'),
+                            const TextSpan(text: ' 환불이 완료되었습니다.'),
                           ],
                         ),
                       ),
@@ -116,13 +85,8 @@ class OptionRefundModal extends StatelessWidget {
                           color: const Color(0xFFF9FAFB), // gray-50
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildInfoItem('환불 금액은 영업일 기준 3-5일 내 입금됩니다.'),
-                            const SizedBox(height: 8),
-                            _buildInfoItem('옵션 수량 변경은 즉시 적용됩니다.'),
-                          ],
+                        child: _buildInfoItem(
+                          '결제수단에 따라 5영업일까지 소요될 수 있습니다.',
                         ),
                       ),
                     ],
@@ -131,55 +95,27 @@ class OptionRefundModal extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
-            // 버튼
-            Row(
-              children: [
-                // 취소 버튼
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onClose,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(
-                        color: Color(0xFFD1D5DB), // gray-300
-                        width: 2,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      '취소',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF374151), // gray-700
-                      ),
-                    ),
+            // 확인 버튼
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onClose,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB), // blue-600
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  '확인',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(width: 8),
-                // 확인 버튼
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: onConfirm,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB), // blue-600
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      '환불 확인',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),

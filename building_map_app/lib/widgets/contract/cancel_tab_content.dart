@@ -5,6 +5,7 @@ import '../../core/exceptions.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/rental_order_service.dart';
 import '../../utils/format_utils.dart';
+import '../../widgets/modals/option_refund_modal.dart';
 import 'guest_contract_dialogs.dart';
 import 'order_item_rows.dart';
 
@@ -265,20 +266,9 @@ class _CancelTabContentState extends State<CancelTabContent> {
       } else {
         await showDialog(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('결제 취소 완료'),
-            content: Text(
-                '${result.succeeded.length}건이 취소되었습니다.\n'
-                '환불 예정 금액: ${FormatUtils.formatCurrency(result.totalRefunded)}원'),
-            actions: [
-              ElevatedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.blue600),
-                child: const Text('확인',
-                    style: TextStyle(color: Colors.white)),
-              ),
-            ],
+          builder: (ctx) => OptionRefundModal(
+            refundAmount: result.totalRefunded,
+            onClose: () => Navigator.pop(ctx),
           ),
         );
       }
