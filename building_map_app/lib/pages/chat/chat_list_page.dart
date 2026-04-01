@@ -626,12 +626,30 @@ class _ChatListPageState extends State<ChatListPage> {
     } catch (e) {
       AppLogger.e('❌ [CHAT_LIST] 메시지 전송 실패: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('메시지 전송 실패: $e'),
-            backgroundColor: AppColors.error500,
-          ),
-        );
+        final isPermissionDenied = e.toString().contains('permission-denied') ||
+            e.toString().contains('PERMISSION_DENIED');
+        if (isPermissionDenied) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('메시지 전송 불가'),
+              content: const Text('종료된 계약의 채팅방에는 메시지를 보낼 수 없습니다.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('확인'),
+                ),
+              ],
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('메시지 전송 실패: $e'),
+              backgroundColor: AppColors.error500,
+            ),
+          );
+        }
       }
     }
   }

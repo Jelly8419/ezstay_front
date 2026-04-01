@@ -20,9 +20,7 @@ class OptionRefundModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 448), // max-w-md
         padding: const EdgeInsets.all(24),
@@ -85,9 +83,7 @@ class OptionRefundModal extends StatelessWidget {
                           color: const Color(0xFFF9FAFB), // gray-50
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: _buildInfoItem(
-                          '결제수단에 따라 5영업일까지 소요될 수 있습니다.',
-                        ),
+                        child: _buildInfoItem('결제수단에 따라 5영업일까지 소요될 수 있습니다.'),
                       ),
                     ],
                   ),

@@ -383,6 +383,9 @@ class ChatService {
       final data = snapshot.data() as Map<String, dynamic>;
       final metadata = ChatRoomMetadata.fromFirestore(data);
 
+      // 비활성(계약 종료) 채팅방은 Firestore 규칙에서 쓰기 차단 — 스킵
+      if (!metadata.isActive) return;
+
       // 상대방의 unreadCount 증가
       final otherUserId = lastMessageSenderId == metadata.hostId
           ? metadata.guestId
