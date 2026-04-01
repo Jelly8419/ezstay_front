@@ -28,7 +28,8 @@
 
   <!-- SEO 메타 태그 -->
   <title>EZStay - 단기임대 No.1, 편리하고 안전한 단기 숙소 찾기</title>
-  <meta name="description" content="출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 찾아보세요. 보증금 안심 보호, 안전한 계약.">
+  <meta name="description"
+    content="출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 찾아보세요. 보증금 안심 보호, 안전한 계약.">
   <meta name="keywords" content="단기임대, 한달살기, 원룸, 오피스텔, 단기숙소, 출장숙소, 단기렌트, 월세, 단기거주, 이지스테이, EZStay">
   <meta name="author" content="EZStay">
   <link rel="canonical" href="https://ezstay.io/">
@@ -128,12 +129,14 @@
       font-weight: 400;
       font-display: block;
     }
+
     @font-face {
       font-family: 'Pretendard';
       src: url('assets/fonts/Pretendard-SemiBold.otf') format('opentype');
       font-weight: 600;
       font-display: block;
     }
+
     @font-face {
       font-family: 'Pretendard';
       src: url('assets/fonts/Pretendard-Bold.otf') format('opentype');
@@ -165,10 +168,9 @@
     window.addEventListener('DOMContentLoaded', function () {
       var checkTag = function (attempts) {
         if (typeof Tag !== 'undefined' && Tag.init) {
-          // shopcode는 환경에 따라 변경 (테스트: 1901110002)
-          var shopcode = window.__PAYTAG_SHOPCODE__ || '1901110002';
-          Tag.init(shopcode, 'PAYTAG');
-          console.log('✅ [PayTag] SDK 초기화 완료 (shopcode: ' + shopcode + ')');
+          // shopcode는 환경에 따라 변경 (테스트: 2601031889)
+          var shopcode = window.__PAYTAG_SHOPCODE__ || '2601031889';
+          Tag.init(shopcode, 'ezstay');
         } else if (attempts < 50) {
           setTimeout(function () { checkTag(attempts + 1); }, 100);
         } else {
@@ -311,7 +313,8 @@
 <body>
   <!-- SEO: 크롤러/JS 미지원 브라우저를 위한 폴백 콘텐츠 -->
   <noscript>
-    <div style="max-width:800px;margin:40px auto;padding:0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#333;">
+    <div
+      style="max-width:800px;margin:40px auto;padding:0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#333;">
       <h1>EZStay - 단기임대 No.1, 편리하고 안전한 단기 숙소 찾기</h1>
       <p>출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게 찾아보세요. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 제공합니다.</p>
       <h2>EZStay 주요 서비스</h2>
@@ -356,23 +359,23 @@
 
   <!-- .part.js 로딩 실패 자동 감지 → 캐시 삭제 후 새로고침 (1회만) -->
   <script>
-    window.addEventListener('error', function(e) {
+    window.addEventListener('error', function (e) {
       var msg = (e.message || '') + ' ' + (e.filename || '');
       if (msg.indexOf('.part.js') !== -1 && !sessionStorage.getItem('_partjs_reload')) {
         console.log('🔄 [AutoReload] .part.js 로딩 실패 감지, 캐시 삭제 후 새로고침');
         sessionStorage.setItem('_partjs_reload', '1');
         // 캐시 전부 삭제 후 새로고침
         if ('caches' in window) {
-          caches.keys().then(function(names) {
-            return Promise.all(names.map(function(n) { return caches.delete(n); }));
-          }).then(function() { window.location.reload(); });
+          caches.keys().then(function (names) {
+            return Promise.all(names.map(function (n) { return caches.delete(n); }));
+          }).then(function () { window.location.reload(); });
         } else {
           window.location.reload();
         }
       }
     }, true);
     // 정상 로드 시 플래그 제거 (무한 리로드 방지)
-    window.addEventListener('flutter-first-frame', function() {
+    window.addEventListener('flutter-first-frame', function () {
       sessionStorage.removeItem('_partjs_reload');
     });
   </script>
@@ -380,16 +383,16 @@
   <!-- 서비스 워커 해제: .part.js 캐시 불일치 방지 -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
         for (var reg of registrations) {
-          reg.unregister().then(function() {
+          reg.unregister().then(function () {
             console.log('🧹 [SW] 서비스 워커 해제 완료');
           });
         }
       });
       // 서비스 워커 캐시도 전부 삭제
       if ('caches' in window) {
-        caches.keys().then(function(names) {
+        caches.keys().then(function (names) {
           for (var name of names) {
             caches.delete(name);
             console.log('🧹 [Cache] 삭제:', name);

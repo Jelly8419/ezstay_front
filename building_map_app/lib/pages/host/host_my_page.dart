@@ -16,8 +16,14 @@ import '../../models/user.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../widgets/common/app_footer.dart';
-import '../../widgets/common/custom_text_field.dart';
-import '../../utils/password_validator.dart';
+import '../../widgets/common/my_page_dialogs.dart';
+import '../../services/host_receipt_service.dart';
+import '../../services/host_account_service.dart';
+import '../../widgets/host/host_bank_account_section.dart';
+import '../../widgets/host/host_nickname_edit_section.dart';
+import '../../widgets/host/host_password_edit_section.dart';
+import '../../widgets/host/host_receipt_display_section.dart';
+import '../../widgets/common/profile_info_row.dart';
 
 /// 호스트 마이페이지 (내 정보 관리)
 /// React: src/pages/HostMyPage.tsx
@@ -32,6 +38,8 @@ class _HostMyPageState extends State<HostMyPage> {
   final UserProfileService _userProfileService = UserProfileService();
   final BankAccountService _bankAccountService = BankAccountService();
   final ReceiptService _receiptService = ReceiptService();
+  final HostReceiptService _hostReceiptService = HostReceiptService();
+  final HostAccountService _hostAccountService = HostAccountService();
 
   // 로딩 상태
   bool _isLoading = true;
@@ -174,76 +182,39 @@ class _HostMyPageState extends State<HostMyPage> {
 
   /// 닉네임 변경 처리
   Future<void> _handleNicknameChange() async {
-    final nickname = _nicknameController.text.trim();
-
-    // 길이 검증 (2~20자)
-    if (nickname.length < 2 || nickname.length > 20) {
-      _showErrorDialog('닉네임은 2~20자로 입력해주세요.');
-      return;
-    }
-
-    try {
-      final newNickname = await _userProfileService.changeNickname(
-        nickname: nickname,
-      );
-
-      if (mounted) {
-        // 프로필 정보 업데이트
-        setState(() {
-          _userProfile = _userProfile!.copyWith(nickname: newNickname);
-          _isEditingNickname = false;
-          _nicknameController.clear();
-        });
-        _showSuccessDialog('닉네임이 성공적으로 변경되었습니다.');
-      }
-    } on UnauthorizedException {
-      if (mounted) context.go('/login');
-    } catch (e) {
-      if (mounted) {
-        _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
-      }
+    final newNickname = await _hostAccountService.changeNickname(
+      context: context,
+      nickname: _nicknameController.text.trim(),
+      onError: _showErrorDialog,
+    );
+    if (newNickname != null && mounted) {
+      setState(() {
+        _userProfile = _userProfile!.copyWith(nickname: newNickname);
+        _isEditingNickname = false;
+        _nicknameController.clear();
+      });
+      _showSuccessDialog('닉네임이 성공적으로 변경되었습니다.');
     }
   }
 
   /// 비밀번호 변경 처리
   Future<void> _handlePasswordChange() async {
-    // 비밀번호 일치 확인
-    if (_newPasswordController.text != _confirmPasswordController.text) {
-      _showErrorDialog('새 비밀번호와 비밀번호 확인이 일치하지 않습니다.');
-      return;
-    }
-
-    // 비밀번호 형식 검증
-    final passwordError = PasswordValidator.validate(_newPasswordController.text);
-    if (passwordError != null) {
-      _showErrorDialog(passwordError);
-      return;
-    }
-
-    try {
-      await _userProfileService.changePassword(
-        currentPassword: _currentPasswordController.text,
-        newPassword: _newPasswordController.text,
-      );
-
-      if (mounted) {
-        _showSuccessDialog('정상적으로 변경되었습니다.');
-        _cancelPasswordEdit();
-      }
-    } on UnauthorizedException {
-      if (mounted) context.go('/login');
-    } catch (e) {
-      if (mounted) {
-        _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
-      }
+    final success = await _hostAccountService.changePassword(
+      context: context,
+      currentPassword: _currentPasswordController.text,
+      newPassword: _newPasswordController.text,
+      confirmPassword: _confirmPasswordController.text,
+      onError: _showErrorDialog,
+    );
+    if (success && mounted) {
+      _showSuccessDialog('정상적으로 변경되었습니다.');
+      _cancelPasswordEdit();
     }
   }
 
   /// 연락처 변경 (본인인증 SDK 호출)
   void _handlePhoneChange() {
-    // TODO: 외부 본인인증 SDK 호출 (PASS, NICE 등)
-
-    _showInfoDialog('준비 중입니다', '본인인증 기능은 준비 중입니다.');
+    _hostAccountService.handlePhoneChange(context);
   }
 
   /// 계좌 정보 수정
@@ -261,11 +232,10 @@ class _HostMyPageState extends State<HostMyPage> {
       _isEditingReceipt = true;
       _receiptType = _savedReceipt?['receiptType'] ?? '';
       _receiptNumberController.text = _savedReceipt?['receiptNumber'] ?? '';
-      _receiptBusinessNameController.text =
-          _savedReceipt?['businessName'] ?? '';
+      _receiptBusinessNameController.text = _savedReceipt?['businessName'] ?? '';
       _receiptRepNameController.text = _savedReceipt?['repName'] ?? '';
       _receiptEmailController.text = _savedReceipt?['email'] ?? '';
-      _receiptNumberInputType = 'phone'; // 기본값
+      _receiptNumberInputType = 'phone';
       _receiptFieldErrors.clear();
     });
   }
@@ -285,346 +255,80 @@ class _HostMyPageState extends State<HostMyPage> {
   }
 
   /// 영수증 정보 저장
-  /// PUT /api/host/receipt
   Future<void> _handleSaveReceipt() async {
-    // 유효성 검증 (필드별 에러 표시)
+    // 유효성 검증 결과를 _receiptFieldErrors에 반영해 UI 업데이트
     setState(() {
-      _validateReceiptFields();
-    });
-
-    if (_receiptFieldErrors.isNotEmpty) {
-      return;
-    }
-
-    try {
-      final receiptData = await _receiptService.saveReceipt(
-        type: _receiptType,
-        number: _receiptNumberController.text,
-        businessName: _receiptBusinessNameController.text.isNotEmpty
-            ? _receiptBusinessNameController.text
-            : null,
-        repName: _receiptRepNameController.text.isNotEmpty
-            ? _receiptRepNameController.text
-            : null,
-        email: _receiptEmailController.text.isNotEmpty
-            ? _receiptEmailController.text
-            : null,
+      _hostReceiptService.validateFields(
+        receiptType: _receiptType,
+        receiptNumberInputType: _receiptNumberInputType,
+        number: _receiptNumberController.text.trim(),
+        businessName: _receiptBusinessNameController.text,
+        repName: _receiptRepNameController.text,
+        email: _receiptEmailController.text.trim(),
+        errors: _receiptFieldErrors,
       );
+    });
+    if (_receiptFieldErrors.isNotEmpty) return;
 
-      if (mounted) {
-        setState(() {
-          _savedReceipt = receiptData;
-          _isEditingReceipt = false;
-        });
-        _showSuccessDialog('영수증 정보가 저장되었습니다.');
-      }
-    } on UnauthorizedException {
-      if (mounted) context.go('/login');
-    } catch (e) {
-      if (mounted) {
-        _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
-      }
+    final receiptData = await _hostReceiptService.saveReceipt(
+      context: context,
+      receiptType: _receiptType,
+      receiptNumberInputType: _receiptNumberInputType,
+      number: _receiptNumberController.text,
+      businessName: _receiptBusinessNameController.text,
+      repName: _receiptRepNameController.text,
+      email: _receiptEmailController.text,
+      errors: _receiptFieldErrors,
+      onError: _showErrorDialog,
+    );
+    if (receiptData != null && mounted) {
+      setState(() {
+        _savedReceipt = receiptData;
+        _isEditingReceipt = false;
+      });
+      _showSuccessDialog('영수증 정보가 저장되었습니다.');
     }
   }
 
   /// 영수증 설정 삭제
-  /// DELETE /api/host/receipt
   Future<void> _handleDeleteReceipt() async {
-    try {
-      await _receiptService.deleteReceipt();
-
-      if (mounted) {
-        setState(() {
-          _savedReceipt = null;
-          _isEditingReceipt = false;
-          _receiptType = '';
-          _receiptNumberInputType = 'phone';
-          _receiptNumberController.clear();
-          _receiptBusinessNameController.clear();
-          _receiptRepNameController.clear();
-          _receiptEmailController.clear();
-          _receiptFieldErrors.clear();
-        });
-        _showSuccessDialog('영수증 설정이 삭제되었습니다.');
-      }
-    } on UnauthorizedException {
-      if (mounted) context.go('/login');
-    } catch (e) {
-      if (mounted) {
-        _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
-      }
+    final success = await _hostReceiptService.deleteReceipt(
+      context: context,
+      onError: _showErrorDialog,
+    );
+    if (success && mounted) {
+      setState(() {
+        _savedReceipt = null;
+        _isEditingReceipt = false;
+        _receiptType = '';
+        _receiptNumberInputType = 'phone';
+        _receiptNumberController.clear();
+        _receiptBusinessNameController.clear();
+        _receiptRepNameController.clear();
+        _receiptEmailController.clear();
+        _receiptFieldErrors.clear();
+      });
+      _showSuccessDialog('영수증 설정이 삭제되었습니다.');
     }
   }
 
   /// 영수증 종류 이름 반환
-  String _getReceiptTypeName(String? type) {
-    switch (type) {
-      case 'personal':
-        return '개인소득공제용 현금영수증';
-      case 'business':
-        return '사업자증빙용 현금영수증';
-      case 'tax_invoice':
-        return '전자세금계산서';
-      default:
-        return '-';
-    }
-  }
-
-  /// 영수증 필드 유효성 검증 (실시간 + 저장 시)
-  /// 에러가 있으면 _receiptFieldErrors에 저장, 없으면 null
-  bool _validateReceiptFields() {
-    _receiptFieldErrors.clear();
-
-    if (_receiptType.isEmpty) {
-      _receiptFieldErrors['type'] = '영수증 종류를 선택해주세요.';
-    }
-
-    final number = _receiptNumberController.text.trim();
-
-    if (_receiptType == 'personal') {
-      if (number.isEmpty) {
-        _receiptFieldErrors['number'] = _receiptNumberInputType == 'phone'
-            ? '휴대폰 번호를 입력해주세요.'
-            : '현금영수증 카드 번호를 입력해주세요.';
-      } else if (_receiptNumberInputType == 'phone') {
-        _receiptFieldErrors['number'] = _validatePhone(number);
-      } else {
-        _receiptFieldErrors['number'] = _validateCardNumber(number);
-      }
-    } else if (_receiptType == 'business') {
-      if (number.isEmpty) {
-        _receiptFieldErrors['number'] = _receiptNumberInputType == 'phone'
-            ? '휴대폰 번호를 입력해주세요.'
-            : '사업자 등록번호를 입력해주세요.';
-      } else if (_receiptNumberInputType == 'phone') {
-        _receiptFieldErrors['number'] = _validatePhone(number);
-      } else {
-        _receiptFieldErrors['number'] = _validateBusinessNumber(number);
-      }
-    } else if (_receiptType == 'tax_invoice') {
-      if (number.isEmpty) {
-        _receiptFieldErrors['number'] = '사업자 등록번호를 입력해주세요.';
-      } else {
-        _receiptFieldErrors['number'] = _validateBusinessNumber(number);
-      }
-
-      if (_receiptBusinessNameController.text.trim().isEmpty) {
-        _receiptFieldErrors['businessName'] = '사업자명을 입력해주세요.';
-      }
-      if (_receiptRepNameController.text.trim().isEmpty) {
-        _receiptFieldErrors['repName'] = '대표자 이름을 입력해주세요.';
-      }
-
-      final email = _receiptEmailController.text.trim();
-      if (email.isNotEmpty) {
-        _receiptFieldErrors['email'] = _validateEmail(email);
-      }
-    }
-
-    // null 값(에러 없음) 제거
-    _receiptFieldErrors.removeWhere((_, v) => v == null);
-    return _receiptFieldErrors.isEmpty;
-  }
-
-  /// 휴대폰 번호 형식 검증 (숫자만 10~11자리)
-  String? _validatePhone(String value) {
-    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.length < 10 || digits.length > 11) {
-      return '휴대폰 번호는 10~11자리 숫자로 입력해주세요.';
-    }
-    if (!digits.startsWith('01')) {
-      return '올바른 휴대폰 번호를 입력해주세요.';
-    }
-    return null;
-  }
-
-  /// 현금영수증 카드 번호 검증 (숫자만 13~16자리)
-  String? _validateCardNumber(String value) {
-    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.length < 13 || digits.length > 16) {
-      return '현금영수증 카드 번호는 13~16자리 숫자로 입력해주세요.';
-    }
-    return null;
-  }
-
-  /// 사업자 등록번호 검증 (숫자만 10자리)
-  String? _validateBusinessNumber(String value) {
-    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.length != 10) {
-      return '사업자 등록번호는 10자리 숫자로 입력해주세요.';
-    }
-    return null;
-  }
-
-  /// 이메일 형식 검증
-  String? _validateEmail(String value) {
-    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-    if (!emailRegex.hasMatch(value)) {
-      return '올바른 이메일 주소를 입력해주세요.';
-    }
-    return null;
-  }
+  String _getReceiptTypeName(String? type) =>
+      _hostReceiptService.getReceiptTypeName(type);
 
   /// 회원 탈퇴
   Future<void> _handleWithdrawal() async {
-    final confirmed = await showDialog<bool>(
+    await _hostAccountService.withdrawUser(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('회원 탈퇴', style: AppTextStyles.headingSmall),
-        content: Text(
-          '정말 탈퇴하시겠습니까?\n모든 데이터가 삭제되며 복구할 수 없습니다.',
-          style: AppTextStyles.bodyMedium,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              '취소',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error500,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-            ),
-            child: Text(
-              '탈퇴',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.neutral0,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await _userProfileService.withdrawUser();
-
-        if (mounted) {
-          // 로그아웃 처리
-          final authService = Provider.of<AuthService>(context, listen: false);
-          await authService.logout();
-
-          // 로그인 페이지로 이동
-          if (mounted) {
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/login', (route) => false);
-          }
-        }
-      } on UnauthorizedException {
-        if (mounted) context.go('/login');
-      } catch (e) {
-        if (mounted) {
-          _showErrorDialog(e.toString().replaceAll('Exception: ', ''));
-        }
-      }
-    }
-  }
-
-  /// 성공 다이얼로그
-  void _showSuccessDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('성공', style: AppTextStyles.headingSmall),
-        content: Text(message, style: AppTextStyles.bodyMedium),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary500,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-            ),
-            child: Text(
-              '확인',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.neutral0,
-              ),
-            ),
-          ),
-        ],
-      ),
+      onError: _showErrorDialog,
     );
   }
 
-  /// 에러 다이얼로그
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('오류', style: AppTextStyles.headingSmall),
-        content: Text(message, style: AppTextStyles.bodyMedium),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary500,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-            ),
-            child: Text(
-              '확인',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.neutral0,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  void _showSuccessDialog(String message) =>
+      showMyPageSuccessDialog(context, message);
 
-  /// 정보 다이얼로그
-  void _showInfoDialog(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title, style: AppTextStyles.headingSmall),
-        content: Text(message, style: AppTextStyles.bodyMedium),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary500,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-            ),
-            child: Text(
-              '확인',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.neutral0,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  void _showErrorDialog(String message) =>
+      showMyPageErrorDialog(context, message);
 
   @override
   Widget build(BuildContext context) {
@@ -787,19 +491,39 @@ class _HostMyPageState extends State<HostMyPage> {
           // React: <div className="space-y-4">
           Column(
             children: [
-              _buildProfileField(
+              ProfileInfoRow(
                 label: '이름',
                 value: _userProfile!.name,
               ),
-              _buildNicknameField(),
-              _buildProfileField(
+              HostNicknameEditSection(
+                isEditing: _isEditingNickname,
+                currentNickname: _userProfile!.nickname,
+                nicknameController: _nicknameController,
+                onStartEdit: () => setState(() {
+                  _isEditingNickname = true;
+                  _nicknameController.text = _userProfile!.nickname ?? '';
+                }),
+                onCancel: _cancelNicknameEdit,
+                onSave: _handleNicknameChange,
+                onFieldChanged: () => setState(() {}),
+              ),
+              ProfileInfoRow(
                 label: '이메일',
                 value: _userProfile!.email,
               ),
               _buildPhoneField(),
               // 소셜 로그인 사용자는 비밀번호 변경 불필요
               if (Provider.of<AuthService>(context, listen: false).currentUser?.provider == AuthProvider.email)
-                _buildPasswordField(),
+                HostPasswordEditSection(
+                  isEditing: _isEditingPassword,
+                  currentPasswordController: _currentPasswordController,
+                  newPasswordController: _newPasswordController,
+                  confirmPasswordController: _confirmPasswordController,
+                  onStartEdit: () => setState(() => _isEditingPassword = true),
+                  onCancel: _cancelPasswordEdit,
+                  onSave: _handlePasswordChange,
+                  onFieldChanged: () => setState(() {}),
+                ),
             ],
           ),
         ],
@@ -836,7 +560,10 @@ class _HostMyPageState extends State<HostMyPage> {
           SizedBox(height: AppSpacing.xl), // mb-6 = 24px
 
           // 정산 받을 계좌 서브섹션
-          _buildBankAccountSubsection(),
+          HostBankAccountSection(
+            bankAccount: _bankAccount,
+            onEdit: _handleAccountEdit,
+          ),
 
           // React: <div className="border-t border-gray-200 pt-6">
           Container(
@@ -846,925 +573,58 @@ class _HostMyPageState extends State<HostMyPage> {
                 top: BorderSide(color: AppColors.gray200), // border-gray-200
               ),
             ),
-            child: _buildReceiptSubsection(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 정산 받을 계좌 서브섹션
-  /// React: <div className="mb-8">
-  ///   <h4 className="font-semibold text-gray-900 mb-4">정산 받을 계좌</h4>
-  Widget _buildBankAccountSubsection() {
-    return Container(
-      margin: EdgeInsets.only(bottom: AppSpacing.xl), // mb-8 = 32px
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // React: <h4 className="font-semibold text-gray-900 mb-4">정산 받을 계좌</h4>
-          Text(
-            '정산 받을 계좌',
-            style: AppTextStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w600, // font-semibold
-              color: AppColors.gray900, // text-gray-900
-            ),
-          ),
-
-          SizedBox(height: AppSpacing.md), // mb-4 = 16px
-
-          if (_bankAccount != null) ...[
-            // React: <div className="py-3 px-4 bg-gray-50 rounded-lg">
-            Container(
-              padding: EdgeInsets.symmetric(
-                vertical: AppSpacing.md, // py-3 = 12px
-                horizontal: AppSpacing.md, // px-4 = 16px
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.gray50, // bg-gray-50
-                borderRadius: BorderRadius.circular(AppRadius.sm), // rounded-lg
-              ),
-              child: Row(
-                children: [
-                  // React: <Building2 className="w-5 h-5 text-gray-400" />
-                  Icon(
-                    Icons.account_balance,
-                    size: 20, // w-5 h-5
-                    color: AppColors.neutral400, // text-gray-400
-                  ),
-                  SizedBox(width: AppSpacing.sm), // gap-2
-                  // React: <span className="font-medium text-gray-900">
-                  Expanded(
-                    child: Text(
-                      '${_bankAccount!.bankName} ${_bankAccount!.accountNumber} (${_bankAccount!.accountHolder})',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w500, // font-medium
-                        color: AppColors.gray900, // text-gray-900
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            SizedBox(height: AppSpacing.md), // mt-4 = 16px
-
-            // React: <button className="w-full mt-4 py-3 px-4 border-2 border-blue-600 text-blue-600 rounded-lg ...">
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: _handleAccountEdit,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary500,
-                  side: BorderSide(
-                    color: AppColors.primary600, // border-blue-600
-                    width: 2,
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md, // px-4
-                    vertical: AppSpacing.md, // py-3 = 12px
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppRadius.sm,
-                    ), // rounded-lg = 8px
-                  ),
-                ),
-                child: Text(
-                  '변경',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.primary600, // text-blue-600
-                    fontWeight: FontWeight.bold, // font-bold
-                  ),
-                ),
-              ),
-            ),
-          ] else ...[
-            // 계좌 미등록 시
-            Container(
-              padding: EdgeInsets.symmetric(
-                vertical: AppSpacing.md,
-                horizontal: AppSpacing.md,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.gray50,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.account_balance,
-                    size: 20,
-                    color: AppColors.neutral400,
-                  ),
-                  SizedBox(width: AppSpacing.sm),
-                  Text(
-                    '등록된 계좌가 없습니다',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.gray900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            SizedBox(height: AppSpacing.md),
-
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: _handleAccountEdit,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary500,
-                  side: BorderSide(
-                    color: AppColors.primary600,
-                    width: 2,
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.md,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                ),
-                child: Text(
-                  '등록',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.primary600,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// 수수료에 대한 영수증 발급 서브섹션
-  /// React: <h4 className="font-semibold text-gray-900 mb-4">수수료에 대한 영수증 발급</h4>
-  Widget _buildReceiptSubsection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // React: <h4 className="font-semibold text-gray-900 mb-4">
-        Text(
-          '수수료에 대한 영수증 발급',
-          style: AppTextStyles.bodyLarge.copyWith(
-            fontWeight: FontWeight.w600, // font-semibold
-            color: AppColors.gray900, // text-gray-900
-          ),
-        ),
-
-        SizedBox(height: AppSpacing.md), // mb-4 = 16px
-
-        if (!_isEditingReceipt) ...[
-          // 표시 모드
-          // React: <div className="py-3 px-4 bg-gray-50 rounded-lg">
-          Container(
-            padding: EdgeInsets.symmetric(
-              vertical: AppSpacing.md, // py-3
-              horizontal: AppSpacing.md, // px-4
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.gray50, // bg-gray-50
-              borderRadius: BorderRadius.circular(AppRadius.sm), // rounded-lg
-            ),
-            child: Row(
-              children: [
-                // React: <FileText className="w-5 h-5 text-gray-400" />
-                Icon(
-                  Icons.description_outlined,
-                  size: 20, // w-5 h-5
-                  color: AppColors.neutral400, // text-gray-400
-                ),
-                SizedBox(width: AppSpacing.sm), // gap-2
-                // React: <span className="font-medium text-gray-900">
-                Expanded(
-                  child: Text(
-                    _savedReceipt != null
-                        ? '신청 - ${_getReceiptTypeName(_savedReceipt!['receiptType'])} (${_savedReceipt!['receiptNumber']})'
-                        : '신청 안함',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w500, // font-medium
-                      color: AppColors.gray900, // text-gray-900
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: AppSpacing.md), // mt-4
-
-          // React: <button className="w-full mt-4 py-3 px-4 border-2 border-blue-600 text-blue-600 rounded-lg ...">
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: _startEditingReceipt,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary500,
-                side: BorderSide(
-                  color: AppColors.primary600, // border-blue-600
-                  width: 2,
-                ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, // px-4
-                  vertical: AppSpacing.md, // py-3
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppRadius.sm,
-                  ), // rounded-lg
-                ),
-              ),
-              child: Text(
-                '변경',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.primary600, // text-blue-600
-                  fontWeight: FontWeight.bold, // font-bold
-                ),
-              ),
-            ),
-          ),
-        ] else ...[
-          // 편집 모드
-          _buildReceiptEditForm(),
-        ],
-      ],
-    );
-  }
-
-  /// 영수증 편집 폼
-  Widget _buildReceiptEditForm() {
-    final canSubmit = _receiptType.isNotEmpty &&
-        _receiptNumberController.text.isNotEmpty &&
-        (_receiptType != 'tax_invoice' ||
-            (_receiptBusinessNameController.text.isNotEmpty &&
-                _receiptRepNameController.text.isNotEmpty));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 영수증 종류
-        Text(
-          '영수증 종류',
-          style: AppTextStyles.bodySmall.copyWith(
-            fontWeight: FontWeight.w500, // font-medium
-            color: AppColors.neutral700, // text-gray-700
-          ),
-        ),
-        SizedBox(height: AppSpacing.sm), // mb-2 = 8px
-
-          // React: <select className="w-full px-4 py-3 border border-gray-300 rounded-lg ...">
-          DropdownButtonFormField<String>(
-            initialValue: _receiptType.isEmpty ? null : _receiptType,
-            hint: Text(
-              '선택하세요',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            items: const [
-              DropdownMenuItem(
-                value: 'personal',
-                child: Text('개인소득공제용 현금영수증'),
-              ),
-              DropdownMenuItem(
-                value: 'business',
-                child: Text('사업자증빙용 현금영수증'),
-              ),
-              DropdownMenuItem(
-                value: 'tax_invoice',
-                child: Text('전자세금계산서'),
-              ),
-            ],
-            onChanged: (value) {
-              setState(() {
-                _receiptType = value ?? '';
-                _receiptNumberInputType = 'phone'; // 종류 변경 시 기본값
-                // 종류 변경 시 입력값 초기화
-                _receiptNumberController.clear();
-                _receiptBusinessNameController.clear();
-                _receiptRepNameController.clear();
-                _receiptEmailController.clear();
-                _receiptFieldErrors.clear();
-              });
-            },
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm), // rounded-lg
-                borderSide: BorderSide(color: AppColors.gray300), // border-gray-300
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                borderSide: BorderSide(color: AppColors.gray300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                borderSide: BorderSide(
-                  color: AppColors.primary500, // focus:ring-blue-500
-                  width: 2,
-                ),
-              ),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, // px-4
-                vertical: AppSpacing.md, // py-3 = 12px
-              ),
-            ),
-          ),
-
-          // 조건부 입력 필드들
-          if (_receiptType == 'personal') ...[
-            SizedBox(height: AppSpacing.md),
-            // 번호 종류 선택 라디오
-            Text(
-              '번호 종류',
-              style: AppTextStyles.bodySmall.copyWith(
-                fontWeight: FontWeight.w500,
-                color: AppColors.neutral700,
-              ),
-            ),
-            SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                _buildRadioOption(
-                  label: '휴대폰 번호',
-                  value: 'phone',
-                  groupValue: _receiptNumberInputType,
-                  onChanged: (value) {
-                    setState(() {
-                      _receiptNumberInputType = value;
-                      _receiptNumberController.clear();
-                      _receiptFieldErrors.remove('number');
-                    });
-                  },
-                ),
-                SizedBox(width: AppSpacing.md),
-                _buildRadioOption(
-                  label: '현금영수증 카드 번호',
-                  value: 'card',
-                  groupValue: _receiptNumberInputType,
-                  onChanged: (value) {
-                    setState(() {
-                      _receiptNumberInputType = value;
-                      _receiptNumberController.clear();
-                      _receiptFieldErrors.remove('number');
-                    });
-                  },
-                ),
-              ],
-            ),
-            SizedBox(height: AppSpacing.sm),
-            _buildReceiptInputField(
-              label: _receiptNumberInputType == 'phone'
-                  ? '휴대폰 번호'
-                  : '현금영수증 카드 번호',
-              placeholder: _receiptNumberInputType == 'phone'
-                  ? "'-' 없이 숫자만 입력해주세요 (예: 01012345678)"
-                  : "'-' 없이 숫자만 입력해주세요",
-              controller: _receiptNumberController,
-              keyboardType: TextInputType.number,
-              errorText: _receiptFieldErrors['number'],
-            ),
-          ],
-
-          if (_receiptType == 'business') ...[
-            SizedBox(height: AppSpacing.md),
-            // 번호 종류 선택 라디오
-            Text(
-              '번호 종류',
-              style: AppTextStyles.bodySmall.copyWith(
-                fontWeight: FontWeight.w500,
-                color: AppColors.neutral700,
-              ),
-            ),
-            SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                _buildRadioOption(
-                  label: '휴대폰 번호',
-                  value: 'phone',
-                  groupValue: _receiptNumberInputType,
-                  onChanged: (value) {
-                    setState(() {
-                      _receiptNumberInputType = value;
-                      _receiptNumberController.clear();
-                      _receiptFieldErrors.remove('number');
-                    });
-                  },
-                ),
-                SizedBox(width: AppSpacing.md),
-                _buildRadioOption(
-                  label: '사업자 등록번호',
-                  value: 'bizno',
-                  groupValue: _receiptNumberInputType,
-                  onChanged: (value) {
-                    setState(() {
-                      _receiptNumberInputType = value;
-                      _receiptNumberController.clear();
-                      _receiptFieldErrors.remove('number');
-                    });
-                  },
-                ),
-              ],
-            ),
-            SizedBox(height: AppSpacing.sm),
-            _buildReceiptInputField(
-              label: _receiptNumberInputType == 'phone'
-                  ? '휴대폰 번호'
-                  : '사업자 등록번호',
-              placeholder: _receiptNumberInputType == 'phone'
-                  ? "'-' 없이 숫자만 입력해주세요 (예: 01012345678)"
-                  : "'-' 없이 숫자만 입력해주세요 (10자리)",
-              controller: _receiptNumberController,
-              keyboardType: TextInputType.number,
-              errorText: _receiptFieldErrors['number'],
-            ),
-          ],
-
-          if (_receiptType == 'tax_invoice') ...[
-            SizedBox(height: AppSpacing.md),
-            _buildReceiptInputField(
-              label: '사업자 등록번호',
-              placeholder: "'-' 없이 숫자만 입력해주세요 (10자리)",
-              controller: _receiptNumberController,
-              keyboardType: TextInputType.number,
-              errorText: _receiptFieldErrors['number'],
-            ),
-            SizedBox(height: AppSpacing.md),
-            _buildReceiptInputField(
-              label: '사업자명',
-              placeholder: '사업자명을 입력해 주세요.',
-              controller: _receiptBusinessNameController,
-              errorText: _receiptFieldErrors['businessName'],
-            ),
-            SizedBox(height: AppSpacing.md),
-            _buildReceiptInputField(
-              label: '대표자 이름',
-              placeholder: '대표자 이름을 입력해 주세요',
-              controller: _receiptRepNameController,
-              errorText: _receiptFieldErrors['repName'],
-            ),
-            SizedBox(height: AppSpacing.md),
-            _buildReceiptInputField(
-              label: '이메일 주소 (선택)',
-              placeholder: '이메일 주소를 입력해 주세요',
-              controller: _receiptEmailController,
-              keyboardType: TextInputType.emailAddress,
-              errorText: _receiptFieldErrors['email'],
-            ),
-          ],
-
-        SizedBox(height: AppSpacing.md),
-
-        // 버튼 영역
-        Padding(
-          padding: EdgeInsets.only(top: AppSpacing.sm),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  // 취소 버튼
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _cancelReceiptEdit,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.neutral700,
-                        side: BorderSide(
-                          color: AppColors.gray300,
-                          width: 2,
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                      ),
-                      child: Text(
-                        '취소',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(width: AppSpacing.sm),
-
-                  // 저장 버튼
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: canSubmit ? _handleSaveReceipt : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary600,
-                        disabledBackgroundColor: AppColors.gray300,
-                        foregroundColor: AppColors.neutral0,
-                        padding: EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                      ),
-                      child: Text(
-                        '저장',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.neutral0,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              // 삭제 버튼 (기존 설정이 있을 때만 표시)
-              if (_savedReceipt != null) ...[
-                SizedBox(height: AppSpacing.sm),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: _handleDeleteReceipt,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.error500,
-                      side: BorderSide(
-                        color: AppColors.error500,
-                        width: 2,
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        vertical: AppSpacing.md,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                    ),
-                    child: Text(
-                      '영수증 설정 삭제',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.error500,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 라디오 버튼 옵션
-  /// React: <label className="flex items-center gap-2 cursor-pointer">
-  ///   <input type="radio" className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
-  ///   <span className="text-gray-900">...</span>
-  Widget _buildRadioOption({
-    required String label,
-    required String value,
-    required String groupValue,
-    required void Function(String) onChanged,
-  }) {
-    final isSelected = value == groupValue;
-
-    return GestureDetector(
-      onTap: () => onChanged(value),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // w-4 h-4 커스텀 라디오 버튼
-          Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected
-                    ? AppColors.primary600
-                    : AppColors.gray300,
-                width: 2,
-              ),
-            ),
-            child: isSelected
-                ? Center(
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.primary600, // text-blue-600
-                      ),
-                    ),
-                  )
-                : null,
-          ),
-          SizedBox(width: AppSpacing.sm), // gap-2 = 8px
-          Text(
-            label,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.gray900, // text-gray-900
+            child: HostReceiptDisplaySection(
+              isEditing: _isEditingReceipt,
+              savedReceipt: _savedReceipt,
+              receiptTypeName: _savedReceipt != null
+                  ? _getReceiptTypeName(_savedReceipt!['receiptType'])
+                  : '',
+              onStartEdit: _startEditingReceipt,
+              receiptType: _receiptType,
+              receiptNumberInputType: _receiptNumberInputType,
+              receiptNumberController: _receiptNumberController,
+              receiptBusinessNameController: _receiptBusinessNameController,
+              receiptRepNameController: _receiptRepNameController,
+              receiptEmailController: _receiptEmailController,
+              receiptFieldErrors: _receiptFieldErrors,
+              onReceiptTypeChanged: (value) {
+                setState(() {
+                  _receiptType = value;
+                  _receiptNumberInputType = 'phone';
+                  _receiptNumberController.clear();
+                  _receiptBusinessNameController.clear();
+                  _receiptRepNameController.clear();
+                  _receiptEmailController.clear();
+                  _receiptFieldErrors.clear();
+                });
+              },
+              onNumberInputTypeChanged: (value) {
+                setState(() {
+                  _receiptNumberInputType = value;
+                  _receiptNumberController.clear();
+                  _receiptFieldErrors.remove('number');
+                });
+              },
+              onCancel: _cancelReceiptEdit,
+              onSave: _handleSaveReceipt,
+              onDelete: _handleDeleteReceipt,
+              onFieldChanged: () => setState(() {}),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  /// 영수증 입력 필드 (공통)
-  /// React: <input className="w-full px-4 py-3 border border-gray-300 rounded-lg
-  ///   focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-  Widget _buildReceiptInputField({
-    required String label,
-    required String placeholder,
-    required TextEditingController controller,
-    TextInputType keyboardType = TextInputType.text,
-    String? errorText,
-  }) {
-    final hasError = errorText != null && errorText.isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.bodySmall.copyWith(
-            fontWeight: FontWeight.w500,
-            color: AppColors.neutral700,
-          ),
-        ),
-        SizedBox(height: AppSpacing.sm),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          onChanged: (_) => setState(() {
-            // 입력 시 해당 필드 에러 클리어
-            _receiptFieldErrors.removeWhere((_, v) => v == errorText);
-          }),
-          decoration: InputDecoration(
-            hintText: placeholder,
-            hintStyle: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            errorText: hasError ? errorText : null,
-            errorStyle: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.error500,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: BorderSide(color: AppColors.gray300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: BorderSide(
-                color: hasError ? AppColors.error500 : AppColors.gray300,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: BorderSide(
-                color: hasError ? AppColors.error500 : AppColors.primary500,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: BorderSide(color: AppColors.error500),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: BorderSide(color: AppColors.error500, width: 2),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.md,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 프로필 필드 (공통) - 아이콘 제거됨
-  Widget _buildProfileField({
-    required String label,
-    required String value,
-    Widget? trailing,
-    bool showBorder = true,
-  }) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.md), // py-3
-      decoration: showBorder
-          ? BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: AppColors.gray200), // border-gray-100
-              ),
-            )
-          : null,
-      child: Row(
-        children: [
-          // 레이블 & 값
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 레이블
-                Text(
-                  label,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary, // text-gray-500
-                  ),
-                ),
-                const SizedBox(height: 4),
-
-                // 값
-                Text(
-                  value,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600, // font-medium
-                    color: AppColors.gray900, // text-gray-900
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          if (trailing != null) trailing,
-        ],
-      ),
-    );
-  }
-
-  /// 닉네임 필드 (편집 기능 포함)
-  Widget _buildNicknameField() {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.gray200)),
-      ),
-      child: _isEditingNickname
-          ? _buildNicknameEditForm()
-          : _buildNicknameDisplay(),
-    );
-  }
-
-  /// 닉네임 표시 (편집 모드 OFF)
-  Widget _buildNicknameDisplay() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '닉네임',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _userProfile!.nickname ?? '미설정',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.gray900,
-                ),
-              ),
-            ],
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            setState(() {
-              _isEditingNickname = true;
-              _nicknameController.text = _userProfile!.nickname ?? '';
-            });
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.primary500,
-            padding: EdgeInsets.zero,
-          ),
-          child: Text(
-            '변경',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.primary500,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 닉네임 편집 폼 (편집 모드 ON)
-  Widget _buildNicknameEditForm() {
-    final canSubmit = _nicknameController.text.trim().length >= 2 &&
-        _nicknameController.text.trim().length <= 20;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '닉네임',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 4),
-
-        // 닉네임 입력
-        CustomTextField(
-          controller: _nicknameController,
-          hint: '닉네임을 입력해주세요',
-          onChanged: (_) => setState(() {}),
-        ),
-
-        const SizedBox(height: 4),
-
-        // 안내 문구
-        Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: Text(
-            '2~20자 입력 가능',
-            style: AppTextStyles.bodySmall.copyWith(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-
-        SizedBox(height: AppSpacing.sm),
-
-        // 버튼 그룹
-        Row(
-          children: [
-            // 취소 버튼
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _cancelNicknameEdit,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textPrimary,
-                  side: BorderSide(
-                    color: AppColors.border,
-                    width: 2,
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-                child: Text(
-                  '취소',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(width: AppSpacing.sm),
-
-            // 변경 버튼
-            Expanded(
-              child: ElevatedButton(
-                onPressed: canSubmit ? _handleNicknameChange : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary500,
-                  disabledBackgroundColor: AppColors.gray300,
-                  foregroundColor: AppColors.neutral0,
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-                child: Text(
-                  '변경',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.neutral0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
   /// 연락처 필드 (변경 버튼 포함)
   Widget _buildPhoneField() {
-    return _buildProfileField(
+    return ProfileInfoRow(
       label: '연락처',
       value: _userProfile!.phoneNumber,
       trailing: TextButton(
         onPressed: _handlePhoneChange,
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary500, // text-blue-600
+          foregroundColor: AppColors.primary500,
           padding: EdgeInsets.zero,
         ),
         child: Text(
@@ -1775,186 +635,6 @@ class _HostMyPageState extends State<HostMyPage> {
           ),
         ),
       ),
-    );
-  }
-
-  /// 비밀번호 필드 (토글) - 아이콘 제거됨
-  Widget _buildPasswordField() {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.md), // py-3
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.gray200)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 편집 모드 분기
-          _isEditingPassword
-              ? _buildPasswordEditForm()
-              : _buildPasswordDisplay(),
-        ],
-      ),
-    );
-  }
-
-  /// 비밀번호 표시 (편집 모드 OFF) - 아이콘 제거됨
-  Widget _buildPasswordDisplay() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '비밀번호',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '••••••••',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.gray900,
-                ),
-              ),
-            ],
-          ),
-        ),
-        TextButton(
-          onPressed: () => setState(() => _isEditingPassword = true),
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.primary500,
-            padding: EdgeInsets.zero,
-          ),
-          child: Text(
-            '변경',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.primary500,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 비밀번호 편집 폼 (편집 모드 ON)
-  Widget _buildPasswordEditForm() {
-    final canSubmit = _currentPasswordController.text.isNotEmpty &&
-        _newPasswordController.text.isNotEmpty &&
-        _confirmPasswordController.text.isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 현재 비밀번호 입력
-        CustomTextField(
-          controller: _currentPasswordController,
-          hint: '현재 비밀번호',
-          obscureText: true,
-          onChanged: (_) => setState(() {}),
-        ),
-
-        SizedBox(height: AppSpacing.sm),
-
-        // 새 비밀번호 입력
-        CustomTextField(
-          controller: _newPasswordController,
-          hint: '새 비밀번호',
-          obscureText: true,
-          onChanged: (_) => setState(() {}),
-        ),
-
-        const SizedBox(height: 4),
-
-        // 안내 문구
-        Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: Text(
-            PasswordValidator.policyDescription,
-            style: AppTextStyles.bodySmall.copyWith(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-
-        SizedBox(height: AppSpacing.sm),
-
-        // 비밀번호 확인 입력
-        CustomTextField(
-          controller: _confirmPasswordController,
-          hint: '새 비밀번호 확인',
-          obscureText: true,
-          onChanged: (_) => setState(() {}),
-        ),
-
-        SizedBox(height: AppSpacing.sm),
-
-        // 버튼 그룹
-        // React: <div className="flex gap-2 pt-2">
-        Row(
-          children: [
-            // 취소 버튼
-            // React: <button className="flex-1 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg ...">취소</button>
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _cancelPasswordEdit,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textPrimary,
-                  side: BorderSide(
-                    color: AppColors.border, // border-gray-300
-                    width: 2,
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    vertical: AppSpacing.sm,
-                  ), // py-2
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppRadius.md,
-                    ), // rounded-lg
-                  ),
-                ),
-                child: Text(
-                  '취소',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(width: AppSpacing.sm), // gap-2
-
-            // 변경 버튼
-            // React: <button className="flex-1 py-2 bg-blue-600 text-white rounded-lg ... disabled:bg-gray-300">변경</button>
-            Expanded(
-              child: ElevatedButton(
-                onPressed: canSubmit ? _handlePasswordChange : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary500, // bg-blue-600
-                  disabledBackgroundColor:
-                      AppColors.gray300, // disabled:bg-gray-300
-                  foregroundColor: AppColors.neutral0,
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-                child: Text(
-                  '변경',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.neutral0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 

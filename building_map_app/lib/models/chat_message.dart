@@ -146,17 +146,26 @@ class ChatRoomMetadata {
 
   factory ChatRoomMetadata.fromFirestore(Map<String, dynamic> data) {
     return ChatRoomMetadata(
-      contractId: data['contractId'],
-      hostId: data['hostId'],
-      guestId: data['guestId'],
+      contractId: _toInt(data['contractId']),
+      hostId: _toInt(data['hostId']),
+      guestId: _toInt(data['guestId']),
       isActive: data['isActive'] ?? true,
       lastMessageText: data['lastMessageText'],
-      lastMessageSenderId: data['lastMessageSenderId'],
+      lastMessageSenderId: data['lastMessageSenderId'] != null
+          ? _toInt(data['lastMessageSenderId'])
+          : null,
       lastMessageAt: data['lastMessageAt'] != null
           ? (data['lastMessageAt'] as Timestamp).toDate()
           : null,
       unreadCount: Map<String, int>.from(data['unreadCount'] ?? {}),
     );
+  }
+
+  /// Firestore 값이 String("2008") 또는 int(2008) 어느 쪽이어도 int로 변환
+  static int _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.parse(value);
+    return 0;
   }
 
   Map<String, dynamic> toFirestore() {

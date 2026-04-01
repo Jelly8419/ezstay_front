@@ -177,13 +177,13 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               for (var e in optionMapping.entries) e.value: e.key,
             };
 
-            // basicOptions JSON 문자열 파싱
+            // basicOptions JSON 문자열 파싱 (이중 직렬화 대응)
             if (amenities['basicOptions'] != null &&
                 amenities['basicOptions'] is String) {
               try {
-                final basicOptionsMap =
-                    jsonDecode(amenities['basicOptions'])
-                        as Map<String, dynamic>;
+                dynamic decoded = jsonDecode(amenities['basicOptions']);
+                if (decoded is String) decoded = jsonDecode(decoded);
+                final basicOptionsMap = decoded as Map<String, dynamic>;
 
                 // 영어 필드명을 한글로 역변환
                 basicOptionsMap.forEach((englishKey, value) {
@@ -222,13 +222,13 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               }
             }
 
-            // additionalOptions JSON 문자열 파싱
+            // additionalOptions JSON 문자열 파싱 (이중 직렬화 대응)
             if (amenities['additionalOptions'] != null &&
                 amenities['additionalOptions'] is String) {
               try {
-                final additionalOptionsMap =
-                    jsonDecode(amenities['additionalOptions'])
-                        as Map<String, dynamic>;
+                dynamic decoded = jsonDecode(amenities['additionalOptions']);
+                if (decoded is String) decoded = jsonDecode(decoded);
+                final additionalOptionsMap = decoded as Map<String, dynamic>;
 
                 additionalOptionsMap.forEach((englishKey, value) {
                   if (value == true) {
@@ -245,13 +245,13 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               }
             }
 
-            // convenienceOptions JSON 문자열 파싱
+            // convenienceOptions JSON 문자열 파싱 (이중 직렬화 대응)
             if (amenities['convenienceOptions'] != null &&
                 amenities['convenienceOptions'] is String) {
               try {
-                final convenienceOptionsMap =
-                    jsonDecode(amenities['convenienceOptions'])
-                        as Map<String, dynamic>;
+                dynamic decoded = jsonDecode(amenities['convenienceOptions']);
+                if (decoded is String) decoded = jsonDecode(decoded);
+                final convenienceOptionsMap = decoded as Map<String, dynamic>;
 
                 convenienceOptionsMap.forEach((englishKey, value) {
                   if (value == true) {
@@ -896,17 +896,18 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
     try {
       // API로 심사 요청
-      final success = await _roomService.submitReview(_currentRoomId!);
+      final resultStatus = await _roomService.submitReview(_currentRoomId!);
 
-      if (!success) {
+      if (resultStatus == null) {
         throw Exception('심사 요청 API 호출 실패');
       }
-
 
       if (!mounted) return;
 
       // 성공 토스트 표시
       CustomToast.success(context, '방 등록이 완료되었습니다!');
+
+      final isPendingReview = resultStatus == 'pending_review';
 
       // 성공 다이얼로그 표시
       showDialog(
@@ -949,13 +950,13 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
               const SizedBox(height: 12),
 
-              // 설명
-              const Text(
-                '방 등록이 완료되었습니다!\n\n'
-                '관리자 심사가 진행됩니다. (보통 1-2일 소요)\n'
-                '심사 승인 후 매물이 공개됩니다.',
+              // 설명 (pending_review일 때만 심사 안내 표시)
+              Text(
+                isPendingReview
+                    ? '방 등록이 완료되었습니다!\n\n관리자 심사가 진행됩니다. (보통 1-2일 소요)\n심사 승인 후 매물이 공개됩니다.'
+                    : '방 정보가 저장되었습니다!',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textSecondary,

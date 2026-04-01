@@ -24,6 +24,12 @@ class NoticeTexts {
   static const optionRefundBeforeDelivery =
       '옵션 상품은 배송 전에는 전액 환불, 배송이 시작된 이후에는 왕복 배송비 7,000원 차감 후 환불됩니다.';
 
+  static const optionReturnRequestAdminConfirm =
+      '반품 신청 후 실제 환불 금액은 관리자 처리 후 최종 확정됩니다.';
+
+  static const optionReturnShippingFeeNotice =
+      '배송 완료 상품 반품 시 수거비 7,000원이 차감될 수 있습니다. 동일 계약 내 수거 진행 중인 건이 있으면 면제됩니다.';
+
   // === 환불 규칙 텍스트 생성 ===
   /// RefundRule, RefundPolicyRule 등 description + refundRate 조합 텍스트
   static String cancellationText(String description, int refundRate) {

@@ -5,6 +5,10 @@ on:
     branches: [develop]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+
 env:
   REMOTE_UPLOAD_PATH: '/opt/ezstay/frontend/flutter'
   REMOTE_NGINX_PATH: '/var/www/flutter'
@@ -252,3 +256,17 @@ jobs:
           echo "Server: ${{ secrets.TEST_SERVER_HOST }}"
           echo "Kakao JS Key: 8fa88a...f60"
           echo ""
+
+      - name: Slack 배포 알림
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,ref,workflow,took
+          text: |
+            레포: ${{ github.repository }}
+            브랜치: ${{ github.ref_name }}
+            커밋: ${{ github.sha }}
+            트리거: ${{ github.actor }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

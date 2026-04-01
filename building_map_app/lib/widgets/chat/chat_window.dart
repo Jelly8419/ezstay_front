@@ -1,8 +1,10 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/chat_room.dart';
@@ -43,22 +45,60 @@ class _ChatWindowState extends State<ChatWindow> {
   bool _hasText = false;
   bool _isSending = false;
 
+  // 채팅 쓰기 제한 상태
+  bool _isWriteLocked = false;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _writeLockSub;
+
   @override
-  void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _subscribeWriteLock();
   }
 
   @override
   void didUpdateWidget(ChatWindow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 메시지가 변경되면 스크롤 맨 아래로
-    if (widget.messages.length != oldWidget.messages.length) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
-      });
+    // 채팅방이 바뀌면 구독 갱신
+    if (widget.chatRoom?.firebaseChatRoomId !=
+        oldWidget.chatRoom?.firebaseChatRoomId) {
+      _subscribeWriteLock();
     }
+    if (widget.messages.length != oldWidget.messages.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    }
+  }
+
+  /// chatWritableUntil 실시간 구독
+  void _subscribeWriteLock() {
+    _writeLockSub?.cancel();
+    final chatRoomId = widget.chatRoom?.firebaseChatRoomId;
+    if (chatRoomId == null) return;
+
+    _writeLockSub = FirebaseFirestore.instance
+        .collection('chatRooms')
+        .doc(chatRoomId)
+        .snapshots()
+        .listen((doc) {
+      if (!doc.exists || !mounted) return;
+      final data = doc.data();
+      final writableUntil =
+          (data?['chatWritableUntil'] as Timestamp?)?.toDate();
+      final locked =
+          writableUntil != null && DateTime.now().isAfter(writableUntil);
+      if (locked != _isWriteLocked) {
+        setState(() => _isWriteLocked = locked);
+      }
+    }, onError: (e) {
+      AppLogger.w('⚠️ [CHAT_WINDOW] writeLock 구독 에러: $e');
+    });
+  }
+
+  @override
+  void dispose() {
+    _writeLockSub?.cancel();
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _scrollToBottom() {
@@ -438,6 +478,32 @@ class _ChatWindowState extends State<ChatWindow> {
 
   /// 입력 영역
   Widget _buildInputArea() {
+    // 쓰기 제한된 채팅방 — 입력창 대신 잠금 배너 표시
+    if (_isWriteLocked) {
+      return Container(
+        decoration: const BoxDecoration(
+          color: AppColors.neutral0,
+          border: Border(
+            top: BorderSide(color: AppColors.gray200, width: 1),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline, size: 16, color: AppColors.neutral400),
+            const SizedBox(width: 8),
+            Text(
+              '종료된 계약의 채팅방입니다. 메시지를 보낼 수 없습니다.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.neutral400,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.neutral0, // bg-white
