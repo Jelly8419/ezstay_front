@@ -82,8 +82,7 @@ class _PricingStepState extends State<PricingStep> {
   String get _cleaningFee => widget.formData['cleaningFee']?.toString() ?? '';
   String get _minContractDays =>
       widget.formData['minContractDays']?.toString() ?? '7';
-  String get _refundPolicy =>
-      widget.formData['refundPolicy']?.toString() ?? '';
+  String get _refundPolicy => widget.formData['refundPolicy']?.toString() ?? '';
   String get _longTermDiscountWeeks =>
       widget.formData['longTermDiscountWeeks']?.toString() ?? '0';
   String get _longTermDiscountPercent =>
@@ -129,9 +128,7 @@ class _PricingStepState extends State<PricingStep> {
     _earlyCheckInDiscountAmountController = TextEditingController(
       text: _formatNumberWithCommas(_earlyCheckInDiscountAmount),
     );
-    _minContractDaysController = TextEditingController(
-      text: _minContractDays,
-    );
+    _minContractDaysController = TextEditingController(text: _minContractDays);
 
     // FocusNode 초기화
     _dailyRentFocus = FocusNode();
@@ -350,9 +347,7 @@ class _PricingStepState extends State<PricingStep> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           children: [
             Icon(Icons.info_outline, color: AppColors.primary600, size: 24),
@@ -364,9 +359,7 @@ class _PricingStepState extends State<PricingStep> {
           fontSize: 18,
           color: AppColors.textPrimary,
         ),
-        content: const Text(
-          '청소 서비스 선택 시, 호스트님은 청소비를 설정 및 정산받을 수 없습니다.',
-        ),
+        content: const Text('청소 서비스 선택 시, 호스트님은 청소비를 설정 및 정산받을 수 없습니다.'),
         contentTextStyle: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.textSecondary,
           height: 1.5,
@@ -374,10 +367,7 @@ class _PricingStepState extends State<PricingStep> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              '취소',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
+            child: Text('취소', style: TextStyle(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -459,8 +449,7 @@ class _PricingStepState extends State<PricingStep> {
                       (digit) => _buildKeypadButton(
                         digit,
                         onTap: () {
-                          _updateFormData(
-                              'servicePassword', password + digit);
+                          _updateFormData('servicePassword', password + digit);
                         },
                         height: buttonHeight,
                       ),
@@ -697,7 +686,9 @@ class _PricingStepState extends State<PricingStep> {
                 if (_hasError('dailyRent'))
                   Text(
                     '임대료를 입력해주세요',
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.error600),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.error600,
+                    ),
                   ),
               ],
             ),
@@ -801,7 +792,9 @@ class _PricingStepState extends State<PricingStep> {
                 if (_hasError('dailyMaintenanceFee'))
                   Text(
                     '관리비를 입력해주세요',
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.error600),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.error600,
+                    ),
                   ),
                 const SizedBox(height: 16),
 
@@ -901,8 +894,8 @@ class _PricingStepState extends State<PricingStep> {
                     fillColor: _cleaningService
                         ? AppColors.gray50
                         : _hasError('cleaningFee')
-                            ? AppColors.error50
-                            : Colors.white,
+                        ? AppColors.error50
+                        : Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -978,8 +971,11 @@ class _PricingStepState extends State<PricingStep> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: _cleaningService
-                            ? const Icon(Icons.check,
-                                size: 16, color: Colors.white)
+                            ? const Icon(
+                                Icons.check,
+                                size: 16,
+                                color: Colors.white,
+                              )
                             : null,
                       ),
                       const SizedBox(width: 12),
@@ -1029,8 +1025,9 @@ class _PricingStepState extends State<PricingStep> {
                   const SizedBox(height: 8),
                   Text(
                     '* 청소 서비스 진행을 위해 도어락 비밀번호를 입력해주세요. 비밀번호가 불일치할 경우 청소 일정에 불이익이 발생할 수 있습니다.',
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.textSecondary),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ],
@@ -1327,7 +1324,9 @@ class _PricingStepState extends State<PricingStep> {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       '환불 규정을 선택해주세요',
-                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.error600),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.error600,
+                      ),
                     ),
                   ),
               ],
@@ -1349,7 +1348,6 @@ class _PricingStepState extends State<PricingStep> {
                     DropdownButton<String>(
                       value:
                           [
-                            '0',
                             '2',
                             '3',
                             '4',
@@ -1363,10 +1361,9 @@ class _PricingStepState extends State<PricingStep> {
                             '12',
                           ].contains(_longTermDiscountWeeks)
                           ? _longTermDiscountWeeks
-                          : '0',
+                          : '2',
                       items:
                           [
-                                '0',
                                 '2',
                                 '3',
                                 '4',
@@ -1392,7 +1389,9 @@ class _PricingStepState extends State<PricingStep> {
                         }
                       },
                       underline: Container(),
-                      style: AppTextStyles.bodySmall.copyWith(color: Colors.black),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.black,
+                      ),
                     ),
                     const Text('이상 계약 시'),
                     SizedBox(
@@ -1471,7 +1470,6 @@ class _PricingStepState extends State<PricingStep> {
                       value:
                           [
                             '0',
-                            'today',
                             '1',
                             '2',
                             '3',
@@ -1484,8 +1482,7 @@ class _PricingStepState extends State<PricingStep> {
                           : '0',
                       items:
                           [
-                                {'value': '0', 'label': '0일'},
-                                {'value': 'today', 'label': '오늘입주'},
+                                {'value': '0', 'label': '오늘입주'},
                                 {'value': '1', 'label': '1일'},
                                 {'value': '2', 'label': '2일'},
                                 {'value': '3', 'label': '3일'},
@@ -1507,7 +1504,9 @@ class _PricingStepState extends State<PricingStep> {
                         }
                       },
                       underline: Container(),
-                      style: AppTextStyles.bodySmall.copyWith(color: Colors.black),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.black,
+                      ),
                     ),
                     const Text('이내 입주 시'),
                     SizedBox(
