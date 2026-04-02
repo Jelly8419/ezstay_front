@@ -84,13 +84,13 @@ class _PricingStepState extends State<PricingStep> {
       widget.formData['minContractDays']?.toString() ?? '7';
   String get _refundPolicy => widget.formData['refundPolicy']?.toString() ?? '';
   String get _longTermDiscountWeeks =>
-      widget.formData['longTermDiscountWeeks']?.toString() ?? '0';
+      widget.formData['longTermDiscountWeeks']?.toString() ?? '';
   String get _longTermDiscountPercent =>
       widget.formData['longTermDiscountPercent']?.toString() ?? '';
   String get _earlyCheckInDiscountDays =>
-      widget.formData['earlyCheckInDiscountDays']?.toString() ?? '0';
+      widget.formData['earlyCheckinDiscountDays']?.toString() ?? '';
   String get _earlyCheckInDiscountAmount =>
-      widget.formData['earlyCheckInDiscountAmount']?.toString() ?? '';
+      widget.formData['earlyCheckinDiscountAmount']?.toString() ?? '';
 
   List<String> get _maintenanceInclusions =>
       (widget.formData['maintenanceInclusions'] as List<dynamic>?)
@@ -1348,6 +1348,7 @@ class _PricingStepState extends State<PricingStep> {
                     DropdownButton<String>(
                       value:
                           [
+                            '',
                             '2',
                             '3',
                             '4',
@@ -1361,28 +1362,20 @@ class _PricingStepState extends State<PricingStep> {
                             '12',
                           ].contains(_longTermDiscountWeeks)
                           ? _longTermDiscountWeeks
-                          : '2',
-                      items:
-                          [
-                                '2',
-                                '3',
-                                '4',
-                                '5',
-                                '6',
-                                '7',
-                                '8',
-                                '9',
-                                '10',
-                                '11',
-                                '12',
-                              ]
-                              .map(
-                                (week) => DropdownMenuItem(
-                                  value: week,
-                                  child: Text('$week주'),
-                                ),
-                              )
-                              .toList(),
+                          : '',
+                      items: [
+                        const DropdownMenuItem(
+                          value: '',
+                          child: Text('선택'),
+                        ),
+                        ...['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
+                            .map(
+                              (week) => DropdownMenuItem(
+                                value: week,
+                                child: Text('$week주'),
+                              ),
+                            ),
+                      ],
                       onChanged: (value) {
                         if (value != null) {
                           _updateFormData('longTermDiscountWeeks', value);
@@ -1469,6 +1462,7 @@ class _PricingStepState extends State<PricingStep> {
                     DropdownButton<String>(
                       value:
                           [
+                            '',
                             '0',
                             '1',
                             '2',
@@ -1479,28 +1473,31 @@ class _PricingStepState extends State<PricingStep> {
                             '7',
                           ].contains(_earlyCheckInDiscountDays)
                           ? _earlyCheckInDiscountDays
-                          : '0',
-                      items:
-                          [
-                                {'value': '0', 'label': '오늘입주'},
-                                {'value': '1', 'label': '1일'},
-                                {'value': '2', 'label': '2일'},
-                                {'value': '3', 'label': '3일'},
-                                {'value': '4', 'label': '4일'},
-                                {'value': '5', 'label': '5일'},
-                                {'value': '6', 'label': '6일'},
-                                {'value': '7', 'label': '7일'},
-                              ]
-                              .map(
-                                (day) => DropdownMenuItem(
-                                  value: day['value'],
-                                  child: Text(day['label']!),
-                                ),
-                              )
-                              .toList(),
+                          : '',
+                      items: [
+                        const DropdownMenuItem(
+                          value: '',
+                          child: Text('선택'),
+                        ),
+                        ...[
+                          {'value': '0', 'label': '오늘입주'},
+                          {'value': '1', 'label': '1일'},
+                          {'value': '2', 'label': '2일'},
+                          {'value': '3', 'label': '3일'},
+                          {'value': '4', 'label': '4일'},
+                          {'value': '5', 'label': '5일'},
+                          {'value': '6', 'label': '6일'},
+                          {'value': '7', 'label': '7일'},
+                        ].map(
+                          (day) => DropdownMenuItem(
+                            value: day['value'],
+                            child: Text(day['label']!),
+                          ),
+                        ),
+                      ],
                       onChanged: (value) {
                         if (value != null) {
-                          _updateFormData('earlyCheckInDiscountDays', value);
+                          _updateFormData('earlyCheckinDiscountDays', value);
                         }
                       },
                       underline: Container(),
@@ -1519,7 +1516,7 @@ class _PricingStepState extends State<PricingStep> {
                             RegExp(r'[^0-9]'),
                             '',
                           );
-                          _updateFormData('earlyCheckInDiscountAmount', number);
+                          _updateFormData('earlyCheckinDiscountAmount', number);
 
                           // 실시간 콤마 포맷팅 적용
                           if (number.isNotEmpty) {
@@ -1539,7 +1536,7 @@ class _PricingStepState extends State<PricingStep> {
                                 int.tryParse(_earlyCheckInDiscountAmount) ?? 0;
                             final rounded = (value / 10000).round() * 10000;
                             _updateFormData(
-                              'earlyCheckInDiscountAmount',
+                              'earlyCheckinDiscountAmount',
                               rounded.toString(),
                             );
                           }
