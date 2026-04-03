@@ -158,6 +158,36 @@ enum PaymentMethod {
   }
 }
 
+/// 호스트 정산 상세 정보 (API hostSettlement 객체)
+class HostSettlement {
+  final int rentalFee;
+  final int maintenanceFee;
+  final int cleaningFee;
+  final int discountAmount;
+  final int hostPlatformFee;
+  final int hostEarnings;
+
+  const HostSettlement({
+    required this.rentalFee,
+    required this.maintenanceFee,
+    required this.cleaningFee,
+    required this.discountAmount,
+    required this.hostPlatformFee,
+    required this.hostEarnings,
+  });
+
+  factory HostSettlement.fromJson(Map<String, dynamic> json) {
+    return HostSettlement(
+      rentalFee: json['rentalFee'] as int? ?? 0,
+      maintenanceFee: json['maintenanceFee'] as int? ?? 0,
+      cleaningFee: json['cleaningFee'] as int? ?? 0,
+      discountAmount: json['discountAmount'] as int? ?? 0,
+      hostPlatformFee: json['hostPlatformFee'] as int? ?? 0,
+      hostEarnings: json['hostEarnings'] as int? ?? 0,
+    );
+  }
+}
+
 /// 계약 목록 아이템 (간단한 정보)
 class ContractListItem {
   final int id;
@@ -170,6 +200,7 @@ class ContractListItem {
   final String? guestMessage; // 호스트용
   final String? rejectionReason; // 거절 사유
   final List<RentalItem>? rentalItems; // 옵션 상품
+  final RecommendedItemsInfo? recommendedItems; // 호스트 권장 상품 (APPROVED 상태에서 제공)
 
   // 금액 상세 정보 (호스트용 - 선택적)
   final int? rentalFee; // 임대료
@@ -183,7 +214,7 @@ class ContractListItem {
   final int? subtotal; // 소계 (할인 전)
   final int? totalUsageFee; // 실이용 금액 (할인 후)
   final int? deposit; // 보증금
-  final int? hostEarnings; // 호스트 실수령액 (NEW)
+  final HostSettlement? hostSettlement; // 호스트 정산 상세 (API 제공)
   final bool? isEzCleaning; // EZ청소 서비스 여부
 
   // 퇴실 정보
@@ -231,6 +262,7 @@ class ContractListItem {
     this.guestMessage,
     this.rejectionReason,
     this.rentalItems,
+    this.recommendedItems,
     this.rentalFee,
     this.maintenanceFee,
     this.cleaningFee,
@@ -242,7 +274,7 @@ class ContractListItem {
     this.subtotal,
     this.totalUsageFee,
     this.deposit,
-    this.hostEarnings,
+    this.hostSettlement,
     this.isEzCleaning,
     this.checkoutStatus,
     this.checkoutStatusLabel,
@@ -283,6 +315,9 @@ class ContractListItem {
       guestMessage: json['guestMessage'],
       rejectionReason: json['rejectionReason'],
       rentalItems: _parseRentalItems(json['rentalItems']),
+      recommendedItems: json['recommendedItems'] != null
+          ? RecommendedItemsInfo.fromJson(json['recommendedItems'] as Map<String, dynamic>)
+          : null,
       // 금액 상세 정보 (호스트용 - 선택적)
       rentalFee: json['rentalFee'] as int?,
       maintenanceFee: json['maintenanceFee'] as int?,
@@ -297,7 +332,9 @@ class ContractListItem {
       subtotal: json['subtotal'] as int?,
       totalUsageFee: json['totalUsageFee'] as int?,
       deposit: json['deposit'] as int?,
-      hostEarnings: json['hostEarnings'] as int?,
+      hostSettlement: json['hostSettlement'] != null
+          ? HostSettlement.fromJson(json['hostSettlement'] as Map<String, dynamic>)
+          : null,
       isEzCleaning: json['isEzCleaning'] as bool?,
       // 퇴실 정보
       checkoutStatus: CheckoutStatus.fromString(
@@ -705,6 +742,55 @@ class RentalItem {
       quantity: quantity ?? this.quantity,
       deliveryStatus: deliveryStatus ?? this.deliveryStatus,
       rentalOrderId: rentalOrderId ?? this.rentalOrderId,
+    );
+  }
+}
+
+/// 호스트가 권장한 옵션 상품 정보 (APPROVED 상태에서 제공)
+class RecommendedItemsInfo {
+  final List<RecommendedItem> items;
+  final int recommendedBy;
+  final DateTime recommendedAt;
+
+  RecommendedItemsInfo({
+    required this.items,
+    required this.recommendedBy,
+    required this.recommendedAt,
+  });
+
+  factory RecommendedItemsInfo.fromJson(Map<String, dynamic> json) {
+    final itemsList = (json['items'] as List? ?? [])
+        .map((e) => RecommendedItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return RecommendedItemsInfo(
+      items: itemsList,
+      recommendedBy: json['recommendedBy'] as int,
+      recommendedAt: DateTime.parse(json['recommendedAt'] as String),
+    );
+  }
+}
+
+class RecommendedItem {
+  final int itemId;
+  final String name;
+  final int price;
+
+  RecommendedItem({
+    required this.itemId,
+    required this.name,
+    required this.price,
+  });
+
+  factory RecommendedItem.fromJson(Map<String, dynamic> json) {
+    int price = 0;
+    final raw = json['price'];
+    if (raw is int) price = raw;
+    else if (raw is double) price = raw.toInt();
+    else if (raw is String) price = double.tryParse(raw)?.toInt() ?? 0;
+    return RecommendedItem(
+      itemId: json['itemId'] as int,
+      name: json['name'] as String,
+      price: price,
     );
   }
 }

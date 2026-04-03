@@ -8,6 +8,7 @@ import '../../widgets/contract/contract_room_info_section.dart';
 import '../../widgets/contract/checkout_status_section.dart';
 import '../../widgets/contract/contract_options_section.dart';
 import '../../widgets/modals/cancel_request_modal.dart';
+import '../../widgets/contract/host_recommendation_banner.dart';
 
 /// 게스트 계약 카드 위젯
 class GuestContractCard extends StatelessWidget {
@@ -213,6 +214,13 @@ class GuestContractCard extends StatelessWidget {
 
           // 액션 버튼: 승인됨 → 결제하기
           if (contract.status == ContractStatus.approved) ...[
+            if (contract.recommendedItems != null &&
+                contract.recommendedItems!.items.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              HostRecommendationBanner(
+                recommendedItems: contract.recommendedItems!,
+              ),
+            ],
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,

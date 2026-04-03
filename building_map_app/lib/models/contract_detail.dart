@@ -90,6 +90,9 @@ class ContractDetail {
   // 취소 요청 여부 (IN_PROGRESS 상태에서 1회 제한)
   final bool cancellationRequested;
 
+  // 호스트 정산 정보 (호스트용)
+  final HostSettlement? hostSettlement;
+
   // 기타
   final bool isEzCleaning;
 
@@ -146,6 +149,7 @@ class ContractDetail {
     this.roomCheckoutTime,
     this.cancellationRequested = false,
     required this.isEzCleaning,
+    this.hostSettlement,
   });
 
   factory ContractDetail.fromJson(Map<String, dynamic> json) {
@@ -327,6 +331,10 @@ class ContractDetail {
       roomCheckoutTime: room?['checkoutTime'] as String? ?? json['roomCheckoutTime'] as String?,
       // 취소 요청 여부
       cancellationRequested: json['cancellationRequested'] as bool? ?? false,
+      // 호스트 정산 정보
+      hostSettlement: json['hostSettlement'] != null
+          ? HostSettlement.fromJson(json['hostSettlement'] as Map<String, dynamic>)
+          : null,
       // 기타
       isEzCleaning: json['isEzCleaning'] as bool? ?? false,
     );

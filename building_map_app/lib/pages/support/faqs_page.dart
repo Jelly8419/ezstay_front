@@ -18,6 +18,8 @@ class _FAQsPageState extends State<FAQsPage> {
 
   List<FAQCategory> _categories = [];
   List<FAQ> _faqs = [];
+  int _totalFaqCount = 0;
+  Map<int, int> _categoryFaqCounts = {};
   int? _selectedCategory;
   int? _expandedFaq;
   String _searchTerm = '';
@@ -32,8 +34,12 @@ class _FAQsPageState extends State<FAQsPage> {
   @override
   void initState() {
     super.initState();
-    _fetchCategories();
-    _fetchFAQs();
+    _fetchInitialData();
+  }
+
+  Future<void> _fetchInitialData() async {
+    await _fetchCategories();
+    await _fetchFAQs(updateCounts: true);
   }
 
   @override
@@ -50,7 +56,8 @@ class _FAQsPageState extends State<FAQsPage> {
 
       if (categories != null) {
         setState(() {
-          _categories = categories;
+          // "전체" 카테고리는 하드코딩 버튼으로 처리하므로 API 목록에서 제외
+          _categories = categories.where((c) => c.name != '전체').toList();
         });
       }
     } catch (e) {
@@ -58,7 +65,7 @@ class _FAQsPageState extends State<FAQsPage> {
     }
   }
 
-  Future<void> _fetchFAQs() async {
+  Future<void> _fetchFAQs({bool updateCounts = false}) async {
     setState(() {
       _loading = true;
       _errorMessage = null;
@@ -72,8 +79,21 @@ class _FAQsPageState extends State<FAQsPage> {
       );
 
       if (faqs != null) {
+        if (updateCounts) {
+          AppLogger.d('[FAQs] faqs.length=${faqs.length}, categoryIds=${faqs.map((f) => f.categoryId).toList()}');
+          AppLogger.d('[FAQs] _categories=${_categories.map((c) => '${c.id}:${c.name}').toList()}');
+        }
         setState(() {
           _faqs = faqs;
+          if (updateCounts) {
+            _totalFaqCount = faqs.length;
+            final countMap = <int, int>{};
+            for (final faq in faqs) {
+              countMap[faq.categoryId] = (countMap[faq.categoryId] ?? 0) + 1;
+            }
+            _categoryFaqCounts = countMap;
+            AppLogger.d('[FAQs] countMap=$countMap');
+          }
         });
       } else {
         setState(() {
@@ -267,14 +287,14 @@ class _FAQsPageState extends State<FAQsPage> {
           padding: const EdgeInsets.only(bottom: 8),
           child: Row(
             children: [
-              _buildCategoryButton(null, '전체'),
+              _buildCategoryButton(null, '전체 ($_totalFaqCount)'),
               const SizedBox(width: 8),
               ..._categories.map((category) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: _buildCategoryButton(
                     category.id,
-                    '${category.name} (${category.faqCount})',
+                    '${category.name} (${_categoryFaqCounts[category.id] ?? 0})',
                   ),
                 );
               }),

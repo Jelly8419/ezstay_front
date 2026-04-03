@@ -75,7 +75,12 @@ Future<void> main() async {
   }
 
   // 한국어 날짜 포맷 초기화 (intl 패키지)
-  await initializeDateFormatting('ko_KR', null);
+  // 웹 DDC 빌드에서 deferred loading 타이밍 이슈로 실패할 수 있으므로 try-catch 처리
+  try {
+    await initializeDateFormatting('ko_KR', null);
+  } catch (e) {
+    AppLogger.w('⚠️ [MAIN] 한국어 날짜 포맷 초기화 실패 (기본 포맷 사용): $e');
+  }
 
   // 웹에서 URL의 '#' 제거 (path 기반 라우팅 사용)
   usePathUrlStrategy();

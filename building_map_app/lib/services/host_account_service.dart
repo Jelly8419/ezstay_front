@@ -3,9 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/exceptions.dart';
 import '../services/auth_service.dart';
+import '../services/kmc_service.dart';
 import '../services/user_profile_service.dart';
 import '../utils/password_validator.dart';
 import '../widgets/common/my_page_dialogs.dart';
+import '../widgets/kmc_webview.dart';
 
 /// 호스트 계정 비즈니스 로직 서비스
 ///
@@ -77,9 +79,42 @@ class HostAccountService {
     }
   }
 
-  /// 연락처 변경 안내 (본인인증 SDK 준비 중)
-  void handlePhoneChange(BuildContext context) {
-    showMyPageInfoDialog(context, '준비 중입니다', '본인인증 기능은 준비 중입니다.');
+  /// 연락처 변경 (KMC 본인인증)
+  ///
+  /// 인증 성공 시 [onSuccess]에 새 전화번호 전달.
+  Future<void> handlePhoneChange(
+    BuildContext context, {
+    required void Function(String newPhone) onSuccess,
+  }) async {
+    try {
+      final requestResult = await KmcService.requestVerification();
+      if (!context.mounted) return;
+
+      final popupResult = await KmcWebViewHelper.openKmcVerification(
+        context: context,
+        requestResult: requestResult,
+      );
+      if (!context.mounted || popupResult == null) return;
+
+      final verifyResult = await KmcService.verifyResult(
+        apiToken: popupResult['apiToken']!,
+        certNum: popupResult['certNum']!,
+      );
+      if (!context.mounted) return;
+
+      if (verifyResult.verified) {
+        onSuccess(verifyResult.phoneNumber);
+        showPhoneChangedDialog(context, verifyResult.phoneNumber);
+      }
+    } on KmcException catch (e) {
+      if (context.mounted) {
+        showMyPageErrorDialog(context, KmcService.getErrorMessage(e.code));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showMyPageErrorDialog(context, '본인인증 중 오류가 발생했습니다.');
+      }
+    }
   }
 
   /// 회원 탈퇴

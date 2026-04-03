@@ -8,6 +8,101 @@ import '../../core/theme/app_text_styles.dart';
 /// 성공/에러/안내 다이얼로그를 top-level 함수로 제공합니다.
 /// 호스트/게스트 마이페이지 모두에서 사용 가능합니다.
 
+/// 휴대폰번호 변경 완료 다이얼로그
+///
+/// 변경된 번호를 강조하여 표시합니다.
+void showPhoneChangedDialog(BuildContext context, String newPhoneNumber) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      contentPadding: EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.xl,
+        AppSpacing.xl,
+        AppSpacing.md,
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.primary500.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.check_circle_rounded,
+              color: AppColors.primary500,
+              size: 32,
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          Text(
+            '휴대폰번호 변경 완료',
+            style: AppTextStyles.headingSmall.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            '휴대폰번호가 변경되었습니다.',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppSpacing.md),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(
+              vertical: AppSpacing.sm,
+              horizontal: AppSpacing.md,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.neutral100,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Text(
+              newPhoneNumber,
+              style: AppTextStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary500,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            ),
+            child: Text(
+              '확인',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.neutral0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 void showMyPageSuccessDialog(BuildContext context, String message) {
   showDialog(
     context: context,

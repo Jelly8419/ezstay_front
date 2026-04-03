@@ -67,7 +67,6 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
     // 첫 번째 호출에서만 데이터 로드
     if (_noticesLoading && _notices.isEmpty) {
       _fetchNotices();
-      _fetchFAQCategories();
       _fetchFAQs();
       _fetchInquiries();
     }
@@ -106,22 +105,6 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
     }
   }
 
-  Future<void> _fetchFAQCategories() async {
-    try {
-      final categories = await _supportService.getFAQCategories(
-        userType: _userMode,
-      );
-
-      if (categories != null) {
-        setState(() {
-          _faqCategories = categories;
-        });
-      }
-    } catch (e) {
-      AppLogger.e('Failed to fetch FAQ categories: $e');
-    }
-  }
-
   Future<void> _fetchFAQs() async {
     setState(() {
       _faqsLoading = true;
@@ -137,6 +120,26 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
       if (faqs != null) {
         setState(() {
           _faqs = faqs;
+          // 전체 조회 시 FAQ 데이터로 카테고리 목록 및 카운트 계산
+          if (_selectedCategory == null) {
+            final countMap = <int, int>{};
+            final categoryMap = <int, FAQCategory>{};
+            for (final faq in faqs) {
+              countMap[faq.categoryId] = (countMap[faq.categoryId] ?? 0) + 1;
+              if (faq.category != null && faq.category!.name != '전체') {
+                categoryMap[faq.categoryId] = faq.category!;
+              }
+            }
+            final categories = categoryMap.values.toList()
+              ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+            _faqCategories = categories.map((cat) => FAQCategory(
+              id: cat.id,
+              name: cat.name,
+              userType: cat.userType,
+              displayOrder: cat.displayOrder,
+              faqCount: countMap[cat.id] ?? 0,
+            )).toList();
+          }
         });
       } else {
         setState(() {

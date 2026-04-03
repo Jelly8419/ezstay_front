@@ -11,6 +11,9 @@ import '../../models/bank_account.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/refund_account_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/kmc_service.dart';
+import '../../widgets/kmc_webview.dart';
+import '../../widgets/common/my_page_dialogs.dart';
 import '../../models/user.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
@@ -40,6 +43,9 @@ class _GuestMyPageState extends State<GuestMyPage> {
 
   // 환급 계좌 정보
   BankAccount? _refundAccount;
+
+  // 연락처 변경 상태
+  bool _isChangingPhone = false;
 
   // 비밀번호 변경 상태
   bool _isEditingPassword = false;
@@ -198,9 +204,53 @@ class _GuestMyPageState extends State<GuestMyPage> {
     }
   }
 
-  /// 연락처 변경 (본인인증 SDK 호출)
-  void _handlePhoneChange() {
-    _showInfoDialog('준비 중입니다', '본인인증 기능은 준비 중입니다.');
+  /// 연락처 변경 (KMC 본인인증)
+  Future<void> _handlePhoneChange() async {
+    setState(() => _isChangingPhone = true);
+    try {
+      final requestResult = await KmcService.requestVerification();
+      if (!mounted) return;
+
+      final popupResult = await KmcWebViewHelper.openKmcVerification(
+        context: context,
+        requestResult: requestResult,
+      );
+      if (!mounted) return;
+
+      if (popupResult == null) {
+        setState(() => _isChangingPhone = false);
+        return;
+      }
+
+      final verifyResult = await KmcService.verifyResult(
+        apiToken: popupResult['apiToken']!,
+        certNum: popupResult['certNum']!,
+      );
+      if (!mounted) return;
+
+      if (verifyResult.verified) {
+        setState(() {
+          _userProfile = _userProfile!.copyWith(
+            phoneNumber: verifyResult.phoneNumber,
+          );
+          _isChangingPhone = false;
+        });
+        showPhoneChangedDialog(context, verifyResult.phoneNumber);
+      } else {
+        setState(() => _isChangingPhone = false);
+        _showErrorDialog('본인인증에 실패했습니다. 다시 시도해주세요.');
+      }
+    } on KmcException catch (e) {
+      if (mounted) {
+        setState(() => _isChangingPhone = false);
+        _showErrorDialog(KmcService.getErrorMessage(e.code));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isChangingPhone = false);
+        _showErrorDialog('본인인증 중 오류가 발생했습니다.');
+      }
+    }
   }
 
   // ──────────────────────────────────────────────
@@ -322,37 +372,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('오류', style: AppTextStyles.headingSmall),
-        content: Text(message, style: AppTextStyles.bodyMedium),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary500,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-            ),
-            child: Text(
-              '확인',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.neutral0,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 정보 다이얼로그
-  void _showInfoDialog(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title, style: AppTextStyles.headingSmall),
         content: Text(message, style: AppTextStyles.bodyMedium),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -900,7 +919,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
       label: '연락처',
       value: _userProfile!.phoneNumber,
       trailing: TextButton(
-        onPressed: _handlePhoneChange,
+        onPressed: _isChangingPhone ? null : _handlePhoneChange,
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary500,
           padding: EdgeInsets.zero,

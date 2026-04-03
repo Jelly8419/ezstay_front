@@ -236,11 +236,17 @@ class _ContractStatusBannerState extends State<ContractStatusBanner> {
         );
 
       case 'PAYMENT_COMPLETED':
-        final checkIn = widget.contract.checkInDate;
+        final checkIn = DateTime.parse(widget.contract.checkInDate);
+        final isPm = checkIn.hour >= 12;
+        final hour12 = checkIn.hour % 12 == 0 ? 12 : checkIn.hour % 12;
+        final minute = checkIn.minute.toString().padLeft(2, '0');
+        final amPm = isPm ? '오후' : '오전';
+        final checkInFormatted =
+            '${checkIn.year}-${checkIn.month.toString().padLeft(2, '0')}-${checkIn.day.toString().padLeft(2, '0')} $amPm ${hour12}시${minute}분';
         return _BannerConfig(
           icon: Icons.check_circle,
           title: '결제가 완료되었습니다',
-          subtitle: '입주일: $checkIn',
+          subtitle: '입주일: $checkInFormatted',
           bgColor: const Color(0xFFF0FDF4), // green-50
           borderColor: const Color(0xFFBBF7D0), // green-200
           iconColor: const Color(0xFF16A34A), // green-600
