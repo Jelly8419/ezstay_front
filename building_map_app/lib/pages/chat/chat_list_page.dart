@@ -50,6 +50,8 @@ class _ChatListPageState extends State<ChatListPage> {
 
   // Firestore 채팅방 메타데이터 실시간 구독
   final List<StreamSubscription<dynamic>> _metadataSubs = [];
+  int _metadataRetryCount = 0;
+  static const int _maxMetadataRetries = 3;
 
   // PC 뷰 heartbeat (채팅창 열려있는 동안 알림톡 차단)
   Timer? _readHeartbeatTimer;
@@ -110,10 +112,20 @@ class _ChatListPageState extends State<ChatListPage> {
   /// whereIn 최대 30개 제한으로 청크 분할
   void _subscribeFirestoreMetadata(int currentUserId) {
     _cancelMetadataSubs();
+    _metadataRetryCount = 0; // 재구독 시작 시 재시도 카운터 리셋
     if (_chatRooms.isEmpty) return;
 
+    // 종료된 방(isReadOnly) 중 이미 읽음 완료(unreadCount==0)는 구독 불필요.
+    // 새 메시지·unreadCount 변화가 없으므로 Firestore reads 낭비만 발생함.
+    final roomsToWatch = _chatRooms.where((r) {
+      if (!r.isReadOnly) return true;        // 활성 방: 항상 구독
+      return (r.unreadCount ?? 0) > 0;       // 종료 방: 미읽음 있을 때만 구독
+    }).toList();
+
+    if (roomsToWatch.isEmpty) return;
+
     const chunkSize = 30;
-    final ids = _chatRooms.map((r) => r.firebaseChatRoomId).toList();
+    final ids = roomsToWatch.map((r) => r.firebaseChatRoomId).toList();
 
     for (var i = 0; i < ids.length; i += chunkSize) {
       final chunk = ids.sublist(i, (i + chunkSize).clamp(0, ids.length));
@@ -127,6 +139,8 @@ class _ChatListPageState extends State<ChatListPage> {
 
         bool changed = false;
         final updatedRooms = List<ChatRoom>.from(_chatRooms);
+        // 순서 재배치가 필요한 방 ID 추적 (lastMessageAt 변경된 경우만)
+        final reorderIds = <String>{};
 
         for (final doc in querySnapshot.docs) {
           final data = doc.data();
@@ -183,23 +197,48 @@ class _ChatListPageState extends State<ChatListPage> {
             unreadCount: effectiveUnreadCount,
           );
           changed = true;
+          // lastMessageAt이 바뀐 방만 순서 재배치 대상
+          if (lastMessageAtChanged) reorderIds.add(chatRoomId);
         }
 
         if (!changed) return;
 
-        updatedRooms.sort((a, b) {
-          final aTime = a.lastMessageAt ?? DateTime(2000);
-          final bTime = b.lastMessageAt ?? DateTime(2000);
-          return bTime.compareTo(aTime);
-        });
+        // 정렬 최적화: lastMessageAt이 변경된 방이 소수(≤2)이면
+        // 전체 sort(O(n log n)) 대신 해당 방만 올바른 위치에 재삽입(O(n))
+        if (reorderIds.isEmpty) {
+          // unreadCount만 바뀐 경우 — 순서 변경 없음
+        } else if (reorderIds.length <= 2) {
+          for (final id in reorderIds) {
+            final roomIdx = updatedRooms.indexWhere((r) => r.firebaseChatRoomId == id);
+            if (roomIdx == -1) continue;
+            final room = updatedRooms.removeAt(roomIdx);
+            final roomTime = room.lastMessageAt ?? DateTime(2000);
+            // 내림차순 정렬이므로 roomTime보다 작은 첫 번째 위치에 삽입
+            final insertIdx = updatedRooms.indexWhere(
+              (r) => (r.lastMessageAt ?? DateTime(2000)).isBefore(roomTime),
+            );
+            updatedRooms.insert(insertIdx == -1 ? updatedRooms.length : insertIdx, room);
+          }
+        } else {
+          // 다수 변경 시 전체 정렬 (드문 케이스)
+          updatedRooms.sort((a, b) {
+            final aTime = a.lastMessageAt ?? DateTime(2000);
+            final bTime = b.lastMessageAt ?? DateTime(2000);
+            return bTime.compareTo(aTime);
+          });
+        }
         setState(() => _chatRooms = updatedRooms);
       }, onError: (e) {
-        if (e is FirebaseException && e.code == 'permission-denied') {
-          AppLogger.w('⚠️ [CHAT_LIST] 메타데이터 권한 없음 — 재인증 후 재구독');
-          _firebaseAuth.signInWithCustomToken().then((_) {
-            if (mounted) _subscribeFirestoreMetadata(currentUserId);
-          }).catchError((err) {
-            AppLogger.e('❌ [CHAT_LIST] 재인증 실패: $err');
+        if (e is FirebaseException && e.code == 'permission-denied' &&
+            _metadataRetryCount < _maxMetadataRetries) {
+          _metadataRetryCount++;
+          AppLogger.w('⚠️ [CHAT_LIST] 메타데이터 권한 없음 — 재인증 시도 $_metadataRetryCount/$_maxMetadataRetries');
+          Future.delayed(Duration(seconds: _metadataRetryCount), () {
+            _firebaseAuth.signInWithCustomToken().then((_) {
+              if (mounted) _subscribeFirestoreMetadata(currentUserId);
+            }).catchError((err) {
+              AppLogger.e('❌ [CHAT_LIST] 재인증 실패: $err');
+            });
           });
           return;
         }

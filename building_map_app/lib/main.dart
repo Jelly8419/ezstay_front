@@ -123,7 +123,7 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authService),
-        ChangeNotifierProvider(create: (_) => GNBProvider()..firebaseInitFuture = firebaseInitFuture),
+        ChangeNotifierProvider(create: (_) => GNBProvider()),
         // 지도 상호작용 조정자 (이벤트 충돌 방지)
         ChangeNotifierProvider(create: (_) => MapInteractionCoordinator()),
         // 지도 검색 상태 보존 (방 상세 진입 후 뒤로가기 시 위치 복원)
