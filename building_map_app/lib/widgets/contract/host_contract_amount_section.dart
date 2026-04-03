@@ -71,7 +71,10 @@ class HostContractAmountSection extends StatelessWidget {
               const SizedBox(height: 6),
               _row('관리비', s.maintenanceFee),
               const SizedBox(height: 6),
-              _cleaningRow(s.cleaningFee),
+              _cleaningRow(
+                displayAmount: contract.cleaningFee,
+                isEzCleaning: s.cleaningFee == 0 && contract.cleaningFee > 0,
+              ),
               if (s.discountAmount > 0) ...[
                 const SizedBox(height: 6),
                 _row('할인', -s.discountAmount, valueColor: const Color(0xFFDC2626)),
@@ -156,7 +159,10 @@ class HostContractAmountSection extends StatelessWidget {
               const SizedBox(height: 6),
               _row('관리비', contract.maintenanceFee),
               const SizedBox(height: 6),
-              _cleaningRow(contract.cleaningFee),
+              _cleaningRow(
+                displayAmount: contract.cleaningFee,
+                isEzCleaning: contract.isEzCleaning,
+              ),
             ],
           ),
         ),
@@ -216,14 +222,14 @@ class HostContractAmountSection extends StatelessWidget {
     );
   }
 
-  Widget _cleaningRow(int amount) {
+  Widget _cleaningRow({required int displayAmount, required bool isEzCleaning}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
             const Text('청소비', style: TextStyle(fontSize: 14, color: Color(0xFF374151))),
-            if (contract.isEzCleaning) ...[
+            if (isEzCleaning) ...[
               const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -236,12 +242,23 @@ class HostContractAmountSection extends StatelessWidget {
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
                 ),
               ),
+              const SizedBox(width: 6),
+              Text(
+                '(정산 제외)',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
             ],
           ],
         ),
         Text(
-          '₩${FormatUtils.formatCurrency(amount)}',
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
+          isEzCleaning
+              ? '(₩${FormatUtils.formatCurrency(displayAmount)})'
+              : '₩${FormatUtils.formatCurrency(displayAmount)}',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: isEzCleaning ? Colors.grey[600]! : const Color(0xFF111827),
+          ),
         ),
       ],
     );
