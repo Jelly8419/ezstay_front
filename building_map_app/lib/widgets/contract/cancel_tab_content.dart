@@ -5,6 +5,7 @@ import '../../core/exceptions.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/rental_order_service.dart';
 import '../../utils/format_utils.dart';
+import '../../utils/price_calculator.dart';
 import '../../widgets/modals/option_refund_modal.dart';
 import 'guest_contract_dialogs.dart';
 import 'order_item_rows.dart';
@@ -52,6 +53,24 @@ class _CancelTabContentState extends State<CancelTabContent> {
     }
     return total;
   }
+
+  int get _totalActiveAmount {
+    int total = 0;
+    for (final order in widget.cancelableOrders) {
+      for (final item in order.items) {
+        if (item.status == 'ACTIVE') {
+          total += item.price * item.quantity;
+        }
+      }
+    }
+    return total;
+  }
+
+  int get _remainingAmountAfterCancel =>
+      _totalActiveAmount - _selectedTotalAmount;
+
+  bool get _hasInvalidRemainingAmount =>
+      PriceCalculator.isInvalidRentalAmount(_remainingAmountAfterCancel);
 
   @override
   void dispose() {
@@ -172,60 +191,82 @@ class _CancelTabContentState extends State<CancelTabContent> {
   Widget _buildFooter() {
     final selectedCount = _selectedIds.length;
     final totalAmount = _selectedTotalAmount;
+    final invalidRemaining = _hasInvalidRemainingAmount;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.neutral200)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '$selectedCount개 선택됨',
-                  style: TextStyle(
-                      fontSize: 13, color: AppColors.neutral600),
+          if (invalidRemaining) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: AppColors.error50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.error500),
+              ),
+              child: Text(
+                PriceCalculator.rentalCancelRemainingErrorMessage(),
+                style: TextStyle(fontSize: 12, color: AppColors.error700),
+              ),
+            ),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$selectedCount개 선택됨',
+                      style: TextStyle(
+                          fontSize: 13, color: AppColors.neutral600),
+                    ),
+                    if (selectedCount > 0)
+                      Text(
+                        '환불 예정: ${FormatUtils.formatCurrency(totalAmount)}원',
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.blue600),
+                      ),
+                  ],
                 ),
-                if (selectedCount > 0)
-                  Text(
-                    '환불 예정: ${FormatUtils.formatCurrency(totalAmount)}원',
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.blue600),
-                  ),
-              ],
-            ),
-          ),
-          OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: AppColors.neutral300),
-            ),
-            child: Text('닫기',
-                style: TextStyle(color: AppColors.neutral600)),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: (selectedCount > 0 && !_isProcessing)
-                ? _submitCancelItems
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.blue600,
-              disabledBackgroundColor: AppColors.neutral300,
-            ),
-            child: _isProcessing
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : const Text('결제 취소',
-                    style: TextStyle(color: Colors.white)),
+              ),
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: AppColors.neutral300),
+                ),
+                child: Text('닫기',
+                    style: TextStyle(color: AppColors.neutral600)),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: (selectedCount > 0 && !_isProcessing && !invalidRemaining)
+                    ? _submitCancelItems
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.blue600,
+                  disabledBackgroundColor: AppColors.neutral300,
+                ),
+                child: _isProcessing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('결제 취소',
+                        style: TextStyle(color: Colors.white)),
+              ),
+            ],
           ),
         ],
       ),
