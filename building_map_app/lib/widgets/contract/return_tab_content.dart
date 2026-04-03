@@ -80,7 +80,7 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
     }
     final orders = widget.returnableOrders;
     if (orders.isEmpty) {
-      return _buildDisabledMsg('반품 가능한 주문이 없습니다.\n(배송 중 또는 배송 완료 상태의 주문만 반품 가능)');
+      return _buildDisabledMsg('반품 가능한 주문이 없습니다.\n(배송 중 또는 배송 완료 상태의 주문만 표시됩니다.)');
     }
     return Column(
       children: [

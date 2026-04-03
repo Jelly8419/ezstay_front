@@ -66,7 +66,7 @@ class _CancelTabContentState extends State<CancelTabContent> {
     }
     final orders = widget.cancelableOrders;
     if (orders.isEmpty) {
-      return _buildDisabledMsg('취소 가능한 주문이 없습니다.\n(배송 전 상태의 주문만 취소 가능)');
+      return _buildDisabledMsg('결제 취소 가능한 주문이 없습니다.\n(결제 취소 가능한 상태의 주문만 표시됩니다.)');
     }
     return Column(
       children: [
