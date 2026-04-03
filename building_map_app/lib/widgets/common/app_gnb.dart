@@ -103,7 +103,11 @@ class _AppGNBState extends State<AppGNB> {
   /// 로고
   Widget _buildLogo(BuildContext context) {
     return InkWell(
-      onTap: () => context.go('/'),
+      onTap: () {
+        final authService = context.read<AuthService>();
+        final isHostMode = authService.currentUser?.mode == UserMode.host;
+        context.go(isHostMode ? '/host' : '/');
+      },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
