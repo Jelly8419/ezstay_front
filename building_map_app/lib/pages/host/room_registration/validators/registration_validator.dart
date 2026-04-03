@@ -227,7 +227,7 @@ class RegistrationValidator {
       if (earlyCheckinDiscountDays != null &&
           earlyCheckinDiscountDays.isNotEmpty) {
         final daysValue = int.tryParse(earlyCheckinDiscountDays);
-        if (daysValue == null || daysValue <= 0) {
+        if (daysValue == null || daysValue < 0) {
           errors.add('올바른 조기 체크인 할인 일 수를 입력해주세요');
         }
       }

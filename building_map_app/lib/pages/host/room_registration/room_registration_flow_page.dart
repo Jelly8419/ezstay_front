@@ -282,25 +282,26 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               roomData['dailyMaintenanceFee']?.toString() ?? '';
           _formData['weeklyMaintenanceFee'] =
               roomData['weeklyMaintenanceFee']?.toString() ?? '';
-          if (roomData['maintenanceInclusions'] != null) {
-            _formData['maintenanceInclusions'] = List<String>.from(
-              roomData['maintenanceInclusions'],
-            );
-          }
+          final inclusions = <String>[];
+          if (roomData['includeElectricity'] == true) inclusions.add('전기세');
+          if (roomData['includeWater'] == true) inclusions.add('수도세');
+          if (roomData['includeGas'] == true) inclusions.add('가스비');
+          if (roomData['includeInternet'] == true) inclusions.add('인터넷');
+          _formData['maintenanceInclusions'] = inclusions;
           _formData['maintenanceDescription'] =
-              roomData['maintenanceDescription'] ?? '';
+              roomData['maintenanceDetail'] ?? '';
           _formData['cleaningFee'] = roomData['cleaningFee']?.toString() ?? '';
           _formData['minContractDays'] =
               roomData['minContractDays']?.toString() ?? '7';
           _formData['refundPolicy'] = roomData['refundPolicy'] ?? '보통';
           _formData['longTermDiscountWeeks'] =
-              roomData['longTermDiscountWeeks']?.toString() ?? '';
+              roomData['longTermWeeks']?.toString() ?? '';
           _formData['longTermDiscountPercent'] =
-              roomData['longTermDiscountPercent']?.toString() ?? '';
+              roomData['longTermDiscount']?.toString() ?? '';
           _formData['earlyCheckinDiscountDays'] =
-              roomData['earlyCheckinDiscountDays'] ?? '';
+              roomData['quickMoveIn']?.toString() ?? '';
           _formData['earlyCheckinDiscountAmount'] =
-              roomData['earlyCheckinDiscountAmount']?.toString() ?? '';
+              roomData['quickMoveInDiscount']?.toString() ?? '';
 
           // Step 4: 이지스테이 관리 서비스 (API ezServices 객체에서 가져오기)
           if (roomData['ezServices'] != null && roomData['ezServices'] is Map) {
@@ -820,20 +821,25 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           'weeklyMaintenanceFee': int.tryParse(
             _formData['weeklyMaintenanceFee'] ?? '',
           ),
-          'maintenanceInclusions': _formData['maintenanceInclusions'] ?? [],
-          'maintenanceDescription': _formData['maintenanceDescription'],
+          'includeElectricity': (_formData['maintenanceInclusions'] as List?)?.contains('전기세') ?? false,
+          'includeWater': (_formData['maintenanceInclusions'] as List?)?.contains('수도세') ?? false,
+          'includeGas': (_formData['maintenanceInclusions'] as List?)?.contains('가스비') ?? false,
+          'includeInternet': (_formData['maintenanceInclusions'] as List?)?.contains('인터넷') ?? false,
+          'maintenanceDetail': _formData['maintenanceDescription'],
           'cleaningFee': int.tryParse(_formData['cleaningFee'] ?? ''),
           'minContractDays': int.tryParse(_formData['minContractDays'] ?? '7'),
           'refundPolicy': _formData['refundPolicy'],
-          'longTermDiscountWeeks': int.tryParse(
-            _formData['longTermDiscountWeeks'] ?? '0',
+          'longTermWeeks': int.tryParse(
+            _formData['longTermDiscountWeeks'] ?? '',
           ),
-          'longTermDiscountPercent': int.tryParse(
-            _formData['longTermDiscountPercent'] ?? '0',
+          'longTermDiscount': int.tryParse(
+            _formData['longTermDiscountPercent'] ?? '',
           ),
-          'earlyCheckinDiscountDays': _formData['earlyCheckinDiscountDays'],
-          'earlyCheckinDiscountAmount': int.tryParse(
-            _formData['earlyCheckinDiscountAmount'] ?? '0',
+          'quickMoveIn': int.tryParse(
+            _formData['earlyCheckinDiscountDays'] ?? '',
+          ),
+          'quickMoveInDiscount': int.tryParse(
+            _formData['earlyCheckinDiscountAmount'] ?? '',
           ),
         };
 

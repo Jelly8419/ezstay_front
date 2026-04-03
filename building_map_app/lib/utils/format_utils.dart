@@ -89,6 +89,15 @@ class FormatUtils {
 
   // ========== 날짜 파싱 ==========
 
+  /// 채팅 메시지 시간 포맷 — 오전/오후 h:mm (예: "오후 2:05")
+  static String formatChatTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? '오후' : '오전';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '$period $displayHour:$minute';
+  }
+
   /// 문자열을 DateTime으로 파싱 (null 안전)
   static DateTime? tryParseDate(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty) return null;

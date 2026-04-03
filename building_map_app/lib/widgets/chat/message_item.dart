@@ -7,6 +7,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../models/chat_message.dart';
 import '../../models/chat_room.dart';
 import '../../utils/contract_utils.dart';
+import '../../utils/format_utils.dart';
 
 /// 채팅 메시지 아이템 위젯
 /// React MessageItem.tsx를 Flutter로 완전 복제
@@ -23,14 +24,6 @@ class MessageItem extends StatelessWidget {
     required this.otherPartyAvatar,
     required this.currentUserId,
   });
-
-  String _formatTime(DateTime date) {
-    final hour = date.hour;
-    final minute = date.minute.toString().padLeft(2, '0');
-    final period = hour >= 12 ? '오후' : '오전';
-    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-    return '$period $displayHour:$minute';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +125,7 @@ class MessageItem extends StatelessWidget {
                   const SizedBox(height: 8), // mt-2
                   // 시간
                   Text(
-                    _formatTime(message.timestamp),
+                    FormatUtils.formatChatTime(message.timestamp),
                     style: AppTextStyles.caption.copyWith(
                       color: AppColors.green600, // text-green-600
                     ),
@@ -161,7 +154,7 @@ class MessageItem extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 4), // mb-1
                 child: Text(
-                  _formatTime(message.timestamp),
+                  FormatUtils.formatChatTime(message.timestamp),
                   style: AppTextStyles.caption.copyWith(
                     color: AppColors.neutral500, // text-gray-500
                   ),
@@ -285,7 +278,7 @@ class MessageItem extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 8), // ml-2
                 child: Text(
-                  _formatTime(message.timestamp),
+                  FormatUtils.formatChatTime(message.timestamp),
                   style: AppTextStyles.caption.copyWith(
                     color: AppColors.neutral500, // text-gray-500
                   ),

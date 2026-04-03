@@ -94,10 +94,13 @@ class ChatListItem extends StatelessWidget {
                     // Row 2: Other party name + Status badge
                     Row(
                       children: [
-                        Text(
-                          otherUserName,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.gray600, // text-gray-600
+                        Flexible(
+                          child: Text(
+                            otherUserName,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.gray600, // text-gray-600
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 8), // gap-2
