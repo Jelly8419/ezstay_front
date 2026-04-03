@@ -24,6 +24,7 @@ class _GuestPreparationModalState extends State<GuestPreparationModal> {
 
   List<RentalItem> _availableItems = [];
   final Set<int> _selectedItemIds = {};
+  bool _noneOption = false;
   bool _isSubmitting = false;
   bool _isLoading = true;
   String? _errorMessage;
@@ -68,8 +69,16 @@ class _GuestPreparationModalState extends State<GuestPreparationModal> {
     }
   }
 
+  void _toggleNone() {
+    setState(() {
+      _noneOption = !_noneOption;
+      if (_noneOption) _selectedItemIds.clear();
+    });
+  }
+
   void _toggleItem(int itemId) {
     setState(() {
+      _noneOption = false;
       if (_selectedItemIds.contains(itemId)) {
         _selectedItemIds.remove(itemId);
       } else {
@@ -78,8 +87,10 @@ class _GuestPreparationModalState extends State<GuestPreparationModal> {
     });
   }
 
+  bool get _canSubmit => _noneOption || _selectedItemIds.isNotEmpty;
+
   void _handleSubmit() {
-    if (_selectedItemIds.isEmpty) return;
+    if (!_canSubmit) return;
     widget.onConfirm(_selectedItemIds.toList());
   }
 
@@ -170,46 +181,98 @@ class _GuestPreparationModalState extends State<GuestPreparationModal> {
                       ),
                     ),
                   )
-                else if (_availableItems.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(40),
-                      child: Text(
-                        '옵션이 없습니다.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF6B7280),
-                        ),
-                      ),
-                    ),
-                  )
                 else
-                  // 2열 그리드
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 2.5,
-                    ),
-                    itemCount: _availableItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _availableItems[index];
-                      final isSelected = _selectedItemIds.contains(item.id);
+                  // 2열 그리드 + 없음 옵션
+                  Column(
+                    children: [
+                      if (_availableItems.isNotEmpty)
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 2.5,
+                          ),
+                          itemCount: _availableItems.length,
+                          itemBuilder: (context, index) {
+                            final item = _availableItems[index];
+                            final isSelected =
+                                _selectedItemIds.contains(item.id);
 
-                      return GestureDetector(
-                        onTap: () => _toggleItem(item.id),
+                            return GestureDetector(
+                              onTap: () => _toggleItem(item.id),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFFEFF6FF)
+                                      : Colors.white,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFF3B82F6)
+                                        : const Color(0xFFE5E7EB),
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // 체크박스
+                                    Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? const Color(0xFF2563EB)
+                                            : Colors.white,
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? const Color(0xFF2563EB)
+                                              : const Color(0xFFD1D5DB),
+                                          width: 2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: isSelected
+                                          ? const Icon(Icons.check,
+                                              size: 12, color: Colors.white)
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    // 아이템 이름
+                                    Expanded(
+                                      child: Text(
+                                        item.name,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF111827),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      const SizedBox(height: 12),
+                      // 없음 옵션
+                      GestureDetector(
+                        onTap: _toggleNone,
                         child: Container(
+                          width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: isSelected
+                            color: _noneOption
                                 ? const Color(0xFFEFF6FF)
                                 : Colors.white,
                             border: Border.all(
-                              color: isSelected
+                              color: _noneOption
                                   ? const Color(0xFF3B82F6)
                                   : const Color(0xFFE5E7EB),
                               width: 2,
@@ -218,67 +281,59 @@ class _GuestPreparationModalState extends State<GuestPreparationModal> {
                           ),
                           child: Row(
                             children: [
-                              // 체크박스
                               Container(
                                 width: 16,
                                 height: 16,
                                 decoration: BoxDecoration(
-                                  color: isSelected
+                                  color: _noneOption
                                       ? const Color(0xFF2563EB)
                                       : Colors.white,
                                   border: Border.all(
-                                    color: isSelected
+                                    color: _noneOption
                                         ? const Color(0xFF2563EB)
                                         : const Color(0xFFD1D5DB),
                                     width: 2,
                                   ),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: isSelected
+                                child: _noneOption
                                     ? const Icon(Icons.check,
                                         size: 12, color: Colors.white)
                                     : null,
                               ),
                               const SizedBox(width: 8),
-                              // 아이템 이름
-                              Expanded(
-                                child: Text(
-                                  item.name,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF111827),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
+                              const Text(
+                                '없음',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF111827),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 const SizedBox(height: 24),
 
                 // 버튼
                 Row(
                   children: [
-                    // 자동 안내 버튼
+                    // 확인 버튼
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: (_isSubmitting ||
-                                _isLoading ||
-                                _errorMessage != null ||
-                                _selectedItemIds.isEmpty)
+                        onPressed: (_isSubmitting || _isLoading || !_canSubmit)
                             ? null
                             : _handleSubmit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedItemIds.isEmpty
-                              ? const Color(0xFFD1D5DB)
-                              : const Color(0xFF2563EB),
-                          foregroundColor: _selectedItemIds.isEmpty
-                              ? const Color(0xFF6B7280)
-                              : Colors.white,
+                          backgroundColor: _canSubmit
+                              ? const Color(0xFF2563EB)
+                              : const Color(0xFFD1D5DB),
+                          foregroundColor: _canSubmit
+                              ? Colors.white
+                              : const Color(0xFF6B7280),
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -296,7 +351,7 @@ class _GuestPreparationModalState extends State<GuestPreparationModal> {
                                 ),
                               )
                             : const Text(
-                                '자동 안내',
+                                '확인',
                                 style: TextStyle(
                                     fontSize: 16, fontWeight: FontWeight.bold),
                               ),
