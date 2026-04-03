@@ -81,7 +81,11 @@ class ChatRoom {
     );
   }
 
-  ChatRoom copyWith({int? unreadCount}) {
+  ChatRoom copyWith({
+    int? unreadCount,
+    String? lastMessage,
+    DateTime? lastMessageAt,
+  }) {
     return ChatRoom(
       id: id,
       contractId: contractId,
@@ -90,14 +94,14 @@ class ChatRoom {
       guestId: guestId,
       roomId: roomId,
       isActive: isActive,
-      lastMessageAt: lastMessageAt,
+      lastMessageAt: lastMessageAt ?? this.lastMessageAt,
       createdAt: createdAt,
       updatedAt: updatedAt,
       contract: contract,
       room: room,
       host: host,
       guest: guest,
-      lastMessage: lastMessage,
+      lastMessage: lastMessage ?? this.lastMessage,
       unreadCount: unreadCount ?? this.unreadCount,
       isReadOnly: isReadOnly,
       readOnlyReason: readOnlyReason,

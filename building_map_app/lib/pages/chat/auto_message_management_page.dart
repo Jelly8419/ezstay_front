@@ -6,6 +6,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../models/auto_message_template.dart';
 import '../../services/auto_message_service.dart';
 import '../../widgets/chat/auto_message_form_modal.dart';
+import '../../widgets/chat/auto_message_list_item.dart';
 
 /// 자동메시지 관리 페이지
 /// React AutoMessageManagement.tsx를 Flutter로 완전 복제
@@ -357,190 +358,15 @@ class _AutoMessageManagementPageState extends State<AutoMessageManagementPage> {
       children: _templates
           .map((template) => Padding(
                 padding: const EdgeInsets.only(bottom: 16), // space-y-4
-                child: _buildTemplateCard(template),
+                child: AutoMessageListItem(
+                  template: template,
+                  onToggle: () => _handleToggle(template.id),
+                  onEdit: () => _handleEdit(template),
+                  onDelete: () => _handleDelete(template.id),
+                ),
               ))
           .toList(),
     );
   }
 
-  /// 템플릿 카드 (React: bg-white rounded-lg border border-gray-200 p-4 sm:p-6)
-  Widget _buildTemplateCard(AutoMessageTemplate template) {
-    return Container(
-      padding: const EdgeInsets.all(16), // p-4
-      decoration: BoxDecoration(
-        color: AppColors.neutral0, // bg-white
-        border: Border.all(color: AppColors.gray200), // border border-gray-200
-        borderRadius: BorderRadius.circular(8), // rounded-lg
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header (React: flex items-start justify-between mb-4)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title and status (React: flex items-center gap-3 mb-2)
-                    Row(
-                      children: [
-                        Text(
-                          template.title,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.neutral900, // text-gray-900
-                            fontWeight: FontWeight.bold, // font-bold
-                          ),
-                        ),
-                        const SizedBox(width: 12), // gap-3
-                        // Status badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8, // px-2
-                            vertical: 4, // py-1
-                          ),
-                          decoration: BoxDecoration(
-                            color: template.isActive
-                                ? AppColors.green100 // bg-green-100
-                                : AppColors.neutral100, // bg-gray-100
-                            borderRadius: BorderRadius.circular(4), // rounded
-                          ),
-                          child: Text(
-                            template.isActive ? 'ON' : 'OFF',
-                            style: AppTextStyles.caption.copyWith(
-                              color: template.isActive
-                                  ? AppColors.success700 // text-green-800
-                                  : AppColors.neutral600, // text-gray-600
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8), // mb-2
-
-                    // Trigger info (React: text-sm text-gray-600 mb-2)
-                    Text(
-                      '발송 시점: ${template.trigger.displayText}',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.neutral600, // text-gray-600
-                      ),
-                    ),
-                    const SizedBox(height: 8), // mb-2
-
-                    // Property count (React: text-sm text-gray-600)
-                    Text(
-                      '적용된 방: ${template.appliedProperties.length}개',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.neutral600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Toggle switch (React: flex items-center gap-2)
-              Switch(
-                value: template.isActive,
-                onChanged: (_) => _handleToggle(template.id),
-                activeTrackColor: AppColors.blue600, // peer-checked:bg-blue-600
-                inactiveTrackColor: AppColors.gray200, // bg-gray-200
-              ),
-            ],
-          ),
-          const SizedBox(height: 16), // mb-4
-
-          // Content preview (React: bg-gray-50 rounded-lg p-3 mb-4)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12), // p-3
-            decoration: BoxDecoration(
-              color: AppColors.gray50, // bg-gray-50
-              borderRadius: BorderRadius.circular(8), // rounded-lg
-            ),
-            child: Text(
-              template.content,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.neutral700, // text-gray-700
-              ),
-            ),
-          ),
-          const SizedBox(height: 16), // mb-4
-
-          // Action buttons (React: flex gap-2)
-          Row(
-            children: [
-              // Edit button (React: flex items-center gap-2 px-3 py-2 text-sm bg-gray-100)
-              InkWell(
-                onTap: () => _handleEdit(template),
-                borderRadius: BorderRadius.circular(8), // rounded-lg
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12, // px-3
-                    vertical: 8, // py-2
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.neutral100, // bg-gray-100
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.edit_outlined, // Edit2
-                        size: 16, // w-4 h-4
-                        color: AppColors.neutral700, // text-gray-700
-                      ),
-                      const SizedBox(width: 8), // gap-2
-                      Text(
-                        '수정',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.neutral700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8), // gap-2
-
-              // Delete button (React: flex items-center gap-2 px-3 py-2 text-sm bg-red-50)
-              InkWell(
-                onTap: () => _handleDelete(template.id),
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.error50, // bg-red-50
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.delete_outline, // Trash2
-                        size: 16,
-                        color: AppColors.error600, // text-red-600
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '삭제',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.error600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
