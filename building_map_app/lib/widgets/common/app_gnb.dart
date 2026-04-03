@@ -41,8 +41,7 @@ class _AppGNBState extends State<AppGNB> {
           final userId = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
           // 비동기로 미확인 알림/채팅 체크 + Firestore 실시간 구독 시작 (UI 블로킹 없음)
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            gnbProvider.checkGnbBadgeStatus(userMode);
-            if (userId != 0) gnbProvider.startChatUnreadWatch(userId);
+            if (userId != 0) gnbProvider.startChatUnreadWatch(userId, userMode: userMode);
           });
         }
 
@@ -352,8 +351,7 @@ class _AppGNBState extends State<AppGNB> {
                     // 모드 전환 후 배지 상태 재체크 + 실시간 구독 재시작
                     if (context.mounted) {
                       final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
-                      context.read<GNBProvider>().checkGnbBadgeStatus('host');
-                      if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid);
+                      if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid, userMode: 'host');
                       context.go('/host');
                     }
                     return;
@@ -384,8 +382,7 @@ class _AppGNBState extends State<AppGNB> {
                 // 모드 전환 후 배지 상태 재체크 + 실시간 구독 재시작
                 final newUserMode = isCurrentlyHostMode ? 'guest' : 'host';
                 final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
-                context.read<GNBProvider>().checkGnbBadgeStatus(newUserMode);
-                if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid);
+                if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid, userMode: newUserMode);
                 final route = isCurrentlyHostMode ? '/' : '/host';
                 context.go(route);
               }

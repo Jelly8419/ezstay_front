@@ -8,6 +8,11 @@
 
 | 이슈 | 파일 | 처리 |
 |---|---|---|
+| Firestore reads 폭발 — GNBProvider 컬렉션 전체 구독 | `gnb_provider.dart`, `app_gnb.dart`, `main.dart` | ✅ REST API 30초 폴링으로 교체 |
+| Firestore reads 폭발 — 종료 채팅방 불필요 구독 | `chat_list_page.dart` | ✅ isReadOnly && unreadCount==0 방 구독 제외 |
+| `getMessages()` 무한 재시도 루프 | `chat_service.dart` | ✅ 최대 3회 + 지수 백오프(1s/2s/3s) |
+| 메타데이터 구독 onError 무한 재시도 | `chat_list_page.dart` | ✅ 최대 3회 + 지연 재구독, 성공 시 카운터 리셋 |
+| 스냅샷 수신마다 전체 sort O(n log n) | `chat_list_page.dart` | ✅ 변경 방 ≤2개 시 삽입 정렬 O(n)으로 최적화 |
 | lastMessage 수신자 미갱신 (변경 감지 AND→OR) | `chat_list_page.dart` | ✅ |
 | unreadCount 타입 캐스팅 Stream 종료 | `chat_list_page.dart` | ✅ |
 | unreadCount 비원자적 처리 | `chat_service.dart` | ✅ FieldValue.increment |

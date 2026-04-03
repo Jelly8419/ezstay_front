@@ -313,8 +313,12 @@ class ChatService {
 
   /// 메시지 수신 (Firestore - 실시간 스트림)
   /// permission-denied 발생 시 재인증 후 자동 재구독 (ID Token 만료 대응)
+  /// 최대 3회 재시도, 지수 백오프(1s/2s/3s) 적용 — 무한 루프 방지
   Stream<List<ChatMessage>> getMessages(String chatRoomId) async* {
-    while (true) {
+    int retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount <= maxRetries) {
       try {
         await _firebaseAuth.ensureAuthenticated();
 
@@ -333,17 +337,20 @@ class ChatService {
             }
           }
           yield messages;
+          retryCount = 0; // 정상 수신 시 재시도 카운터 리셋
         }
 
         // 스트림이 정상 종료되면 루프 탈출
         break;
       } on FirebaseException catch (e) {
-        if (e.code == 'permission-denied') {
-          AppLogger.w('⚠️ [CHAT] 메시지 읽기 권한 없음 — 재인증 후 재구독: $chatRoomId');
+        if (e.code == 'permission-denied' && retryCount < maxRetries) {
+          retryCount++;
+          AppLogger.w('⚠️ [CHAT] 메시지 읽기 권한 없음 — 재인증 시도 $retryCount/$maxRetries: $chatRoomId');
           await _firebaseAuth.signInWithCustomToken();
-          continue; // 재구독
+          await Future.delayed(Duration(seconds: retryCount)); // 1s, 2s, 3s
+          continue;
         }
-        AppLogger.e('❌ [CHAT] 메시지 스트림 에러: $e');
+        AppLogger.e('❌ [CHAT] 메시지 스트림 포기 (재시도 $retryCount회): $e');
         break;
       } catch (e) {
         AppLogger.e('❌ [CHAT] 메시지 스트림 에러: $e');
