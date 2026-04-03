@@ -1,17 +1,18 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/chat_room.dart';
 import '../../models/chat_message.dart';
+import '../../services/firebase_auth_service.dart';
 import '../system_message_bubble.dart';
 import 'message_item.dart';
-import '../../utils/contract_utils.dart';
+import 'chat_read_only_banner.dart';
+import 'chat_input_bar.dart';
+import 'chat_window_header.dart';
 
 /// 채팅 윈도우 위젯
 /// React ChatWindow.tsx를 Flutter로 완전 복제
@@ -41,17 +42,20 @@ class _ChatWindowState extends State<ChatWindow> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
+  final FirebaseAuthService _firebaseAuth = FirebaseAuthService();
   final List<XFile> _selectedImages = [];
   bool _hasText = false;
   bool _isSending = false;
 
   // 채팅 쓰기 제한 상태
-  bool _isWriteLocked = false;
+  // REST API의 isReadOnly로 초기값 설정 → Firestore 구독으로 실시간 업데이트
+  late bool _isWriteLocked;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _writeLockSub;
 
   @override
   void initState() {
     super.initState();
+    _isWriteLocked = widget.chatRoom?.isReadOnly ?? false;
     _subscribeWriteLock();
   }
 
@@ -61,6 +65,8 @@ class _ChatWindowState extends State<ChatWindow> {
     // 채팅방이 바뀌면 구독 갱신
     if (widget.chatRoom?.firebaseChatRoomId !=
         oldWidget.chatRoom?.firebaseChatRoomId) {
+      // 채팅방 변경 시 즉시 REST API 값으로 초기화 후 Firestore 구독
+      setState(() => _isWriteLocked = widget.chatRoom?.isReadOnly ?? false);
       _subscribeWriteLock();
     }
     if (widget.messages.length != oldWidget.messages.length) {
@@ -69,6 +75,7 @@ class _ChatWindowState extends State<ChatWindow> {
   }
 
   /// chatWritableUntil 실시간 구독
+  /// permission-denied 발생 시 재인증 후 자동 재구독 (ID Token 만료 대응)
   void _subscribeWriteLock() {
     _writeLockSub?.cancel();
     final chatRoomId = widget.chatRoom?.firebaseChatRoomId;
@@ -83,12 +90,26 @@ class _ChatWindowState extends State<ChatWindow> {
       final data = doc.data();
       final writableUntil =
           (data?['chatWritableUntil'] as Timestamp?)?.toDate();
-      final locked =
+      // chatWritableUntil이 있고 만료된 경우에만 Firestore로 잠금
+      // 필드가 없으면 REST API의 isReadOnly 값을 그대로 유지
+      final firestoreLocked =
           writableUntil != null && DateTime.now().isAfter(writableUntil);
+      final restLocked = widget.chatRoom?.isReadOnly ?? false;
+      final locked = firestoreLocked || restLocked;
       if (locked != _isWriteLocked) {
         setState(() => _isWriteLocked = locked);
       }
     }, onError: (e) {
+      if (e is FirebaseException && e.code == 'permission-denied') {
+        AppLogger.w('⚠️ [CHAT_WINDOW] writeLock 권한 없음 — 재인증 후 재구독');
+        // 재인증 후 재구독
+        _firebaseAuth.signInWithCustomToken().then((_) {
+          if (mounted) _subscribeWriteLock();
+        }).catchError((err) {
+          AppLogger.e('❌ [CHAT_WINDOW] 재인증 실패: $err');
+        });
+        return;
+      }
       AppLogger.w('⚠️ [CHAT_WINDOW] writeLock 구독 에러: $e');
     });
   }
@@ -214,7 +235,13 @@ class _ChatWindowState extends State<ChatWindow> {
       child: Column(
         children: [
           // Header with Contract Info
-          _buildHeader(isDesktop),
+          ChatWindowHeader(
+            chatRoom: widget.chatRoom!,
+            currentUserId: widget.currentUserId,
+            onOpenContractInfo: widget.onOpenContractInfo,
+            onBack: widget.onBack,
+            isDesktop: isDesktop,
+          ),
 
           // Contract Period Banner
           _buildContractPeriodBanner(),
@@ -225,7 +252,24 @@ class _ChatWindowState extends State<ChatWindow> {
           ),
 
           // Input Area
-          _buildInputArea(),
+          if (_isWriteLocked)
+            const ChatReadOnlyBanner()
+          else
+            ChatInputBar(
+              messageController: _messageController,
+              selectedImages: _selectedImages,
+              isSending: _isSending,
+              hasText: _hasText,
+              onImageSelect: _handleImageSelect,
+              onSend: _handleSend,
+              onTextChanged: (value) {
+                final hasText = value.trim().isNotEmpty;
+                if (hasText != _hasText) {
+                  setState(() => _hasText = hasText);
+                }
+              },
+              onRemoveImage: _handleRemoveImage,
+            ),
         ],
       ),
     );
@@ -240,150 +284,6 @@ class _ChatWindowState extends State<ChatWindow> {
           '채팅방을 선택해주세요',
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.neutral500, // text-gray-500
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 헤더 위젯
-  Widget _buildHeader(bool isDesktop) {
-    final otherUser = widget.chatRoom!.getOtherUser(widget.currentUserId);
-    final otherUserName = widget.chatRoom!.getOtherUserName(widget.currentUserId);
-    final otherUserAvatar = otherUser?.profileImageUrl ?? '';
-    final propertyTitle = widget.chatRoom!.getRoomDisplayName();
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.neutral0, // bg-white
-        border: Border(
-          bottom: BorderSide(color: AppColors.gray200, width: 1), // border-gray-200
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: isDesktop ? 24 : 16, // px-4 sm:px-6
-          vertical: 16, // py-4
-        ),
-        child: Row(
-          children: [
-            // Mobile Back Button
-            if (widget.onBack != null && !isDesktop) ...[
-              IconButton(
-                onPressed: widget.onBack,
-                icon: const Icon(Icons.arrow_back),
-                color: AppColors.gray900,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-              ),
-              const SizedBox(width: 8),
-            ],
-
-            // Avatar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(9999), // rounded-full
-              child: otherUserAvatar.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: ContractUtils.getFullImageUrl(otherUserAvatar),
-                      width: isDesktop ? 40 : 32, // w-8 sm:w-10
-                      height: isDesktop ? 40 : 32, // h-8 sm:h-10
-                      fit: BoxFit.cover,
-                      placeholder: (ctx, url) => _buildAvatarPlaceholder(isDesktop),
-                      errorWidget: (ctx, url, error) => _buildAvatarPlaceholder(isDesktop),
-                    )
-                  : _buildAvatarPlaceholder(isDesktop),
-            ),
-            const SizedBox(width: 12), // gap-3
-
-            // Title and Name
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          propertyTitle,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.gray900, // text-gray-900
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      // PC Web: 계약정보 버튼을 방 제목 옆에 배치
-                      if (isDesktop) ...[
-                        const SizedBox(width: 8), // gap-2
-                        _buildContractInfoButton(compact: true),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    otherUserName,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.gray600, // text-gray-600
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-
-            // Mobile: 계약정보 버튼을 오른쪽에 배치
-            if (!isDesktop) _buildContractInfoButton(compact: false),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAvatarPlaceholder(bool isDesktop) {
-    final size = isDesktop ? 40.0 : 32.0;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: AppColors.neutral200,
-        borderRadius: BorderRadius.circular(9999),
-      ),
-      child: const Icon(Icons.person, size: 20, color: AppColors.neutral500),
-    );
-  }
-
-  /// 계약정보 버튼
-  Widget _buildContractInfoButton({required bool compact}) {
-    return Material(
-      color: AppColors.neutral100, // bg-gray-100
-      borderRadius: BorderRadius.circular(8), // rounded-lg
-      child: InkWell(
-        onTap: widget.onOpenContractInfo,
-        borderRadius: BorderRadius.circular(8),
-        hoverColor: AppColors.gray200, // hover:bg-gray-200
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: 12, // px-3
-            vertical: compact ? 6 : 8, // py-1.5 : py-2
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.description,
-                size: 16, // w-4 h-4
-                color: AppColors.gray600, // text-gray-600
-              ),
-              const SizedBox(width: 6), // gap-1.5
-              Text(
-                '계약정보',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
           ),
         ),
       ),
@@ -409,10 +309,13 @@ class _ChatWindowState extends State<ChatWindow> {
             color: AppColors.blue600, // text-blue-600
           ),
           const SizedBox(width: 8), // gap-2
-          Text(
-            '계약 기간: ${_formatContractPeriod()}',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.blue900, // text-blue-900
+          Expanded(
+            child: Text(
+              '계약 기간: ${_formatContractPeriod()}',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.blue900, // text-blue-900
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -476,199 +379,6 @@ class _ChatWindowState extends State<ChatWindow> {
     );
   }
 
-  /// 입력 영역
-  Widget _buildInputArea() {
-    // 쓰기 제한된 채팅방 — 입력창 대신 잠금 배너 표시
-    if (_isWriteLocked) {
-      return Container(
-        decoration: const BoxDecoration(
-          color: AppColors.neutral0,
-          border: Border(
-            top: BorderSide(color: AppColors.gray200, width: 1),
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.lock_outline, size: 16, color: AppColors.neutral400),
-            const SizedBox(width: 8),
-            Text(
-              '종료된 계약의 채팅방입니다. 메시지를 보낼 수 없습니다.',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.neutral400,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.neutral0, // bg-white
-        border: Border(
-          top: BorderSide(color: AppColors.gray200, width: 1), // border-gray-200
-        ),
-      ),
-      padding: const EdgeInsets.all(12), // p-3 sm:p-4
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // 이미지 첨부 버튼
-              IconButton(
-                onPressed: _isSending ? null : _handleImageSelect,
-                icon: const Icon(Icons.attach_file),
-                color: _isSending ? AppColors.gray300 : AppColors.gray600,
-                padding: const EdgeInsets.all(10), // p-2.5
-              ),
-
-              // 메시지 입력 필드
-              Expanded(
-                child: TextField(
-                  controller: _messageController,
-                  maxLines: null,
-                  minLines: 1,
-                  keyboardType: TextInputType.multiline,
-                  textInputAction: TextInputAction.send,
-                  onChanged: (value) {
-                    final hasText = value.trim().isNotEmpty;
-                    if (hasText != _hasText) {
-                      setState(() => _hasText = hasText);
-                    }
-                  },
-                  onSubmitted: (_) => _handleSend(),
-                  decoration: InputDecoration(
-                    hintText: '메시지를 입력하세요...',
-                    hintStyle: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.neutral400,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.neutral0,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, // px-3 sm:px-4
-                      vertical: 12, // py-2 sm:py-3
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8), // rounded-lg
-                      borderSide: const BorderSide(color: AppColors.gray300), // border-gray-300
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.gray300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.blue500, width: 2), // focus:ring-2 focus:ring-blue-500
-                    ),
-                    constraints: const BoxConstraints(
-                      minHeight: 44, // minHeight: '44px'
-                      maxHeight: 120, // maxHeight: '120px'
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8), // gap-2
-
-              // 전송 버튼
-              Material(
-                color: (_hasText || _selectedImages.isNotEmpty) && !_isSending
-                    ? AppColors.blue600 // bg-blue-600
-                    : AppColors.gray300, // disabled:bg-gray-300
-                borderRadius: BorderRadius.circular(8), // rounded-lg
-                child: InkWell(
-                  onTap: (_hasText || _selectedImages.isNotEmpty) && !_isSending
-                      ? _handleSend
-                      : null,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10), // p-2.5
-                    child: _isSending
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.neutral0),
-                            ),
-                          )
-                        : const Icon(
-                            Icons.send,
-                            size: 20, // w-5 h-5
-                            color: AppColors.neutral0, // text-white
-                          ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // 이미지 미리보기
-          if (_selectedImages.isNotEmpty) ...[
-            const SizedBox(height: 12), // mt-3
-            SizedBox(
-              height: 72, // w-16 h-16 + padding
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _selectedImages.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 8), // gap-2
-                itemBuilder: (context, index) {
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8), // rounded-lg
-                        child: FutureBuilder<Uint8List>(
-                          future: _selectedImages[index].readAsBytes(),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData) {
-                              return Image.memory(
-                                snapshot.data!,
-                                width: 64, // w-16
-                                height: 64, // h-16
-                                fit: BoxFit.cover,
-                              );
-                            }
-                            return Container(
-                              width: 64,
-                              height: 64,
-                              color: AppColors.neutral200,
-                              child: const Icon(Icons.image, size: 24, color: AppColors.neutral500),
-                            );
-                          },
-                        ),
-                      ),
-                      Positioned(
-                        top: 4, // top-1
-                        right: 4, // right-1
-                        child: GestureDetector(
-                          onTap: () => _handleRemoveImage(index),
-                          child: Container(
-                            padding: const EdgeInsets.all(4), // p-1
-                            decoration: BoxDecoration(
-                              color: AppColors.neutral500, // bg-gray-500
-                              borderRadius: BorderRadius.circular(9999), // rounded-full
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              size: 16, // w-4 h-4
-                              color: AppColors.neutral0, // text-white
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 }
 
 /// 메시지 그룹 (날짜별)

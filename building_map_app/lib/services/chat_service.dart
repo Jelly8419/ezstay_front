@@ -11,6 +11,11 @@ import 'api_client.dart';
 import 'token_service.dart';
 import '../config/api_config.dart';
 
+/// Firestore permission-denied 에러 (계약 종료된 채팅방에 메시지 전송 시)
+class ChatPermissionDeniedException implements Exception {
+  const ChatPermissionDeniedException();
+}
+
 /// 채팅 서비스
 /// - Firestore: 실시간 메시지 전송/수신
 /// - 백엔드 API: 채팅방 메타데이터 관리
@@ -74,8 +79,6 @@ class ChatService {
       final List<dynamic> roomsJson = data['data']['chatRooms'];
       final chatRooms = roomsJson.map((json) => ChatRoom.fromJson(json)).toList();
 
-      for (final room in chatRooms) {
-      }
       return chatRooms;
     } catch (e) {
       AppLogger.e('❌ [CHAT] 채팅방 목록 조회 실패: $e');
@@ -213,6 +216,9 @@ class ChatService {
       );
 
     } catch (e) {
+      if (e is FirebaseException && e.code == 'permission-denied') {
+        throw const ChatPermissionDeniedException();
+      }
       AppLogger.e('❌ [CHAT] 메시지 전송 실패: $e');
       rethrow;
     }
@@ -306,24 +312,44 @@ class ChatService {
   }
 
   /// 메시지 수신 (Firestore - 실시간 스트림)
-  Stream<List<ChatMessage>> getMessages(String chatRoomId) {
-    return _firestore
-        .collection('chatRooms')
-        .doc(chatRoomId)
-        .collection('messages')
-        .orderBy('timestamp', descending: false)
-        .snapshots()
-        .map((snapshot) {
-      final messages = <ChatMessage>[];
-      for (final doc in snapshot.docs) {
-        try {
-          messages.add(ChatMessage.fromFirestore(doc));
-        } catch (e) {
-          AppLogger.w('⚠️ [CHAT] 메시지 파싱 실패 (docId: ${doc.id}): $e');
+  /// permission-denied 발생 시 재인증 후 자동 재구독 (ID Token 만료 대응)
+  Stream<List<ChatMessage>> getMessages(String chatRoomId) async* {
+    while (true) {
+      try {
+        await _firebaseAuth.ensureAuthenticated();
+
+        await for (final snapshot in _firestore
+            .collection('chatRooms')
+            .doc(chatRoomId)
+            .collection('messages')
+            .orderBy('timestamp', descending: false)
+            .snapshots()) {
+          final messages = <ChatMessage>[];
+          for (final doc in snapshot.docs) {
+            try {
+              messages.add(ChatMessage.fromFirestore(doc));
+            } catch (e) {
+              AppLogger.w('⚠️ [CHAT] 메시지 파싱 실패 (docId: ${doc.id}): $e');
+            }
+          }
+          yield messages;
         }
+
+        // 스트림이 정상 종료되면 루프 탈출
+        break;
+      } on FirebaseException catch (e) {
+        if (e.code == 'permission-denied') {
+          AppLogger.w('⚠️ [CHAT] 메시지 읽기 권한 없음 — 재인증 후 재구독: $chatRoomId');
+          await _firebaseAuth.signInWithCustomToken();
+          continue; // 재구독
+        }
+        AppLogger.e('❌ [CHAT] 메시지 스트림 에러: $e');
+        break;
+      } catch (e) {
+        AppLogger.e('❌ [CHAT] 메시지 스트림 에러: $e');
+        break;
       }
-      return messages;
-    });
+    }
   }
 
   /// 읽음 처리 (Firestore)
@@ -340,6 +366,11 @@ class ChatService {
         'unreadCount.$userId': 0,
       });
     } catch (e) {
+      if (e is FirebaseException && e.code == 'permission-denied') {
+        // 잠금/비활성 채팅방은 쓰기 규칙에서 거부 — 정상 케이스이므로 무시
+        AppLogger.w('⚠️ [CHAT] 읽음 처리 권한 없음 (잠금 채팅방): $chatRoomId');
+        return;
+      }
       AppLogger.e('❌ [CHAT] 읽음 처리 실패: $e');
       rethrow;
     }
@@ -387,25 +418,47 @@ class ChatService {
       if (!metadata.isActive) return;
 
       // 상대방의 unreadCount 증가
+      AppLogger.d('🔍 [CHAT] senderId=$lastMessageSenderId, hostId=${metadata.hostId}, guestId=${metadata.guestId}');
       final otherUserId = lastMessageSenderId == metadata.hostId
           ? metadata.guestId
           : metadata.hostId;
 
-      final newUnreadCount = Map<String, int>.from(metadata.unreadCount);
-      newUnreadCount[otherUserId.toString()] =
-          (newUnreadCount[otherUserId.toString()] ?? 0) + 1;
-
-      // 메타데이터 업데이트
+      // FieldValue.increment로 원자적 처리 (read-modify-write 경합 방지)
       await chatRoomRef.update({
         'lastMessageText': lastMessage,
         'lastMessageSenderId': lastMessageSenderId,
         'lastMessageAt': FieldValue.serverTimestamp(),
-        'unreadCount': newUnreadCount,
+        'unreadCount.$otherUserId': FieldValue.increment(1),
       });
+      AppLogger.d('✅ [CHAT] 메타데이터 업데이트 완료: lastMessageText="$lastMessage", otherUserId=$otherUserId');
 
     } catch (e) {
       AppLogger.e('❌ [CHAT] 메타데이터 업데이트 실패: $e');
     }
+  }
+
+  /// 메시지 전송 + 알림톡 요청 통합 (텍스트/이미지 공통, fire-and-forget notify)
+  Future<void> sendMessageWithNotification({
+    required String chatRoomId,
+    required int senderId,
+    required String text,
+    List<XFile> images = const [],
+  }) async {
+    if (images.isNotEmpty) {
+      await sendImageMessages(
+        chatRoomId: chatRoomId,
+        senderId: senderId,
+        images: images,
+        text: text.trim().isNotEmpty ? text : null,
+      );
+    } else {
+      await sendMessage(
+        chatRoomId: chatRoomId,
+        senderId: senderId,
+        text: text,
+      );
+    }
+    notifyChatMessage(chatRoomId); // fire-and-forget
   }
 
   /// 채팅방 메타데이터 스트림 (Firestore)

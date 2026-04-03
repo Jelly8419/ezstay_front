@@ -38,15 +38,20 @@ class _AppGNBState extends State<AppGNB> {
         if (isLoggedIn && !_hasCheckedUnread) {
           _hasCheckedUnread = true;
           final userMode = isHostMode ? 'host' : 'guest';
-          // 비동기로 미확인 알림/채팅 체크 (UI 블로킹 없음)
+          final userId = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
+          // 비동기로 미확인 알림/채팅 체크 + Firestore 실시간 구독 시작 (UI 블로킹 없음)
           WidgetsBinding.instance.addPostFrameCallback((_) {
             gnbProvider.checkGnbBadgeStatus(userMode);
+            if (userId != 0) gnbProvider.startChatUnreadWatch(userId);
           });
         }
 
-        // 로그아웃 시 상태 리셋
+        // 로그아웃 시 상태 리셋 (구독 포함)
         if (!isLoggedIn && _hasCheckedUnread) {
           _hasCheckedUnread = false;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            gnbProvider.reset();
+          });
         }
 
         // 🐛 디버깅: 사용자 상태 로그
@@ -340,9 +345,11 @@ class _AppGNBState extends State<AppGNB> {
                   // 1. 본인인증 완료 + 계좌 등록 완료 → 바로 호스트 홈으로
                   if (currentUser.phoneVerified && currentUser.hasBank) {
                     await authService.switchUserMode(newMode);
-                    // 모드 전환 후 배지 상태 재체크
+                    // 모드 전환 후 배지 상태 재체크 + 실시간 구독 재시작
                     if (context.mounted) {
+                      final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
                       context.read<GNBProvider>().checkGnbBadgeStatus('host');
+                      if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid);
                       context.go('/host');
                     }
                     return;
@@ -370,9 +377,11 @@ class _AppGNBState extends State<AppGNB> {
               await authService.switchUserMode(newMode);
 
               if (context.mounted) {
-                // 모드 전환 후 배지 상태 재체크
+                // 모드 전환 후 배지 상태 재체크 + 실시간 구독 재시작
                 final newUserMode = isCurrentlyHostMode ? 'guest' : 'host';
+                final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
                 context.read<GNBProvider>().checkGnbBadgeStatus(newUserMode);
+                if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid);
                 final route = isCurrentlyHostMode ? '/' : '/host';
                 context.go(route);
               }

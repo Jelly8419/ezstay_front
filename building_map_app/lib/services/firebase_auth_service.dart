@@ -55,14 +55,14 @@ class FirebaseAuthService {
 
       final customToken = response['data']['customToken'] as String;
       final uid = response['data']['uid'].toString();
+      AppLogger.d('🔑 [FIREBASE_AUTH] Custom Token uid: $uid');
 
 
       // 3. Custom Token으로 Firebase Authentication 로그인
       try {
         final userCredential =
             await _firebaseAuth.signInWithCustomToken(customToken);
-
-
+        AppLogger.d('🔑 [FIREBASE_AUTH] 로그인 성공 - Firebase uid: ${userCredential.user?.uid}');
         return userCredential.user;
       } on firebase_auth.FirebaseAuthException catch (e) {
         AppLogger.e('❌ [FIREBASE_AUTH] FirebaseAuthException 발생');
@@ -89,11 +89,34 @@ class FirebaseAuthService {
   bool get isSignedIn => currentUser != null;
 
   /// Firebase 인증 확인 및 필요시 재로그인
+  /// Custom Token 방식은 Firebase SDK 자동 갱신이 동작하지 않으므로
+  /// ID Token 만료 여부를 직접 체크해 갱신
   Future<void> ensureAuthenticated() async {
     if (!isSignedIn) {
       AppLogger.w('⚠️ [FIREBASE_AUTH] Firebase 미인증 상태 - 재로그인 시도');
       await signInWithCustomToken();
-    } else {
+      return;
+    }
+
+    // 세션은 있지만 ID Token이 만료(또는 5분 이내 만료 임박)한 경우 재로그인
+    try {
+      final tokenResult = await currentUser!.getIdTokenResult(false);
+      final expirationTime = tokenResult.expirationTime;
+      if (expirationTime != null &&
+          expirationTime.isBefore(
+            DateTime.now().add(const Duration(minutes: 5)),
+          )) {
+        AppLogger.w(
+          '⚠️ [FIREBASE_AUTH] ID Token 만료 임박 (exp: $expirationTime) - Custom Token 재로그인',
+        );
+        await signInWithCustomToken();
+      } else {
+        AppLogger.d('🔑 [FIREBASE_AUTH] 이미 인증됨 - Firebase uid: ${currentUser?.uid}');
+      }
+    } catch (e) {
+      // getIdTokenResult 실패(네트워크 등) → Custom Token 재발급으로 안전하게 복구
+      AppLogger.w('⚠️ [FIREBASE_AUTH] ID Token 확인 실패 - Custom Token 재로그인: $e');
+      await signInWithCustomToken();
     }
   }
 

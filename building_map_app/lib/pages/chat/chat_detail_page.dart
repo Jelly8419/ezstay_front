@@ -2,17 +2,18 @@ import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/format_utils.dart';
-import '../../utils/contract_utils.dart';
 import '../../models/chat_message.dart';
 import '../../models/chat_room.dart';
-import '../../services/chat_service.dart';
+import '../../services/chat_service.dart' show ChatService, ChatPermissionDeniedException;
 import '../../services/firebase_auth_service.dart';
 import '../../services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/system_message_bubble.dart';
+import '../../widgets/chat/chat_read_only_banner.dart';
+import '../../widgets/chat/chat_bubble.dart';
+import '../../widgets/chat/chat_message_input_field.dart';
 
 /// 채팅 상세 페이지
 class ChatDetailPage extends StatefulWidget {
@@ -41,6 +42,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   bool _isLoading = true;
   String? _error;
   Timer? _readHeartbeatTimer;  // 30초 heartbeat 타이머
+  List<ChatMessage>? _cachedMessages;  // 재진입 시 깜빡임 방지 캐시
 
   @override
   void initState() {
@@ -127,50 +129,48 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         throw Exception('로그인이 필요합니다');
       }
 
-      await _chatService.sendMessage(
+      await _chatService.sendMessageWithNotification(
         chatRoomId: widget.chatRoomId,
         senderId: _currentUserId!,
         text: text,
       );
 
-      // 알림톡 요청 (fire-and-forget)
-      _chatService.notifyChatMessage(widget.chatRoomId);
-
       _messageController.clear();
 
       // 스크롤을 최하단으로 이동
       _scrollToBottom();
+    } on ChatPermissionDeniedException {
+      AppLogger.w('⚠️ [CHAT_DETAIL] 권한 거부: 종료된 계약 채팅방');
+      if (mounted) _showPermissionDeniedDialog();
     } catch (e) {
       AppLogger.e('❌ [CHAT_DETAIL] 메시지 전송 실패: $e');
       if (mounted) {
-        final isPermissionDenied = e.toString().contains('permission-denied') ||
-            e.toString().contains('PERMISSION_DENIED');
-        if (isPermissionDenied) {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('메시지 전송 불가'),
-              content: const Text('종료된 계약의 채팅방에는 메시지를 보낼 수 없습니다.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('확인'),
-                ),
-              ],
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('메시지 전송 실패: $e'),
-              backgroundColor: AppColors.error500,
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('메시지 전송 실패: $e'),
+            backgroundColor: AppColors.error500,
+          ),
+        );
       }
     } finally {
       _isSendingNotifier.value = false;
     }
+  }
+
+  void _showPermissionDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('메시지 전송 불가'),
+        content: const Text('종료된 계약의 채팅방에는 메시지를 보낼 수 없습니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 스크롤을 최하단으로 이동
@@ -275,7 +275,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     return Column(
       children: [
         // 읽기 전용 안내 배너
-        if (isReadOnly) _buildReadOnlyBanner(),
+        if (isReadOnly) const ChatReadOnlyBanner(),
         // 메시지 목록
         Expanded(
           child: _buildMessageList(),
@@ -286,35 +286,20 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     );
   }
 
-  /// 읽기 전용 안내 배너
-  Widget _buildReadOnlyBanner() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: const Color(0xFFF3F4F6),
-      child: Row(
-        children: [
-          Icon(Icons.lock_outline, size: 16, color: AppColors.textSecondary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _chatRoom?.readOnlyReason ?? '종료된 계약의 채팅방입니다. 메시지를 보낼 수 없습니다.',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// 메시지 목록
   Widget _buildMessageList() {
     return StreamBuilder<List<ChatMessage>>(
       stream: _chatService.getMessages(widget.chatRoomId),
+      initialData: _cachedMessages,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        // 새 데이터가 오면 캐시 업데이트
+        if (snapshot.hasData) {
+          _cachedMessages = snapshot.data;
+        }
+
+        // 캐시가 있으면 로딩 스피너 대신 캐시된 메시지 표시 (깜빡임 방지)
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            _cachedMessages == null) {
           return const Center(
             child: CircularProgressIndicator(),
           );
@@ -332,7 +317,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           );
         }
 
-        final messages = snapshot.data ?? [];
+        final messages = snapshot.data ?? _cachedMessages ?? [];
 
         if (messages.isEmpty) {
           return Center(
@@ -376,9 +361,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 if (showDate) _buildDateSeparator(message.timestamp),
                 // 메시지 타입별 분기
                 if (message.type == MessageType.system)
-                  SystemMessageBubble(message: message)  // 시스템 메시지
+                  SystemMessageBubble(message: message)
                 else
-                  _ChatBubble(  // 일반 메시지
+                  ChatBubble(
                     message: message,
                     isMe: isMe,
                   ),
@@ -414,7 +399,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   /// 메시지 입력 필드
   Widget _buildMessageInput() {
-    return _MessageInputField(
+    return ChatMessageInputField(
       controller: _messageController,
       isSendingNotifier: _isSendingNotifier,
       onSend: _sendMessage,
@@ -447,238 +432,3 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   }
 }
 
-/// 채팅 말풍선 위젯
-class _ChatBubble extends StatelessWidget {
-  final ChatMessage message;
-  final bool isMe;
-
-  const _ChatBubble({
-    required this.message,
-    required this.isMe,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (isMe) ...[
-            _buildTime(),
-            const SizedBox(width: 8),
-          ],
-          _buildBubble(),
-          if (!isMe) ...[
-            const SizedBox(width: 8),
-            _buildTime(),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBubble() {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 280),
-      padding: EdgeInsets.symmetric(
-        horizontal: message.isImageMessage && message.text.isEmpty ? 4 : 16,
-        vertical: message.isImageMessage && message.text.isEmpty ? 4 : 10,
-      ),
-      decoration: BoxDecoration(
-        color: isMe ? AppColors.primary500 : AppColors.neutral200,
-        borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(20),
-          topRight: const Radius.circular(20),
-          bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
-          bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (message.text.isNotEmpty)
-            Text(
-              message.text,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: isMe ? Colors.white : AppColors.textPrimary,
-              ),
-            ),
-          if (message.imageUrl != null) ...[
-            if (message.text.isNotEmpty) const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
-                imageUrl: ContractUtils.getFullImageUrl(message.imageUrl),
-                fit: BoxFit.cover,
-                placeholder: (ctx, url) => Container(
-                  width: 200,
-                  height: 150,
-                  color: Colors.black.withValues(alpha: 0.1),
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (ctx, url, error) => Container(
-                  width: 200,
-                  height: 150,
-                  color: Colors.black.withValues(alpha: 0.1),
-                  child: const Icon(Icons.broken_image),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTime() {
-    return Text(
-      FormatUtils.formatTime(message.timestamp),
-      style: AppTextStyles.bodySmall.copyWith(
-        color: AppColors.textSecondary,
-        fontSize: 11,
-      ),
-    );
-  }
-}
-
-/// 메시지 입력 필드 위젯 (포커스 유지를 위해 별도 StatefulWidget으로 분리)
-class _MessageInputField extends StatefulWidget {
-  final TextEditingController controller;
-  final ValueNotifier<bool> isSendingNotifier;
-  final VoidCallback onSend;
-
-  const _MessageInputField({
-    required this.controller,
-    required this.isSendingNotifier,
-    required this.onSend,
-  });
-
-  @override
-  State<_MessageInputField> createState() => _MessageInputFieldState();
-}
-
-class _MessageInputFieldState extends State<_MessageInputField> {
-  late final FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode = FocusNode();
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _handleSend() {
-    widget.onSend();
-    // 메시지 전송 후 포커스 복원
-    Future.microtask(() {
-      if (mounted && _focusNode.canRequestFocus) {
-        _focusNode.requestFocus();
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: widget.controller,
-                focusNode: _focusNode,
-                decoration: InputDecoration(
-                  hintText: '메시지를 입력하세요...',
-                  filled: true,
-                  fillColor: AppColors.background,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    borderSide: BorderSide(color: AppColors.primary500.withValues(alpha: 0.3), width: 1),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                ),
-                maxLines: 5,
-                minLines: 1,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _handleSend(),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ValueListenableBuilder<bool>(
-              valueListenable: widget.isSendingNotifier,
-              builder: (context, isSending, child) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.primary500,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary500.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    onPressed: isSending ? null : _handleSend,
-                    icon: isSending
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Icon(Icons.send, color: Colors.white),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
