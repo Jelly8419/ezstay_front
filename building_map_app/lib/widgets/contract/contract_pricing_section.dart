@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../utils/format_utils.dart';
-import '../../utils/fee_calculator.dart';
 import '../../models/contract.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 
-/// 계약 금액 정보 섹션 (임대료/관리비/청소비/보증금/총액/정산예정)
+/// 계약 금액 정보 섹션 (임대료/관리비/청소비/할인/수수료/정산예정)
 class ContractPricingSection extends StatelessWidget {
   final ContractListItem contract;
 
@@ -16,8 +15,15 @@ class ContractPricingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settlementAmount =
-        contract.hostEarnings ?? FeeCalculator.calculateHostSettlement(contract);
+    final settlement = contract.hostSettlement;
+
+    // hostSettlement 없으면 섹션 전체 미표시
+    if (settlement == null) return const SizedBox.shrink();
+
+    final subtotal = settlement.rentalFee +
+        settlement.maintenanceFee +
+        settlement.cleaningFee -
+        settlement.discountAmount;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -29,7 +35,7 @@ class ContractPricingSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 이용 금액
+          // ── 이용 금액 ──
           Text(
             '이용 금액',
             style: AppTextStyles.labelLarge.copyWith(
@@ -38,179 +44,196 @@ class ContractPricingSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // 임대료, 관리비, 청소비
           Padding(
             padding: const EdgeInsets.only(left: 12),
             child: Column(
               children: [
-                _buildAmountRow('임대료', contract.rentalFee ?? 0),
-                const SizedBox(height: 8),
-                _buildAmountRow('관리비', contract.maintenanceFee ?? 0),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          '청소비',
-                          style: AppTextStyles.bodyMedium.copyWith(color: Colors.black),
-                        ),
-                        if (contract.isEzCleaning == true) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary600,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'EZ서비스',
-                              style: AppTextStyles.labelMedium.copyWith(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    Text(
-                      '₩${FormatUtils.formatCurrency(contract.cleaningFee ?? 0)}',
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: const Color(0xFF111827),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildRow('임대료', settlement.rentalFee),
+                const SizedBox(height: 6),
+                _buildRow('관리비', settlement.maintenanceFee),
+                const SizedBox(height: 6),
+                _buildCleaningRow(settlement.cleaningFee),
+                if (settlement.discountAmount > 0) ...[
+                  const SizedBox(height: 6),
+                  _buildRow('할인', -settlement.discountAmount,
+                      valueColor: const Color(0xFFDC2626)),
+                ],
               ],
             ),
           ),
 
-          const SizedBox(height: 8),
-
-          // 보증금
-          Container(
-            margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.only(top: 8),
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
+          // 소계
+          _buildDividerRow(
+            label: '소계',
+            amount: subtotal,
+            topBorderWidth: 1,
+            topBorderColor: const Color(0xFFE5E7EB),
+            labelStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF111827),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '보증금 ',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF111827),
-                        ),
-                      ),
-                      TextSpan(
-                        text: '(게스트 퇴실 후 환급)',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF6B7280),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  '₩${FormatUtils.formatCurrency(contract.deposit ?? 0)}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-              ],
+            valueStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF111827),
             ),
           ),
 
+          // ── 차감 항목 ──
+          const SizedBox(height: 12),
+          Text(
+            '차감 항목',
+            style: AppTextStyles.labelLarge.copyWith(
+              color: const Color(0xFF111827),
+            ),
+          ),
           const SizedBox(height: 8),
 
-          // 총 계약 금액
-          Container(
-            margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.only(top: 8),
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0xFFD1D5DB), width: 2),
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: _buildRow('호스트 수수료', -settlement.hostPlatformFee,
+                valueColor: const Color(0xFF374151)),
+          ),
+
+          // ── 정산 예정금액 ──
+          _buildDividerRow(
+            label: '정산 예정금액',
+            amount: settlement.hostEarnings,
+            topBorderWidth: 2,
+            topBorderColor: const Color(0xFFD1D5DB),
+            labelStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary600,
+            ),
+            valueStyle: AppTextStyles.headingSmall.copyWith(
+              color: AppColors.primary600,
+            ),
+          ),
+
+          // ── 보증금 안내 ──
+          if ((contract.deposit ?? 0) > 0) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Row(
+                children: [
+                  const Text('💡', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '보증금 ₩${FormatUtils.formatCurrency(contract.deposit ?? 0)}은 게스트 퇴실 후 별도로 환급됩니다.',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF1D4ED8),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  '총 계약 금액',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-                Text(
-                  '₩${FormatUtils.formatCurrency((contract.rentalFee ?? 0) + (contract.maintenanceFee ?? 0) + (contract.cleaningFee ?? 0) + (contract.deposit ?? 0))}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // 정산 예정금액
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  '정산 예정금액',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary600,
-                  ),
-                ),
-                Text(
-                  '₩${FormatUtils.formatCurrency(settlementAmount)}',
-                  style: AppTextStyles.headingSmall.copyWith(
-                    color: AppColors.primary600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildAmountRow(String label, int amount) {
+  Widget _buildRow(
+    String label,
+    int amount, {
+    Color? valueColor,
+    String? subLabel,
+  }) {
+    final isNegative = amount < 0;
+    final displayAmount = isNegative ? -amount : amount;
+    final prefix = isNegative ? '- ' : '';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: AppTextStyles.bodyMedium.copyWith(color: Colors.black)),
+        Row(
+          children: [
+            Text(label, style: AppTextStyles.bodyMedium.copyWith(color: Colors.black)),
+            if (subLabel != null) ...[
+              const SizedBox(width: 4),
+              Text(
+                subLabel,
+                style: AppTextStyles.bodySmall.copyWith(color: const Color(0xFF6B7280)),
+              ),
+            ],
+          ],
+        ),
         Text(
-          '₩${FormatUtils.formatCurrency(amount)}',
+          '$prefix₩${FormatUtils.formatCurrency(displayAmount)}',
           style: AppTextStyles.labelMedium.copyWith(
-            color: const Color(0xFF111827),
+            color: valueColor ?? const Color(0xFF111827),
           ),
         ),
       ],
     );
   }
 
+  Widget _buildCleaningRow(int amount) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Text('청소비', style: AppTextStyles.bodyMedium.copyWith(color: Colors.black)),
+            if (contract.isEzCleaning == true) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary600,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'EZ서비스',
+                  style: AppTextStyles.labelMedium.copyWith(color: Colors.white),
+                ),
+              ),
+            ],
+          ],
+        ),
+        Text(
+          '₩${FormatUtils.formatCurrency(amount)}',
+          style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFF111827)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDividerRow({
+    required String label,
+    required int amount,
+    required double topBorderWidth,
+    required Color topBorderColor,
+    required TextStyle labelStyle,
+    required TextStyle valueStyle,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: topBorderColor, width: topBorderWidth),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: labelStyle),
+          Text('₩${FormatUtils.formatCurrency(amount)}', style: valueStyle),
+        ],
+      ),
+    );
+  }
 }

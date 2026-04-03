@@ -158,6 +158,36 @@ enum PaymentMethod {
   }
 }
 
+/// 호스트 정산 상세 정보 (API hostSettlement 객체)
+class HostSettlement {
+  final int rentalFee;
+  final int maintenanceFee;
+  final int cleaningFee;
+  final int discountAmount;
+  final int hostPlatformFee;
+  final int hostEarnings;
+
+  const HostSettlement({
+    required this.rentalFee,
+    required this.maintenanceFee,
+    required this.cleaningFee,
+    required this.discountAmount,
+    required this.hostPlatformFee,
+    required this.hostEarnings,
+  });
+
+  factory HostSettlement.fromJson(Map<String, dynamic> json) {
+    return HostSettlement(
+      rentalFee: json['rentalFee'] as int? ?? 0,
+      maintenanceFee: json['maintenanceFee'] as int? ?? 0,
+      cleaningFee: json['cleaningFee'] as int? ?? 0,
+      discountAmount: json['discountAmount'] as int? ?? 0,
+      hostPlatformFee: json['hostPlatformFee'] as int? ?? 0,
+      hostEarnings: json['hostEarnings'] as int? ?? 0,
+    );
+  }
+}
+
 /// 계약 목록 아이템 (간단한 정보)
 class ContractListItem {
   final int id;
@@ -184,7 +214,7 @@ class ContractListItem {
   final int? subtotal; // 소계 (할인 전)
   final int? totalUsageFee; // 실이용 금액 (할인 후)
   final int? deposit; // 보증금
-  final int? hostEarnings; // 호스트 실수령액 (NEW)
+  final HostSettlement? hostSettlement; // 호스트 정산 상세 (API 제공)
   final bool? isEzCleaning; // EZ청소 서비스 여부
 
   // 퇴실 정보
@@ -244,7 +274,7 @@ class ContractListItem {
     this.subtotal,
     this.totalUsageFee,
     this.deposit,
-    this.hostEarnings,
+    this.hostSettlement,
     this.isEzCleaning,
     this.checkoutStatus,
     this.checkoutStatusLabel,
@@ -302,7 +332,9 @@ class ContractListItem {
       subtotal: json['subtotal'] as int?,
       totalUsageFee: json['totalUsageFee'] as int?,
       deposit: json['deposit'] as int?,
-      hostEarnings: json['hostEarnings'] as int?,
+      hostSettlement: json['hostSettlement'] != null
+          ? HostSettlement.fromJson(json['hostSettlement'] as Map<String, dynamic>)
+          : null,
       isEzCleaning: json['isEzCleaning'] as bool?,
       // 퇴실 정보
       checkoutStatus: CheckoutStatus.fromString(
