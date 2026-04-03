@@ -1,8 +1,6 @@
-import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
 import '../config/api_config.dart';
 import '../models/user_profile.dart';
 import 'auth_service.dart';
@@ -111,58 +109,6 @@ class UserProfileService {
       } else {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '비밀번호 변경 실패');
-      }
-    } on SocketException {
-      throw Exception('네트워크 연결을 확인해주세요.');
-    } on HttpException {
-      throw Exception('서버 오류가 발생했습니다.');
-    } on FormatException {
-      throw Exception('잘못된 응답 형식입니다.');
-    }
-  }
-
-  /// 연락처 변경
-  ///
-  /// PATCH /api/user/phone
-  ///
-  /// 요청:
-  /// ```json
-  /// {
-  ///   "phoneNumber": "010-9876-5432"
-  /// }
-  /// ```
-  Future<void> changePhoneNumber({
-    required String phoneNumber,
-  }) async {
-    final accessToken = await _authService.getAccessToken();
-
-    if (accessToken == null) {
-      throw const UnauthorizedException('로그인이 필요합니다.');
-    }
-
-
-    try {
-      final response = await http.patch(
-        Uri.parse('$baseUrl/api/user/phone'),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'phoneNumber': phoneNumber,
-        }),
-      ).timeout(const Duration(seconds: 10));
-
-
-      if (response.statusCode == 200) {
-      } else if (response.statusCode == 401) {
-        throw const UnauthorizedException();
-      } else if (response.statusCode == 400) {
-        final error = jsonDecode(utf8.decode(response.bodyBytes));
-        throw Exception(error['message'] ?? '연락처 변경 실패');
-      } else {
-        final error = jsonDecode(utf8.decode(response.bodyBytes));
-        throw Exception(error['message'] ?? '연락처 변경 실패');
       }
     } on SocketException {
       throw Exception('네트워크 연결을 확인해주세요.');

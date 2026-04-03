@@ -212,9 +212,16 @@ class _HostMyPageState extends State<HostMyPage> {
     }
   }
 
-  /// 연락처 변경 (본인인증 SDK 호출)
-  void _handlePhoneChange() {
-    _hostAccountService.handlePhoneChange(context);
+  /// 연락처 변경 (KMC 본인인증)
+  Future<void> _handlePhoneChange() async {
+    await _hostAccountService.handlePhoneChange(
+      context,
+      onSuccess: (newPhone) {
+        setState(() {
+          _userProfile = _userProfile!.copyWith(phoneNumber: newPhone);
+        });
+      },
+    );
   }
 
   /// 계좌 정보 수정
