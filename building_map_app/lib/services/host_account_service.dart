@@ -104,6 +104,7 @@ class HostAccountService {
 
       if (verifyResult.verified) {
         onSuccess(verifyResult.phoneNumber);
+        showPhoneChangedDialog(context, verifyResult.phoneNumber);
       }
     } on KmcException catch (e) {
       if (context.mounted) {

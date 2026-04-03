@@ -13,6 +13,7 @@ import '../../services/refund_account_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/kmc_service.dart';
 import '../../widgets/kmc_webview.dart';
+import '../../widgets/common/my_page_dialogs.dart';
 import '../../models/user.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
@@ -234,6 +235,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
           );
           _isChangingPhone = false;
         });
+        showPhoneChangedDialog(context, verifyResult.phoneNumber);
       } else {
         setState(() => _isChangingPhone = false);
         _showErrorDialog('본인인증에 실패했습니다. 다시 시도해주세요.');
