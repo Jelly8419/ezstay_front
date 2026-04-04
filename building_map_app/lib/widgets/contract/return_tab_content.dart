@@ -294,6 +294,8 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
       final preview = await _fetchReturnPreview();
       if (!mounted) return;
 
+      final isRefundable = preview == null || preview.summary.totalRefundAmount > 0;
+
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -309,9 +311,11 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
                   style: TextStyle(color: AppColors.neutral600)),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
+              onPressed: isRefundable ? () => Navigator.pop(ctx, true) : null,
               style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.warning600),
+                backgroundColor: AppColors.warning600,
+                disabledBackgroundColor: AppColors.neutral300,
+              ),
               child: const Text('반품 신청',
                   style: TextStyle(color: Colors.white)),
             ),
