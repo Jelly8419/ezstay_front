@@ -315,7 +315,6 @@ class _CancelTabContentState extends State<CancelTabContent> {
       }
       if (mounted) {
         widget.onComplete();
-        Navigator.of(context).pop();
       }
     } on UnauthorizedException {
       if (mounted) context.go('/login');
