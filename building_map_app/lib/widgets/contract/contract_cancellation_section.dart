@@ -34,25 +34,7 @@ class ContractCancellationSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text('계약 해지 조항', style: AppTextStyles.headingSmall),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getRefundPolicyColor().withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  _getRefundPolicyLabel(),
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: _getRefundPolicyColor(),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          Text('환불 규정', style: AppTextStyles.headingSmall),
           const SizedBox(height: 16),
 
           // 로딩 중
@@ -67,7 +49,7 @@ class ContractCancellationSection extends StatelessWidget {
           else if (refundPolicyData != null) ...[
             ...refundPolicyData!.rules.map((rule) {
               return _buildBulletText(
-                NoticeTexts.cancellationText(rule.description, rule.refundRate),
+                NoticeTexts.cancellationText(rule.period, rule.description, rule.refundRate),
               );
             }),
           ]
@@ -108,49 +90,15 @@ class ContractCancellationSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 _buildNoticeBulletText(NoticeTexts.sameDayCancelPenalty),
-                if (refundPolicyData?.specialRules?.alwaysRefund != null)
-                  _buildNoticeBulletText(
-                    refundPolicyData!.specialRules!.alwaysRefund!,
-                  )
-                else
-                  _buildNoticeBulletText(NoticeTexts.alwaysRefundDefault),
+                _buildNoticeBulletText(NoticeTexts.alwaysRefundDefault),
                 _buildNoticeBulletText(NoticeTexts.rentRefundByHost),
-                _buildNoticeBulletText(NoticeTexts.optionRefundWithin7Days),
-                _buildNoticeBulletText(NoticeTexts.optionRefundRestrictions),
+                _buildNoticeBulletText(NoticeTexts.hostCancelPenalty),
               ],
             ),
           ),
         ],
       ),
     );
-  }
-
-  /// 환불 정책 라벨
-  String _getRefundPolicyLabel() {
-    switch (refundPolicy.toLowerCase()) {
-      case 'flexible':
-        return '유연';
-      case 'moderate':
-        return '보통';
-      case 'strict':
-        return '엄격';
-      default:
-        return '기본';
-    }
-  }
-
-  /// 환불 정책 색상
-  Color _getRefundPolicyColor() {
-    switch (refundPolicy.toLowerCase()) {
-      case 'flexible':
-        return Colors.green;
-      case 'moderate':
-        return Colors.orange;
-      case 'strict':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
   }
 
   /// 불릿 텍스트 (회색)

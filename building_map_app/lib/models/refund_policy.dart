@@ -65,6 +65,40 @@ class RefundPolicy {
         return englishType;
     }
   }
+
+  /// 정책 타입 표시 라벨 (한글/영문 모두 대응)
+  static String getLabel(String policyType) {
+    switch (policyType.toLowerCase()) {
+      case 'flexible':
+      case '약하게':
+        return '유연';
+      case 'moderate':
+      case '보통':
+        return '보통';
+      case 'strict':
+      case '엄격하게':
+        return '엄격';
+      default:
+        return policyType.isNotEmpty ? policyType : '기본';
+    }
+  }
+
+  /// 정책 타입 색상 코드 (한글/영문 모두 대응)
+  static int getColorValue(String policyType) {
+    switch (policyType.toLowerCase()) {
+      case 'flexible':
+      case '약하게':
+        return 0xFF4CAF50; // Colors.green
+      case 'moderate':
+      case '보통':
+        return 0xFFFF9800; // Colors.orange
+      case 'strict':
+      case '엄격하게':
+        return 0xFFF44336; // Colors.red
+      default:
+        return 0xFF9E9E9E; // Colors.grey
+    }
+  }
 }
 
 /// 환불 규칙

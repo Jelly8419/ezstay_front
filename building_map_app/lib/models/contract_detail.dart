@@ -651,6 +651,15 @@ class RefundPolicyRule {
       description: json['description'] as String? ?? '',
     );
   }
+
+  /// daysBeforeMin/Max → 사람이 읽기 좋은 기간 문자열
+  String get periodLabel {
+    if (isSameDayCancellation) return '입주일 당일';
+    if (daysBeforeMin == null && daysBeforeMax == null) return '';
+    if (daysBeforeMin == null) return '입주일 ${daysBeforeMax!}일 이전';
+    if (daysBeforeMax == null) return '입주일 ${daysBeforeMin!}일 이후';
+    return '입주일 $daysBeforeMax~$daysBeforeMin일 이전';
+  }
 }
 
 /// 환불 특별 규칙

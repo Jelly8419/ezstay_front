@@ -293,7 +293,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
           // 환불 정책 규칙 표시
           if (snapshot != null && snapshot.rules.isNotEmpty) ...[
             ...snapshot.rules.map((rule) {
-              return BulletText(text: NoticeTexts.cancellationText(rule.description, rule.refundRate));
+              return BulletText(text: NoticeTexts.cancellationText(rule.periodLabel, rule.description, rule.refundRate));
             }),
           ] else ...[
             // Fallback: 기존 상세 설명

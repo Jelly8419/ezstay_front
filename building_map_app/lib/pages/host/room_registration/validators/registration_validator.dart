@@ -170,6 +170,12 @@ class RegistrationValidator {
       errors.add('환불 정책을 선택해주세요');
     }
 
+    // 환불 규정 확인 체크박스
+    final refundPolicyConfirmed = formData['refundPolicyConfirmed'] as bool?;
+    if (refundPolicyConfirmed != true) {
+      errors.add('환불 규정 및 주의사항을 확인해주세요');
+    }
+
     // 장기 할인 (선택사항이므로 값이 있을 때만 검증)
     final longTermDiscountWeeks = formData['longTermDiscountWeeks'] as String?;
     final longTermDiscountPercent =

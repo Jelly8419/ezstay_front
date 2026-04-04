@@ -1090,33 +1090,12 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 제목 + 정책 라벨 (contract_start_page와 동일)
-          Row(
-            children: [
-              Text(
-                '환불 정책',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              // 환불 정책 라벨
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getRefundPolicyColor().withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  _getRefundPolicyLabel(),
-                  style: AppTextStyles.caption.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: _getRefundPolicyColor(),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            '환불 규정',
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: 12),
 
@@ -1125,7 +1104,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
             // 환불 규칙 목록 (contract_start_page와 동일 포맷)
             ..._refundPolicy!.rules.map(
               (rule) =>
-                  _buildRefundBulletText(NoticeTexts.cancellationText(rule.description, rule.refundRate)),
+                  _buildRefundBulletText(NoticeTexts.cancellationText(rule.period, rule.description, rule.refundRate)),
             ),
           ] else ...[
             // API 로드 실패 시 기본 텍스트만 표시
@@ -1165,16 +1144,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                 ),
                 const SizedBox(height: 12),
                 _buildNoticeBulletText(NoticeTexts.sameDayCancelPenalty),
-                // API에서 로드한 특별 규칙 표시
-                if (_refundPolicy?.specialRules?.alwaysRefund != null)
-                  _buildNoticeBulletText(
-                    _refundPolicy!.specialRules!.alwaysRefund!,
-                  )
-                else
-                  _buildNoticeBulletText(NoticeTexts.alwaysRefundDefault),
+                _buildNoticeBulletText(NoticeTexts.alwaysRefundDefault),
                 _buildNoticeBulletText(NoticeTexts.rentRefundByHost),
-                _buildNoticeBulletText(NoticeTexts.optionRefundWithin7Days),
-                _buildNoticeBulletText(NoticeTexts.optionRefundRestrictions),
+                _buildNoticeBulletText(NoticeTexts.hostCancelPenalty),
               ],
             ),
           ),
@@ -1182,36 +1154,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       ),
     );
   }
-
-  /// 환불 정책 라벨 텍스트
-  String _getRefundPolicyLabel() {
-    switch (_room!.refundPolicy.toLowerCase()) {
-      case 'flexible':
-        return '유연';
-      case 'moderate':
-        return '보통';
-      case 'strict':
-        return '엄격';
-      default:
-        return '기본';
-    }
-  }
-
-  /// 환불 정책 색상
-  Color _getRefundPolicyColor() {
-    switch (_room!.refundPolicy.toLowerCase()) {
-      case 'flexible':
-        return Colors.green;
-      case 'moderate':
-        return Colors.orange;
-      case 'strict':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  /// 환불 규칙을 텍스트로 변환 (contract_start_page와 동일)
 
   /// 환불 규칙 불릿 텍스트
   Widget _buildRefundBulletText(String text) {
