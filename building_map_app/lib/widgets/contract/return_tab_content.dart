@@ -80,7 +80,7 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
     }
     final orders = widget.returnableOrders;
     if (orders.isEmpty) {
-      return _buildDisabledMsg('반품 가능한 주문이 없습니다.\n(배송 중 또는 배송 완료 상태의 주문만 반품 가능)');
+      return _buildDisabledMsg('반품 가능한 주문이 없습니다.\n(배송 중 또는 배송 완료 상태의 주문만 표시됩니다.)');
     }
     return Column(
       children: [
@@ -294,6 +294,8 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
       final preview = await _fetchReturnPreview();
       if (!mounted) return;
 
+      final isRefundable = preview == null || preview.summary.totalRefundAmount > 0;
+
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -309,9 +311,11 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
                   style: TextStyle(color: AppColors.neutral600)),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
+              onPressed: isRefundable ? () => Navigator.pop(ctx, true) : null,
               style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.warning600),
+                backgroundColor: AppColors.warning600,
+                disabledBackgroundColor: AppColors.neutral300,
+              ),
               child: const Text('반품 신청',
                   style: TextStyle(color: Colors.white)),
             ),
@@ -349,7 +353,6 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
       );
       if (mounted) {
         widget.onComplete();
-        Navigator.of(context).pop();
       }
     } on UnauthorizedException {
       if (mounted) context.go('/login');

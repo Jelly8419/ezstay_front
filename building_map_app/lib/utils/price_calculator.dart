@@ -1,5 +1,3 @@
-import 'package:building_map_app/core/utils/app_logger.dart';
-import 'package:flutter/foundation.dart';
 import '../constants/fee_constants.dart';
 import '../models/room.dart';
 import '../models/booking_state.dart';
@@ -200,11 +198,11 @@ class PriceCalculator {
 
     final days = bookingState.selectedDays!;
     if (days < room.minContractDays) {
-      return '최소 ${room.minContractDays}일 이상 선택해주세요. (현재: ${days}일)';
+      return '최소 ${room.minContractDays}일 이상 선택해주세요. (현재: $days일)';
     }
 
     if (days > room.maxContractDays) {
-      return '최대 ${room.maxContractDays}일까지 선택할 수 있습니다. (현재: ${days}일)';
+      return '최대 ${room.maxContractDays}일까지 선택할 수 있습니다. (현재: $days일)';
     }
 
     return null; // 유효함
@@ -271,6 +269,30 @@ class PriceCalculator {
 
     return null; // 선택 가능
   }
+
+  // ========== 옵션 상품 최소 금액 검증 ==========
+
+  static const int _rentalMinimumAmount = 10000;
+
+  /// 옵션 금액이 최소 주문 조건을 위반하는지 여부
+  /// - 0원은 위반 아님 (옵션 없음 / 전액 취소)
+  /// - 1원 ~ 9,999원은 위반
+  static bool isInvalidRentalAmount(int amount) =>
+      amount > 0 && amount < _rentalMinimumAmount;
+
+  /// 옵션 금액 위반 시 표시할 에러 메시지
+  /// [currentAmount] 현재 금액을 포함한 안내 문구가 필요할 때 전달
+  static String rentalAmountErrorMessage({int? currentAmount}) {
+    if (currentAmount != null) {
+      return '옵션 상품은 최소 ${formatKRW(_rentalMinimumAmount)} 이상 선택해주세요. (현재: ${formatKRW(currentAmount)})';
+    }
+    return '옵션 상품 금액은 최소 ${formatKRW(_rentalMinimumAmount)} 이상이어야 합니다.';
+  }
+
+  /// 취소 후 잔액 에러 메시지
+  static String rentalCancelRemainingErrorMessage() =>
+      '취소 후 남은 옵션 금액이 ${formatKRW(_rentalMinimumAmount)} 미만입니다.\n'
+      '전체 취소하거나 ${formatKRW(_rentalMinimumAmount)} 이상 남도록 선택해 주세요.';
 
   /// EZ서비스 청소비 계산
   /// - 기본금: 5만원

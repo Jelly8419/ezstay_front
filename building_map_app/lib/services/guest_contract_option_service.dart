@@ -4,6 +4,7 @@ import '../core/exceptions.dart';
 import '../models/contract.dart';
 import '../services/rental_order_service.dart';
 import '../services/payment_service_unified.dart';
+import '../utils/price_calculator.dart';
 
 /// 게스트 계약 옵션 관리 서비스
 /// - 옵션 편집/저장/결제 비즈니스 로직 담당
@@ -184,8 +185,8 @@ class GuestContractOptionService {
         0,
         (sum, item) => sum + item.price * item.quantity,
       );
-      if (totalOptionsFee > 0 && totalOptionsFee < 10000) {
-        onShowMessage('옵션 상품 총액은 최소 10,000원 이상이어야 합니다.', false);
+      if (PriceCalculator.isInvalidRentalAmount(totalOptionsFee)) {
+        onShowMessage(PriceCalculator.rentalAmountErrorMessage(), false);
         return null;
       }
       await _updatePendingRentalItems(
@@ -279,6 +280,19 @@ class GuestContractOptionService {
 
     if (itemsToOrder.isEmpty) {
       onComplete();
+      return null;
+    }
+
+    final additionalFee = itemsToOrder.fold(0, (sum, item) {
+      final rentalItem = modifiedItems.firstWhere(
+        (m) => m.id == item.itemId.toString(),
+        orElse: () => RentalItem(id: '', name: '', price: 0, quantity: 0, deliveryStatus: DeliveryStatus.pending),
+      );
+      return sum + rentalItem.price * item.quantity;
+    });
+
+    if (PriceCalculator.isInvalidRentalAmount(additionalFee)) {
+      onShowMessage(PriceCalculator.rentalAmountErrorMessage(), false);
       return null;
     }
 

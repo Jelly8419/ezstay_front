@@ -1673,11 +1673,10 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       bookingState: _bookingState,
     );
 
-    // 렌탈 아이템 최소 금액 검증 (10,000원 이상)
+    // 렌탈 아이템 최소 금액 검증
     final hasInvalidRentalAmount =
         _bookingState.hasRentalItems &&
-        priceBreakdown.rentalItemsFee > 0 &&
-        priceBreakdown.rentalItemsFee < 10000;
+        PriceCalculator.isInvalidRentalAmount(priceBreakdown.rentalItemsFee);
 
     final canRequestContract =
         _bookingState.hasSelectedDates &&
@@ -1970,7 +1969,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                   SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
-                      '옵션상품은 최소 10,000원 이상 선택해주세요. (현재: ${PriceCalculator.formatKRW(priceBreakdown.rentalItemsFee)})',
+                      PriceCalculator.rentalAmountErrorMessage(currentAmount: priceBreakdown.rentalItemsFee),
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.error700,
                       ),

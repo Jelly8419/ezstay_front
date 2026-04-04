@@ -639,10 +639,9 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
   }
 
   Widget _buildBottomBar(PriceBreakdown breakdown, String? validationError) {
-    // 렌탈 아이템 최소 금액 검증 (10,000원 이상)
+    // 렌탈 아이템 최소 금액 검증
     final hasInvalidRentalAmount = _bookingState.hasRentalItems &&
-        breakdown.rentalItemsFee > 0 &&
-        breakdown.rentalItemsFee < 10000;
+        PriceCalculator.isInvalidRentalAmount(breakdown.rentalItemsFee);
 
     final bool canRequestContract = _bookingState.hasSelectedDates &&
         validationError == null &&
@@ -697,7 +696,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                   SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
-                      '옵션상품은 최소 10,000원 이상 선택해주세요. (현재: ${PriceCalculator.formatKRW(breakdown.rentalItemsFee)})',
+                      PriceCalculator.rentalAmountErrorMessage(currentAmount: breakdown.rentalItemsFee),
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.error700,
                       ),
