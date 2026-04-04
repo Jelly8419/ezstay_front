@@ -2267,7 +2267,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
         // 증가 버튼 (w-6 h-6 = 24x24)
         InkWell(
-          onTap: currentQuantity < item.availableStock
+          onTap: currentQuantity < item.totalStock
               ? () {
                   setState(() {
                     _bookingState = _bookingState.addRentalItem(
@@ -2289,7 +2289,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               child: Icon(
                 Icons.add,
                 size: 14, // w-3.5 h-3.5 = 14px
-                color: currentQuantity < item.availableStock
+                color: currentQuantity < item.totalStock
                     ? AppColors.textPrimary
                     : AppColors.neutral400,
               ),

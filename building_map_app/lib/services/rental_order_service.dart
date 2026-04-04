@@ -630,7 +630,7 @@ class AvailableRentalItem {
   final String? description;
   final int price;
   final String? imageUrl;
-  final int availableStock;
+  final int totalStock;
 
   AvailableRentalItem({
     required this.id,
@@ -638,18 +638,18 @@ class AvailableRentalItem {
     this.description,
     required this.price,
     this.imageUrl,
-    required this.availableStock,
+    required this.totalStock,
   });
 
   factory AvailableRentalItem.fromJson(Map<String, dynamic> json) {
-    final stock = json['availableStock'] ?? json['availableQuantity'] ?? 0;
+    final stock = json['totalStock'] ?? json['availableQuantity'] ?? 0;
     return AvailableRentalItem(
       id: json['id'],
       name: json['name'] ?? '',
       description: json['description'],
       price: _parsePrice(json['price']),
       imageUrl: json['imageUrl'],
-      availableStock: stock is int ? stock : int.tryParse(stock.toString()) ?? 0,
+      totalStock: stock is int ? stock : int.tryParse(stock.toString()) ?? 0,
     );
   }
 

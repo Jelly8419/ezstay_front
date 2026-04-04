@@ -4,7 +4,7 @@ class RentalItem {
   final String name;
   final String description;
   final int price;
-  final int availableStock;
+  final int totalStock;
   final String? imageUrl;
 
   const RentalItem({
@@ -12,7 +12,7 @@ class RentalItem {
     required this.name,
     required this.description,
     required this.price,
-    required this.availableStock,
+    required this.totalStock,
     this.imageUrl,
   });
 
@@ -22,7 +22,7 @@ class RentalItem {
       name: json['name'] as String,
       description: json['description'] as String? ?? '',
       price: json['price'] as int,
-      availableStock: json['availableStock'] as int,
+      totalStock: json['totalStock'] as int,
       imageUrl: json['imageUrl'] as String?,
     );
   }
@@ -33,7 +33,7 @@ class RentalItem {
       'name': name,
       'description': description,
       'price': price,
-      'availableStock': availableStock,
+      'totalStock': totalStock,
       'imageUrl': imageUrl,
     };
   }
