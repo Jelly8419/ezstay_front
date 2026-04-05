@@ -7,7 +7,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../constants/notice_texts.dart';
 import '../../utils/contract_utils.dart';
-import '../../widgets/common/responsive_page_layout.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../widgets/contract/contract_status_banner.dart';
 import '../../widgets/contract/contract_common_widgets.dart';
@@ -270,10 +269,23 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
       children: [
         ColoredBox(
           color: AppColors.gray50,
-          child: ResponsivePageLayout(
-            useCardStyle: false,
-            maxWidth: 896,
-            child: _buildBodyWithFooter(),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 896),
+                    child: Padding(
+                      padding: EdgeInsets.all(
+                        MediaQuery.of(context).size.width >= 1024 ? 24 : 16,
+                      ),
+                      child: _buildBody(),
+                    ),
+                  ),
+                ),
+                const AppFooter(),
+              ],
+            ),
           ),
         ),
 
@@ -297,7 +309,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
     );
   }
 
-  Widget _buildBodyWithFooter() {
+  Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -330,10 +342,9 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
 
     final contract = _contract!;
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Text(
@@ -395,9 +406,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
             ),
           ),
           const SizedBox(height: 32),
-          const AppFooter(),
         ],
-      ),
-    );
+      );
   }
 }
