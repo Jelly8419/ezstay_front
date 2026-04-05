@@ -139,18 +139,25 @@ class SettlementListResponse {
   });
 
   factory SettlementListResponse.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] ?? json;
+    final data = (json['data'] ?? json) as Map<String, dynamic>;
+    final settlementsList = data['settlements'];
+    final filters = data['filters'];
+    final roomsList = filters is Map ? filters['rooms'] : null;
     return SettlementListResponse(
-      settlements: (data['settlements'] as List<dynamic>?)
-              ?.map((e) => Settlement.fromJson(e))
-              .toList() ??
-          [],
-      summary: SettlementSummary.fromJson(data['summary'] ?? {}),
-      pagination: SettlementPagination.fromJson(data['pagination'] ?? {}),
-      rooms: (data['filters']?['rooms'] as List<dynamic>?)
-              ?.map((e) => SettlementRoom.fromJson(e))
-              .toList() ??
-          [],
+      settlements: settlementsList is List
+          ? settlementsList
+              .map((e) => Settlement.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : [],
+      summary: SettlementSummary.fromJson(
+          (data['summary'] ?? <String, dynamic>{}) as Map<String, dynamic>),
+      pagination: SettlementPagination.fromJson(
+          (data['pagination'] ?? <String, dynamic>{}) as Map<String, dynamic>),
+      rooms: roomsList is List
+          ? roomsList
+              .map((e) => SettlementRoom.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : [],
     );
   }
 }
@@ -390,14 +397,20 @@ class SettlementDetail {
   });
 
   factory SettlementDetail.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] ?? json;
+    final data = (json['data'] ?? json) as Map<String, dynamic>;
     return SettlementDetail(
-      contract: SettlementContract.fromJson(data['contract'] ?? {}),
-      room: SettlementRoomInfo.fromJson(data['room'] ?? {}),
-      guest: SettlementGuest.fromJson(data['guest'] ?? {}),
-      breakdown: SettlementBreakdown.fromJson(data['breakdown'] ?? {}),
-      refund: SettlementRefund.fromJson(data['refund'] ?? {}),
-      settlement: SettlementInfo.fromJson(data['settlement'] ?? {}),
+      contract: SettlementContract.fromJson(
+          (data['contract'] ?? <String, dynamic>{}) as Map<String, dynamic>),
+      room: SettlementRoomInfo.fromJson(
+          (data['room'] ?? <String, dynamic>{}) as Map<String, dynamic>),
+      guest: SettlementGuest.fromJson(
+          (data['guest'] ?? <String, dynamic>{}) as Map<String, dynamic>),
+      breakdown: SettlementBreakdown.fromJson(
+          (data['breakdown'] ?? <String, dynamic>{}) as Map<String, dynamic>),
+      refund: SettlementRefund.fromJson(
+          (data['refund'] ?? <String, dynamic>{}) as Map<String, dynamic>),
+      settlement: SettlementInfo.fromJson(
+          (data['settlement'] ?? <String, dynamic>{}) as Map<String, dynamic>),
     );
   }
 }
