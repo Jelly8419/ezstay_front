@@ -436,8 +436,6 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
                   onDateChange: _handleEndDateChange,
                 ),
               ],
-              // Spacer for desktop
-              if (isDesktop) Spacer(),
               // 엑셀 다운로드 버튼
               _buildExcelDownloadButton(),
             ],
