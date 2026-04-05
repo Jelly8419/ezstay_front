@@ -1,3 +1,19 @@
+// ignore_for_file: avoid_dynamic_calls
+
+/// JSON에서 안전하게 Map을 추출 (릴리즈 빌드 타입 캐스트 오류 방지)
+Map<String, dynamic> _asMap(dynamic value) {
+  if (value is Map) {
+    return value.map((k, v) => MapEntry(k.toString(), v));
+  }
+  return <String, dynamic>{};
+}
+
+/// JSON에서 안전하게 List를 추출
+List<dynamic> _asList(dynamic value) {
+  if (value is List) return value;
+  return <dynamic>[];
+}
+
 /// 정산 목록 아이템 (API 응답)
 class Settlement {
   final int contractId;
@@ -36,24 +52,25 @@ class Settlement {
     required this.hasEzCleaningService,
   });
 
-  factory Settlement.fromJson(Map<String, dynamic> json) {
+  factory Settlement.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return Settlement(
       contractId: (json['contractId'] ?? 0).toInt(),
-      contractNumber: json['contractNumber'] ?? '',
+      contractNumber: (json['contractNumber'] ?? '').toString(),
       roomId: (json['roomId'] ?? 0).toInt(),
-      roomTitle: json['roomTitle'] ?? '',
-      roomThumbnail: json['roomThumbnail'],
-      guestName: json['guestName'] ?? '',
-      checkInDate: json['checkInDate'] ?? '',
-      checkOutDate: json['checkOutDate'] ?? '',
+      roomTitle: (json['roomTitle'] ?? '').toString(),
+      roomThumbnail: json['roomThumbnail']?.toString(),
+      guestName: (json['guestName'] ?? '').toString(),
+      checkInDate: (json['checkInDate'] ?? '').toString(),
+      checkOutDate: (json['checkOutDate'] ?? '').toString(),
       rentalDays: (json['rentalDays'] ?? 0).toInt(),
       settlementAmount: (json['settlementAmount'] ?? 0).toInt(),
-      settlementDate: json['settlementDate'] ?? '',
-      status: json['status'] ?? 'pending',
-      statusLabel: json['statusLabel'] ?? '',
-      hasRefund: json['hasRefund'] ?? false,
+      settlementDate: (json['settlementDate'] ?? '').toString(),
+      status: (json['status'] ?? 'pending').toString(),
+      statusLabel: (json['statusLabel'] ?? '').toString(),
+      hasRefund: json['hasRefund'] == true,
       refundAmount: (json['refundAmount'] ?? 0).toInt(),
-      hasEzCleaningService: json['hasEzCleaningService'] ?? false,
+      hasEzCleaningService: json['hasEzCleaningService'] == true,
     );
   }
 }
@@ -72,7 +89,8 @@ class SettlementSummary {
     required this.completedCount,
   });
 
-  factory SettlementSummary.fromJson(Map<String, dynamic> json) {
+  factory SettlementSummary.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return SettlementSummary(
       totalCount: (json['totalCount'] ?? 0).toInt(),
       totalSettlementAmount: (json['totalSettlementAmount'] ?? 0).toInt(),
@@ -96,7 +114,8 @@ class SettlementPagination {
     required this.totalCount,
   });
 
-  factory SettlementPagination.fromJson(Map<String, dynamic> json) {
+  factory SettlementPagination.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return SettlementPagination(
       page: (json['page'] ?? 1).toInt(),
       limit: (json['limit'] ?? 20).toInt(),
@@ -116,10 +135,11 @@ class SettlementRoom {
     required this.roomTitle,
   });
 
-  factory SettlementRoom.fromJson(Map<String, dynamic> json) {
+  factory SettlementRoom.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return SettlementRoom(
       roomId: (json['roomId'] ?? 0).toInt(),
-      roomTitle: json['roomTitle'] ?? '',
+      roomTitle: (json['roomTitle'] ?? '').toString(),
     );
   }
 }
@@ -138,26 +158,19 @@ class SettlementListResponse {
     required this.rooms,
   });
 
-  factory SettlementListResponse.fromJson(Map<String, dynamic> json) {
-    final data = (json['data'] ?? json) as Map<String, dynamic>;
-    final settlementsList = data['settlements'];
-    final filters = data['filters'];
-    final roomsList = filters is Map ? filters['rooms'] : null;
+  factory SettlementListResponse.fromJson(dynamic raw) {
+    final root = _asMap(raw);
+    final data = _asMap(root['data'] ?? root);
+    final filters = _asMap(data['filters']);
     return SettlementListResponse(
-      settlements: settlementsList is List
-          ? settlementsList
-              .map((e) => Settlement.fromJson(e as Map<String, dynamic>))
-              .toList()
-          : [],
-      summary: SettlementSummary.fromJson(
-          (data['summary'] ?? <String, dynamic>{}) as Map<String, dynamic>),
-      pagination: SettlementPagination.fromJson(
-          (data['pagination'] ?? <String, dynamic>{}) as Map<String, dynamic>),
-      rooms: roomsList is List
-          ? roomsList
-              .map((e) => SettlementRoom.fromJson(e as Map<String, dynamic>))
-              .toList()
-          : [],
+      settlements: _asList(data['settlements'])
+          .map((e) => Settlement.fromJson(e))
+          .toList(),
+      summary: SettlementSummary.fromJson(data['summary']),
+      pagination: SettlementPagination.fromJson(data['pagination']),
+      rooms: _asList(filters['rooms'])
+          .map((e) => SettlementRoom.fromJson(e))
+          .toList(),
     );
   }
 }
@@ -182,15 +195,16 @@ class SettlementContract {
     this.paidAt,
   });
 
-  factory SettlementContract.fromJson(Map<String, dynamic> json) {
+  factory SettlementContract.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return SettlementContract(
       contractId: (json['contractId'] ?? 0).toInt(),
-      contractNumber: json['contractNumber'] ?? '',
-      status: json['status'] ?? '',
-      checkInDate: json['checkInDate'] ?? '',
-      checkOutDate: json['checkOutDate'] ?? '',
+      contractNumber: (json['contractNumber'] ?? '').toString(),
+      status: (json['status'] ?? '').toString(),
+      checkInDate: (json['checkInDate'] ?? '').toString(),
+      checkOutDate: (json['checkOutDate'] ?? '').toString(),
       rentalDays: (json['rentalDays'] ?? 0).toInt(),
-      paidAt: json['paidAt'],
+      paidAt: json['paidAt']?.toString(),
     );
   }
 }
@@ -209,12 +223,13 @@ class SettlementRoomInfo {
     this.thumbnail,
   });
 
-  factory SettlementRoomInfo.fromJson(Map<String, dynamic> json) {
+  factory SettlementRoomInfo.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return SettlementRoomInfo(
       roomId: (json['roomId'] ?? 0).toInt(),
-      title: json['title'] ?? '',
-      address: json['address'] ?? '',
-      thumbnail: json['thumbnail'],
+      title: (json['title'] ?? '').toString(),
+      address: (json['address'] ?? '').toString(),
+      thumbnail: json['thumbnail']?.toString(),
     );
   }
 }
@@ -229,10 +244,11 @@ class SettlementGuest {
     required this.phone,
   });
 
-  factory SettlementGuest.fromJson(Map<String, dynamic> json) {
+  factory SettlementGuest.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return SettlementGuest(
-      name: json['name'] ?? '',
-      phone: json['phone'] ?? '',
+      name: (json['name'] ?? '').toString(),
+      phone: (json['phone'] ?? '').toString(),
     );
   }
 }
@@ -261,13 +277,14 @@ class SettlementBreakdown {
     required this.grossSettlement,
   });
 
-  factory SettlementBreakdown.fromJson(Map<String, dynamic> json) {
+  factory SettlementBreakdown.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return SettlementBreakdown(
       rentalFee: (json['rentalFee'] ?? 0).toInt(),
       maintenanceFee: (json['maintenanceFee'] ?? 0).toInt(),
       cleaningFee: (json['cleaningFee'] ?? 0).toInt(),
       originalCleaningFee: (json['originalCleaningFee'] ?? 0).toInt(),
-      hasEzCleaningService: json['hasEzCleaningService'] ?? false,
+      hasEzCleaningService: json['hasEzCleaningService'] == true,
       subtotal: (json['subtotal'] ?? 0).toInt(),
       platformFee: (json['platformFee'] ?? 0).toInt(),
       platformFeeRate: (json['platformFeeRate'] ?? 3.3).toDouble(),
@@ -290,7 +307,8 @@ class RefundDetails {
     required this.totalRefund,
   });
 
-  factory RefundDetails.fromJson(Map<String, dynamic> json) {
+  factory RefundDetails.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return RefundDetails(
       rentalFeeRefund: (json['rentalFeeRefund'] ?? 0).toInt(),
       maintenanceFeeRefund: (json['maintenanceFeeRefund'] ?? 0).toInt(),
@@ -316,12 +334,13 @@ class SettlementRefund {
     this.refundDetails,
   });
 
-  factory SettlementRefund.fromJson(Map<String, dynamic> json) {
+  factory SettlementRefund.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return SettlementRefund(
-      hasRefund: json['hasRefund'] ?? false,
-      refundDate: json['refundDate'],
-      refundReason: json['refundReason'],
-      refundType: json['refundType'],
+      hasRefund: json['hasRefund'] == true,
+      refundDate: json['refundDate']?.toString(),
+      refundReason: json['refundReason']?.toString(),
+      refundType: json['refundType']?.toString(),
       refundDetails: json['refundDetails'] != null
           ? RefundDetails.fromJson(json['refundDetails'])
           : null,
@@ -341,11 +360,12 @@ class BankInfo {
     required this.accountHolder,
   });
 
-  factory BankInfo.fromJson(Map<String, dynamic> json) {
+  factory BankInfo.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return BankInfo(
-      bankName: json['bankName'] ?? '',
-      accountNumber: json['accountNumber'] ?? '',
-      accountHolder: json['accountHolder'] ?? '',
+      bankName: (json['bankName'] ?? '').toString(),
+      accountNumber: (json['accountNumber'] ?? '').toString(),
+      accountHolder: (json['accountHolder'] ?? '').toString(),
     );
   }
 }
@@ -366,14 +386,16 @@ class SettlementInfo {
     this.bankInfo,
   });
 
-  factory SettlementInfo.fromJson(Map<String, dynamic> json) {
+  factory SettlementInfo.fromJson(dynamic raw) {
+    final json = _asMap(raw);
     return SettlementInfo(
       finalAmount: (json['finalAmount'] ?? 0).toInt(),
-      settlementDate: json['settlementDate'] ?? '',
-      status: json['status'] ?? 'pending',
-      statusLabel: json['statusLabel'] ?? '',
-      bankInfo:
-          json['bankInfo'] != null ? BankInfo.fromJson(json['bankInfo']) : null,
+      settlementDate: (json['settlementDate'] ?? '').toString(),
+      status: (json['status'] ?? 'pending').toString(),
+      statusLabel: (json['statusLabel'] ?? '').toString(),
+      bankInfo: json['bankInfo'] != null
+          ? BankInfo.fromJson(json['bankInfo'])
+          : null,
     );
   }
 }
@@ -396,21 +418,16 @@ class SettlementDetail {
     required this.settlement,
   });
 
-  factory SettlementDetail.fromJson(Map<String, dynamic> json) {
-    final data = (json['data'] ?? json) as Map<String, dynamic>;
+  factory SettlementDetail.fromJson(dynamic raw) {
+    final root = _asMap(raw);
+    final data = _asMap(root['data'] ?? root);
     return SettlementDetail(
-      contract: SettlementContract.fromJson(
-          (data['contract'] ?? <String, dynamic>{}) as Map<String, dynamic>),
-      room: SettlementRoomInfo.fromJson(
-          (data['room'] ?? <String, dynamic>{}) as Map<String, dynamic>),
-      guest: SettlementGuest.fromJson(
-          (data['guest'] ?? <String, dynamic>{}) as Map<String, dynamic>),
-      breakdown: SettlementBreakdown.fromJson(
-          (data['breakdown'] ?? <String, dynamic>{}) as Map<String, dynamic>),
-      refund: SettlementRefund.fromJson(
-          (data['refund'] ?? <String, dynamic>{}) as Map<String, dynamic>),
-      settlement: SettlementInfo.fromJson(
-          (data['settlement'] ?? <String, dynamic>{}) as Map<String, dynamic>),
+      contract: SettlementContract.fromJson(data['contract']),
+      room: SettlementRoomInfo.fromJson(data['room']),
+      guest: SettlementGuest.fromJson(data['guest']),
+      breakdown: SettlementBreakdown.fromJson(data['breakdown']),
+      refund: SettlementRefund.fromJson(data['refund']),
+      settlement: SettlementInfo.fromJson(data['settlement']),
     );
   }
 }
