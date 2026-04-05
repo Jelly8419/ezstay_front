@@ -135,13 +135,11 @@ class ContractInfoPaymentHistorySection extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Text(_typeLabel(history.transactionType),
+                              Text(history.isPayment ? '결제' : '환불',
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     color: AppColors.gray900,
                                     fontWeight: FontWeight.w700,
                                   )),
-                              const SizedBox(width: 8),
-                              _PaymentStatusBadge(status: history.status),
                             ],
                           ),
                           if (history.description != null) ...[
@@ -153,7 +151,7 @@ class ContractInfoPaymentHistorySection extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                               FormatUtils.formatDateTimeDot(
-                                  history.transactionDate),
+                                  history.occurredAt),
                               style: AppTextStyles.caption
                                   .copyWith(color: AppColors.neutral500)),
                         ],
@@ -176,61 +174,4 @@ class ContractInfoPaymentHistorySection extends StatelessWidget {
     );
   }
 
-  String _typeLabel(String type) {
-    switch (type) {
-      case 'PAYMENT':
-        return '결제';
-      case 'PARTIAL_REFUND':
-        return '부분 환불';
-      case 'FULL_REFUND':
-        return '전체 환불';
-      default:
-        return type;
-    }
-  }
-}
-
-class _PaymentStatusBadge extends StatelessWidget {
-  final String status;
-
-  const _PaymentStatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final Color bgColor;
-    final Color textColor;
-    final String label;
-
-    switch (status) {
-      case 'COMPLETED':
-        bgColor = const Color(0xFFD1FAE5);
-        textColor = const Color(0xFF047857);
-        label = '완료';
-      case 'PENDING':
-        bgColor = const Color(0xFFFEF3C7);
-        textColor = const Color(0xFFA16207);
-        label = '대기';
-      case 'FAILED':
-        bgColor = const Color(0xFFFEE2E2);
-        textColor = const Color(0xFFB91C1C);
-        label = '실패';
-      default:
-        bgColor = AppColors.neutral100;
-        textColor = AppColors.neutral700;
-        label = status;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(label,
-          style: AppTextStyles.caption.copyWith(
-            color: textColor,
-            fontWeight: FontWeight.w700,
-          )),
-    );
-  }
 }

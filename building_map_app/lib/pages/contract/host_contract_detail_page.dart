@@ -18,6 +18,7 @@ import '../../widgets/contract/host_deposit_agreement_section.dart';
 import '../../widgets/contract/host_contract_basic_info_section.dart';
 import '../../widgets/contract/host_contract_action_buttons.dart';
 import '../../widgets/contract/host_contract_party_info_section.dart';
+import '../../widgets/contract/guest_contract_payment_history_section.dart';
 import '../../widgets/modals/host_contract_modals.dart' show DepositAgreementModal, RequestCancellationModal;
 
 /// 호스트 계약 상세 페이지
@@ -386,6 +387,11 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
             contract: contract,
             onSubmitAgreement: _handleDepositAgreement,
           ),
+
+          if (contract.paymentHistory.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            GuestContractPaymentHistorySection(contract: contract),
+          ],
 
           const SizedBox(height: 24),
           ContractDetailCard(
