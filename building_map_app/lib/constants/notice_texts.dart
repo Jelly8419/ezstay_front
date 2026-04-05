@@ -6,14 +6,15 @@ class NoticeTexts {
 
   // === 환불 안내사항 ===
   static const sameDayCancelPenalty =
-      '결제 당일 취소 시, 환불 규정과 관계 없이 임대료와 계약 수수료를 합계한 10%만 위약금으로 부과됩니다.';
+      '결제 당일 취소 시, 환불 규정과 관계 없이 임대료의 10%와 수수료만 부과됩니다.\n단, 무료 취소 기간에 해당하는 경우 전액 환불됩니다.';
 
-  static const alwaysRefundDefault = '관리비, 청소비, 보증금은 전액 환불됩니다.';
+  static const alwaysRefundDefault = '계약 취소 시 관리비, 청소비, 보증금은 전액 환불됩니다.';
 
-  static const afterSameDayNoServiceFeeRefund =
-      '결제 당일 이후에는 계약수수료가 환불되지 않습니다.';
+  static const afterSameDayNoServiceFeeRefund = '결제 당일 이후에는 계약수수료가 환불되지 않습니다.';
 
-  static const rentRefundByHost = '임대료 환불 규정은 호스트의 설정에 따라 달라집니다.';
+  static const rentRefundByHost = '환불 규정은 임대인이 설정할 수 있습니다.';
+
+  static const hostCancelPenalty = '임대인이 계약을 취소할 경우, 동일한 기준의 위약금이 발생하며, 임차인에게 자동 지급됩니다.';
 
   // === 옵션 상품 환불 ===
   static const optionRefundWithin7Days = '옵션 상품은 배송 완료 후 7일 내에 환불이 가능합니다.';
@@ -31,12 +32,11 @@ class NoticeTexts {
       '배송 완료 상품 반품 시 수거비 7,000원이 차감될 수 있습니다. 동일 계약 내 수거 진행 중인 건이 있으면 면제됩니다.';
 
   // === 환불 규칙 텍스트 생성 ===
-  /// RefundRule, RefundPolicyRule 등 description + refundRate 조합 텍스트
-  static String cancellationText(String description, int refundRate) {
-    if (refundRate == 0) {
-      return '$description : 임대료 환불 불가';
-    }
-    return '$description : 임대료의 $refundRate% 환불';
+  /// RefundRule의 period + description + 수수료 조합 텍스트
+  static String cancellationText(String period, String description, int refundRate) {
+    final desc = description.isNotEmpty ? description : (refundRate == 0 ? '취소 불가' : '임대료의 $refundRate% 환불');
+    if (refundRate == 0) return '$period $desc';
+    return '$period $desc 및 수수료';
   }
 
   // === 계약 안내사항 (게스트) ===

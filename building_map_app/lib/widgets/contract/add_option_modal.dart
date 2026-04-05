@@ -28,7 +28,7 @@ class _AddOptionModalState extends State<AddOptionModal> {
         final option = widget.availableOptions.firstWhere(
           (o) => o.id == entry.key,
           orElse: () =>
-              AvailableRentalItem(id: 0, name: '', price: 0, availableStock: 0),
+              AvailableRentalItem(id: 0, name: '', price: 0, totalStock: 0),
         );
         total += option.price * entry.value;
       }
@@ -313,7 +313,7 @@ class _AddOptionModalState extends State<AddOptionModal> {
                   ),
                   // 플러스 버튼
                   InkWell(
-                    onTap: qty < option.availableStock
+                    onTap: qty < option.totalStock
                         ? () {
                             setState(() {
                               _quantities[option.id] = qty + 1;
@@ -323,7 +323,7 @@ class _AddOptionModalState extends State<AddOptionModal> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  '이 옵션은 최대 ${option.availableStock}개까지 선택 가능합니다.',
+                                  '이 옵션은 최대 ${option.totalStock}개까지 선택 가능합니다.',
                                 ),
                                 backgroundColor: const Color(0xFFF59E0B),
                               ),

@@ -572,13 +572,178 @@ class _PricingStepState extends State<PricingStep> {
     _updateFormData('maintenanceInclusions', updated);
   }
 
+  bool get _refundPolicyConfirmed =>
+      (widget.formData['refundPolicyConfirmed'] as bool?) ?? false;
+
+  /// 환불 정책 상세 표 + 안내문
+  Widget _buildRefundPolicyDetail(RefundPolicy policy) {
+    final periods = policy.rules.map((r) => r.period).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 표 (절반 너비, 왼쪽 정렬)
+        FractionallySizedBox(
+          widthFactor: 0.5,
+          alignment: Alignment.centerLeft,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Table(
+              border: TableBorder.all(color: AppColors.gray200, width: 1),
+              columnWidths: const {
+                0: FlexColumnWidth(1.4),
+                1: FlexColumnWidth(1),
+                2: FlexColumnWidth(1),
+                3: FlexColumnWidth(1),
+              },
+              children: [
+                // 헤더 행
+                TableRow(
+                  decoration: const BoxDecoration(color: AppColors.gray50),
+                  children: [
+                    _tableCell('', isHeader: true),
+                    ..._refundPolicies.map(
+                      (p) => _tableCell(
+                        p.displayName,
+                        isHeader: true,
+                        center: true,
+                      ),
+                    ),
+                  ],
+                ),
+                // 기간별 행
+                ...periods.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final period = entry.value;
+                  return TableRow(
+                    children: [
+                      _tableCell(period, isHeader: true),
+                      ..._refundPolicies.map((p) {
+                        if (idx >= p.rules.length) return _tableCell('-');
+                        final rule = p.rules[idx];
+                        final text = rule.refundRate == 0
+                            ? '취소 불가'
+                            : rule.description.isNotEmpty
+                            ? rule.description
+                            : '임대료의 ${rule.refundRate}%';
+                        return _tableCell(text);
+                      }),
+                    ],
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
+        // 안내문
+        const SizedBox(height: 12),
+        _bulletText(
+          '결제 당일 취소 시, 선택한 위약금 규정과 관계 없이 임대료의 10%와 수수료가 위약금으로 부과됩니다. 단, 무료 취소 기간에 해당하는 경우 전액 환불됩니다.',
+        ),
+        const SizedBox(height: 6),
+        _bulletText('관리비, 청소비, 보증금은 전액 환불됩니다.'),
+        const SizedBox(height: 6),
+        _bulletText('계약 취소 후 위약금은 임대인에게 자동 지급됩니다.'),
+        const SizedBox(height: 12),
+        const Text(
+          '주의사항',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 6),
+        _bulletText(
+          '임대인님이 계약을 취소 하는 경우에 선택하신 규정으로 임차인에게 지급할 위약금과 수수료를 결제해야 합니다.',
+        ),
+      ],
+    );
+  }
+
+  Widget _tableCell(String text, {bool isHeader = false, bool center = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isHeader ? FontWeight.w600 : FontWeight.w400,
+          color: Colors.black,
+        ),
+        textAlign: center
+            ? TextAlign.center
+            : (isHeader ? TextAlign.left : TextAlign.center),
+      ),
+    );
+  }
+
+  Widget _bulletText(String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('• ', style: TextStyle(fontSize: 12, color: Colors.black87)),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 12, color: Colors.black87),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 환불 규정 확인 체크박스
+  Widget _buildRefundPolicyCheckbox() {
+    final hasError = _hasError('refundPolicyConfirmed');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () {
+            _updateFormData('refundPolicyConfirmed', !_refundPolicyConfirmed);
+          },
+          borderRadius: BorderRadius.circular(4),
+          child: Row(
+            children: [
+              Checkbox(
+                value: _refundPolicyConfirmed,
+                onChanged: (value) {
+                  _updateFormData('refundPolicyConfirmed', value ?? false);
+                },
+                activeColor: AppColors.primary600,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              const SizedBox(width: 4),
+              const Text(
+                '환불 규정 및 주의사항을 확인하였습니다.',
+                style: TextStyle(fontSize: 14, color: Colors.black87),
+              ),
+            ],
+          ),
+        ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 4),
+            child: Text(
+              '환불 규정 및 주의사항을 확인해주세요',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.error600,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   bool _hasError(String field) {
     if (widget.validationErrors == null) return false;
     const errorMessages = {
       'dailyRent': '임대료를 입력해주세요',
       'dailyMaintenanceFee': '관리비를 입력해주세요',
       'cleaningFee': '청소비를 입력해주세요',
-      'refundPolicy': '환불 규정을 선택해주세요',
+      'refundPolicy': '환불 정책을 선택해주세요',
+      'refundPolicyConfirmed': '환불 규정 및 주의사항을 확인해주세요',
     };
     return widget.validationErrors!.contains(errorMessages[field]);
   }
@@ -1207,128 +1372,81 @@ class _PricingStepState extends State<PricingStep> {
                   )
                 // 정상 로드됨
                 else ...[
-                  DropdownButtonFormField<String>(
-                    initialValue:
-                        _refundPolicies.any(
-                          (p) => p.policyType == _refundPolicy,
-                        )
-                        ? _refundPolicy
-                        : null,
-                    items: [
-                      const DropdownMenuItem(value: null, child: Text('선택')),
-                      ..._refundPolicies.map(
-                        (policy) => DropdownMenuItem(
-                          value: policy.policyType,
-                          child: Text(policy.displayName),
+                  SizedBox(
+                    width: 160,
+                    child: DropdownButtonFormField<String>(
+                      initialValue:
+                          _refundPolicies.any(
+                            (p) => p.policyType == _refundPolicy,
+                          )
+                          ? _refundPolicy
+                          : null,
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('선택')),
+                        ..._refundPolicies.map(
+                          (policy) => DropdownMenuItem(
+                            value: policy.policyType,
+                            child: Text(policy.displayName),
+                          ),
                         ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        _updateFormData('refundPolicy', value);
-                      }
-                    },
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.gray300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.gray300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: AppColors.primary600,
-                          width: 2,
+                      ],
+                      onChanged: (value) {
+                        _updateFormData('refundPolicy', value ?? '');
+                      },
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: AppColors.gray300,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: AppColors.gray300,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: AppColors.primary600,
+                            width: 2,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  // 선택된 정책의 상세 내용 표시
-                  if (_refundPolicy.isNotEmpty) ...[
+                  ), // SizedBox
+                  if (_hasError('refundPolicy'))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        '환불 정책을 선택해주세요',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.error600,
+                        ),
+                      ),
+                    ),
+                  // 선택된 정책 상세 표 + 안내문
+                  if (_refundPolicy.isNotEmpty &&
+                      _refundPolicies.any(
+                        (p) => p.policyType == _refundPolicy,
+                      )) ...[
                     const SizedBox(height: 16),
-                    Builder(
-                      builder: (context) {
-                        final selectedPolicy = _refundPolicies.firstWhere(
-                          (p) => p.policyType == _refundPolicy,
-                          orElse: () => _refundPolicies.first,
-                        );
-
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.gray50,
-                            border: Border.all(color: AppColors.gray200),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 정책 설명
-                              if (selectedPolicy.description.isNotEmpty) ...[
-                                Text(
-                                  selectedPolicy.description,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                              ],
-                              // 환불 규칙
-                              ...selectedPolicy.rules.map(
-                                (rule) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
-                                  child: Text(
-                                    '• ${rule.period} : 임대료의 ${rule.refundRate}% 환불',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // 특별 규칙
-                              if (selectedPolicy.specialRules?.alwaysRefund !=
-                                  null) ...[
-                                const SizedBox(height: 8),
-                                const Divider(color: AppColors.gray300),
-                                const SizedBox(height: 8),
-                                Text(
-                                  selectedPolicy.specialRules!.alwaysRefund!,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.primary600,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        );
-                      },
+                    _buildRefundPolicyDetail(
+                      _refundPolicies.firstWhere(
+                        (p) => p.policyType == _refundPolicy,
+                      ),
                     ),
                   ],
+                  const SizedBox(height: 16),
+                  _buildRefundPolicyCheckbox(),
                 ],
-                if (_hasError('refundPolicy'))
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      '환불 규정을 선택해주세요',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.error600,
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -1364,17 +1482,25 @@ class _PricingStepState extends State<PricingStep> {
                           ? _longTermDiscountWeeks
                           : '',
                       items: [
-                        const DropdownMenuItem(
-                          value: '',
-                          child: Text('선택'),
+                        const DropdownMenuItem(value: '', child: Text('선택')),
+                        ...[
+                          '2',
+                          '3',
+                          '4',
+                          '5',
+                          '6',
+                          '7',
+                          '8',
+                          '9',
+                          '10',
+                          '11',
+                          '12',
+                        ].map(
+                          (week) => DropdownMenuItem(
+                            value: week,
+                            child: Text('$week주'),
+                          ),
                         ),
-                        ...['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
-                            .map(
-                              (week) => DropdownMenuItem(
-                                value: week,
-                                child: Text('$week주'),
-                              ),
-                            ),
                       ],
                       onChanged: (value) {
                         if (value != null) {
@@ -1475,10 +1601,7 @@ class _PricingStepState extends State<PricingStep> {
                           ? _earlyCheckInDiscountDays
                           : '',
                       items: [
-                        const DropdownMenuItem(
-                          value: '',
-                          child: Text('선택'),
-                        ),
+                        const DropdownMenuItem(value: '', child: Text('선택')),
                         ...[
                           {'value': '0', 'label': '오늘입주'},
                           {'value': '1', 'label': '1일'},

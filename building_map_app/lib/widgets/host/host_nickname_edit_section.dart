@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../utils/text_input_validator.dart';
 import '../common/custom_text_field.dart';
 
 /// 닉네임 변경 섹션
@@ -17,6 +18,7 @@ class HostNicknameEditSection extends StatelessWidget {
     required this.onCancel,
     required this.onSave,
     required this.onFieldChanged,
+    this.nicknameError,
   });
 
   final bool isEditing;
@@ -26,6 +28,7 @@ class HostNicknameEditSection extends StatelessWidget {
   final VoidCallback onCancel;
   final VoidCallback onSave;
   final VoidCallback onFieldChanged;
+  final String? nicknameError;
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +84,9 @@ class HostNicknameEditSection extends StatelessWidget {
   }
 
   Widget _buildEditForm() {
-    final canSubmit = nicknameController.text.trim().length >= 2 &&
-        nicknameController.text.trim().length <= 20;
+    final trimmed = nicknameController.text.trim();
+    final canSubmit = nicknameError == null &&
+        TextInputValidator.isValid(trimmed, minLength: 2, maxLength: 20);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,14 +103,13 @@ class HostNicknameEditSection extends StatelessWidget {
           hint: '닉네임을 입력해주세요',
           onChanged: (_) => onFieldChanged(),
         ),
-        const SizedBox(height: 4),
         Padding(
-          padding: const EdgeInsets.only(left: 4),
+          padding: const EdgeInsets.only(left: 4, top: 4),
           child: Text(
-            '2~20자 입력 가능',
+            nicknameError ?? '2~20자, 한글/영어만 입력 가능',
             style: AppTextStyles.bodySmall.copyWith(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: nicknameError != null ? AppColors.error500 : AppColors.textSecondary,
             ),
           ),
         ),

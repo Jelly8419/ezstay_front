@@ -612,7 +612,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
           ),
           // 증가 버튼
           InkWell(
-            onTap: currentQuantity < item.availableStock
+            onTap: currentQuantity < item.totalStock
                 ? () {
                     _updateState(
                       _bookingState.addRentalItem(item.id, currentQuantity + 1),
@@ -627,7 +627,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
               child: Icon(
                 Icons.add,
                 size: 18,
-                color: currentQuantity < item.availableStock
+                color: currentQuantity < item.totalStock
                     ? AppColors.textPrimary
                     : AppColors.neutral400,
               ),

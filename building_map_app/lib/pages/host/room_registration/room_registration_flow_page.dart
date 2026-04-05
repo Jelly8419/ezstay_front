@@ -85,6 +85,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     'cleaningFee': '',
     'minContractDays': '7',
     'refundPolicy': '보통',
+    'refundPolicyConfirmed': false,
     'longTermDiscountWeeks': '',
     'longTermDiscountPercent': '',
     'earlyCheckinDiscountDays': '',
@@ -169,7 +170,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
             _formData['uploadedPhotos'] = photoObjects; // photoId 추적용
           }
 
-          // amenities 객체에서 JSON 문자열 파싱
+          // amenities 객체 파싱 (Map 직접 응답 또는 JSON 문자열 이중 직렬화 모두 대응)
           if (roomData['amenities'] != null && roomData['amenities'] is Map) {
             final amenities = roomData['amenities'] as Map<String, dynamic>;
             final optionMapping = _getOptionMapping();
@@ -177,95 +178,68 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               for (var e in optionMapping.entries) e.value: e.key,
             };
 
-            // basicOptions JSON 문자열 파싱 (이중 직렬화 대응)
-            if (amenities['basicOptions'] != null &&
-                amenities['basicOptions'] is String) {
-              try {
-                dynamic decoded = jsonDecode(amenities['basicOptions']);
-                if (decoded is String) decoded = jsonDecode(decoded);
-                final basicOptionsMap = decoded as Map<String, dynamic>;
-
-                // 영어 필드명을 한글로 역변환
-                basicOptionsMap.forEach((englishKey, value) {
-                  if (englishKey == 'bed' && value is Map) {
-                    // 침대 정보 처리
-                    basicOptionsList.add('침대');
-                    final bedMap = value as Map<String, dynamic>;
-                    final sizeReverseMapping = {
-                      'king': '킹',
-                      'queen': '퀸',
-                      'single': '싱글',
-                      'superSingle': '슈퍼싱글',
-                    };
-
-                    bedMap.forEach((englishSize, count) {
-                      final koreanSize = sizeReverseMapping[englishSize];
-                      if (koreanSize != null && count > 0) {
-                        bedSelectionsList.add({
-                          'size': koreanSize,
-                          'count': count,
-                        });
-                      }
-                    });
-                  } else if (value == true) {
-                    // boolean 옵션 (true인 것만)
-                    final koreanKey = reverseMapping[englishKey];
-                    if (koreanKey != null) {
-                      basicOptionsList.add(koreanKey);
-                    }
-                  }
-                });
-              } on UnauthorizedException {
-                if (mounted) context.go('/login');
-              } catch (e) {
-                AppLogger.e('❌ basicOptions JSON 파싱 실패: $e');
+            Map<String, dynamic>? toMap(dynamic raw) {
+              if (raw == null) return null;
+              if (raw is Map<String, dynamic>) return raw;
+              if (raw is String) {
+                try {
+                  dynamic decoded = jsonDecode(raw);
+                  if (decoded is String) decoded = jsonDecode(decoded);
+                  if (decoded is Map<String, dynamic>) return decoded;
+                } catch (_) {}
               }
+              return null;
             }
 
-            // additionalOptions JSON 문자열 파싱 (이중 직렬화 대응)
-            if (amenities['additionalOptions'] != null &&
-                amenities['additionalOptions'] is String) {
-              try {
-                dynamic decoded = jsonDecode(amenities['additionalOptions']);
-                if (decoded is String) decoded = jsonDecode(decoded);
-                final additionalOptionsMap = decoded as Map<String, dynamic>;
-
-                additionalOptionsMap.forEach((englishKey, value) {
-                  if (value == true) {
-                    final koreanKey = reverseMapping[englishKey];
-                    if (koreanKey != null) {
-                      selectedOptionsList.add(koreanKey);
+            // basicOptions 파싱
+            final basicOptionsMap = toMap(amenities['basicOptions']);
+            if (basicOptionsMap != null) {
+              basicOptionsMap.forEach((englishKey, value) {
+                if (englishKey == 'bed' && value is Map) {
+                  final bedMap = value as Map<String, dynamic>;
+                  final sizeReverseMapping = {
+                    'king': '킹',
+                    'queen': '퀸',
+                    'single': '싱글',
+                    'superSingle': '슈퍼싱글',
+                  };
+                  bool hasBed = false;
+                  bedMap.forEach((englishSize, count) {
+                    final koreanSize = sizeReverseMapping[englishSize];
+                    final cnt = count is int ? count : (count as num?)?.toInt() ?? 0;
+                    if (koreanSize != null && cnt > 0) {
+                      hasBed = true;
+                      bedSelectionsList.add({'size': koreanSize, 'count': cnt});
                     }
-                  }
-                });
-              } on UnauthorizedException {
-                if (mounted) context.go('/login');
-              } catch (e) {
-                AppLogger.e('❌ additionalOptions JSON 파싱 실패: $e');
-              }
+                  });
+                  if (hasBed) basicOptionsList.add('침대');
+                } else if (value == true) {
+                  final koreanKey = reverseMapping[englishKey];
+                  if (koreanKey != null) basicOptionsList.add(koreanKey);
+                }
+              });
             }
 
-            // convenienceOptions JSON 문자열 파싱 (이중 직렬화 대응)
-            if (amenities['convenienceOptions'] != null &&
-                amenities['convenienceOptions'] is String) {
-              try {
-                dynamic decoded = jsonDecode(amenities['convenienceOptions']);
-                if (decoded is String) decoded = jsonDecode(decoded);
-                final convenienceOptionsMap = decoded as Map<String, dynamic>;
+            // additionalOptions 파싱
+            final additionalOptionsMap = toMap(amenities['additionalOptions']);
+            if (additionalOptionsMap != null) {
+              additionalOptionsMap.forEach((englishKey, value) {
+                if (value == true) {
+                  final koreanKey = reverseMapping[englishKey];
+                  if (koreanKey != null) selectedOptionsList.add(koreanKey);
+                }
+              });
+            }
 
-                convenienceOptionsMap.forEach((englishKey, value) {
-                  if (value == true) {
-                    final koreanKey = reverseMapping[englishKey];
-                    if (koreanKey != null) {
-                      selectedOptionsList.add(koreanKey);
-                    }
-                  }
-                });
-              } on UnauthorizedException {
-                if (mounted) context.go('/login');
-              } catch (e) {
-                AppLogger.e('❌ convenienceOptions JSON 파싱 실패: $e');
-              }
+            // convenienceOptions 파싱
+            final convenienceOptionsMap = toMap(amenities['convenienceOptions']);
+            if (convenienceOptionsMap != null) {
+              convenienceOptionsMap.forEach((englishKey, value) {
+                if (value == true) {
+                  final koreanKey = reverseMapping[englishKey];
+                  if (koreanKey != null) selectedOptionsList.add(koreanKey);
+                }
+              });
             }
           }
 

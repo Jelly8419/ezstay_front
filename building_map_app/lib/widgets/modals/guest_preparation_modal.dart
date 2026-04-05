@@ -43,7 +43,7 @@ class _GuestPreparationModalState extends State<GuestPreparationModal> {
         _errorMessage = null;
       });
 
-      final items = await _contractService.getAllRentalItems(inStock: true);
+      final items = await _contractService.getAllRentalItems();
 
       if (items != null && items.isNotEmpty) {
         setState(() {

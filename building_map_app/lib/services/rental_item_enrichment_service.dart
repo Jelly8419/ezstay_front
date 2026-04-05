@@ -36,7 +36,7 @@ class RentalItemEnrichmentService {
             'price': _parsePriceFromString(item['price']),
             'itemType': item['itemType'] ?? '',
             'itemTypeLabel': item['itemTypeLabel'] ?? '',
-            'availableStock': item['availableStock'] ?? 0,
+            'totalStock': item['totalStock'] ?? 0,
             'imageUrl': item['imageUrl'],
           };
         }

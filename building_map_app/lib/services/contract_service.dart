@@ -937,12 +937,10 @@ class ContractService {
   /// 렌탈 아이템 전체 목록 조회 (완전한 데이터)
   ///
   /// [itemType]: 필터할 아이템 타입 (선택) - hair_dryer, bedding_set, amenity_kit, towel_set, other
-  /// [inStock]: 재고 있는 것만 조회 (기본값: true)
   ///
-  /// 반환: 렌탈 아이템 목록 (id, itemType, itemTypeLabel, name, description, price, availableStock, imageUrl)
+  /// 반환: 렌탈 아이템 목록 (id, itemType, itemTypeLabel, name, description, price, totalStock, imageUrl)
   Future<List<dynamic>?> getAllRentalItems({
     String? itemType,
-    bool inStock = true,
   }) async {
     try {
       // 개발 환경에서는 skipExpiryCheck도 시도
@@ -960,14 +958,14 @@ class ContractService {
       }
 
       // 쿼리 파라미터 구성
-      final queryParams = <String, String>{'inStock': inStock.toString()};
+      final queryParams = <String, String>{};
       if (itemType != null && itemType.isNotEmpty) {
         queryParams['itemType'] = itemType;
       }
 
       final url = Uri.parse(
         '${ApiConfig.baseUrl}/api/rental-items',
-      ).replace(queryParameters: queryParams);
+      ).replace(queryParameters: queryParams.isEmpty ? null : queryParams);
 
       final response = await http
           .get(
