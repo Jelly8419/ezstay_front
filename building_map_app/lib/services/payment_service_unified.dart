@@ -167,7 +167,7 @@ class PaymentServiceUnified {
     required String payType,
   }) async {
     if (!kIsWeb) {
-      throw Exception('렌탈 추가 결제는 현재 웹에서만 지원됩니다.');
+      throw Exception('옵션 상품 추가 결제는 현재 웹에서만 지원됩니다.');
     }
 
     if (_webService == null) {
@@ -177,7 +177,7 @@ class PaymentServiceUnified {
     final orderId = paymentInfo['orderId'] as String;
     final actualAmount = (paymentInfo['amount'] as num).toInt();
     final pgAmount = paymentInfo['pgAmount'] == null ? null : (paymentInfo['pgAmount'] as num).toInt();
-    final orderName = paymentInfo['orderName'] as String? ?? '렌탈 아이템 추가';
+    final orderName = paymentInfo['orderName'] as String? ?? '옵션 상품 추가';
     final customerName = paymentInfo['customerName'] as String?;
     final customerEmail = paymentInfo['customerEmail'] as String?;
     final customerPhone = paymentInfo['customerPhone'] as String?;

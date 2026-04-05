@@ -322,7 +322,7 @@ void showRefundInfoDialog(
                 label: '서비스 수수료',
                 value: guestServiceFeeRefunded
                     ? '${FormatUtils.formatCurrency(originalPlatformFee as num)}원'
-                    : '환불 없음',
+                    : '환불 대상 제외',
                 subLabel:
                     '결제액 ${FormatUtils.formatCurrency(originalPlatformFee as num)}원',
                 isWarning: !guestServiceFeeRefunded,
