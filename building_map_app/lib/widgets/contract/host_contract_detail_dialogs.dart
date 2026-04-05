@@ -52,11 +52,11 @@ class HostCheckoutConfirmDialog extends StatelessWidget {
                     TextSpan(
                       children: [
                         const TextSpan(
-                          text: '청소 서비스 진행을 위해 방 도어락 비밀번호가 변경되진 않았는지 반드시 확인해주세요. ',
+                          text: '청소 서비스 진행을 위해 방 도어락 비밀번호가 맞는지 반드시 확인해주세요. ',
                         ),
                         if (roomId != null)
                           TextSpan(
-                            text: '(변경 요청)',
+                            text: '(현재 비밀번호 확인 및 변경 요청)',
                             style: const TextStyle(
                               color: Color(0xFF2563EB),
                               fontWeight: FontWeight.w700,
