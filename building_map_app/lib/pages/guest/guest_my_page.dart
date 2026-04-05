@@ -20,6 +20,7 @@ import '../../widgets/common/app_gnb.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../widgets/common/custom_text_field.dart';
 import '../../utils/password_validator.dart';
+import '../../utils/text_input_validator.dart';
 
 /// 게스트 마이페이지 (내 정보 관리)
 /// React: src/pages/GuestMyPage.tsx
@@ -57,6 +58,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
   // 닉네임 변경 상태
   bool _isEditingNickname = false;
   final TextEditingController _nicknameController = TextEditingController();
+  String? _nicknameError;
 
   @override
   void initState() {
@@ -134,6 +136,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
     setState(() {
       _isEditingNickname = false;
       _nicknameController.clear();
+      _nicknameError = null;
     });
   }
 
@@ -141,9 +144,9 @@ class _GuestMyPageState extends State<GuestMyPage> {
   Future<void> _handleNicknameChange() async {
     final nickname = _nicknameController.text.trim();
 
-    // 길이 검증 (2~20자)
-    if (nickname.length < 2 || nickname.length > 20) {
-      _showErrorDialog('닉네임은 2~20자로 입력해주세요.');
+    final error = TextInputValidator.validate(nickname, minLength: 2, maxLength: 20);
+    if (error != null) {
+      setState(() => _nicknameError = error);
       return;
     }
 
@@ -824,8 +827,9 @@ class _GuestMyPageState extends State<GuestMyPage> {
 
   /// 닉네임 편집 폼 (편집 모드 ON)
   Widget _buildNicknameEditForm() {
-    final canSubmit = _nicknameController.text.trim().length >= 2 &&
-        _nicknameController.text.trim().length <= 20;
+    final trimmed = _nicknameController.text.trim();
+    final canSubmit = _nicknameError == null &&
+        TextInputValidator.isValid(trimmed, minLength: 2, maxLength: 20);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -841,18 +845,20 @@ class _GuestMyPageState extends State<GuestMyPage> {
         CustomTextField(
           controller: _nicknameController,
           hint: '닉네임을 입력해주세요',
-          onChanged: (_) => setState(() {}),
+          onChanged: (v) {
+            setState(() {
+              _nicknameError = TextInputValidator.validate(v.trim(), minLength: 2, maxLength: 20);
+            });
+          },
         ),
 
-        const SizedBox(height: 4),
-
         Padding(
-          padding: const EdgeInsets.only(left: 4),
+          padding: const EdgeInsets.only(left: 4, top: 4),
           child: Text(
-            '2~20자 입력 가능',
+            _nicknameError ?? '2~20자, 한글/영어만 입력 가능',
             style: AppTextStyles.bodySmall.copyWith(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: _nicknameError != null ? AppColors.error500 : AppColors.textSecondary,
             ),
           ),
         ),

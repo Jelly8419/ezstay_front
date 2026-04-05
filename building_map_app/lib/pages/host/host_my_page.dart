@@ -24,6 +24,7 @@ import '../../widgets/host/host_nickname_edit_section.dart';
 import '../../widgets/host/host_password_edit_section.dart';
 import '../../widgets/host/host_receipt_display_section.dart';
 import '../../widgets/common/profile_info_row.dart';
+import '../../utils/text_input_validator.dart';
 
 /// 호스트 마이페이지 (내 정보 관리)
 /// React: src/pages/HostMyPage.tsx
@@ -60,6 +61,7 @@ class _HostMyPageState extends State<HostMyPage> {
   // 닉네임 변경 상태
   bool _isEditingNickname = false;
   final TextEditingController _nicknameController = TextEditingController();
+  String? _nicknameError;
 
   // 영수증 발급 관련 상태
   bool _isEditingReceipt = false;
@@ -177,11 +179,21 @@ class _HostMyPageState extends State<HostMyPage> {
     setState(() {
       _isEditingNickname = false;
       _nicknameController.clear();
+      _nicknameError = null;
     });
   }
 
   /// 닉네임 변경 처리
   Future<void> _handleNicknameChange() async {
+    final error = TextInputValidator.validate(
+      _nicknameController.text.trim(),
+      minLength: 2,
+      maxLength: 20,
+    );
+    if (error != null) {
+      setState(() => _nicknameError = error);
+      return;
+    }
     final newNickname = await _hostAccountService.changeNickname(
       context: context,
       nickname: _nicknameController.text.trim(),
@@ -506,13 +518,20 @@ class _HostMyPageState extends State<HostMyPage> {
                 isEditing: _isEditingNickname,
                 currentNickname: _userProfile!.nickname,
                 nicknameController: _nicknameController,
+                nicknameError: _nicknameError,
                 onStartEdit: () => setState(() {
                   _isEditingNickname = true;
                   _nicknameController.text = _userProfile!.nickname ?? '';
                 }),
                 onCancel: _cancelNicknameEdit,
                 onSave: _handleNicknameChange,
-                onFieldChanged: () => setState(() {}),
+                onFieldChanged: () => setState(() {
+                  _nicknameError = TextInputValidator.validate(
+                    _nicknameController.text.trim(),
+                    minLength: 2,
+                    maxLength: 20,
+                  );
+                }),
               ),
               ProfileInfoRow(
                 label: '이메일',
