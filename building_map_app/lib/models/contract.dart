@@ -301,7 +301,8 @@ class ContractListItem {
 
   factory ContractListItem.fromJson(Map<String, dynamic> json) {
     // 백엔드는 room과 guest(호스트용) 또는 host(게스트용) 정보를 포함
-    final room = json['room'];
+    // Breaking Change: roomSnapshot → snapshot, room fallback 유지
+    final room = json['snapshot'] ?? json['room'];
     final partner = json['guest'] ?? json['host']; // 호스트용은 guest, 게스트용은 host
 
     return ContractListItem(
@@ -349,18 +350,18 @@ class ContractListItem {
       cancellationRequested: json['cancellationRequested'] as bool?,
       depositAgreementStatus: json['depositAgreementStatus'] as String?,
       // 방 정보 - 백엔드 필드명: roomName, thumbnailUrl
-      roomId: room['id'],
-      roomName: room['roomName'] ?? room['name'] ?? '',
-      roomAddress: room['address'] ?? '',
-      roomArea: double.parse((room['area'] ?? 0).toString()),
-      buildingType: room['buildingType'] ?? '',
-      roomThumbnail: room['thumbnailUrl'] ?? room['thumbnail'],
+      roomId: room?['id'] as int? ?? 0,
+      roomName: room?['roomName'] ?? room?['name'] ?? '',
+      roomAddress: room?['address'] ?? '',
+      roomArea: double.parse((room?['area'] ?? 0).toString()),
+      buildingType: room?['buildingType'] ?? '',
+      roomThumbnail: room?['thumbnailUrl'] ?? room?['thumbnail'],
       // 상대방 정보 - 백엔드 필드명: phoneNumber
-      partnerId: partner['id'],
-      partnerName: partner['name'] ?? '',
-      partnerNickname: partner['nickname'],
-      partnerPhone: partner['phoneNumber'] ?? partner['phone'] ?? '',
-      partnerEmail: partner['email'],
+      partnerId: partner?['id'] as int? ?? 0,
+      partnerName: partner?['name'] ?? '',
+      partnerNickname: partner?['nickname'] as String?,
+      partnerPhone: partner?['phoneNumber'] ?? partner?['phone'] ?? '',
+      partnerEmail: partner?['email'] as String?,
       createdAt: DateTime.parse(json['createdAt']),
     );
   }
@@ -491,9 +492,10 @@ class Contract {
         json['guestId'] as int? ??
         (json['guest'] != null ? json['guest']['id'] as int? : null) ??
         0;
+    final roomData = json['snapshot'] ?? json['room'];
     final roomId =
         json['roomId'] as int? ??
-        (json['room'] != null ? json['room']['id'] as int? : null) ??
+        (roomData != null ? roomData['id'] as int? : null) ??
         0;
 
     return Contract(
@@ -558,8 +560,8 @@ class Contract {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
-      room: json['room'] != null
-          ? RoomInfo.fromJson(json['room'] as Map<String, dynamic>)
+      room: roomData != null
+          ? RoomInfo.fromJson(roomData as Map<String, dynamic>)
           : null,
       host: json['host'] != null
           ? UserInfo.fromJson(json['host'] as Map<String, dynamic>)

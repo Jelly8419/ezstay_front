@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../models/contract.dart';
 import '../../models/contract_detail.dart';
@@ -20,18 +21,18 @@ class HostContractAmountSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: AppRadius.radiusMd,
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.gray200),
         boxShadow: ContractDetailCard.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '계약 금액',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF111827),
+              color: AppColors.gray900,
             ),
           ),
           const SizedBox(height: 16),
@@ -39,9 +40,9 @@ class HostContractAmountSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
+              color: AppColors.gray50,
               borderRadius: AppRadius.radiusSm,
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              border: Border.all(color: AppColors.gray200),
             ),
             child: settlement != null
                 ? _buildWithSettlement(settlement)
@@ -59,7 +60,6 @@ class HostContractAmountSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── 이용 금액 ──
         _sectionLabel('이용 금액'),
         const SizedBox(height: 8),
 
@@ -77,51 +77,47 @@ class HostContractAmountSection extends StatelessWidget {
               ),
               if (s.discountAmount > 0) ...[
                 const SizedBox(height: 6),
-                _row('할인', -s.discountAmount, valueColor: const Color(0xFFDC2626)),
+                _row('할인', -s.discountAmount, valueColor: AppColors.error600),
               ],
             ],
           ),
         ),
 
-        // 소계
         _dividerRow(
           label: '소계',
           amount: subtotal,
           topBorderWidth: 1,
-          topBorderColor: const Color(0xFFE5E7EB),
-          labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
-          valueStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
+          topBorderColor: AppColors.gray200,
+          labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
+          valueStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
         ),
 
-        // ── 차감 항목 ──
         const SizedBox(height: 12),
         _sectionLabel('차감 항목'),
         const SizedBox(height: 8),
 
         Padding(
           padding: const EdgeInsets.only(left: 12),
-          child: _row('호스트 수수료', -s.hostPlatformFee, valueColor: const Color(0xFF374151)),
+          child: _row('호스트 수수료', -s.hostPlatformFee, valueColor: AppColors.neutral700),
         ),
 
-        // ── 정산 예정금액 ──
         _dividerRow(
           label: '정산 예정금액',
           amount: s.hostEarnings,
           topBorderWidth: 2,
-          topBorderColor: const Color(0xFFD1D5DB),
-          labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF2563EB)),
-          valueStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF2563EB)),
+          topBorderColor: AppColors.gray300,
+          labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.blue600),
+          valueStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.blue600),
         ),
 
-        // ── 보증금 안내 ──
         if (contract.deposit > 0) ...[
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: AppColors.blue50,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
+              border: Border.all(color: AppColors.blue100),
             ),
             child: Row(
               children: [
@@ -130,7 +126,7 @@ class HostContractAmountSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '보증금 ₩${FormatUtils.formatCurrency(contract.deposit)}은 게스트 퇴실 후 별도로 환급됩니다.',
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF1D4ED8), height: 1.4),
+                    style: TextStyle(fontSize: 13, color: AppColors.blue900, height: 1.4),
                   ),
                 ),
               ],
@@ -170,17 +166,17 @@ class HostContractAmountSection extends StatelessWidget {
           label: '보증금',
           amount: contract.deposit,
           topBorderWidth: 1,
-          topBorderColor: const Color(0xFFE5E7EB),
-          labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
-          valueStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
+          topBorderColor: AppColors.gray200,
+          labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
+          valueStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
         ),
         _dividerRow(
           label: '총 계약 금액',
           amount: totalContractAmount,
           topBorderWidth: 2,
-          topBorderColor: const Color(0xFFD1D5DB),
-          labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
-          valueStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
+          topBorderColor: AppColors.gray300,
+          labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
+          valueStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.gray900),
         ),
       ],
     );
@@ -189,7 +185,7 @@ class HostContractAmountSection extends StatelessWidget {
   Widget _sectionLabel(String text) {
     return Text(
       text,
-      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
+      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
     );
   }
 
@@ -203,10 +199,10 @@ class HostContractAmountSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(label, style: const TextStyle(fontSize: 14, color: Color(0xFF374151))),
+            Text(label, style: TextStyle(fontSize: 14, color: AppColors.neutral700)),
             if (subLabel != null) ...[
               const SizedBox(width: 4),
-              Text(subLabel, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+              Text(subLabel, style: TextStyle(fontSize: 12, color: AppColors.neutral500)),
             ],
           ],
         ),
@@ -215,7 +211,7 @@ class HostContractAmountSection extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: valueColor ?? const Color(0xFF111827),
+            color: valueColor ?? AppColors.gray900,
           ),
         ),
       ],
@@ -228,13 +224,13 @@ class HostContractAmountSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Text('청소비', style: TextStyle(fontSize: 14, color: Color(0xFF374151))),
+            Text('청소비', style: TextStyle(fontSize: 14, color: AppColors.neutral700)),
             if (isEzCleaning) ...[
               const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB),
+                  color: AppColors.blue600,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
@@ -245,7 +241,7 @@ class HostContractAmountSection extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '(정산 제외)',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: AppColors.neutral500),
               ),
             ],
           ],
@@ -257,7 +253,7 @@ class HostContractAmountSection extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: isEzCleaning ? Colors.grey[600]! : const Color(0xFF111827),
+            color: isEzCleaning ? AppColors.neutral500 : AppColors.gray900,
           ),
         ),
       ],

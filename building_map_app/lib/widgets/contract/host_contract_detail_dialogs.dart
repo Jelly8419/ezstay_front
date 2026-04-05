@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import '../../core/theme/app_colors.dart';
 import '../../utils/format_utils.dart';
 
 /// 호스트 퇴실 확인 다이얼로그 (도어락 경고 포함)
@@ -37,15 +38,18 @@ class HostCheckoutConfirmDialog extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF7ED),
-              border: Border.all(color: const Color(0xFFFED7AA)),
+              color: AppColors.warning50,
+              border: Border.all(color: AppColors.warning500.withValues(alpha: 0.4)),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.warning_amber_rounded,
-                    size: 20, color: Color(0xFFF97316)),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 20,
+                  color: AppColors.warning500,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text.rich(
@@ -57,8 +61,8 @@ class HostCheckoutConfirmDialog extends StatelessWidget {
                         if (roomId != null)
                           TextSpan(
                             text: '(현재 비밀번호 확인 및 변경 요청)',
-                            style: const TextStyle(
-                              color: Color(0xFF2563EB),
+                            style: TextStyle(
+                              color: AppColors.blue600,
                               fontWeight: FontWeight.w700,
                               decoration: TextDecoration.underline,
                             ),
@@ -70,9 +74,9 @@ class HostCheckoutConfirmDialog extends StatelessWidget {
                           ),
                       ],
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF9A3412),
+                      color: AppColors.warning700,
                       height: 1.5,
                     ),
                   ),
@@ -90,7 +94,7 @@ class HostCheckoutConfirmDialog extends StatelessWidget {
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF3B82F6),
+            backgroundColor: AppColors.primary500,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -121,7 +125,7 @@ class HostRequestCheckoutDialog extends StatelessWidget {
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2563EB),
+            backgroundColor: AppColors.blue600,
             foregroundColor: Colors.white,
           ),
           child: const Text('확인'),
@@ -158,7 +162,7 @@ class HostPenaltyPaymentConfirmDialog extends StatelessWidget {
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: AppColors.error600,
             foregroundColor: Colors.white,
           ),
           child: const Text('결제하기'),

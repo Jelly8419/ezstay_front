@@ -34,7 +34,7 @@ class GuestContractAmountSection extends StatelessWidget {
             style: AppTextStyles.headingMedium.copyWith(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF111827),
+              color: AppColors.gray900,
             ),
           ),
 
@@ -82,9 +82,7 @@ class GuestContractAmountSection extends StatelessWidget {
             style: TextStyle(
               fontSize: isTotal ? 16 : 14,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal
-                  ? const Color(0xFF111827)
-                  : const Color(0xFF374151),
+              color: isTotal ? AppColors.gray900 : AppColors.neutral700,
             ),
           ),
           Text(
@@ -92,7 +90,7 @@ class GuestContractAmountSection extends StatelessWidget {
             style: TextStyle(
               fontSize: isTotal ? 16 : 14,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF111827),
+              color: AppColors.gray900,
             ),
           ),
         ],
@@ -114,10 +112,10 @@ class GuestContractAmountSection extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.normal,
-                  color: Color(0xFF374151),
+                  color: AppColors.neutral700,
                 ),
               ),
               if (showEzBadge) ...[
@@ -128,7 +126,7 @@ class GuestContractAmountSection extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB),
+                    color: AppColors.blue600,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
@@ -145,10 +143,10 @@ class GuestContractAmountSection extends StatelessWidget {
           ),
           Text(
             '${FormatUtils.formatCurrency(amount)}원',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF111827),
+              color: AppColors.gray900,
             ),
           ),
         ],
@@ -166,29 +164,29 @@ class GuestContractAmountSection extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.normal,
-                  color: Color(0xFF374151),
+                  color: AppColors.neutral700,
                 ),
               ),
               const SizedBox(width: 4),
               Text(
                 subtext,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.normal,
-                  color: Color(0xFF6B7280),
+                  color: AppColors.neutral500,
                 ),
               ),
             ],
           ),
           Text(
             '${FormatUtils.formatCurrency(amount)}원',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF111827),
+              color: AppColors.gray900,
             ),
           ),
         ],

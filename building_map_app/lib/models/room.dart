@@ -100,6 +100,12 @@ class Room {
   final String? hostName;
   final String? hostNickname;
   final int? hostId;
+  // 스냅샷 전용 — 계약 당시 게스트 정보 (호스트가 스냅샷 조회 시에만 존재)
+  final String? guestName;
+  final String? guestNickname;
+  final String? guestProfileImage;
+  final bool? guestPhoneVerified;
+  final int? guestId;
   final String status; // 방 상태 (draft, pending_review, approved, rejected)
   final bool isActive; // 게시 여부 (approved 상태에서만 의미 있음)
   final bool isAvailable; // 예약 가능 여부 (지도 검색 API 응답)
@@ -195,6 +201,11 @@ class Room {
     this.hostName,
     this.hostNickname,
     this.hostId,
+    this.guestName,
+    this.guestNickname,
+    this.guestProfileImage,
+    this.guestPhoneVerified,
+    this.guestId,
     this.status = 'draft',
     this.isActive = false,
     this.isAvailable = true,
@@ -225,32 +236,32 @@ class Room {
       parkingAvailable: _parseBool(json['parkingAvailable']) ?? false,
       parkingInfo: json['parkingInfo'] as String?,
       elevatorAvailable: _parseBool(json['elevatorAvailable']) ?? false,
-      roomCount: json['roomCount'] as int? ?? 0,
-      bathroomCount: json['bathroomCount'] as int? ?? 0,
-      livingRoomCount: json['livingRoomCount'] as int? ?? 0,
-      kitchenCount: json['kitchenCount'] as int? ?? 0,
+      roomCount: _parseNullableInt(json['roomCount']) ?? 0,
+      bathroomCount: _parseNullableInt(json['bathroomCount']) ?? 0,
+      livingRoomCount: _parseNullableInt(json['livingRoomCount']) ?? 0,
+      kitchenCount: _parseNullableInt(json['kitchenCount']) ?? 0,
       isDuplex: _parseBool(json['isDuplex']) ?? false,
-      maxGuests: json['maxGuests'] as int? ?? 2,
+      maxGuests: _parseNullableInt(json['maxGuests']) ?? 2,
 
       // 가격 정보
-      dailyRent: json['dailyRent'] as int? ?? 0,
+      dailyRent: _parseNullableInt(json['dailyRent']) ?? 0,
       // discounts 객체에서 할인 정보 파싱 (nullable with explicit null handling)
       longTermWeeks: _parseNullableInt(json['discounts']?['longTermWeeks']) ?? _parseNullableInt(json['longTermWeeks']),
       longTermDiscount: _parseNullableInt(json['discounts']?['longTermDiscount']) ?? _parseNullableInt(json['longTermDiscount']),
       quickMoveIn: _parseNullableInt(json['discounts']?['quickMoveIn']) ?? _parseNullableInt(json['quickMoveIn']),
       quickMoveInDiscount: _parseNullableInt(json['discounts']?['quickMoveInDiscount']) ?? _parseNullableInt(json['quickMoveInDiscount']),
-      dailyMaintenanceFee: json['dailyMaintenanceFee'] as int? ?? 0,
+      dailyMaintenanceFee: _parseNullableInt(json['dailyMaintenanceFee']) ?? 0,
       maintenanceDetail: json['maintenanceDetail'] as String?,
       includeElectricity: _parseBool(json['includeElectricity']) ?? false,
       includeWater: _parseBool(json['includeWater']) ?? false,
       includeGas: _parseBool(json['includeGas']) ?? false,
       includeInternet: _parseBool(json['includeInternet']) ?? false,
-      cleaningFee: json['cleaningFee'] as int? ?? 0,
-      deposit: json['deposit'] as int? ?? 0,
+      cleaningFee: _parseNullableInt(json['cleaningFee']) ?? 0,
+      deposit: _parseNullableInt(json['deposit']) ?? 0,
 
       // 계약 정보
-      minContractDays: json['minContractDays'] as int? ?? 7,
-      maxContractDays: json['maxContractDays'] as int? ?? 90,
+      minContractDays: _parseNullableInt(json['minContractDays']) ?? 7,
+      maxContractDays: _parseNullableInt(json['maxContractDays']) ?? 90,
       refundPolicy: json['refundPolicy'] as String? ?? 'moderate',
       description: json['description'] as String?,
       transportation: json['transportation'] as String?,
@@ -267,7 +278,12 @@ class Room {
 
       // 연관 데이터
       photos: photoList,
-      amenity: json['amenity'] != null ? RoomAmenityFreezed.fromJson(_sanitizeJson(json['amenity'] as Map<String, dynamic>)) : null,
+      amenity: json['amenity'] != null
+          ? RoomAmenityFreezed.fromJson(_sanitizeJson({
+              'roomId': json['id'] ?? 0,
+              ...json['amenity'] as Map<String, dynamic>,
+            }))
+          : null,
       // ezService 우선, 없으면 freeService fallback (백엔드 마이그레이션 기간 호환성)
       ezService: json['ezService'] != null
           ? RoomEzService.fromJson(_sanitizeJson(json['ezService'] as Map<String, dynamic>))
@@ -288,6 +304,12 @@ class Room {
       hostName: json['host'] != null ? json['host']['name'] as String? : json['hostName'] as String?,
       hostNickname: json['host'] != null ? json['host']['nickname'] as String? : json['hostNickname'] as String?,
       hostId: json['host'] != null ? json['host']['id'] as int? : json['hostId'] as int?,
+      // guest 객체에서 정보 추출 (스냅샷 전용 — null 방어 처리)
+      guestName: json['guest']?['name'] as String?,
+      guestNickname: json['guest']?['nickname'] as String?,
+      guestProfileImage: json['guest']?['profileImageUrl'] as String?,
+      guestPhoneVerified: _parseBool(json['guest']?['phoneVerified']),
+      guestId: json['guest']?['id'] as int?,
       status: _normalizeStatus(json['status'] as String?),
       isActive: _parseBool(json['isActive']) ?? false,
       isAvailable: _parseBool(json['isAvailable']) ?? true,
@@ -315,10 +337,11 @@ class Room {
     return 0.0;
   }
 
-  /// nullable int 값을 안전하게 파싱 (null, int, String 지원)
+  /// nullable int 값을 안전하게 파싱 (null, int, double, String 지원)
   static int? _parseNullableInt(dynamic value) {
     if (value == null) return null;
     if (value is int) return value;
+    if (value is double) return value.toInt();
     if (value is String) return int.tryParse(value);
     return null;
   }
@@ -513,6 +536,11 @@ class Room {
     String? hostName,
     String? hostNickname,
     int? hostId,
+    String? guestName,
+    String? guestNickname,
+    String? guestProfileImage,
+    bool? guestPhoneVerified,
+    int? guestId,
     String? status,
     bool? isActive,
     String? rejectionReason,
@@ -572,6 +600,11 @@ class Room {
       hostName: hostName ?? this.hostName,
       hostNickname: hostNickname ?? this.hostNickname,
       hostId: hostId ?? this.hostId,
+      guestName: guestName ?? this.guestName,
+      guestNickname: guestNickname ?? this.guestNickname,
+      guestProfileImage: guestProfileImage ?? this.guestProfileImage,
+      guestPhoneVerified: guestPhoneVerified ?? this.guestPhoneVerified,
+      guestId: guestId ?? this.guestId,
       status: status ?? this.status,
       isActive: isActive ?? this.isActive,
       rejectionReason: rejectionReason ?? this.rejectionReason,

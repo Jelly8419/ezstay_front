@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 import '../../models/contract_detail.dart';
 import '../../utils/format_utils.dart';
 
@@ -14,7 +15,7 @@ class GuestContractOptionSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.gray200),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -27,21 +28,20 @@ class GuestContractOptionSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 헤더
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.inventory_2_outlined,
                 size: 20,
-                color: Color(0xFF374151),
+                color: AppColors.neutral700,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 '옵션 상품 (EZstay에서 제공)',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF111827),
+                  color: AppColors.gray900,
                 ),
               ),
             ],
@@ -50,14 +50,14 @@ class GuestContractOptionSection extends StatelessWidget {
           const SizedBox(height: 16),
 
           if (contract.rentalItems.isEmpty)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Text(
                   '선택한 옵션이 없습니다.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.neutral500,
                   ),
                 ),
               ),
@@ -72,31 +72,30 @@ class GuestContractOptionSection extends StatelessWidget {
               );
             }),
 
-            // 합계
             Container(
               padding: const EdgeInsets.only(top: 12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+                  top: BorderSide(color: AppColors.gray200, width: 1),
                 ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     '옵션 상품 합계',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF111827),
+                      color: AppColors.gray900,
                     ),
                   ),
                   Text(
                     '${FormatUtils.formatCurrency(contract.rentalItemsFee)}원',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF111827),
+                      color: AppColors.gray900,
                     ),
                   ),
                 ],
@@ -112,7 +111,7 @@ class GuestContractOptionSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+        border: Border.all(color: AppColors.gray200, width: 1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -125,27 +124,27 @@ class GuestContractOptionSection extends StatelessWidget {
               children: [
                 Text(
                   item.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
+                    color: AppColors.gray900,
                   ),
                 ),
                 const SizedBox(height: 4),
                 if (item.description != null && item.description!.isNotEmpty)
                   Text(
                     item.description!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF4B5563),
+                      color: AppColors.neutral600,
                     ),
                   ),
                 const SizedBox(height: 4),
                 Text(
                   '수량: ${item.quantity}개',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF4B5563),
+                    color: AppColors.neutral600,
                   ),
                 ),
               ],
@@ -156,10 +155,10 @@ class GuestContractOptionSection extends StatelessWidget {
 
           Text(
             '${FormatUtils.formatCurrency(item.price * item.quantity)}원',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF111827),
+              color: AppColors.gray900,
             ),
           ),
         ],

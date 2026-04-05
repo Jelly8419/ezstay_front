@@ -61,7 +61,7 @@ class GuestContractPartyInfoSection extends StatelessWidget {
             style: AppTextStyles.headingMedium.copyWith(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF111827),
+              color: AppColors.gray900,
             ),
           ),
 
@@ -99,7 +99,7 @@ class GuestContractPartyInfoSection extends StatelessWidget {
                       style: AppTextStyles.bodyMedium.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF111827),
+                        color: AppColors.gray900,
                       ),
                     ),
                     if (showPhone && contract.hostPhoneNumber != null) ...[
@@ -148,7 +148,7 @@ class GuestContractPartyInfoSection extends StatelessWidget {
                 style: AppTextStyles.headingMedium.copyWith(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF111827),
+                  color: AppColors.gray900,
                 ),
               ),
               if (contract.isEzCleaning)
@@ -191,8 +191,8 @@ class GuestContractPartyInfoSection extends StatelessWidget {
               Container(
                 width: 48,
                 height: 48,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE5E7EB),
+                decoration: BoxDecoration(
+                  color: AppColors.gray200,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -200,10 +200,10 @@ class GuestContractPartyInfoSection extends StatelessWidget {
                     contract.guestDisplayName.isNotEmpty
                         ? contract.guestDisplayName.substring(0, 1)
                         : '?',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF4B5563),
+                      color: AppColors.neutral600,
                     ),
                   ),
                 ),
@@ -214,18 +214,18 @@ class GuestContractPartyInfoSection extends StatelessWidget {
                 children: [
                   Text(
                     contract.guestDisplayName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF111827),
+                      color: AppColors.gray900,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     contract.guestPhone,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF4B5563),
+                      color: AppColors.neutral600,
                     ),
                   ),
                 ],

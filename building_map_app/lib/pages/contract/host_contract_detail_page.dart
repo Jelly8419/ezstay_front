@@ -20,8 +20,6 @@ import '../../widgets/contract/host_contract_basic_info_section.dart';
 import '../../widgets/contract/host_contract_action_buttons.dart';
 import '../../widgets/contract/host_contract_party_info_section.dart';
 import '../../widgets/modals/host_contract_modals.dart' show DepositAgreementModal, RequestCancellationModal;
-import '../../widgets/modals/refund_calculation_modal.dart';
-import '../../services/payment_service.dart';
 
 /// 호스트 계약 상세 페이지
 class HostContractDetailPage extends StatefulWidget {
@@ -54,7 +52,6 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
     _loadContractDetail();
   }
 
-  /// 계약 상세 정보 로드
   Future<void> _loadContractDetail() async {
     try {
       setState(() {
@@ -132,12 +129,12 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
       await _contractService.hostCheckoutPending(widget.contractId, reason);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('퇴실 확인이 보류되었습니다. 관리자가 확인합니다.'),
-            backgroundColor: Color(0xFFF97316),
+          SnackBar(
+            content: const Text('퇴실 확인이 보류되었습니다. 관리자가 확인합니다.'),
+            backgroundColor: AppColors.warning500,
           ),
         );
-        _loadContractDetail(); // 상태 갱신
+        _loadContractDetail();
       }
     } on UnauthorizedException {
       if (mounted) context.go('/login');
@@ -146,118 +143,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('퇴실 보류 처리 실패: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Color(0xFFDC2626),
-          ),
-        );
-      }
-    }
-  }
-
-  /// PAYMENT_COMPLETED 상태에서 호스트 계약 취소
-  /// 호스트 귀책 취소: 환불 계산 모달 → 위약금 결제 → 취소 확정
-  Future<void> _handleCancelByHost() async {
-    if (_contract == null) return;
-
-    final contract = _contract!.toContract();
-
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => RefundCalculationModal(
-        contract: contract,
-        isHost: true,
-        refundPolicySnapshot: _contract!.refundPolicySnapshot,
-        onClose: () => Navigator.of(dialogContext).pop(),
-        onConfirm: (penaltyAmount) async {
-          Navigator.of(dialogContext).pop();
-
-          if (penaltyAmount != null && penaltyAmount > 0) {
-            // 위약금이 있는 경우: 호스트 위약금 결제 플로우
-            await _processHostPenaltyPayment(penaltyAmount.toInt());
-          } else {
-            // 위약금이 없는 경우 (무료 취소 기간): 바로 취소
-            await _executeCancelByHost('호스트 귀책 취소 (무료 취소 기간)');
-          }
-        },
-      ),
-    );
-  }
-
-  /// 호스트 위약금 결제 처리
-  Future<void> _processHostPenaltyPayment(int penaltyAmount) async {
-    final paymentService = PaymentService();
-
-    try {
-      // 1. 위약금 결제 정보 조회
-      final paymentInfo = await paymentService.getHostPenaltyPaymentInfo(
-        widget.contractId,
-      );
-
-      if (!mounted) return;
-
-      // 2. 결제 정보 확인 다이얼로그
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (_) => HostPenaltyPaymentConfirmDialog(penaltyAmount: penaltyAmount),
-      );
-
-      if (confirmed != true || !mounted) return;
-
-      // 3. 위약금 결제 승인 (PayTag PG)
-      // TODO: 실제 PayTag SDK 결제 플로우 연동 후 recvPayparam 전달
-      await paymentService.confirmHostPenaltyPayment(
-        contractId: widget.contractId,
-        recvPayparam: paymentInfo['recvPayparam'] ?? 'mock_key',
-        orderId: paymentInfo['orderId'] ?? '',
-        amount: penaltyAmount,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('위약금 결제 완료. 계약이 취소되었습니다.'),
-            backgroundColor: Color(0xFFF97316),
-          ),
-        );
-        _loadContractDetail();
-      }
-    } on UnauthorizedException {
-      if (mounted) context.go('/login');
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '위약금 결제 실패: ${e.toString().replaceAll('Exception: ', '')}',
-            ),
-            backgroundColor: const Color(0xFFDC2626),
-          ),
-        );
-      }
-    }
-  }
-
-  /// 호스트 취소 실행 (위약금 없는 경우)
-  Future<void> _executeCancelByHost(String reason) async {
-    try {
-      await _contractService.cancelByHost(widget.contractId, reason);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('계약이 취소되었습니다.'),
-            backgroundColor: Color(0xFFF97316),
-          ),
-        );
-        _loadContractDetail();
-      }
-    } on UnauthorizedException {
-      if (mounted) context.go('/login');
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('계약 취소 실패: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: AppColors.error600,
           ),
         );
       }
@@ -277,9 +163,9 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
       await _contractService.requestCheckout(widget.contractId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('퇴실 확인이 완료되었습니다.'),
-            backgroundColor: Color(0xFF10B981),
+          SnackBar(
+            content: const Text('퇴실 확인이 완료되었습니다.'),
+            backgroundColor: AppColors.success500,
           ),
         );
         _loadContractDetail();
@@ -291,7 +177,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('퇴실 확인 실패: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: AppColors.error600,
           ),
         );
       }
@@ -315,9 +201,9 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
       await _contractService.requestCancellation(widget.contractId, reason);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('취소 요청이 접수되었습니다. 관리자 승인 후 처리됩니다.'),
-            backgroundColor: Color(0xFFF97316),
+          SnackBar(
+            content: const Text('취소 요청이 접수되었습니다. 관리자 승인 후 처리됩니다.'),
+            backgroundColor: AppColors.warning500,
           ),
         );
         _loadContractDetail();
@@ -329,7 +215,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('취소 요청 실패: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: AppColors.error600,
           ),
         );
       }
@@ -357,9 +243,9 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('합의 내용이 제출되었습니다. 게스트 확인을 기다립니다.'),
-            backgroundColor: Color(0xFF10B981),
+          SnackBar(
+            content: const Text('합의 내용이 제출되었습니다. 게스트 확인을 기다립니다.'),
+            backgroundColor: AppColors.success500,
           ),
         );
         _loadContractDetail();
@@ -371,7 +257,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('합의 내용 제출 실패: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: AppColors.error600,
           ),
         );
       }
@@ -383,33 +269,23 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
     return Stack(
       children: [
         ColoredBox(
-          color: const Color(0xFFF9FAFB), // bg-gray-50
+          color: AppColors.gray50,
           child: ResponsivePageLayout(
-            useCardStyle: false, // 배경색 유지 (각 섹션이 이미 카드)
-            maxWidth: 896, // max-w-4xl (React 기준)
+            useCardStyle: false,
+            maxWidth: 896,
             child: _buildBodyWithFooter(),
           ),
         ),
 
-        // 취소 요청 모달
         if (_showCancellationModal)
           RequestCancellationModal(
-            onClose: () {
-              setState(() {
-                _showCancellationModal = false;
-              });
-            },
+            onClose: () => setState(() => _showCancellationModal = false),
             onConfirm: (reason) => _submitCancellationRequest(reason),
           ),
 
-        // 보증금 합의 모달
         if (_showDepositAgreementModal && _contract != null)
           DepositAgreementModal(
-            onClose: () {
-              setState(() {
-                _showDepositAgreementModal = false;
-              });
-            },
+            onClose: () => setState(() => _showDepositAgreementModal = false),
             onConfirm: (deductAmount, agreementText) =>
                 _submitDepositAgreement(deductAmount, agreementText),
             depositAmount: _contract!.deposit,
@@ -423,9 +299,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
 
   Widget _buildBodyWithFooter() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_errorMessage != null) {
@@ -451,83 +325,72 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
     }
 
     if (_contract == null) {
-      return const Center(
-        child: Text('계약 정보가 없습니다.'),
-      );
+      return const Center(child: Text('계약 정보가 없습니다.'));
     }
+
+    final contract = _contract!;
 
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 페이지 제목
           Padding(
-            padding: const EdgeInsets.only(bottom: 16), // mb-4
+            padding: const EdgeInsets.only(bottom: 16),
             child: Text(
               '계약 상세 정보',
-              style: const TextStyle(
-                fontSize: 20, // text-xl
-                fontWeight: FontWeight.w700, // font-bold
-                color: Color(0xFF111827), // gray-900
+              style: AppTextStyles.headingLarge.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.gray900,
               ),
             ),
           ),
 
-          // 계약 상태 배너
-          ContractStatusBanner(
-            contract: _contract!,
-            isHost: true,
-          ),
+          ContractStatusBanner(contract: contract, isHost: true),
           const SizedBox(height: 24),
 
-          HostContractBasicInfoSection(contract: _contract!),
-          const SizedBox(height: 24), // mb-6
-          HostContractPartyInfoSection(contract: _contract!),
-          const SizedBox(height: 24), // mb-6
-          HostContractAmountSection(contract: _contract!),
+          HostContractBasicInfoSection(contract: contract),
+          const SizedBox(height: 24),
+          HostContractPartyInfoSection(contract: contract),
+          const SizedBox(height: 24),
+          HostContractAmountSection(contract: contract),
 
-          // 퇴실 확인 위젯 (IN_PROGRESS + 퇴실일 도래 시)
-          if (ContractUtils.shouldShowCheckoutConfirmation(_contract)) ...[
+          if (ContractUtils.shouldShowCheckoutConfirmation(contract)) ...[
             const SizedBox(height: 24),
             CheckoutConfirmationWidget(
-              contract: _contract!,
+              contract: contract,
               isHost: true,
               onHostConfirm: _handleHostCheckoutConfirm,
               onHostHold: _handleHostCheckoutHold,
             ),
           ],
 
-          // 상태별 액션 버튼 섹션
           HostContractActionButtons(
-            contract: _contract!,
-            onCancelByHost: _handleCancelByHost,
+            contract: contract,
             onRequestCheckout: _handleRequestCheckout,
             onRequestCancellation: _handleRequestCancellation,
           ),
 
-          // 보증금 합의 섹션 (HOST_PENDING / AGREEMENT_SUBMITTED)
           HostDepositAgreementSection(
-            contract: _contract!,
+            contract: contract,
             onSubmitAgreement: _handleDepositAgreement,
           ),
 
-          const SizedBox(height: 24), // mb-6
+          const SizedBox(height: 24),
           ContractDetailCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '계약 안내사항',
-                  style: TextStyle(
+                  style: AppTextStyles.headingMedium.copyWith(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
+                    color: AppColors.gray900,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const NoticeContainer(
-                  notices: NoticeTexts.hostContractNotices,
-                ),
+                const NoticeContainer(notices: NoticeTexts.hostContractNotices),
               ],
             ),
           ),

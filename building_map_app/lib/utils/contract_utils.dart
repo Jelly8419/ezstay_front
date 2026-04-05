@@ -8,17 +8,19 @@ import '../models/contract_detail.dart';
 class ContractUtils {
   ContractUtils._();
 
-  /// 퇴실 확인 위젯 표시 여부 (IN_PROGRESS + 퇴실일 도래)
+  /// 퇴실 확인 위젯 표시 여부
+  ///
+  /// 정책: IN_PROGRESS 상태이고 퇴실일 당일 00:00 이후면 노출.
+  /// 일찍 퇴실하는 경우를 위해 퇴실 시간(roomCheckoutTime) 조건 없이 당일부터 표시.
   static bool shouldShowCheckoutConfirmation(ContractDetail? contract) {
     if (contract == null) return false;
-    if (contract.status != 'IN_PROGRESS') return false;
+    if (ContractStatus.fromString(contract.status) != ContractStatus.inProgress) return false;
     final checkOutDate = DateTime.tryParse(contract.checkOutDate);
     if (checkOutDate == null) return false;
-    final now = DateTime.now();
-    return now.isAfter(checkOutDate) ||
-        (now.year == checkOutDate.year &&
-            now.month == checkOutDate.month &&
-            now.day == checkOutDate.day);
+    final checkOutDay = DateTime(checkOutDate.year, checkOutDate.month, checkOutDate.day);
+    final today = DateTime.now();
+    final todayDay = DateTime(today.year, today.month, today.day);
+    return !todayDay.isBefore(checkOutDay); // 당일 포함, 이후 모두 노출
   }
 
   /// 이미지 URL에 baseUrl 추가 (상대경로 → 절대경로)
@@ -32,9 +34,10 @@ class ContractUtils {
 
   /// 전화번호 표시 여부 (결제 완료 이후에만 노출)
   static bool shouldShowPhoneNumber(String status) {
-    return status == 'PAYMENT_COMPLETED' ||
-        status == 'IN_PROGRESS' ||
-        status == 'COMPLETED';
+    final s = ContractStatus.fromString(status);
+    return s == ContractStatus.paymentCompleted ||
+        s == ContractStatus.inProgress ||
+        s == ContractStatus.completed;
   }
 
   /// 주소 표시 로직 (정책: 결제 완료 후에만 상세주소 공개)
@@ -42,8 +45,12 @@ class ContractUtils {
   /// - PENDING_APPROVAL, APPROVED: 기본주소 + 층만 표시
   /// - PAYMENT_COMPLETED, IN_PROGRESS, COMPLETED: 상세주소 포함
   static String getAddressDisplay(ContractDetail contract) {
-    const paidStatuses = ['PAYMENT_COMPLETED', 'IN_PROGRESS', 'COMPLETED'];
-    if (paidStatuses.contains(contract.status)) {
+    const paidStatuses = [
+      ContractStatus.paymentCompleted,
+      ContractStatus.inProgress,
+      ContractStatus.completed,
+    ];
+    if (paidStatuses.contains(ContractStatus.fromString(contract.status))) {
       return '${contract.address} ${contract.detailAddress}';
     }
     return '${contract.address} ${contract.floor}';
@@ -51,7 +58,8 @@ class ContractUtils {
 
   /// 상세주소 비공개 안내 메시지 표시 여부
   static bool shouldShowAddressNotice(String status) {
-    return status == 'PENDING_APPROVAL' || status == 'APPROVED';
+    final s = ContractStatus.fromString(status);
+    return s == ContractStatus.pendingApproval || s == ContractStatus.approved;
   }
 
   /// 퇴실 시간 도래 여부 (ContractListItem 기준)

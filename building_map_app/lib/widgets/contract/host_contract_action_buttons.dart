@@ -1,61 +1,33 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
+import '../../models/contract.dart';
 import '../../models/contract_detail.dart';
 import '../../utils/contract_utils.dart';
 
 /// 호스트 계약 상태별 액션 버튼 섹션
 ///
-/// - PAYMENT_COMPLETED: 계약 취소 버튼
+/// - PAYMENT_COMPLETED: 없음 (계약 취소는 계약관리 페이지에서 처리)
 /// - IN_PROGRESS + NOT_STARTED: 퇴실 확인(시간 도래 시) + 취소 요청 버튼
 class HostContractActionButtons extends StatelessWidget {
   final ContractDetail contract;
-  final VoidCallback onCancelByHost;
   final VoidCallback onRequestCheckout;
   final VoidCallback onRequestCancellation;
 
   const HostContractActionButtons({
     super.key,
     required this.contract,
-    required this.onCancelByHost,
     required this.onRequestCheckout,
     required this.onRequestCancellation,
   });
 
   @override
   Widget build(BuildContext context) {
-    final status = contract.status;
-    final checkoutStatus = contract.checkoutStatus;
+    final status = ContractStatus.fromString(contract.status);
+    final checkoutStatus = CheckoutStatus.fromString(contract.checkoutStatus);
 
-    // PAYMENT_COMPLETED: 계약 취소 버튼
-    if (status == 'PAYMENT_COMPLETED') {
-      return Padding(
-        padding: const EdgeInsets.only(top: 24),
-        child: SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: onCancelByHost,
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              side: const BorderSide(color: Color(0xFFDC2626)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              '계약 취소',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFDC2626),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // IN_PROGRESS + NOT_STARTED
-    if (status == 'IN_PROGRESS' &&
-        (checkoutStatus == null || checkoutStatus == 'NOT_STARTED')) {
+    // IN_PROGRESS + NOT_STARTED (또는 checkoutStatus 없음)
+    if (status == ContractStatus.inProgress &&
+        (checkoutStatus == null || checkoutStatus == CheckoutStatus.notStarted)) {
       final isCheckoutTimeReached =
           ContractUtils.isCheckoutTimeReachedFromDetail(contract);
       final isCheckoutRequested = contract.checkoutRequestedAt != null;
@@ -71,7 +43,7 @@ class HostContractActionButtons extends StatelessWidget {
                   onPressed: onRequestCheckout,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: AppColors.blue600,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -89,17 +61,17 @@ class HostContractActionButtons extends StatelessWidget {
                   onPressed: onRequestCancellation,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: Color(0xFFDC2626)),
+                    side: BorderSide(color: AppColors.error600),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     '취소 요청',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFDC2626),
+                      color: AppColors.error600,
                     ),
                   ),
                 ),
@@ -118,17 +90,17 @@ class HostContractActionButtons extends StatelessWidget {
             onPressed: onRequestCancellation,
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
-              side: const BorderSide(color: Color(0xFFDC2626)),
+              side: BorderSide(color: AppColors.error600),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
+            child: Text(
               '취소 요청',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFDC2626),
+                color: AppColors.error600,
               ),
             ),
           ),

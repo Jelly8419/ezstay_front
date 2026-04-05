@@ -58,13 +58,13 @@ class _GuestPreparationModalState extends State<GuestPreparationModal> {
       } else {
         setState(() {
           _isLoading = false;
-          _errorMessage = '렌탈 아이템 목록이 없습니다.';
+          _errorMessage = '옵션 상품 목록이 없습니다.';
         });
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = '렌탈 아이템을 불러오는데 실패했습니다: $e';
+        _errorMessage = '옵션 상품을 불러오는데 실패했습니다: $e';
       });
     }
   }

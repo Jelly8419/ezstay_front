@@ -10,6 +10,7 @@ import '../../models/rental_item.dart';
 import '../../models/calculated_pricing.dart';
 import '../../services/guest_room_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/contract_service.dart';
 import '../../services/refund_policy_service.dart';
 import '../../widgets/simple_kakao_map.dart';
 import '../../widgets/room_detail/booking_bottom_sheet.dart';
@@ -25,10 +26,24 @@ import '../../widgets/kakao_roadview_web.dart';
 import '../../widgets/common/app_footer.dart';
 
 /// 방 상세 정보 페이지
+///
+/// [isSnapshot] true이면 계약 당시 스냅샷 모드 — 예약 UI 숨김, [contractId] 필수
+/// [isHostViewing] true이면 호스트가 조회하는 스냅샷 — 파티 정보 섹션에 게스트 정보 표시
 class RoomDetailPage extends StatefulWidget {
   final int roomId;
+  final bool isSnapshot;
+  final bool isHostViewing;
+  final int? contractId;
+  final String? capturedAt; // ISO 8601, 스냅샷 배너 표시용
 
-  const RoomDetailPage({super.key, required this.roomId});
+  const RoomDetailPage({
+    super.key,
+    required this.roomId,
+    this.isSnapshot = false,
+    this.isHostViewing = false,
+    this.contractId,
+    this.capturedAt,
+  });
 
   @override
   State<RoomDetailPage> createState() => _RoomDetailPageState();
@@ -37,6 +52,7 @@ class RoomDetailPage extends StatefulWidget {
 class _RoomDetailPageState extends State<RoomDetailPage> {
   final GuestRoomService _guestRoomService = GuestRoomService();
   final AnalyticsService _analyticsService = AnalyticsService();
+  final ContractService _contractService = ContractService();
   final RefundPolicyService _refundPolicyService = RefundPolicyService();
   final ScrollController _thumbnailScrollController = ScrollController();
 
@@ -76,7 +92,14 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     });
 
     try {
-      final room = await _guestRoomService.getRoomDetail(widget.roomId);
+      final Room? room;
+      if (widget.isSnapshot && widget.contractId != null) {
+        // 스냅샷 모드: 계약 당시 방 정보 조회
+        room = await _contractService.getContractRoomSnapshot(widget.contractId!);
+      } else {
+        // 일반 모드: 현재 방 정보 조회
+        room = await _guestRoomService.getRoomDetail(widget.roomId);
+      }
 
       if (room != null) {
         setState(() {
@@ -89,8 +112,10 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           _loadRefundPolicy(room.refundPolicy);
         }
 
-        // 📊 Analytics: 방 상세 페이지 조회
-        await _analyticsService.logViewRoomDetail(roomId: widget.roomId);
+        // 📊 Analytics: 스냅샷 모드에서는 Analytics 미호출
+        if (!widget.isSnapshot) {
+          await _analyticsService.logViewRoomDetail(roomId: widget.roomId);
+        }
       } else {
         setState(() {
           _errorMessage = '방 정보를 찾을 수 없습니다.';
@@ -99,7 +124,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = '방 정보를 불러오는데 실패했습니다.';
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
       });
       AppLogger.e('❌ 방 상세 정보 로드 실패: $e');
@@ -247,6 +272,45 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
 
+    // 스냅샷 모드: Scaffold + AppBar로 감싸서 독립 라우트 렌더링 지원
+    if (widget.isSnapshot) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: AppColors.primary500,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              final contractId = widget.contractId;
+              final backPath = contractId != null
+                  ? (widget.isHostViewing
+                      ? '/host/contracts/$contractId'
+                      : '/guest/contracts/$contractId')
+                  : (widget.isHostViewing
+                      ? '/host/contracts'
+                      : '/guest/contracts');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                context.go(backPath);
+              });
+            },
+          ),
+          title: Text(
+            '방 정보',
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        body: _buildBody(isMobile),
+      );
+    }
+
+    return _buildBody(isMobile);
+  }
+
+  Widget _buildBody(bool isMobile) {
     return ColoredBox(
       color: AppColors.background,
       child: _isLoading
@@ -260,6 +324,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                 SingleChildScrollView(
                   child: Column(
                     children: [
+                      // 스냅샷 모드 안내 배너
+                      if (widget.isSnapshot) _buildSnapshotBanner(),
+
                       Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 1280),
@@ -276,8 +343,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                   ),
                 ),
 
-                // 데스크톱 오른쪽 고정 예약 위젯
-                if (!isMobile)
+                // 데스크톱 오른쪽 고정 예약 위젯 (스냅샷 모드에서는 숨김)
+                if (!isMobile && !widget.isSnapshot)
                   Positioned(
                     top: 100,
                     right: MediaQuery.of(context).size.width > 1280
@@ -322,7 +389,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                             if (Navigator.of(context).canPop()) {
                               Navigator.of(context).pop();
                             } else {
-                              // 직접 진입 시 게스트 홈으로 이동
                               Navigator.of(
                                 context,
                               ).pushReplacementNamed('/guest-home');
@@ -344,8 +410,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                     ),
                   ),
 
-                // 모바일 하단 고정 바
-                if (isMobile)
+                // 모바일 하단 고정 바 (스냅샷 모드에서는 숨김)
+                if (isMobile && !widget.isSnapshot)
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -398,8 +464,11 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         ),
         const SizedBox(height: 24),
 
-        // 호스트 정보
-        FormSection(title: '호스트 정보', child: _buildHostContent()),
+        // 호스트/게스트 정보
+        FormSection(
+          title: widget.isHostViewing ? '게스트 정보' : '호스트 정보',
+          child: _buildPartyContent(),
+        ),
         const SizedBox(height: 100), // 하단 바 공간
       ],
     );
@@ -407,45 +476,42 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
   /// 데스크톱 레이아웃 - 왼쪽 컨텐츠 (스크롤 가능)
   Widget _buildDesktopLeftContent() {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildPhotoGallery(),
+        const SizedBox(height: 24),
+        FormSection(title: _room!.roomName, child: _buildPropertyInfo()),
+        const SizedBox(height: 24),
+        FormSection(title: '옵션', child: _buildAmenitiesGrid()),
+        const SizedBox(height: 24),
+        FormSection(title: '위치', child: _buildLocationContent()),
+        const SizedBox(height: 24),
+        FormSection(title: '요금 안내', child: _buildPricingContent()),
+        const SizedBox(height: 24),
+        FormSection(
+          title: widget.isHostViewing ? '게스트 정보' : '호스트 정보',
+          child: _buildPartyContent(),
+        ),
+      ],
+    );
+
+    // 스냅샷 모드: 예약 위젯 없으므로 전체 너비 사용
+    if (widget.isSnapshot) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: content,
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 왼쪽: 상세 정보 (2/3 너비)
-        Expanded(
-          flex: 2,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 사진 갤러리
-              _buildPhotoGallery(),
-              const SizedBox(height: 24),
-
-              // 방 기본 정보
-              FormSection(title: _room!.roomName, child: _buildPropertyInfo()),
-              const SizedBox(height: 24),
-
-              // 편의시설
-              FormSection(title: '옵션', child: _buildAmenitiesGrid()),
-              const SizedBox(height: 24),
-
-              // 위치 정보
-              FormSection(title: '위치', child: _buildLocationContent()),
-              const SizedBox(height: 24),
-
-              // 요금 안내
-              FormSection(title: '요금 안내', child: _buildPricingContent()),
-              const SizedBox(height: 24),
-
-              // 호스트 정보
-              FormSection(title: '호스트 정보', child: _buildHostContent()),
-            ],
-          ),
-        ),
-
+        Expanded(flex: 2, child: content),
         const SizedBox(width: 32),
-
         // 오른쪽: 빈 공간 유지 (고정 위젯이 Positioned로 처리됨)
-        Expanded(flex: 1, child: SizedBox()),
+        Expanded(flex: 1, child: const SizedBox()),
       ],
     );
   }
@@ -1221,12 +1287,25 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     );
   }
 
-  /// 호스트 정보 컨텐츠
-  Widget _buildHostContent() {
-    final hostName = _room!.hostDisplayName;
-    final hostInitial = hostName.isNotEmpty ? hostName[0] : '?';
-    final isVerified =
-        _room!.hostPhoneVerified == true || _room!.hostAccountVerified == true;
+  /// 호스트/게스트 정보 컨텐츠
+  /// 호스트가 스냅샷 조회 시 게스트 정보 표시, 그 외에는 호스트 정보 표시
+  Widget _buildPartyContent() {
+    final String displayName;
+    final bool isVerified;
+    final String roleLabel;
+
+    if (widget.isHostViewing && _room!.guestName != null) {
+      displayName = _room!.guestNickname ?? _room!.guestName!;
+      isVerified = _room!.guestPhoneVerified == true;
+      roleLabel = '게스트';
+    } else {
+      displayName = _room!.hostDisplayName;
+      isVerified =
+          _room!.hostPhoneVerified == true || _room!.hostAccountVerified == true;
+      roleLabel = '호스트';
+    }
+
+    final initial = displayName.isNotEmpty ? displayName[0] : '?';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1237,7 +1316,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               radius: 24,
               backgroundColor: AppColors.primary100,
               child: Text(
-                hostInitial,
+                initial,
                 style: AppTextStyles.headingSmall.copyWith(
                   color: AppColors.primary600,
                 ),
@@ -1251,7 +1330,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                   Row(
                     children: [
                       Text(
-                        hostName,
+                        displayName,
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -1291,7 +1370,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '호스트',
+                    roleLabel,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -1302,6 +1381,42 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           ],
         ),
       ],
+    );
+  }
+
+  /// 스냅샷 모드 안내 배너
+  Widget _buildSnapshotBanner() {
+    String? dateLabel;
+    if (widget.capturedAt != null) {
+      final dt = DateTime.tryParse(widget.capturedAt!);
+      if (dt != null) {
+        final local = dt.toLocal();
+        dateLabel =
+            '${local.year}. ${local.month}. ${local.day}.';
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      color: AppColors.blue50,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 16, color: AppColors.blue600),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              dateLabel != null
+                  ? '계약 시점($dateLabel) 기준 방 정보입니다. 현재 방 상태와 다를 수 있습니다.'
+                  : '계약 당시 기준 방 정보입니다. 현재 방 상태와 다를 수 있습니다.',
+              style: AppTextStyles.bodySmall.copyWith(
+                fontSize: 13,
+                color: AppColors.blue600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
