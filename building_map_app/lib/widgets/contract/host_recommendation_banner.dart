@@ -11,10 +11,6 @@ class HostRecommendationBanner extends StatelessWidget {
     super.key,
   });
 
-  String _formatPrice(int price) {
-    return '${price.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -47,23 +43,11 @@ class HostRecommendationBanner extends StatelessWidget {
             (item) => Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      const SizedBox(width: 4),
-                      const Text('• ', style: TextStyle(color: Color(0xFF64748B))),
-                      Text(
-                        item.name,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF334155),
-                        ),
-                      ),
-                    ],
-                  ),
+                  const SizedBox(width: 4),
+                  const Text('• ', style: TextStyle(color: Color(0xFF64748B))),
                   Text(
-                    _formatPrice(item.price),
+                    item.name,
                     style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF334155),
