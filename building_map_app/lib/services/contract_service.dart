@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../models/contract.dart';
 import '../models/contract_detail.dart';
+import '../models/room.dart';
 import 'token_service.dart';
 import '../core/exceptions.dart';
 
@@ -1713,6 +1714,79 @@ class ContractService {
       } else {
         final error = json.decode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? '퇴실 요청에 실패했습니다.');
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버와 통신할 수 없습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception('요청 시간이 초과되었습니다.');
+      }
+      rethrow;
+    }
+  }
+
+  /// 계약 시점 방 상세(스냅샷) 조회
+  ///
+  /// [contractId]: 계약 ID
+  /// 반환: 계약 당시 방 정보 (Room 모델, /api/rooms/:id 응답과 동일 구조)
+  Future<Room> getContractRoomSnapshot(int contractId) async {
+    try {
+      var token = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (token == null && !ApiConfig.isProduction) {
+        AppLogger.w('⚠️ [CONTRACT_ROOM_SNAPSHOT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        token = await TokenService.getAccessToken(skipExpiryCheck: true);
+      }
+
+      if (token == null) {
+        throw const UnauthorizedException('로그인이 필요합니다.');
+      }
+
+      final url = Uri.parse(
+        '${ApiConfig.baseUrl}/api/contracts/$contractId/room-detail',
+      );
+
+      final response = await http
+          .get(
+            url,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(
+            Duration(seconds: ApiConfig.timeoutSeconds),
+            onTimeout: () {
+              throw Exception('요청 시간이 초과되었습니다.');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(utf8.decode(response.bodyBytes));
+        if (responseData['success'] == true && responseData['data'] != null) {
+          return Room.fromJson(
+            responseData['data'] as Map<String, dynamic>,
+          );
+        } else {
+          throw Exception('예상하지 못한 응답 형식입니다.');
+        }
+      } else if (response.statusCode == 401) {
+        throw const UnauthorizedException();
+      } else if (response.statusCode == 403) {
+        throw Exception('방 정보를 조회할 권한이 없습니다.');
+      } else if (response.statusCode == 404) {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        final code = error['code'];
+        if (code == 3006) {
+          throw Exception('계약 당시 방 정보를 불러올 수 없습니다. (구 계약 데이터)');
+        }
+        throw Exception('계약을 찾을 수 없습니다.');
+      } else {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(error['message'] ?? '방 정보를 불러오는데 실패했습니다.');
       }
     } on SocketException {
       throw Exception('네트워크 연결을 확인해주세요.');

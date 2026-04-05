@@ -227,12 +227,16 @@ class AppRouter {
     );
   }
 
+  static final GlobalKey<NavigatorState> _rootNavigatorKey =
+      GlobalKey<NavigatorState>(debugLabel: 'root');
+
   static GoRouter createRouter(
     AuthService authService, {
     GlobalKey<NavigatorState>? navigatorKey,
   }) {
+    final rootKey = navigatorKey ?? _rootNavigatorKey;
     return GoRouter(
-      navigatorKey: navigatorKey,
+      navigatorKey: rootKey,
       initialLocation: '/',
       debugLogDiagnostics: true,
       refreshListenable: authService,
@@ -688,6 +692,68 @@ class AppRouter {
         // ============================================
         // 독립 라우트: 자체 Scaffold/AppBar를 관리하는 페이지
         // ============================================
+
+        // 계약 시점 방 스냅샷 (게스트)
+        GoRoute(
+          parentNavigatorKey: rootKey,
+          path: '/guest/contracts/:contractId/room-snapshot',
+          name: 'guest-contract-room-snapshot',
+          builder: (context, state) {
+            final contractId = _parseIntParameter(
+              state.pathParameters['contractId'],
+            );
+            if (contractId == null) {
+              return _buildInvalidAccessPage(
+                context,
+                message: '잘못된 접근입니다.',
+                buttonText: '계약 목록으로 돌아가기',
+                redirectPath: '/guest/contracts',
+              );
+            }
+            return Material(
+              child: _deferredWidget(
+                room_detail.loadLibrary,
+                () => room_detail.RoomDetailPage(
+                  roomId: 0,
+                  isSnapshot: true,
+                  contractId: contractId,
+                ),
+              ),
+            );
+          },
+        ),
+
+        // 계약 시점 방 스냅샷 (호스트)
+        GoRoute(
+          parentNavigatorKey: rootKey,
+          path: '/host/contracts/:contractId/room-snapshot',
+          name: 'host-contract-room-snapshot',
+          builder: (context, state) {
+            final contractId = _parseIntParameter(
+              state.pathParameters['contractId'],
+            );
+            if (contractId == null) {
+              return _buildInvalidAccessPage(
+                context,
+                message: '잘못된 접근입니다.',
+                buttonText: '계약 목록으로 돌아가기',
+                redirectPath: '/host/contracts',
+              );
+            }
+            return Material(
+              child: _deferredWidget(
+                room_detail.loadLibrary,
+                () => room_detail.RoomDetailPage(
+                  roomId: 0,
+                  isSnapshot: true,
+                  isHostViewing: true,
+                  contractId: contractId,
+                ),
+              ),
+            );
+          },
+        ),
+
         GoRoute(
           path: '/auth/callback',
           name: 'auth-callback',

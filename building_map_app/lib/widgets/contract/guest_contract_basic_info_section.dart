@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/contract_detail.dart';
@@ -119,13 +120,20 @@ class GuestContractBasicInfoSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      contract.roomName,
-                      style: AppTextStyles.headingMedium.copyWith(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF111827),
-                      ),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      children: [
+                        Text(
+                          contract.roomName,
+                          style: AppTextStyles.headingMedium.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF111827),
+                          ),
+                        ),
+                        _RoomInfoButton(contractId: contract.id),
+                      ],
                     ),
 
                     const SizedBox(height: 12),
@@ -234,6 +242,46 @@ class GuestContractBasicInfoSection extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 방 정보 버튼 — 계약 당시 방 스냅샷 페이지로 이동
+class _RoomInfoButton extends StatelessWidget {
+  final int contractId;
+
+  const _RoomInfoButton({required this.contractId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: () {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            context.go('/guest/contracts/$contractId/room-snapshot');
+          });
+        },
+        borderRadius: BorderRadius.circular(20),
+        hoverColor: AppColors.gray50,
+        splashColor: AppColors.gray200,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.gray300),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '방 정보',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontSize: 12,
+              color: AppColors.gray600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ),
     );
   }

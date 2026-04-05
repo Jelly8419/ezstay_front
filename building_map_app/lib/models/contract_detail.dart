@@ -175,8 +175,8 @@ class ContractDetail {
       return value.toString();
     }
 
-    // nested room 객체 파싱
-    final room = json['room'] as Map<String, dynamic>?;
+    // nested room 객체 파싱 (백엔드 Breaking Change: roomSnapshot → snapshot, room fallback 유지)
+    final room = (json['snapshot'] ?? json['room']) as Map<String, dynamic>?;
     final roomPhotos = room?['photos'] as List<dynamic>?;
 
     // 첫 번째 사진 안전하게 추출 (photo 객체에서 url 필드 추출)
@@ -327,8 +327,8 @@ class ContractDetail {
       isReadOnly: json['isReadOnly'] as bool? ?? false,
       readOnlyReason: json['readOnlyReason'] as String?,
       // 방 입실/퇴실 시간
-      roomCheckInTime: room?['checkInTime'] as String? ?? json['roomCheckInTime'] as String?,
-      roomCheckoutTime: room?['checkoutTime'] as String? ?? json['roomCheckoutTime'] as String?,
+      roomCheckInTime: room?['checkInTime']?.toString() ?? json['roomCheckInTime']?.toString(),
+      roomCheckoutTime: room?['checkoutTime']?.toString() ?? room?['checkOutTime']?.toString() ?? json['roomCheckoutTime']?.toString(),
       // 취소 요청 여부
       cancellationRequested: json['cancellationRequested'] as bool? ?? false,
       // 호스트 정산 정보
