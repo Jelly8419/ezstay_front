@@ -63,6 +63,9 @@ class GuestContractPaymentHistorySection extends StatelessWidget {
   }
 
   Widget _buildPaymentHistoryTile(PaymentHistory payment) {
+    final isPayment = payment.isPayment;
+    final displayAmount = payment.amount.abs();
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -70,12 +73,12 @@ class GuestContractPaymentHistorySection extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: payment.isPayment ? AppColors.blue100 : AppColors.error50,
+            color: isPayment ? AppColors.blue100 : AppColors.error50,
             shape: BoxShape.circle,
           ),
           child: Icon(
-            payment.isPayment ? Icons.payment : Icons.replay,
-            color: payment.isPayment ? AppColors.blue600 : AppColors.error600,
+            isPayment ? Icons.payment : Icons.replay,
+            color: isPayment ? AppColors.blue600 : AppColors.error600,
             size: 20,
           ),
         ),
@@ -87,7 +90,7 @@ class GuestContractPaymentHistorySection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                payment.isPayment ? '결제' : '환불',
+                isPayment ? '결제' : '환불',
                 style: AppTextStyles.bodyMedium.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -96,7 +99,7 @@ class GuestContractPaymentHistorySection extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                FormatUtils.formatDateTime(payment.transactionDate),
+                FormatUtils.formatDateTime(payment.occurredAt),
                 style: AppTextStyles.bodySmall.copyWith(
                   fontSize: 14,
                   color: AppColors.gray600,
@@ -112,49 +115,19 @@ class GuestContractPaymentHistorySection extends StatelessWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 6),
-              _buildPaymentStatusBadge(payment.status),
             ],
           ),
         ),
 
         Text(
-          '${payment.isPayment ? '' : '-'}${FormatUtils.formatCurrency(payment.amount)}원',
+          '${isPayment ? '' : '-'}${FormatUtils.formatCurrency(displayAmount)}원',
           style: AppTextStyles.bodyMedium.copyWith(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: payment.isPayment ? AppColors.gray900 : AppColors.error600,
+            color: isPayment ? AppColors.gray900 : AppColors.error600,
           ),
         ),
       ],
     );
-  }
-
-  Widget _buildPaymentStatusBadge(String status) {
-    final config = _getPaymentStatusConfig(status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: (config['color'] as Color).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        config['text'] as String,
-        style: AppTextStyles.bodySmall.copyWith(
-          fontSize: 12,
-          color: config['color'] as Color,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Map<String, dynamic> _getPaymentStatusConfig(String status) {
-    final statusMap = {
-      'COMPLETED': {'text': '완료', 'color': AppColors.success500},
-      'PENDING': {'text': '대기', 'color': AppColors.warning500},
-      'FAILED': {'text': '실패', 'color': AppColors.error500},
-    };
-    return statusMap[status] ?? statusMap['PENDING']!;
   }
 }
