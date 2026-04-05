@@ -38,21 +38,21 @@ class Settlement {
 
   factory Settlement.fromJson(Map<String, dynamic> json) {
     return Settlement(
-      contractId: json['contractId'] ?? 0,
+      contractId: (json['contractId'] ?? 0).toInt(),
       contractNumber: json['contractNumber'] ?? '',
-      roomId: json['roomId'] ?? 0,
+      roomId: (json['roomId'] ?? 0).toInt(),
       roomTitle: json['roomTitle'] ?? '',
       roomThumbnail: json['roomThumbnail'],
       guestName: json['guestName'] ?? '',
       checkInDate: json['checkInDate'] ?? '',
       checkOutDate: json['checkOutDate'] ?? '',
-      rentalDays: json['rentalDays'] ?? 0,
-      settlementAmount: json['settlementAmount'] ?? 0,
+      rentalDays: (json['rentalDays'] ?? 0).toInt(),
+      settlementAmount: (json['settlementAmount'] ?? 0).toInt(),
       settlementDate: json['settlementDate'] ?? '',
       status: json['status'] ?? 'pending',
       statusLabel: json['statusLabel'] ?? '',
       hasRefund: json['hasRefund'] ?? false,
-      refundAmount: json['refundAmount'] ?? 0,
+      refundAmount: (json['refundAmount'] ?? 0).toInt(),
       hasEzCleaningService: json['hasEzCleaningService'] ?? false,
     );
   }
@@ -74,10 +74,10 @@ class SettlementSummary {
 
   factory SettlementSummary.fromJson(Map<String, dynamic> json) {
     return SettlementSummary(
-      totalCount: json['totalCount'] ?? 0,
-      totalSettlementAmount: json['totalSettlementAmount'] ?? 0,
-      pendingCount: json['pendingCount'] ?? 0,
-      completedCount: json['completedCount'] ?? 0,
+      totalCount: (json['totalCount'] ?? 0).toInt(),
+      totalSettlementAmount: (json['totalSettlementAmount'] ?? 0).toInt(),
+      pendingCount: (json['pendingCount'] ?? 0).toInt(),
+      completedCount: (json['completedCount'] ?? 0).toInt(),
     );
   }
 }
@@ -98,10 +98,10 @@ class SettlementPagination {
 
   factory SettlementPagination.fromJson(Map<String, dynamic> json) {
     return SettlementPagination(
-      page: json['page'] ?? 1,
-      limit: json['limit'] ?? 20,
-      totalPages: json['totalPages'] ?? 1,
-      totalCount: json['totalCount'] ?? 0,
+      page: (json['page'] ?? 1).toInt(),
+      limit: (json['limit'] ?? 20).toInt(),
+      totalPages: (json['totalPages'] ?? 1).toInt(),
+      totalCount: (json['totalCount'] ?? 0).toInt(),
     );
   }
 }
@@ -118,7 +118,7 @@ class SettlementRoom {
 
   factory SettlementRoom.fromJson(Map<String, dynamic> json) {
     return SettlementRoom(
-      roomId: json['roomId'] ?? 0,
+      roomId: (json['roomId'] ?? 0).toInt(),
       roomTitle: json['roomTitle'] ?? '',
     );
   }
@@ -177,12 +177,12 @@ class SettlementContract {
 
   factory SettlementContract.fromJson(Map<String, dynamic> json) {
     return SettlementContract(
-      contractId: json['contractId'] ?? 0,
+      contractId: (json['contractId'] ?? 0).toInt(),
       contractNumber: json['contractNumber'] ?? '',
       status: json['status'] ?? '',
       checkInDate: json['checkInDate'] ?? '',
       checkOutDate: json['checkOutDate'] ?? '',
-      rentalDays: json['rentalDays'] ?? 0,
+      rentalDays: (json['rentalDays'] ?? 0).toInt(),
       paidAt: json['paidAt'],
     );
   }
@@ -204,7 +204,7 @@ class SettlementRoomInfo {
 
   factory SettlementRoomInfo.fromJson(Map<String, dynamic> json) {
     return SettlementRoomInfo(
-      roomId: json['roomId'] ?? 0,
+      roomId: (json['roomId'] ?? 0).toInt(),
       title: json['title'] ?? '',
       address: json['address'] ?? '',
       thumbnail: json['thumbnail'],
@@ -256,15 +256,15 @@ class SettlementBreakdown {
 
   factory SettlementBreakdown.fromJson(Map<String, dynamic> json) {
     return SettlementBreakdown(
-      rentalFee: json['rentalFee'] ?? 0,
-      maintenanceFee: json['maintenanceFee'] ?? 0,
-      cleaningFee: json['cleaningFee'] ?? 0,
-      originalCleaningFee: json['originalCleaningFee'] ?? 0,
+      rentalFee: (json['rentalFee'] ?? 0).toInt(),
+      maintenanceFee: (json['maintenanceFee'] ?? 0).toInt(),
+      cleaningFee: (json['cleaningFee'] ?? 0).toInt(),
+      originalCleaningFee: (json['originalCleaningFee'] ?? 0).toInt(),
       hasEzCleaningService: json['hasEzCleaningService'] ?? false,
-      subtotal: json['subtotal'] ?? 0,
-      platformFee: json['platformFee'] ?? 0,
+      subtotal: (json['subtotal'] ?? 0).toInt(),
+      platformFee: (json['platformFee'] ?? 0).toInt(),
       platformFeeRate: (json['platformFeeRate'] ?? 3.3).toDouble(),
-      grossSettlement: json['grossSettlement'] ?? 0,
+      grossSettlement: (json['grossSettlement'] ?? 0).toInt(),
     );
   }
 }
@@ -285,10 +285,10 @@ class RefundDetails {
 
   factory RefundDetails.fromJson(Map<String, dynamic> json) {
     return RefundDetails(
-      rentalFeeRefund: json['rentalFeeRefund'] ?? 0,
-      maintenanceFeeRefund: json['maintenanceFeeRefund'] ?? 0,
-      cleaningFeeRefund: json['cleaningFeeRefund'] ?? 0,
-      totalRefund: json['totalRefund'] ?? 0,
+      rentalFeeRefund: (json['rentalFeeRefund'] ?? 0).toInt(),
+      maintenanceFeeRefund: (json['maintenanceFeeRefund'] ?? 0).toInt(),
+      cleaningFeeRefund: (json['cleaningFeeRefund'] ?? 0).toInt(),
+      totalRefund: (json['totalRefund'] ?? 0).toInt(),
     );
   }
 }
@@ -361,7 +361,7 @@ class SettlementInfo {
 
   factory SettlementInfo.fromJson(Map<String, dynamic> json) {
     return SettlementInfo(
-      finalAmount: json['finalAmount'] ?? 0,
+      finalAmount: (json['finalAmount'] ?? 0).toInt(),
       settlementDate: json['settlementDate'] ?? '',
       status: json['status'] ?? 'pending',
       statusLabel: json['statusLabel'] ?? '',
