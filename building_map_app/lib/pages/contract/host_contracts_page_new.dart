@@ -35,7 +35,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
   String _selectedTab =
       'in_progress'; // 'in_progress', 'completed', 'cancelled' - 기본값: 진행중
-  String? _selectedStatus; // 상태 필터 (ContractStatus 또는 'all')
+  String _selectedStatus = 'all'; // 상태 필터 ('all' 또는 ContractStatus 값)
 
   // 거절 모달 상태
   bool _showRejectionModal = false;
@@ -69,7 +69,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
     try {
       final contracts = await _contractService.getHostContracts(
-        status: _selectedStatus,
+        status: _selectedStatus == 'all' ? null : _selectedStatus,
       );
 
 
@@ -94,7 +94,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
     final tabFiltered = ContractStatusHelper.filterByTab(_contracts, _selectedTab);
 
     // 2단계: 상태 필터 적용 (선택된 경우에만)
-    if (_selectedStatus != null && _selectedStatus != 'all') {
+    if (_selectedStatus != 'all') {
       // '계약 취소' 선택 시 취소 계열 전체 포함
       final cancelledStatuses = [
         'CANCELLED_BY_GUEST',
@@ -140,7 +140,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                             onTabChanged: (tab) {
                               setState(() {
                                 _selectedTab = tab;
-                                _selectedStatus = null;
+                                _selectedStatus = 'all';
                               });
                             },
                             getTabCount: (tab) => ContractStatusHelper.countByTab(_contracts, tab),
@@ -241,14 +241,14 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
 /// 상태 필터 드롭다운 (리액트 동일: 전체 상태 표시, 선택 시 탭 자동 전환)
   Widget _buildStatusDropdown() {
-    return PopupMenuButton<String?>(
+    return PopupMenuButton<String>(
       initialValue: _selectedStatus,
-      onSelected: (String? newStatus) {
+      onSelected: (String newStatus) {
         setState(() {
           _selectedStatus = newStatus;
 
           // 상태에 따라 자동으로 탭 전환 (리액트 동일)
-          if (newStatus == null) {
+          if (newStatus == 'all') {
             // 전체 선택 시 탭 유지
           } else if ([
             'PENDING_APPROVAL',
@@ -310,8 +310,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       itemBuilder: (BuildContext context) {
         // 전체 상태 옵션 (리액트 코드와 동일)
         // 취소 계열 5개는 '계약 취소' 1개로 대표 표시
-        final allStatuses = <String?>[
-          null, // 계약 상태 (전체)
+        final allStatuses = <String>[
+          'all', // 계약 상태 (전체)
           'PENDING_APPROVAL',
           'APPROVED',
           'PAYMENT_COMPLETED',
@@ -320,8 +320,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
           'REJECTED',
           'CANCELLED_BY_GUEST', // 취소 계열 대표 (게스트/호스트/환불/만료 모두 포함)
         ];
-        return allStatuses.map((String? status) {
-          return PopupMenuItem<String?>(
+        return allStatuses.map((String status) {
+          return PopupMenuItem<String>(
             value: status,
             child: Text(
               _getStatusText(status),
