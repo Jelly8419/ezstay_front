@@ -2,7 +2,6 @@ import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../constants/notice_texts.dart';
 import '../../models/room.dart';
 import '../../models/booking_state.dart';
 import '../../models/refund_policy.dart';
@@ -24,6 +23,7 @@ import '../../utils/format_utils.dart';
 import '../../utils/contract_utils.dart';
 import '../../widgets/kakao_roadview_web.dart';
 import '../../widgets/common/app_footer.dart';
+import '../../widgets/common/refund_policy_section.dart';
 
 /// 방 상세 정보 페이지
 ///
@@ -1089,7 +1089,22 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         // 8. 환불 규정 - py-4 (마지막 항목, border 없음)
         if (_room!.refundPolicy.isNotEmpty) ...[
           const Divider(),
-          _buildRefundPolicySection(),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: RefundPolicySection(
+              rules: _refundPolicy?.rules
+                      .map((r) => RefundRuleItem(
+                            daysBeforeMin: r.daysBeforeMin,
+                            daysBeforeMax: r.daysBeforeMax,
+                            refundRate: r.refundRate,
+                            isSameDayCancellation: r.isSameDayCancellation,
+                            description: r.description,
+                          ))
+                      .toList() ??
+                  [],
+              isLoading: _refundPolicy == null && _room!.refundPolicy.isNotEmpty,
+            ),
+          ),
         ],
       ],
     );
@@ -1150,143 +1165,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   }
 
   /// 환불 규정 섹션 (contract_start_page의 계약 해지조항과 동일)
-  Widget _buildRefundPolicySection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '환불 규정',
-            style: AppTextStyles.bodyMedium.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // API에서 로드된 상세 정책이 있으면 표시
-          if (_refundPolicy != null) ...[
-            // 환불 규칙 목록 (contract_start_page와 동일 포맷)
-            ..._refundPolicy!.rules.map(
-              (rule) =>
-                  _buildRefundBulletText(NoticeTexts.cancellationText(rule.period, rule.description, rule.refundRate)),
-            ),
-          ] else ...[
-            // API 로드 실패 시 기본 텍스트만 표시
-            _buildRefundBulletText('환불 정책을 불러오는데 실패했습니다.'),
-            _buildRefundBulletText('자세한 환불 규정은 호스트에게 문의해주세요.'),
-          ],
-
-          const SizedBox(height: 16),
-
-          // 안내사항 (contract_start_page와 동일)
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF), // blue-50
-              border: Border.all(color: const Color(0xFFDBEAFE)), // blue-100
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      size: 18,
-                      color: Color(0xFF2563EB), // blue-600
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '안내사항',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1E40AF), // blue-800
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _buildNoticeBulletText(NoticeTexts.sameDayCancelPenalty),
-                _buildNoticeBulletText(NoticeTexts.alwaysRefundDefault),
-                _buildNoticeBulletText(NoticeTexts.rentRefundByHost),
-                _buildNoticeBulletText(NoticeTexts.hostCancelPenalty),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 환불 규칙 불릿 텍스트
-  Widget _buildRefundBulletText(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Container(
-              width: 4,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.neutral500,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.neutral700,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 안내사항 불릿 텍스트 (blue 스타일)
-  Widget _buildNoticeBulletText(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 5),
-            child: Container(
-              width: 4,
-              height: 4,
-              decoration: const BoxDecoration(
-                color: Color(0xFF2563EB), // blue-600
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: const Color(0xFF1E40AF), // blue-800
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// 호스트/게스트 정보 컨텐츠
   /// 호스트가 스냅샷 조회 시 게스트 정보 표시, 그 외에는 호스트 정보 표시
   Widget _buildPartyContent() {

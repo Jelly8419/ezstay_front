@@ -32,12 +32,23 @@ class NoticeTexts {
       '배송 완료 상품 반품 시 수거비 7,000원이 차감될 수 있습니다. 동일 계약 내 수거 진행 중인 건이 있으면 면제됩니다.';
 
   // === 환불 규칙 텍스트 생성 ===
-  /// RefundRule의 period + description + 수수료 조합 텍스트
-  static String cancellationText(String period, String description, int refundRate) {
-    final desc = description.isNotEmpty ? description : (refundRate == 0 ? '취소 불가' : '임대료의 $refundRate% 환불');
-    if (refundRate == 0) return '$period $desc';
-    return '$period $desc 및 수수료';
+  /// daysBeforeMin/Max + description 기반 환불 규칙 문구
+  /// isSameDayCancellation == true 인 룰은 호출하지 않음 (안내사항에서 별도 표시)
+  static String cancellationRuleText({
+    required int? daysBeforeMin,
+    required int? daysBeforeMax,
+    required String description,
+  }) {
+    if (daysBeforeMin == 0) {
+      return '입주일 당일 이후 취소 시, $description';
+    }
+    final int daysCount = (daysBeforeMax ?? daysBeforeMin)!;
+    return '입주일 $daysCount일 이전 취소 시, $description 및 수수료';
   }
+
+  /// 환불 규정 섹션 고정 안내 문구
+  static const refundPolicyHeader =
+      '취소일에 따라 임대인이 설정한 아래의 위약금을 제외하고 환불됩니다.';
 
   // === 계약 안내사항 (게스트) ===
   static const guestContractNotices = [

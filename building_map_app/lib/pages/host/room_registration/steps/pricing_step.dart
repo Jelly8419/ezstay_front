@@ -577,7 +577,7 @@ class _PricingStepState extends State<PricingStep> {
 
   /// 환불 정책 상세 표 + 안내문
   Widget _buildRefundPolicyDetail(RefundPolicy policy) {
-    final periods = policy.rules.map((r) => r.period).toList();
+    final periods = policy.rules.map((r) => r.periodLabel).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

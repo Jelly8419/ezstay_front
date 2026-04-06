@@ -103,30 +103,45 @@ class RefundPolicy {
 
 /// 환불 규칙
 class RefundRule {
-  final String period; // "입주일 20일 이전"
+  final int? daysBeforeMin;
+  final int? daysBeforeMax;
   final int refundRate; // 100 (%)
-  final String description; // "입주일 20일 이전"
+  final bool isSameDayCancellation;
+  final String description;
 
   RefundRule({
-    required this.period,
+    this.daysBeforeMin,
+    this.daysBeforeMax,
     required this.refundRate,
+    required this.isSameDayCancellation,
     required this.description,
   });
 
   factory RefundRule.fromJson(Map<String, dynamic> json) {
     return RefundRule(
-      period: json['period'] as String,
-      refundRate: json['refundRate'] as int,
-      description: json['description'] as String,
+      daysBeforeMin: json['daysBeforeMin'] as int?,
+      daysBeforeMax: json['daysBeforeMax'] as int?,
+      refundRate: json['refundRate'] as int? ?? 0,
+      isSameDayCancellation: json['isSameDayCancellation'] as bool? ?? false,
+      description: json['description'] as String? ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'period': period,
+      'daysBeforeMin': daysBeforeMin,
+      'daysBeforeMax': daysBeforeMax,
       'refundRate': refundRate,
+      'isSameDayCancellation': isSameDayCancellation,
       'description': description,
     };
+  }
+
+  /// daysBeforeMin/Max → 사람이 읽기 좋은 기간 문자열
+  String get periodLabel {
+    if (daysBeforeMin == null && daysBeforeMax == null) return '';
+    if (daysBeforeMin == 0) return '입주일 $daysBeforeMin일 이전';
+    return '입주일 ${daysBeforeMax ?? daysBeforeMin}일 이전';
   }
 }
 
