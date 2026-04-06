@@ -65,8 +65,9 @@ class GuestContractCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = ContractStatusHelper.getStatusColor(contract.status);
-    final statusBgColor = ContractStatusHelper.getStatusBgColor(contract.status);
+    final statusBadge = ContractStatusHelper.getStatusBadgeConfig(contract.status);
+    final statusColor = statusBadge.textColor;
+    final statusBgColor = statusBadge.bgColor;
     final statusMessage = ContractStatusHelper.getStatusMessage(contract.status);
     final showChatButton = [
       ContractStatus.approved,
@@ -120,7 +121,7 @@ class GuestContractCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            contract.status.label,
+                            statusBadge.text,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,

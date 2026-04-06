@@ -6,10 +6,7 @@ import '../../models/contract.dart';
 class HostRecommendationBanner extends StatelessWidget {
   final RecommendedItemsInfo recommendedItems;
 
-  const HostRecommendationBanner({
-    required this.recommendedItems,
-    super.key,
-  });
+  const HostRecommendationBanner({required this.recommendedItems, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +23,11 @@ class HostRecommendationBanner extends StatelessWidget {
         children: [
           Row(
             children: const [
-              Icon(Icons.chat_bubble_outline, size: 15, color: Color(0xFF0369A1)),
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 15,
+                color: Color(0xFF0369A1),
+              ),
               SizedBox(width: 6),
               Text(
                 '호스트가 입주 전 챙기면 좋을 상품을 안내해뒀어요',
@@ -59,11 +60,8 @@ class HostRecommendationBanner extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            '결제 시 함께 선택할 수 있어요',
-            style: TextStyle(
-              fontSize: 12,
-              color: Color(0xFF64748B),
-            ),
+            '필요한 옵션 상품을 추가할 수 있어요',
+            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
           ),
         ],
       ),
