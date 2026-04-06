@@ -84,7 +84,8 @@ class ContractInfoRentalItemsSection extends StatelessWidget {
                     color: AppColors.gray900,
                     fontWeight: FontWeight.w700,
                   )),
-              Text(FormatUtils.formatKRW(contract.rentalItemsFee),
+              Text(FormatUtils.formatKRW(
+                  contract.rentalItems.fold(0, (sum, item) => sum + item.totalPrice)),
                   style: AppTextStyles.headingSmall
                       .copyWith(color: AppColors.gray900)),
             ],

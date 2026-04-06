@@ -203,18 +203,27 @@ class ContractDetail {
     final rentalOrdersData = json['rentalOrders'];
     if (rentalOrdersData is Map && rentalOrdersData['activeItems'] is List) {
       final activeItems = rentalOrdersData['activeItems'] as List;
-      parsedRentalItems = activeItems.map((e) {
+      // rentalItemId 기준으로 그룹핑하여 수량 합산
+      final grouped = <int, Map<String, dynamic>>{};
+      for (final e in activeItems) {
         final item = e as Map<String, dynamic>;
-        // activeItems 필드명 → ContractRentalItem 필드명 매핑
-        return ContractRentalItem.fromJson({
-          'id': item['rentalItemId'],
-          'name': item['name'],
-          'description': item['description'],
-          'price': item['pricePerItem'],
-          'quantity': item['quantity'],
-          'imageUrl': item['imageUrl'],
-        });
-      }).toList();
+        final itemId = item['rentalItemId'] as int;
+        if (grouped.containsKey(itemId)) {
+          grouped[itemId]!['quantity'] =
+              (grouped[itemId]!['quantity'] as int) + (item['quantity'] as int);
+        } else {
+          grouped[itemId] = {
+            'id': itemId,
+            'name': item['name'],
+            'description': item['description'],
+            'price': item['pricePerItem'],
+            'quantity': item['quantity'] as int,
+            'imageUrl': item['imageUrl'],
+          };
+        }
+      }
+      parsedRentalItems =
+          grouped.values.map((e) => ContractRentalItem.fromJson(e)).toList();
     } else {
       // 2. recommendedItems.items fallback
       final recommendedItemsData = json['recommendedItems'];
@@ -267,7 +276,20 @@ class ContractDetail {
       maintenanceFee: json['maintenanceFee'] as int,
       cleaningFee: json['cleaningFee'] as int,
       deposit: json['deposit'] as int? ?? FeeConstants.depositAmount,
-      rentalItemsFee: json['rentalItemsFee'] as int? ?? 0,
+      // rentalOrders.netAmount 우선 사용 (추가/취소 반영된 실제 금액)
+      // fallback: rentalItemsFee (초기 계약 시점 금액)
+      rentalItemsFee: () {
+        if (rentalOrdersData is Map) {
+          final v = rentalOrdersData['netAmount'];
+          if (v is int) return v;
+          if (v is num) return v.toInt();
+          if (v is String) return int.tryParse(v) ?? 0;
+        }
+        final v = json['rentalItemsFee'];
+        if (v is int) return v;
+        if (v is num) return v.toInt();
+        return 0;
+      }(),
       platformFee: json['platformFee'] as int,
       finalTotalAmount: json['finalTotalAmount'] as int,
       // 상태 정보
@@ -658,7 +680,8 @@ class RefundPolicyRule {
     if (daysBeforeMin == null && daysBeforeMax == null) return '';
     if (daysBeforeMin == null) return '입주일 ${daysBeforeMax!}일 이전';
     if (daysBeforeMax == null) return '입주일 ${daysBeforeMin!}일 이후';
-    return '입주일 $daysBeforeMax~$daysBeforeMin일 이전';
+    if (daysBeforeMin == daysBeforeMax) return '입주일 ${daysBeforeMin!}일 이후';
+    return '입주일 $daysBeforeMin~$daysBeforeMax일 이전';
   }
 }
 
