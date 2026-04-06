@@ -99,6 +99,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       final cancelledStatuses = [
         'CANCELLED_BY_GUEST',
         'CANCELLED_BY_HOST',
+        'CANCELLED_BY_ADMIN_WITH_REFUND',
+        'CANCELLED_BY_ADMIN_NO_REFUND',
         'REFUNDED',
         'APPROVAL_EXPIRED',
         'PAYMENT_EXPIRED',
