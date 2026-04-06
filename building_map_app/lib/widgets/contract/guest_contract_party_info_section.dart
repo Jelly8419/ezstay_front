@@ -6,6 +6,12 @@ import '../../models/contract_detail.dart';
 import '../../utils/contract_utils.dart';
 import '../../utils/responsive_util.dart';
 
+/// 이름(닉네임) 형태 포맷 — 닉네임 없으면 이름만
+String _formatName(String name, String? nickname) {
+  if (nickname == null || nickname.isEmpty) return name;
+  return '$name($nickname)';
+}
+
 /// 게스트 계약 상세 — 호스트/게스트 정보 섹션
 class GuestContractPartyInfoSection extends StatelessWidget {
   final ContractDetail contract;
@@ -95,7 +101,7 @@ class GuestContractPartyInfoSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      contract.hostDisplayName,
+                      _formatName(contract.hostName, contract.hostNickname),
                       style: AppTextStyles.bodyMedium.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -197,8 +203,8 @@ class GuestContractPartyInfoSection extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    contract.guestDisplayName.isNotEmpty
-                        ? contract.guestDisplayName.substring(0, 1)
+                    contract.guestName.isNotEmpty
+                        ? contract.guestName.substring(0, 1)
                         : '?',
                     style: TextStyle(
                       fontSize: 18,
@@ -213,7 +219,7 @@ class GuestContractPartyInfoSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    contract.guestDisplayName,
+                    _formatName(contract.guestName, contract.guestNickname),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

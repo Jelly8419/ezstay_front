@@ -80,11 +80,8 @@ class _CancelTabContentState extends State<CancelTabContent> {
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.enabled) {
-      return _buildDisabledMsg('결제 완료 상태에서만 결제 취소가 가능합니다.');
-    }
     final orders = widget.cancelableOrders;
-    if (orders.isEmpty) {
+    if (!widget.enabled || orders.isEmpty) {
       return _buildDisabledMsg('결제 취소 가능한 주문이 없습니다.\n(결제 취소 가능한 상태의 주문만 표시됩니다.)');
     }
     return Column(
