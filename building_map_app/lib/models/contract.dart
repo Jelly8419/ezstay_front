@@ -5,19 +5,19 @@ import 'package:flutter/foundation.dart';
 /// 계약 상태 (백엔드 CONTRACT_STATUS 매핑)
 enum ContractStatus {
   pendingApproval('PENDING_APPROVAL', '승인 대기'),
-  approved('APPROVED', '승인됨 (결제 대기)'),
-  rejected('REJECTED', '거절됨'),
+  approved('APPROVED', '결제 대기'),
+  rejected('REJECTED', '승인 거절'),
   paymentCompleted('PAYMENT_COMPLETED', '결제 완료'),
-  inProgress('IN_PROGRESS', '계약 진행중 (체크인 완료)'),
+  inProgress('IN_PROGRESS', '임대 중'),
   completed('COMPLETED', '계약 종료'),
-  cancelledByGuest('CANCELLED_BY_GUEST', '게스트 취소'),
-  cancelledByHost('CANCELLED_BY_HOST', '호스트 취소'),
-  cancelledByAdminWithRefund('CANCELLED_BY_ADMIN_WITH_REFUND', '관리자 취소 (환불 O)'),
-  cancelledByAdminNoRefund('CANCELLED_BY_ADMIN_NO_REFUND', '관리자 취소 (환불 X)'),
-  refunded('REFUNDED', '환불 완료'),
-  approvalExpired('APPROVAL_EXPIRED', '미승인 만료'),
-  paymentExpired('PAYMENT_EXPIRED', '미결제 만료'),
-  cancelRequested('CANCEL_REQUESTED', '취소 요청 (관리자 승인 대기)');
+  cancelledByGuest('CANCELLED_BY_GUEST', '계약 취소'),
+  cancelledByHost('CANCELLED_BY_HOST', '계약 취소'),
+  cancelledByAdminWithRefund('CANCELLED_BY_ADMIN_WITH_REFUND', '계약 취소'),
+  cancelledByAdminNoRefund('CANCELLED_BY_ADMIN_NO_REFUND', '계약 취소'),
+  refunded('REFUNDED', '계약 취소'),
+  approvalExpired('APPROVAL_EXPIRED', '계약 취소'),
+  paymentExpired('PAYMENT_EXPIRED', '계약 취소'),
+  cancelRequested('CANCEL_REQUESTED', '취소 요청');
 
   final String value;
   final String label;
