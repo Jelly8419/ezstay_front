@@ -125,9 +125,13 @@ class ContractStatusHelper {
   }
 
   /// 보증금 환급 완료 여부
+  /// - RETURNED: 전액 환급 완료
+  /// - RETURN_CONFIRMED: 반환 금액 확정 후 환급 완료
+  /// - DEDUCTION_CONFIRMED: 상호합의 하에 차감 후 환급 처리 완료
   static bool isDepositRefundComplete(ContractListItem c) {
     return c.depositStatus == DepositStatus.returned ||
-        c.depositStatus == DepositStatus.returnConfirmed;
+        c.depositStatus == DepositStatus.returnConfirmed ||
+        c.depositStatus == DepositStatus.deductionConfirmed;
   }
 
   /// 탭별 계약 필터링
@@ -168,12 +172,15 @@ class ContractStatusHelper {
     ContractStatus.approved,
     ContractStatus.paymentCompleted,
     ContractStatus.inProgress,
+    ContractStatus.cancelRequested, // 취소 요청 중: 관리자 처리 대기 중이므로 진행중 탭 유지
   ];
 
   static const _cancelledStatuses = [
     ContractStatus.rejected,
     ContractStatus.cancelledByGuest,
     ContractStatus.cancelledByHost,
+    ContractStatus.cancelledByAdminWithRefund,
+    ContractStatus.cancelledByAdminNoRefund,
     ContractStatus.refunded,
     ContractStatus.approvalExpired,
     ContractStatus.paymentExpired,
