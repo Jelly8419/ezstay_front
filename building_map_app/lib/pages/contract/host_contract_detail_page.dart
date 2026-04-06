@@ -18,6 +18,7 @@ import '../../widgets/contract/host_deposit_agreement_section.dart';
 import '../../widgets/contract/host_contract_basic_info_section.dart';
 import '../../widgets/contract/host_contract_action_buttons.dart';
 import '../../widgets/contract/host_contract_party_info_section.dart';
+import '../../widgets/contract/guest_contract_cancellation_section.dart';
 import '../../widgets/contract/guest_contract_payment_history_section.dart';
 import '../../widgets/modals/host_contract_modals.dart' show DepositAgreementModal, RequestCancellationModal;
 
@@ -366,6 +367,8 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
           HostContractPartyInfoSection(contract: contract),
           const SizedBox(height: 24),
           HostContractAmountSection(contract: contract),
+          const SizedBox(height: 24),
+          GuestContractCancellationSection(contract: contract),
 
           if (ContractUtils.shouldShowCheckoutConfirmation(contract)) ...[
             const SizedBox(height: 24),
