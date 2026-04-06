@@ -6,6 +6,7 @@ import 'contract_info_basic_section.dart';
 import 'contract_info_party_section.dart';
 import 'contract_info_pricing_section.dart';
 import 'contract_info_items_section.dart';
+import '../common/refund_policy_section.dart';
 
 /// 계약 정보 모달 위젯
 class ContractInfoModal extends StatelessWidget {
@@ -65,8 +66,21 @@ class ContractInfoModal extends StatelessWidget {
                       const SizedBox(height: 24),
                     ],
 
-                    if (contract.refundPolicyDetail.isNotEmpty) ...[
-                      _buildRefundPolicySection(),
+                    if (contract.refundPolicySnapshot != null ||
+                        contract.refundPolicyDetail.isNotEmpty) ...[
+                      RefundPolicySection(
+                        rules: contract.refundPolicySnapshot?.rules
+                                .map((r) => RefundRuleItem(
+                                      daysBeforeMin: r.daysBeforeMin,
+                                      daysBeforeMax: r.daysBeforeMax,
+                                      refundRate: r.refundRate,
+                                      isSameDayCancellation:
+                                          r.isSameDayCancellation,
+                                      description: r.description,
+                                    ))
+                                .toList() ??
+                            [],
+                      ),
                       const SizedBox(height: 24),
                     ],
 
@@ -112,33 +126,6 @@ class ContractInfoModal extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildRefundPolicySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('환불 규정',
-            style:
-                AppTextStyles.headingSmall.copyWith(color: AppColors.gray900)),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.gray50,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            contract.refundPolicyDetail,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.neutral700,
-              height: 1.6,
-            ),
-          ),
-        ),
-      ],
     );
   }
 

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
-import '../../constants/notice_texts.dart';
 import '../../models/contract_detail.dart';
-import '../contract/contract_common_widgets.dart';
+import '../../widgets/common/refund_policy_section.dart';
 
 /// 게스트 계약 상세 — 환불 규정 섹션
 class GuestContractCancellationSection extends StatelessWidget {
@@ -14,6 +12,17 @@ class GuestContractCancellationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final snapshot = contract.refundPolicySnapshot;
+
+    final rules = snapshot?.rules
+            .map((r) => RefundRuleItem(
+                  daysBeforeMin: r.daysBeforeMin,
+                  daysBeforeMax: r.daysBeforeMax,
+                  refundRate: r.refundRate,
+                  isSameDayCancellation: r.isSameDayCancellation,
+                  description: r.description,
+                ))
+            .toList() ??
+        [];
 
     return Container(
       decoration: BoxDecoration(
@@ -29,42 +38,7 @@ class GuestContractCancellationSection extends StatelessWidget {
         ],
       ),
       padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '환불 규정',
-            style: AppTextStyles.headingMedium.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.gray900,
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (snapshot != null && snapshot.rules.isNotEmpty) ...[
-            ...snapshot.rules.map(
-              (rule) => BulletText(
-                text: NoticeTexts.cancellationText(
-                  rule.periodLabel,
-                  rule.description,
-                  rule.refundRate,
-                ),
-              ),
-            ),
-          ] else ...[
-            Text(
-              contract.refundPolicyDetail.isNotEmpty
-                  ? contract.refundPolicyDetail
-                  : '환불 정책 정보를 불러올 수 없습니다.',
-              style: AppTextStyles.bodyMedium.copyWith(
-                fontSize: 14,
-                color: AppColors.neutral700,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ],
-      ),
+      child: RefundPolicySection(rules: rules),
     );
   }
 }
