@@ -169,6 +169,12 @@ class _PricingStepState extends State<PricingStep> {
 
     try {
       final policies = await _refundPolicyService.getRefundPolicies();
+      const order = ['약하게', 'flexible', '보통', 'moderate', '엄격하게', 'strict'];
+      policies.sort((a, b) {
+        final ai = order.indexWhere((o) => o == a.policyType);
+        final bi = order.indexWhere((o) => o == b.policyType);
+        return (ai == -1 ? 999 : ai).compareTo(bi == -1 ? 999 : bi);
+      });
       setState(() {
         _refundPolicies = policies;
         _isLoadingPolicies = false;
