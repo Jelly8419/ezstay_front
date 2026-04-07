@@ -84,7 +84,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     'maintenanceDescription': '',
     'cleaningFee': '',
     'minContractDays': '7',
-    'refundPolicy': '보통',
+    'refundPolicy': '',
     'refundPolicyConfirmed': false,
     'longTermDiscountWeeks': '',
     'longTermDiscountPercent': '',
@@ -267,7 +267,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           _formData['cleaningFee'] = roomData['cleaningFee']?.toString() ?? '';
           _formData['minContractDays'] =
               roomData['minContractDays']?.toString() ?? '7';
-          _formData['refundPolicy'] = roomData['refundPolicy'] ?? '보통';
+          _formData['refundPolicy'] = roomData['refundPolicy'] ?? '';
           _formData['longTermDiscountWeeks'] =
               roomData['longTermWeeks']?.toString() ?? '';
           _formData['longTermDiscountPercent'] =
@@ -366,8 +366,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     'refundPolicy': ['환불 정책'],
     'longTermDiscountWeeks': ['장기 할인 주'],
     'longTermDiscountPercent': ['장기 할인 퍼센트'],
-    'earlyCheckinDiscountDays': ['조기 체크인 할인 일'],
-    'earlyCheckinDiscountAmount': ['조기 체크인 할인 금액'],
+    'earlyCheckinDiscountDays': ['조기 입주 할인 일'],
+    'earlyCheckinDiscountAmount': ['조기 입주 할인 금액'],
     'servicePassword': ['비밀번호'],
     'maxGuests': ['최대 인원'],
     'propertyDescription': ['방 소개'],

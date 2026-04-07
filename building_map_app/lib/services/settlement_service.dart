@@ -1,6 +1,7 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'dart:js_interop';
+import 'package:web/web.dart' as web;
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../models/settlement.dart';
@@ -123,26 +124,47 @@ class SettlementService {
     }
   }
 
-  /// 정산 내역 엑셀 다운로드 URL 생성
-  /// 브라우저에서 직접 다운로드 (depositDeduction 컬럼 포함)
-  String getExportUrl({
+  /// 정산 내역 엑셀 다운로드
+  /// Authorization 헤더를 포함한 HTTP GET 요청으로 파일을 받아 dart:html로 다운로드 트리거
+  Future<bool> downloadExcel({
     String tab = 'all',
     int? roomId,
     String? startDate,
     String? endDate,
-  }) {
-    final queryParams = <String, String>{
-      'tab': tab,
-    };
+  }) async {
+    try {
+      final queryParams = <String, String>{'tab': tab};
+      if (roomId != null) queryParams['roomId'] = roomId.toString();
+      if (startDate != null) queryParams['startDate'] = startDate;
+      if (endDate != null) queryParams['endDate'] = endDate;
 
-    if (roomId != null) queryParams['roomId'] = roomId.toString();
-    if (startDate != null) queryParams['startDate'] = startDate;
-    if (endDate != null) queryParams['endDate'] = endDate;
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/host/settlements/export')
+          .replace(queryParameters: queryParams);
 
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/host/settlements/export')
-        .replace(queryParameters: queryParams);
+      final headers = await _getHeaders();
+      final response = await http.get(uri, headers: headers).timeout(ApiConfig.timeout);
 
-    return uri.toString();
+      if (response.statusCode == 200) {
+        final blob = web.Blob(
+          [response.bodyBytes.toJS].toJS,
+          web.BlobPropertyBag(type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+        );
+        final url = web.URL.createObjectURL(blob);
+        (web.document.createElement('a') as web.HTMLAnchorElement)
+          ..href = url
+          ..setAttribute('download', '정산내역.xlsx')
+          ..click();
+        web.URL.revokeObjectURL(url);
+        return true;
+      } else {
+        AppLogger.e('❌ [SETTLEMENT] Export Error: ${response.statusCode}');
+        AppLogger.e('❌ [SETTLEMENT] Export Body: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      AppLogger.e('❌ [SETTLEMENT] Export Exception: $e');
+      return false;
+    }
   }
 
 }

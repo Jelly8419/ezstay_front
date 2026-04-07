@@ -272,21 +272,32 @@ class HostCheckoutSection extends StatelessWidget {
 
       // HOST_PENDING: 호스트 확인 보류 + 합의 내용 제출 버튼
       if (checkoutStatus == CheckoutStatus.hostPending) {
+        final deadlineStr = contract.agreementDeadline;
+        final deadline = deadlineStr != null ? DateTime.tryParse(deadlineStr) : null;
+        final deadlineFormatted = deadline != null
+            ? '${deadline.year.toString().padLeft(4, '0')}-'
+              '${deadline.month.toString().padLeft(2, '0')}-'
+              '${deadline.day.toString().padLeft(2, '0')}, '
+              '${deadline.hour.toString().padLeft(2, '0')}:'
+              '${deadline.minute.toString().padLeft(2, '0')}'
+            : null;
+
         return Padding(
           padding: const EdgeInsets.only(top: 16),
           child: Column(
             children: [
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF7ED), // orange-50
                   border: Border.all(color: const Color(0xFFFED7AA)), // orange-200
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       '⚠️ 퇴실 확인이 보류되었습니다.',
                       style: TextStyle(
                         fontSize: 14,
@@ -294,14 +305,24 @@ class HostCheckoutSection extends StatelessWidget {
                         color: Color(0xFF9A3412), // orange-800
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
+                    const SizedBox(height: 4),
+                    const Text(
                       '관리자가 확인 중입니다. 게스트와 합의가 되었다면 합의 내용을 제출해주세요.',
                       style: TextStyle(
                         fontSize: 13,
                         color: Color(0xFF9A3412),
                       ),
                     ),
+                    if (deadlineFormatted != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        '합의 마감일시 : $deadlineFormatted',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9A3412),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

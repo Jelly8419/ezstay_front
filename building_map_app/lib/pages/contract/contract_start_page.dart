@@ -280,7 +280,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '체크인/체크아웃 날짜를 선택해야 계약을 요청할 수 있습니다.',
+                  '입주/퇴실 날짜를 선택해야 계약을 요청할 수 있습니다.',
                   style: AppTextStyles.bodySmall.copyWith(
                     fontSize: 13,
                     color: Colors.grey[700],
