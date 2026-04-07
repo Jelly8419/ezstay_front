@@ -40,11 +40,11 @@ class DepositDeduction {
   }
 }
 
-/// 보증금 차감 지급 정보 (상세용 — processedAt 포함)
-class DepositDeductionDetail extends DepositDeduction {
+/// 보증금 차감 지급 정보 (정산 상세 인라인용 — processedAt 포함)
+class SettlementDepositDeductionDetail extends DepositDeduction {
   final String? processedAt;
 
-  const DepositDeductionDetail({
+  const SettlementDepositDeductionDetail({
     required super.amount,
     required super.status,
     required super.statusLabel,
@@ -52,9 +52,9 @@ class DepositDeductionDetail extends DepositDeduction {
     this.processedAt,
   });
 
-  factory DepositDeductionDetail.fromJson(dynamic raw) {
+  factory SettlementDepositDeductionDetail.fromJson(dynamic raw) {
     final json = _asMap(raw);
-    return DepositDeductionDetail(
+    return SettlementDepositDeductionDetail(
       amount: (json['amount'] ?? 0).toInt(),
       status: (json['status'] ?? 'PENDING').toString(),
       statusLabel: (json['statusLabel'] ?? '').toString(),
@@ -463,7 +463,7 @@ class SettlementDetail {
   final SettlementBreakdown breakdown;
   final SettlementRefund refund;
   final SettlementInfo settlement;
-  final DepositDeductionDetail? depositDeduction;
+  final SettlementDepositDeductionDetail? depositDeduction;
 
   const SettlementDetail({
     required this.contract,
@@ -486,8 +486,141 @@ class SettlementDetail {
       refund: SettlementRefund.fromJson(data['refund']),
       settlement: SettlementInfo.fromJson(data['settlement']),
       depositDeduction: data['depositDeduction'] != null
-          ? DepositDeductionDetail.fromJson(data['depositDeduction'])
+          ? SettlementDepositDeductionDetail.fromJson(data['depositDeduction'])
           : null,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 보증금 차감 상세 페이지 전용 모델
+// GET /api/host/settlements/:contractId/deposit-deduction
+// ─────────────────────────────────────────────────────────────
+
+/// 합의 이력 아이템
+class DeductionAgreementHistory {
+  final int id;
+  final String status;
+  final String statusLabel;
+  final String holdReason;
+  final int? deductAmount;
+  final String? agreementText;
+  final String? requestedAt;
+  final String? adminApprovedAt;
+  final String? submittedAt;
+  final String? acceptedAt;
+  final String? rejectedAt;
+  final String? rejectedReason;
+
+  const DeductionAgreementHistory({
+    required this.id,
+    required this.status,
+    required this.statusLabel,
+    required this.holdReason,
+    this.deductAmount,
+    this.agreementText,
+    this.requestedAt,
+    this.adminApprovedAt,
+    this.submittedAt,
+    this.acceptedAt,
+    this.rejectedAt,
+    this.rejectedReason,
+  });
+
+  factory DeductionAgreementHistory.fromJson(dynamic raw) {
+    final json = _asMap(raw);
+    return DeductionAgreementHistory(
+      id: (json['id'] ?? 0).toInt(),
+      status: (json['status'] ?? '').toString(),
+      statusLabel: (json['statusLabel'] ?? '').toString(),
+      holdReason: (json['holdReason'] ?? '').toString(),
+      deductAmount: json['deductAmount'] != null
+          ? (json['deductAmount']).toInt()
+          : null,
+      agreementText: json['agreementText']?.toString(),
+      requestedAt: json['requestedAt']?.toString(),
+      adminApprovedAt: json['adminApprovedAt']?.toString(),
+      submittedAt: json['submittedAt']?.toString(),
+      acceptedAt: json['acceptedAt']?.toString(),
+      rejectedAt: json['rejectedAt']?.toString(),
+      rejectedReason: json['rejectedReason']?.toString(),
+    );
+  }
+}
+
+/// 차감 지급(payout) 정보
+class DeductionPayout {
+  final int id;
+  final int amount;
+  final String status;       // 'PENDING' | 'PAYABLE' | 'COMPLETED'
+  final String statusLabel;
+  final String payableAfter; // YYYY-MM-DD
+  final String? processedAt;
+
+  const DeductionPayout({
+    required this.id,
+    required this.amount,
+    required this.status,
+    required this.statusLabel,
+    required this.payableAfter,
+    this.processedAt,
+  });
+
+  factory DeductionPayout.fromJson(dynamic raw) {
+    final json = _asMap(raw);
+    return DeductionPayout(
+      id: (json['id'] ?? 0).toInt(),
+      amount: (json['amount'] ?? 0).toInt(),
+      status: (json['status'] ?? 'PENDING').toString(),
+      statusLabel: (json['statusLabel'] ?? '').toString(),
+      payableAfter: (json['payableAfter'] ?? '').toString(),
+      processedAt: json['processedAt']?.toString(),
+    );
+  }
+}
+
+/// GET /api/host/settlements/:contractId/deposit-deduction 응답
+class DepositDeductionDetailResponse {
+  final int contractId;
+  final String contractNumber;
+  final int deposit;
+  final int depositDeduction;
+  final String deductionReason;
+  final int refundableDeposit;
+  final String depositStatus;
+  final String depositStatusLabel;
+  final DeductionPayout payout;
+  final List<DeductionAgreementHistory> history;
+
+  const DepositDeductionDetailResponse({
+    required this.contractId,
+    required this.contractNumber,
+    required this.deposit,
+    required this.depositDeduction,
+    required this.deductionReason,
+    required this.refundableDeposit,
+    required this.depositStatus,
+    required this.depositStatusLabel,
+    required this.payout,
+    required this.history,
+  });
+
+  factory DepositDeductionDetailResponse.fromJson(dynamic raw) {
+    final root = _asMap(raw);
+    final data = _asMap(root['data'] ?? root);
+    return DepositDeductionDetailResponse(
+      contractId: (data['contractId'] ?? 0).toInt(),
+      contractNumber: (data['contractNumber'] ?? '').toString(),
+      deposit: (data['deposit'] ?? 0).toInt(),
+      depositDeduction: (data['depositDeduction'] ?? 0).toInt(),
+      deductionReason: (data['deductionReason'] ?? '').toString(),
+      refundableDeposit: (data['refundableDeposit'] ?? 0).toInt(),
+      depositStatus: (data['depositStatus'] ?? '').toString(),
+      depositStatusLabel: (data['depositStatusLabel'] ?? '').toString(),
+      payout: DeductionPayout.fromJson(data['payout']),
+      history: _asList(data['history'])
+          .map((e) => DeductionAgreementHistory.fromJson(e))
+          .toList(),
     );
   }
 }

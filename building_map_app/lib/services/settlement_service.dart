@@ -100,6 +100,29 @@ class SettlementService {
     }
   }
 
+  /// 보증금 차감 상세 조회
+  /// GET /api/host/settlements/:contractId/deposit-deduction
+  Future<DepositDeductionDetailResponse?> getDepositDeductionDetail(int contractId) async {
+    try {
+      final uri = Uri.parse(
+        '${ApiConfig.baseUrl}/api/host/settlements/$contractId/deposit-deduction',
+      );
+      final headers = await _getHeaders();
+      final response = await http.get(uri, headers: headers).timeout(ApiConfig.timeout);
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return DepositDeductionDetailResponse.fromJson(json);
+      } else {
+        AppLogger.e('❌ [SETTLEMENT] Deduction Error: ${response.statusCode}');
+        AppLogger.e('❌ [SETTLEMENT] Deduction Body: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      AppLogger.e('❌ [SETTLEMENT] Deduction Exception: $e');
+      return null;
+    }
+  }
+
   /// 정산 내역 엑셀 다운로드 URL 생성
   /// 브라우저에서 직접 다운로드 (depositDeduction 컬럼 포함)
   String getExportUrl({
