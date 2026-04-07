@@ -318,10 +318,11 @@ GET /api/contracts/host
 {
   "contracts": [
     {
-      "checkoutStatus": "HOLD_REJECTED",
-      "checkoutStatusLabel": "보류 신청 반려",
-      "depositAgreementStatus": "REJECTED",
-      "holdRejectedReason": "증빙 자료 부족으로 반려합니다.",
+      "checkoutStatus": "HOST_PENDING",
+      "checkoutStatusLabel": "합의 진행 중",
+      "depositAgreementStatus": "APPROVED",
+      "holdRejectedReason": null,
+      "agreementDeadline": "2026-04-14T10:00:00.000Z",
       "..."
     }
   ]
@@ -334,11 +335,13 @@ GET /api/contracts/host
 | `checkoutStatusLabel` | string | 기존 필드. `'보류 신청 반려'` 값 추가 |
 | `depositAgreementStatus` | string \| null | 최신 `DepositAgreement` row의 status **(신규)** |
 | `holdRejectedReason` | string \| null | `checkoutStatus === 'HOLD_REJECTED'`일 때만 값 있음 **(신규)** |
+| `agreementDeadline` | string \| null | 합의 마감일시 ISO8601. `adminApprovedAt + 10일`. `checkoutStatus === 'HOST_PENDING'`일 때만 값 있음 **(신규 추가 요청)** |
 
 > **UI 활용 예시**
 > - `checkoutStatus === 'HOLD_REJECTED'` → 반려 배지 표시 + `holdRejectedReason` 노출
 > - `depositAgreementStatus === 'REQUESTED'` → "관리자 검토 중" 안내
 > - `depositAgreementStatus === 'SUBMITTED'` → "게스트 동의 대기 중" 안내
+> - `depositAgreementStatus === 'APPROVED'` → 합의 마감일시 표시 (`agreementDeadline`)
 
 ---
 

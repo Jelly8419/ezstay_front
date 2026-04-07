@@ -92,39 +92,23 @@ class CheckoutStatusSection extends StatelessWidget {
         return const SizedBox.shrink();
     }
 
-    // 합의 데드라인 계산 (정책 7.9.1: 관리자 승인 시점 + 10일)
+    // 합의 마감일시 표시 (정책 7.9.1: 관리자 승인 시점 + 10일)
+    // agreementDeadline은 서버에서 계산해서 내려주는 값 — null이면 미표시
     String? deadlineText;
-    if (contract.checkoutStatus == CheckoutStatus.hostPending ||
+    if ((contract.checkoutStatus == CheckoutStatus.hostPending &&
+            contract.depositAgreementStatus != 'ACCEPTED') ||
         contract.checkoutStatus == CheckoutStatus.agreementSubmitted) {
-      DateTime deadline;
-      if (contract.agreementDeadline != null) {
-        deadline =
-            DateTime.tryParse(contract.agreementDeadline!) ??
-            contract.checkOutDate.add(const Duration(days: 10));
-      } else {
-        final checkoutTimeStr = contract.roomCheckoutTime ?? '11:00';
-        final timeParts = checkoutTimeStr.split(':');
-        final checkoutHour = int.tryParse(timeParts[0]) ?? 11;
-        final checkoutMinute = timeParts.length > 1
-            ? (int.tryParse(timeParts[1]) ?? 0)
-            : 0;
-        final checkOutDate = contract.checkOutDate;
-        deadline = DateTime(
-          checkOutDate.year,
-          checkOutDate.month,
-          checkOutDate.day,
-          checkoutHour,
-          checkoutMinute,
-        ).add(const Duration(days: 10));
-      }
-      final remaining = deadline.difference(DateTime.now()).inDays;
-      if (remaining > 0) {
+      final deadline = contract.agreementDeadline != null
+          ? DateTime.tryParse(contract.agreementDeadline!)
+          : null;
+      if (deadline != null) {
         deadlineText =
-            '합의 마감까지 D-$remaining일 (${deadline.month}/${deadline.day})';
-      } else if (remaining == 0) {
-        deadlineText = '합의 마감 오늘까지';
-      } else {
-        deadlineText = '합의 기한 경과';
+            '합의 마감일시 : '
+            '${deadline.year.toString().padLeft(4, '0')}-'
+            '${deadline.month.toString().padLeft(2, '0')}-'
+            '${deadline.day.toString().padLeft(2, '0')}, '
+            '${deadline.hour.toString().padLeft(2, '0')}:'
+            '${deadline.minute.toString().padLeft(2, '0')}';
       }
     }
 
