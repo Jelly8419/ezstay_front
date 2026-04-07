@@ -6,14 +6,15 @@ import '../../core/theme/app_colors.dart';
 class HostCheckoutSection extends StatelessWidget {
   final ContractListItem contract;
   final Future<void> Function(int contractId, int roomId) onCheckoutConfirm;
-  final Future<void> Function(int contractId) onCheckoutPending;
+  /// 보류 신청 버튼 탭 — 페이지에서 HoldRequestModal을 띄운 뒤 reason을 받아 API를 호출한다.
+  final Future<void> Function(int contractId) onCheckoutPendingTap;
   final Future<void> Function(ContractListItem contract) onDepositAgreement;
 
   const HostCheckoutSection({
     super.key,
     required this.contract,
     required this.onCheckoutConfirm,
-    required this.onCheckoutPending,
+    required this.onCheckoutPendingTap,
     required this.onDepositAgreement,
   });
 
@@ -76,7 +77,7 @@ class HostCheckoutSection extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => onCheckoutPending(contract.id),
+                      onPressed: () => onCheckoutPendingTap(contract.id),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         side: const BorderSide(color: Color(0xFFF97316)), // orange-500
@@ -133,6 +134,102 @@ class HostCheckoutSection extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        );
+      }
+
+      // HOLD_REJECTED: 보류 신청 반려 → 반려 사유 표시 + 재신청 버튼
+      if (checkoutStatus == CheckoutStatus.holdRejected) {
+        final rejectedReason = contract.holdRejectedReason;
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2), // red-50
+                  border: Border.all(color: const Color(0xFFFECACA)), // red-200
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '❌ 보류 신청이 반려되었습니다.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF991B1B), // red-800
+                      ),
+                    ),
+                    if (rejectedReason != null && rejectedReason.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        '반려 사유: $rejectedReason',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF991B1B),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 4),
+                    const Text(
+                      '사유를 보완하여 다시 신청할 수 있습니다.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF991B1B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => onCheckoutConfirm(contract.id, contract.roomId),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: AppColors.primary600,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        '퇴실 확인',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => onCheckoutPendingTap(contract.id),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: const BorderSide(color: Color(0xFFF97316)), // orange-500
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        '보류 재신청',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFF97316),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       }

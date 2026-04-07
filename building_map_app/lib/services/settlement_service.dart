@@ -86,9 +86,6 @@ class SettlementService {
             ApiConfig.timeout,
           );
 
-      if (!ApiConfig.isProduction) {
-      }
-
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         return SettlementDetail.fromJson(json);
@@ -104,7 +101,7 @@ class SettlementService {
   }
 
   /// 정산 내역 엑셀 다운로드 URL 생성
-  /// 브라우저에서 직접 다운로드하거나 http_parser로 처리
+  /// 브라우저에서 직접 다운로드 (depositDeduction 컬럼 포함)
   String getExportUrl({
     String tab = 'all',
     int? roomId,
@@ -125,42 +122,4 @@ class SettlementService {
     return uri.toString();
   }
 
-  /// 정산 내역 엑셀 다운로드 (Blob 반환)
-  Future<http.Response?> downloadExcel({
-    String tab = 'all',
-    int? roomId,
-    String? startDate,
-    String? endDate,
-  }) async {
-    try {
-      final queryParams = <String, String>{
-        'tab': tab,
-      };
-
-      if (roomId != null) queryParams['roomId'] = roomId.toString();
-      if (startDate != null) queryParams['startDate'] = startDate;
-      if (endDate != null) queryParams['endDate'] = endDate;
-
-      final uri = Uri.parse('${ApiConfig.baseUrl}/api/host/settlements/export')
-          .replace(queryParameters: queryParams);
-
-      final headers = await _getHeaders();
-      final response = await http.get(uri, headers: headers).timeout(
-            const Duration(seconds: 30), // 엑셀 다운로드는 타임아웃 더 길게
-          );
-
-      if (!ApiConfig.isProduction) {
-      }
-
-      if (response.statusCode == 200) {
-        return response;
-      } else {
-        AppLogger.e('❌ [SETTLEMENT] Export Error: ${response.statusCode}');
-        return null;
-      }
-    } catch (e) {
-      AppLogger.e('❌ [SETTLEMENT] Export Exception: $e');
-      return null;
-    }
-  }
 }

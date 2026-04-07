@@ -1138,3 +1138,199 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
     );
   }
 }
+
+/// 보류 신청 / 재신청 모달
+///
+/// 호스트가 퇴실 확인 보류 신청 시 사유를 입력하는 모달.
+/// [isReapply]가 true이면 재신청 모드 (반려 후).
+class HoldRequestModal extends StatefulWidget {
+  final bool isReapply;
+  final VoidCallback onClose;
+  final Future<void> Function(String reason) onConfirm;
+
+  const HoldRequestModal({
+    super.key,
+    this.isReapply = false,
+    required this.onClose,
+    required this.onConfirm,
+  });
+
+  @override
+  State<HoldRequestModal> createState() => _HoldRequestModalState();
+}
+
+class _HoldRequestModalState extends State<HoldRequestModal> {
+  final TextEditingController _reasonController = TextEditingController();
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleConfirm() async {
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('보류 사유를 입력해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      await widget.onConfirm(reason);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = widget.isReapply ? '보류 재신청' : '퇴실 확인 보류 신청';
+
+    return Container(
+      padding: EdgeInsets.only(
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        top: AppSpacing.lg,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title, style: AppTextStyles.headingSmall),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: widget.onClose,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.warning50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFFFE082)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '보류 신청 안내',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.warning700,
+                  ),
+                ),
+                SizedBox(height: AppSpacing.xs),
+                Text(
+                  '• 관리자가 검토 후 승인 또는 반려합니다.\n'
+                  '• 사진 등 구체적인 증빙 내용을 포함하면 승인에 도움이 됩니다.\n'
+                  '• 승인 후 10일 내에 합의 내용을 제출해야 합니다.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.warning700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          Text(
+            '보류 사유 *',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.gray600,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          TextField(
+            controller: _reasonController,
+            maxLines: 4,
+            maxLength: 500,
+            decoration: InputDecoration(
+              hintText: '예) 벽면 훼손 및 청소 불량 — 퇴실 후 벽에 큰 구멍이 있으며 바닥이 심하게 오염되어 있습니다.',
+              hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.gray300),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.gray300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.gray300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.primary500),
+              ),
+              contentPadding: const EdgeInsets.all(12),
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: widget.onClose,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: BorderSide(color: AppColors.gray300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    '취소',
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.gray600),
+                  ),
+                ),
+              ),
+              SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _handleConfirm,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    backgroundColor: AppColors.warning500,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppColors.gray300,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          widget.isReapply ? '재신청' : '신청',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

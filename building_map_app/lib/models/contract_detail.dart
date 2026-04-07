@@ -77,7 +77,8 @@ class ContractDetail {
   final String? deductionReason; // 차감 사유
   final int? refundableDeposit; // 환급 가능 보증금
   final String? checkoutRequestedAt; // 퇴실 요청 시각
-  final DepositAgreement? depositAgreement; // 보증금 합의 정보
+  final DepositAgreement? depositAgreement; // 보증금 합의 정보 (최신 1건, 하위 호환용)
+  final List<DepositAgreement> depositAgreements; // 전체 합의 이력 최신순 (API v2)
 
   // 채팅 읽기 전용 정보
   final bool isReadOnly;
@@ -143,6 +144,7 @@ class ContractDetail {
     this.refundableDeposit,
     this.checkoutRequestedAt,
     this.depositAgreement,
+    this.depositAgreements = const [],
     this.isReadOnly = false,
     this.readOnlyReason,
     this.roomCheckInTime,
@@ -345,6 +347,10 @@ class ContractDetail {
       depositAgreement: json['depositAgreement'] != null
           ? DepositAgreement.fromJson(json['depositAgreement'] as Map<String, dynamic>)
           : null,
+      depositAgreements: (json['depositAgreements'] as List<dynamic>?)
+              ?.map((e) => DepositAgreement.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
       // 채팅 읽기 전용
       isReadOnly: json['isReadOnly'] as bool? ?? false,
       readOnlyReason: json['readOnlyReason'] as String?,
@@ -450,6 +456,8 @@ class ContractDetail {
       if (refundableDeposit != null) 'refundableDeposit': refundableDeposit,
       if (checkoutRequestedAt != null) 'checkoutRequestedAt': checkoutRequestedAt,
       if (depositAgreement != null) 'depositAgreement': depositAgreement!.toJson(),
+      if (depositAgreements.isNotEmpty)
+        'depositAgreements': depositAgreements.map((e) => e.toJson()).toList(),
       'isReadOnly': isReadOnly,
       if (readOnlyReason != null) 'readOnlyReason': readOnlyReason,
       if (roomCheckInTime != null) 'roomCheckInTime': roomCheckInTime,
@@ -482,13 +490,19 @@ class DepositAgreement {
   final int deductAmount; // 차감 금액
   final String agreementText; // 합의 내용
   final String? holdReason; // 보류 사유
-  final String? status; // 합의 상태 (SUBMITTED, ACCEPTED 등)
+  final String? status; // 합의 상태 (REQUESTED | APPROVED | REJECTED | SUBMITTED | ACCEPTED | AUTO_RETURNED)
   final String? statusLabel; // 상태 라벨 (서버 제공)
+  final String? requestedAt; // 호스트 신청 시각
+  final String? rejectedAt; // 관리자 거절 시각
+  final String? rejectedReason; // 관리자 거절 사유
+  final String? adminApprovedAt; // 관리자 승인 시각 (= holdApprovedAt, 합의 데드라인 기준)
   final String? submittedAt; // 제출 시각
   final String? acceptedAt; // 게스트 동의 시각
   final int? refundableAmount; // 환급 가능 금액
   final int? deposit; // 보증금 총액
-  final String? holdApprovedAt; // 관리자 보류 승인 시각 (정책 7.9.1: 합의 데드라인 기준)
+  /// @deprecated adminApprovedAt으로 통일. 기존 호환을 위해 유지.
+  final String? holdApprovedAt;
+  final String? createdAt; // row 생성 시각
 
   const DepositAgreement({
     required this.deductAmount,
@@ -496,20 +510,26 @@ class DepositAgreement {
     this.holdReason,
     this.status,
     this.statusLabel,
+    this.requestedAt,
+    this.rejectedAt,
+    this.rejectedReason,
+    this.adminApprovedAt,
     this.submittedAt,
     this.acceptedAt,
     this.refundableAmount,
     this.deposit,
     this.holdApprovedAt,
+    this.createdAt,
   });
 
   /// 합의 데드라인 계산 (정책 7.9.1)
   ///
-  /// 기준: 관리자 승인 시점 + (24h × 10) = 승인 시점 + 10일
-  /// holdApprovedAt이 없으면 null 반환 (프론트에서 데드라인 표시 불가)
+  /// 기준: 관리자 승인 시점 + 10일
+  /// adminApprovedAt (또는 holdApprovedAt) 없으면 null 반환
   DateTime? get agreementDeadline {
-    if (holdApprovedAt == null) return null;
-    final approvedAt = DateTime.tryParse(holdApprovedAt!);
+    final base = adminApprovedAt ?? holdApprovedAt;
+    if (base == null) return null;
+    final approvedAt = DateTime.tryParse(base);
     if (approvedAt == null) return null;
     return approvedAt.add(const Duration(days: 10));
   }
@@ -521,11 +541,16 @@ class DepositAgreement {
       holdReason: json['holdReason'] as String?,
       status: json['status'] as String?,
       statusLabel: json['statusLabel'] as String?,
+      requestedAt: json['requestedAt'] as String?,
+      rejectedAt: json['rejectedAt'] as String?,
+      rejectedReason: json['rejectedReason'] as String?,
+      adminApprovedAt: json['adminApprovedAt'] as String?,
       submittedAt: json['submittedAt'] as String?,
       acceptedAt: json['acceptedAt'] as String?,
       refundableAmount: json['refundableAmount'] as int?,
       deposit: json['deposit'] as int?,
       holdApprovedAt: json['holdApprovedAt'] as String?,
+      createdAt: json['createdAt'] as String?,
     );
   }
 
@@ -536,11 +561,16 @@ class DepositAgreement {
       if (holdReason != null) 'holdReason': holdReason,
       if (status != null) 'status': status,
       if (statusLabel != null) 'statusLabel': statusLabel,
+      if (requestedAt != null) 'requestedAt': requestedAt,
+      if (rejectedAt != null) 'rejectedAt': rejectedAt,
+      if (rejectedReason != null) 'rejectedReason': rejectedReason,
+      if (adminApprovedAt != null) 'adminApprovedAt': adminApprovedAt,
       if (submittedAt != null) 'submittedAt': submittedAt,
       if (acceptedAt != null) 'acceptedAt': acceptedAt,
       if (refundableAmount != null) 'refundableAmount': refundableAmount,
       if (deposit != null) 'deposit': deposit,
       if (holdApprovedAt != null) 'holdApprovedAt': holdApprovedAt,
+      if (createdAt != null) 'createdAt': createdAt,
     };
   }
 }
