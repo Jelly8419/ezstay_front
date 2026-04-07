@@ -889,24 +889,6 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
                       ),
                     ),
                   ),
-                  if (settlement.hasEzCleaningService) ...[
-                    SizedBox(width: 8),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.blue50,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'EZ청소',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.blue600,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -1040,25 +1022,6 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
                               color: AppColors.blue600,
                             ),
                           ),
-                          if (settlement.hasEzCleaningService) ...[
-                            SizedBox(width: 8),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.blue50,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'EZ청소',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.blue600,
-                                ),
-                              ),
-                            ),
-                          ],
                         ],
                       ),
                     ),

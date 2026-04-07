@@ -348,7 +348,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
                 ),
               ),
               child: _buildAmountRow(
-                '플랫폼 수수료 (${breakdown.platformFeeRate}%)',
+                '플랫폼 수수료 (${breakdown.platformFeeRate.toStringAsFixed(1)}%)',
                 -breakdown.platformFee,
                 isNegative: true,
               ),
@@ -438,7 +438,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
             SizedBox(height: 12),
             // 수수료
             _buildAmountRow(
-              '플랫폼 수수료 (${breakdown.platformFeeRate}%)',
+              '플랫폼 수수료 (${breakdown.platformFeeRate.toStringAsFixed(1)}%)',
               -breakdown.platformFee,
               isNegative: true,
             ),
