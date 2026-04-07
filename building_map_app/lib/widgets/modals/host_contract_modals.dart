@@ -541,7 +541,7 @@ class GuestPreparationModal extends StatelessWidget {
               _buildSection(
                 title: '🔑 입주일 당일',
                 items: [
-                  '게스트에게 체크인 방법 안내 (비밀번호, 키박스 등)',
+                  '게스트에게 입주 방법 안내 (비밀번호, 키박스 등)',
                   '게스트 도착 시간 확인',
                   '비상 연락처 공유',
                   '주차 방법 및 쓰레기 배출 방법 안내',
@@ -555,7 +555,7 @@ class GuestPreparationModal extends StatelessWidget {
                   '입주 전날 리마인드 메시지 전송',
                   '주변 편의시설 정보 제공',
                   '긴급 상황 시 연락처 공유',
-                  '체크인 후 불편사항 확인',
+                  '입주 후 불편사항 확인',
                 ],
               ),
               SizedBox(height: AppSpacing.md),

@@ -209,7 +209,7 @@ class RegistrationValidator {
       }
     }
 
-    // 조기 체크인 할인 (선택사항이므로 값이 있을 때만 검증)
+    // 조기 입주 할인 (선택사항이므로 값이 있을 때만 검증)
     final earlyCheckinDiscountDays =
         formData['earlyCheckinDiscountDays'] as String?;
     final earlyCheckinDiscountAmount =
@@ -222,11 +222,11 @@ class RegistrationValidator {
       // 둘 중 하나만 입력된 경우
       if (earlyCheckinDiscountDays == null ||
           earlyCheckinDiscountDays.isEmpty) {
-        errors.add('조기 체크인 할인 일 수를 입력해주세요');
+        errors.add('조기 입주 할인 일 수를 입력해주세요');
       }
       if (earlyCheckinDiscountAmount == null ||
           earlyCheckinDiscountAmount.isEmpty) {
-        errors.add('조기 체크인 할인 금액을 입력해주세요');
+        errors.add('조기 입주 할인 금액을 입력해주세요');
       }
 
       // 값 검증
@@ -234,7 +234,7 @@ class RegistrationValidator {
           earlyCheckinDiscountDays.isNotEmpty) {
         final daysValue = int.tryParse(earlyCheckinDiscountDays);
         if (daysValue == null || daysValue < 0) {
-          errors.add('올바른 조기 체크인 할인 일 수를 입력해주세요');
+          errors.add('올바른 조기 입주 할인 일 수를 입력해주세요');
         }
       }
 
@@ -242,9 +242,9 @@ class RegistrationValidator {
           earlyCheckinDiscountAmount.isNotEmpty) {
         final amountValue = int.tryParse(earlyCheckinDiscountAmount);
         if (amountValue == null || amountValue <= 0) {
-          errors.add('올바른 조기 체크인 할인 금액을 입력해주세요');
+          errors.add('올바른 조기 입주 할인 금액을 입력해주세요');
         } else if (amountValue % 10000 != 0) {
-          errors.add('조기 체크인 할인 금액은 만원 단위로 입력해주세요');
+          errors.add('조기 입주 할인 금액은 만원 단위로 입력해주세요');
         }
       }
     }

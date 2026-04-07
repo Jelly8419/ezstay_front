@@ -127,7 +127,7 @@ class SystemMessageBubble extends StatelessWidget {
         );
       case 'check_in':
         return SystemMessageConfig(
-          label: '체크인',
+          label: '입주',
           labelColor: AppColors.primary500,
           icon: Icons.login,
           iconColor: AppColors.info500,
@@ -137,7 +137,7 @@ class SystemMessageBubble extends StatelessWidget {
         );
       case 'check_out':
         return SystemMessageConfig(
-          label: '체크아웃',
+          label: '퇴실',
           labelColor: AppColors.textSecondary,
           icon: Icons.logout,
           iconColor: AppColors.textSecondary,
