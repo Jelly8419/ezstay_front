@@ -603,17 +603,162 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
           // 테이블 헤더 (PC only)
           if (isDesktop) _buildTableHeader(),
           // 테이블 바디
-          ...settlements.asMap().entries.map((entry) {
+          ...settlements.asMap().entries.expand((entry) {
             final index = entry.key;
             final settlement = entry.value;
-            return Column(
-              children: [
-                if (index > 0 || isDesktop)
-                  Divider(height: 1, color: AppColors.gray200),
-                _buildSettlementRow(settlement, isDesktop),
-              ],
-            );
+            return [
+              Column(
+                children: [
+                  if (index > 0 || isDesktop)
+                    Divider(height: 1, color: AppColors.gray200),
+                  _buildSettlementRow(settlement, isDesktop),
+                ],
+              ),
+              if (settlement.depositDeduction != null)
+                _buildDeductionSubRow(settlement, isDesktop),
+            ];
           }),
+        ],
+      ),
+    );
+  }
+
+  /// 보증금 차감 서브 행 — 계약 행에서 파생됨을 시각적으로 표현
+  Widget _buildDeductionSubRow(Settlement settlement, bool isDesktop) {
+    final deduction = settlement.depositDeduction!;
+    return InkWell(
+      onTap: () => context.push(
+          '/host/settlement/deduction/${settlement.contractId}'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.warning50,
+          border: Border(
+            left: BorderSide(color: AppColors.warning500, width: 3),
+          ),
+        ),
+        child: isDesktop
+            ? _buildDeductionSubRowDesktop(settlement, deduction)
+            : _buildDeductionSubRowMobile(settlement, deduction),
+      ),
+    );
+  }
+
+  Widget _buildDeductionSubRowDesktop(
+      Settlement settlement, DepositDeduction deduction) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          // 정산일 열 (flex:1) — 들여쓰기 + 연결 아이콘
+          Expanded(
+            flex: 1,
+            child: Row(
+              children: [
+                SizedBox(width: 12),
+                Icon(Icons.subdirectory_arrow_right,
+                    size: 14, color: AppColors.warning600),
+                SizedBox(width: 4),
+                Text(
+                  '보증금 차감 지급',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.warning700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // 방 이름 열 (flex:2) — 계약번호
+          Expanded(
+            flex: 2,
+            child: Text(
+              settlement.contractNumber,
+              style: TextStyle(fontSize: 13, color: AppColors.neutral500),
+            ),
+          ),
+          // 계약자 열 (flex:1) — 비워둠
+          Expanded(flex: 1, child: const SizedBox.shrink()),
+          // 입주일 열 (flex:1) — 비워둠
+          Expanded(flex: 1, child: const SizedBox.shrink()),
+          // 금액 열 (flex:1)
+          Expanded(
+            flex: 1,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  '+ ${FormatUtils.formatKRW(deduction.amount)}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.warning700,
+                  ),
+                ),
+                SizedBox(width: 8),
+                buildDepositDeductionBadge(deduction.status),
+              ],
+            ),
+          ),
+          // 상세보기 열 (width:100)
+          SizedBox(
+            width: 100,
+            child: Center(
+              child: Text(
+                '차감 상세 →',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.warning600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeductionSubRowMobile(
+      Settlement settlement, DepositDeduction deduction) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 16, 10),
+      child: Row(
+        children: [
+          Icon(Icons.subdirectory_arrow_right,
+              size: 14, color: AppColors.warning600),
+          SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '↳ 보증금 차감 지급',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.warning700,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      '+ ${FormatUtils.formatKRW(deduction.amount)}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.warning700,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    buildDepositDeductionBadge(deduction.status),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right, size: 16, color: AppColors.warning600),
         ],
       ),
     );
@@ -803,30 +948,13 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
             ),
             Expanded(
               flex: 1,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    FormatUtils.formatKRW(settlement.settlementAmount),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if (settlement.depositDeduction != null) ...[
-                    SizedBox(height: 2),
-                    Text(
-                      '+ ${FormatUtils.formatKRW(settlement.depositDeduction!.amount)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.success700,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    buildDepositDeductionBadge(settlement.depositDeduction!.status),
-                  ],
-                ],
+              child: Text(
+                FormatUtils.formatKRW(settlement.settlementAmount),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+                textAlign: TextAlign.right,
               ),
             ),
             SizedBox(
@@ -985,24 +1113,6 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
                   value: FormatUtils.formatKRW(settlement.settlementAmount),
                   valueFontWeight: FontWeight.w700,
                 ),
-                if (settlement.depositDeduction != null) ...[
-                  SizedBox(height: 4),
-                  Row(
-                    children: [
-                      SizedBox(width: 96),
-                      Text(
-                        '+ ${FormatUtils.formatKRW(settlement.depositDeduction!.amount)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.success700,
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      buildDepositDeductionBadge(settlement.depositDeduction!.status),
-                    ],
-                  ),
-                ],
               ],
             ),
           ],

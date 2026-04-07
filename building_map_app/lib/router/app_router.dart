@@ -55,6 +55,8 @@ import '../pages/host/host_settlement_account_page.dart'
 import '../pages/host/host_settlement_page.dart' deferred as host_settlement;
 import '../pages/host/host_settlement_detail_page.dart'
     deferred as host_settlement_detail;
+import '../pages/host/host_settlement_deduction_page.dart'
+    deferred as host_settlement_deduction;
 import '../pages/auth/account_suspended_page.dart' deferred as account_suspended;
 import '../pages/legal/terms_of_service_page.dart' deferred as terms_of_service;
 import '../pages/legal/privacy_policy_page.dart' deferred as privacy_policy;
@@ -1005,6 +1007,20 @@ class AppRouter {
             return _deferredWidget(
               host_settlement_detail.loadLibrary,
               () => host_settlement_detail.HostSettlementDetailPage(
+                contractId: contractId,
+              ),
+            );
+          },
+        ),
+        // 호스트 보증금 차감 상세 페이지
+        GoRoute(
+          path: '/host/settlement/deduction/:contractId',
+          name: 'host-settlement-deduction',
+          builder: (context, state) {
+            final contractId = int.tryParse(state.pathParameters['contractId'] ?? '') ?? 0;
+            return _deferredWidget(
+              host_settlement_deduction.loadLibrary,
+              () => host_settlement_deduction.HostSettlementDeductionPage(
                 contractId: contractId,
               ),
             );

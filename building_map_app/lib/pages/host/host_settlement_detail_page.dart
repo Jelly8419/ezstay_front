@@ -620,7 +620,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
     }
   }
 
-  Widget _buildDepositDeductionSection(DepositDeductionDetail deduction) {
+  Widget _buildDepositDeductionSection(SettlementDepositDeductionDetail deduction) {
     final isCompleted = deduction.status == 'COMPLETED';
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -665,6 +665,22 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
               style: TextStyle(fontSize: 12, color: AppColors.neutral500),
             ),
           ],
+          SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: () => context.push(
+                  '/host/settlement/deduction/${widget.contractId}'),
+              child: Text(
+                '차감 상세 보기 →',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.blue600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
