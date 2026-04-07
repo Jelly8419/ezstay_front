@@ -1,8 +1,6 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../utils/format_utils.dart';
 import '../../models/settlement.dart';
@@ -226,18 +224,13 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
     );
   }
 
-  void _handleDownloadExcel() {
-    final url = _settlementService.getExportUrl(
+  Future<void> _handleDownloadExcel() async {
+    await _settlementService.downloadExcel(
       tab: _activeTab,
       roomId: _selectedRoomId,
       startDate: _activeTab == 'completed' ? _startDate : null,
       endDate: _activeTab == 'completed' ? _endDate : null,
     );
-
-    // 웹에서 새 탭으로 다운로드 URL 열기
-    if (kIsWeb) {
-      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    }
   }
 
   void _onTabChange(String tab) {
