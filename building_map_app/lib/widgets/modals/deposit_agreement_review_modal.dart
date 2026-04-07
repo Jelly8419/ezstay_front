@@ -156,37 +156,6 @@ class DepositAgreementReviewModal extends StatelessWidget {
               ),
             ),
 
-            // 보류 사유 (있는 경우만 표시)
-            if (agreement.holdReason != null &&
-                agreement.holdReason!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Text(
-                '보류 사유',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF374151),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFDE68A)),
-                ),
-                child: Text(
-                  agreement.holdReason!,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF92400E),
-                    height: 1.5,
-                  ),
-                ),
-              ),
-            ],
             const SizedBox(height: 24),
 
             // 버튼
