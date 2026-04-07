@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/settlement.dart';
 import '../../services/settlement_service.dart';
+import '../../utils/format_utils.dart';
+import '../../widgets/settlement/deposit_deduction_badge.dart';
 
 /// 호스트 정산 상세 페이지
 /// React HostSettlementDetail.tsx와 동일한 UI
@@ -195,8 +197,12 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
     final settlement = detail.settlement;
 
     // 날짜 포맷
-    final checkInDate = _formatIsoDate(contract.checkInDate);
-    final checkOutDate = _formatIsoDate(contract.checkOutDate);
+    final checkInDate = FormatUtils.tryParseDate(contract.checkInDate) != null
+        ? FormatUtils.formatDateApi(FormatUtils.tryParseDate(contract.checkInDate)!)
+        : contract.checkInDate;
+    final checkOutDate = FormatUtils.tryParseDate(contract.checkOutDate) != null
+        ? FormatUtils.formatDateApi(FormatUtils.tryParseDate(contract.checkOutDate)!)
+        : contract.checkOutDate;
 
     return Container(
       padding: EdgeInsets.all(16),
@@ -309,7 +315,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
                   ],
                 ),
                 Text(
-                  '${_formatNumber(breakdown.cleaningFee)}원',
+                  FormatUtils.formatKRW(breakdown.cleaningFee),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -437,6 +443,9 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
               isNegative: true,
             ),
           ],
+          // 보증금 차감 지급 섹션 (차감이 있을 때만)
+          if (detail.depositDeduction != null)
+            _buildDepositDeductionSection(detail.depositDeduction!),
           SizedBox(height: 16),
           // 최종 정산 금액
           Container(
@@ -458,7 +467,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
                   ),
                 ),
                 Text(
-                  '${_formatNumber(settlementInfo.finalAmount)}원',
+                  FormatUtils.formatKRW(settlementInfo.finalAmount),
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -521,7 +530,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
       return Container(
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Color(0xFFEFF6FF), // bg-blue-50
+          color: AppColors.blue50,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -532,7 +541,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.info700, // text-blue-700
+                color: AppColors.info700,
               ),
             ),
             SizedBox(height: 4),
@@ -551,7 +560,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
       return Container(
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Color(0xFFF0FDF4), // bg-green-50
+          color: AppColors.success50,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -562,7 +571,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.success700, // text-green-700
+                color: AppColors.success700,
               ),
             ),
             SizedBox(height: 4),
@@ -576,12 +585,12 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
           ],
         ),
       );
-    } else {
+    } else if (settlement.status == 'completed' && isRefund) {
       // 취소 환불 정산 완료
       return Container(
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Color(0xFFEFF6FF), // bg-blue-50
+          color: AppColors.blue50,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -592,7 +601,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.info700, // text-blue-700
+                color: AppColors.info700,
               ),
             ),
             SizedBox(height: 4),
@@ -606,7 +615,59 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
           ],
         ),
       );
+    } else {
+      return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildDepositDeductionSection(DepositDeductionDetail deduction) {
+    final isCompleted = deduction.status == 'COMPLETED';
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.gray200)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '보증금 차감 지급',
+                style: TextStyle(fontSize: 14, color: AppColors.gray600),
+              ),
+              Text(
+                '+ ${FormatUtils.formatKRW(deduction.amount)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.success700,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6),
+          Row(
+            children: [
+              Text(
+                '지급 예정일: ${deduction.payableAfter}',
+                style: TextStyle(fontSize: 12, color: AppColors.neutral500),
+              ),
+              SizedBox(width: 8),
+              buildDepositDeductionBadge(deduction.status),
+            ],
+          ),
+          if (isCompleted && deduction.processedAt != null) ...[
+            SizedBox(height: 4),
+            Text(
+              '처리일: ${deduction.processedAt}',
+              style: TextStyle(fontSize: 12, color: AppColors.neutral500),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   Widget _buildInfoRow(
@@ -663,7 +724,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
           ),
         ),
         Text(
-          '$prefix${_formatNumber(displayAmount)}원',
+          '$prefix${FormatUtils.formatCurrency(displayAmount)}원',
           style: TextStyle(
             fontSize: 14,
             fontWeight: isBold ? FontWeight.w600 : FontWeight.w500,
@@ -674,20 +735,4 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
     );
   }
 
-  String _formatNumber(int number) {
-    return number.toString().replaceAllMapped(
-          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]},',
-        );
-  }
-
-  /// ISO 8601 날짜 문자열을 YYYY-MM-DD 형식으로 변환
-  String _formatIsoDate(String isoDate) {
-    try {
-      final date = DateTime.parse(isoDate);
-      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    } catch (e) {
-      return isoDate;
-    }
-  }
 }

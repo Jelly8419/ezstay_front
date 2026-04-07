@@ -14,6 +14,56 @@ List<dynamic> _asList(dynamic value) {
   return <dynamic>[];
 }
 
+/// 보증금 차감 지급 정보 (목록용)
+/// null이면 해당 계약에 보증금 차감 없음
+class DepositDeduction {
+  final int amount;
+  final String status;       // 'PENDING' | 'PAYABLE' | 'COMPLETED'
+  final String statusLabel;  // "지급 대기" | "지급 가능" | "지급 완료"
+  final String payableAfter; // YYYY-MM-DD
+
+  const DepositDeduction({
+    required this.amount,
+    required this.status,
+    required this.statusLabel,
+    required this.payableAfter,
+  });
+
+  factory DepositDeduction.fromJson(dynamic raw) {
+    final json = _asMap(raw);
+    return DepositDeduction(
+      amount: (json['amount'] ?? 0).toInt(),
+      status: (json['status'] ?? 'PENDING').toString(),
+      statusLabel: (json['statusLabel'] ?? '').toString(),
+      payableAfter: (json['payableAfter'] ?? '').toString(),
+    );
+  }
+}
+
+/// 보증금 차감 지급 정보 (상세용 — processedAt 포함)
+class DepositDeductionDetail extends DepositDeduction {
+  final String? processedAt;
+
+  const DepositDeductionDetail({
+    required super.amount,
+    required super.status,
+    required super.statusLabel,
+    required super.payableAfter,
+    this.processedAt,
+  });
+
+  factory DepositDeductionDetail.fromJson(dynamic raw) {
+    final json = _asMap(raw);
+    return DepositDeductionDetail(
+      amount: (json['amount'] ?? 0).toInt(),
+      status: (json['status'] ?? 'PENDING').toString(),
+      statusLabel: (json['statusLabel'] ?? '').toString(),
+      payableAfter: (json['payableAfter'] ?? '').toString(),
+      processedAt: json['processedAt']?.toString(),
+    );
+  }
+}
+
 /// 정산 목록 아이템 (API 응답)
 class Settlement {
   final int contractId;
@@ -32,6 +82,7 @@ class Settlement {
   final bool hasRefund;
   final int refundAmount;
   final bool hasEzCleaningService;
+  final DepositDeduction? depositDeduction;
 
   const Settlement({
     required this.contractId,
@@ -50,6 +101,7 @@ class Settlement {
     required this.hasRefund,
     required this.refundAmount,
     required this.hasEzCleaningService,
+    this.depositDeduction,
   });
 
   factory Settlement.fromJson(dynamic raw) {
@@ -71,6 +123,9 @@ class Settlement {
       hasRefund: json['hasRefund'] == true,
       refundAmount: (json['refundAmount'] ?? 0).toInt(),
       hasEzCleaningService: json['hasEzCleaningService'] == true,
+      depositDeduction: json['depositDeduction'] != null
+          ? DepositDeduction.fromJson(json['depositDeduction'])
+          : null,
     );
   }
 }
@@ -408,6 +463,7 @@ class SettlementDetail {
   final SettlementBreakdown breakdown;
   final SettlementRefund refund;
   final SettlementInfo settlement;
+  final DepositDeductionDetail? depositDeduction;
 
   const SettlementDetail({
     required this.contract,
@@ -416,6 +472,7 @@ class SettlementDetail {
     required this.breakdown,
     required this.refund,
     required this.settlement,
+    this.depositDeduction,
   });
 
   factory SettlementDetail.fromJson(dynamic raw) {
@@ -428,6 +485,9 @@ class SettlementDetail {
       breakdown: SettlementBreakdown.fromJson(data['breakdown']),
       refund: SettlementRefund.fromJson(data['refund']),
       settlement: SettlementInfo.fromJson(data['settlement']),
+      depositDeduction: data['depositDeduction'] != null
+          ? DepositDeductionDetail.fromJson(data['depositDeduction'])
+          : null,
     );
   }
 }

@@ -1,11 +1,14 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:html' as html;
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
+import '../../utils/format_utils.dart';
 import '../../models/settlement.dart';
 import '../../services/settlement_service.dart';
 import '../../widgets/common/app_gnb.dart';
+import '../../widgets/settlement/deposit_deduction_badge.dart';
 import '../../widgets/settlement/filter_bottom_sheet.dart';
 import '../../widgets/settlement/settlement_date_picker.dart';
 
@@ -94,7 +97,7 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
         roomId: _activeTab == 'completed' ? _selectedRoomId : null,
         startDate: _activeTab == 'completed' ? _startDate : null,
         endDate: _activeTab == 'completed' ? _endDate : null,
-        page: loadMore ? _currentPage + 1 : 1,
+        page: loadMore ? _currentPage + 1 : _currentPage,
         limit: _itemsPerPage,
       );
 
@@ -156,8 +159,15 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
   }
 
   int get _totalAmount {
-    return _summary?.totalSettlementAmount ?? 0;
+    final base = _summary?.totalSettlementAmount ?? 0;
+    final deductionTotal = _settlements
+        .where((s) => s.depositDeduction != null)
+        .fold(0, (sum, s) => sum + s.depositDeduction!.amount);
+    return base + deductionTotal;
   }
+
+  bool get _hasAnyDeduction =>
+      _settlements.any((s) => s.depositDeduction != null);
 
   int get _totalCount {
     return _summary?.totalCount ?? _settlements.length;
@@ -180,6 +190,7 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
     }
     setState(() {
       _startDate = newStartDate;
+      _currentPage = 1;
     });
     _loadSettlements();
   }
@@ -201,6 +212,7 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
     }
     setState(() {
       _endDate = newEndDate;
+      _currentPage = 1;
     });
     _loadSettlements();
   }
@@ -229,13 +241,16 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
     );
 
     // 웹에서 새 탭으로 다운로드 URL 열기
-    html.window.open(url, '_blank');
+    if (kIsWeb) {
+      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    }
   }
 
   void _onTabChange(String tab) {
     setState(() {
       _activeTab = tab;
       _selectedRoomId = null;
+      _currentPage = 1;
     });
     _loadSettlements();
   }
@@ -247,6 +262,7 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
       } else {
         _selectedRoomId = int.tryParse(roomIdStr);
       }
+      _currentPage = 1;
     });
     _loadSettlements();
   }
@@ -396,9 +412,6 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
   }
 
   Widget _buildFilterSection() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 1024;
-
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -415,7 +428,7 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               // 방 필터 버튼
-              _buildRoomFilterButton(isDesktop),
+              _buildRoomFilterButton(),
               // 날짜 필터 (정산 완료 탭만)
               if (_activeTab == 'completed') ...[
                 SettlementDatePicker(
@@ -455,7 +468,7 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
               ),
               SizedBox(width: 8),
               Text(
-                '${_totalCount}건',
+                '$_totalCount건',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -464,12 +477,22 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
               ),
               SizedBox(width: 8),
               Text(
-                '${_formatNumber(_totalAmount)}원',
+                FormatUtils.formatKRW(_totalAmount),
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              if (_hasAnyDeduction) ...[
+                SizedBox(width: 6),
+                Text(
+                  '(차감 포함)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.neutral500,
+                  ),
+                ),
+              ],
             ],
           ),
         ],
@@ -477,17 +500,12 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
     );
   }
 
-  Widget _buildRoomFilterButton(bool isDesktop) {
-    // SettlementRoom을 filter_bottom_sheet에서 사용하는 형식으로 변환
-    final roomsForBottomSheet = _rooms
-        .map((r) => SettlementRoom(roomId: r.roomId, roomTitle: r.roomTitle))
-        .toList();
-
+  Widget _buildRoomFilterButton() {
     return InkWell(
       onTap: () {
         showSettlementFilterBottomSheet(
           context: context,
-          rooms: roomsForBottomSheet,
+          rooms: _rooms,
           selectedRoomId: _selectedRoomId?.toString() ?? 'all',
           onSelectRoom: _onRoomFilterChange,
         );
@@ -695,7 +713,9 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
 
   Widget _buildDesktopRow(Settlement settlement) {
     // ISO 8601 날짜를 YYYY-MM-DD로 변환
-    final checkInDate = _formatIsoDate(settlement.checkInDate);
+    final checkInDate = FormatUtils.tryParseDate(settlement.checkInDate) != null
+        ? FormatUtils.formatDateApi(FormatUtils.tryParseDate(settlement.checkInDate)!)
+        : settlement.checkInDate;
 
     return InkWell(
       onTap: () => context.push('/host/settlement/${settlement.contractId}'),
@@ -783,13 +803,30 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
             ),
             Expanded(
               flex: 1,
-              child: Text(
-                '${_formatNumber(settlement.settlementAmount)}원',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-                textAlign: TextAlign.right,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    FormatUtils.formatKRW(settlement.settlementAmount),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (settlement.depositDeduction != null) ...[
+                    SizedBox(height: 2),
+                    Text(
+                      '+ ${FormatUtils.formatKRW(settlement.depositDeduction!.amount)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.success700,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    buildDepositDeductionBadge(settlement.depositDeduction!.status),
+                  ],
+                ],
               ),
             ),
             SizedBox(
@@ -823,7 +860,9 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
   }
 
   Widget _buildMobileRow(Settlement settlement) {
-    final checkInDate = _formatIsoDate(settlement.checkInDate);
+    final checkInDate = FormatUtils.tryParseDate(settlement.checkInDate) != null
+        ? FormatUtils.formatDateApi(FormatUtils.tryParseDate(settlement.checkInDate)!)
+        : settlement.checkInDate;
 
     return InkWell(
       onTap: () => context.push('/host/settlement/${settlement.contractId}'),
@@ -943,9 +982,27 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
                 SizedBox(height: 8),
                 _buildMobileRowItem(
                   label: '총 정산 금액:',
-                  value: '${_formatNumber(settlement.settlementAmount)}원',
+                  value: FormatUtils.formatKRW(settlement.settlementAmount),
                   valueFontWeight: FontWeight.w700,
                 ),
+                if (settlement.depositDeduction != null) ...[
+                  SizedBox(height: 4),
+                  Row(
+                    children: [
+                      SizedBox(width: 96),
+                      Text(
+                        '+ ${FormatUtils.formatKRW(settlement.depositDeduction!.amount)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.success700,
+                        ),
+                      ),
+                      SizedBox(width: 6),
+                      buildDepositDeductionBadge(settlement.depositDeduction!.status),
+                    ],
+                  ),
+                ],
               ],
             ),
           ],
@@ -1105,20 +1162,4 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
     );
   }
 
-  String _formatNumber(int number) {
-    return number.toString().replaceAllMapped(
-          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]},',
-        );
-  }
-
-  /// ISO 8601 날짜 문자열을 YYYY-MM-DD 형식으로 변환
-  String _formatIsoDate(String isoDate) {
-    try {
-      final date = DateTime.parse(isoDate);
-      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    } catch (e) {
-      return isoDate;
-    }
-  }
 }
