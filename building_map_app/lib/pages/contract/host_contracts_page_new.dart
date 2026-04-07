@@ -8,7 +8,7 @@ import '../../models/contract.dart';
 import '../../services/contract_service.dart';
 import '../../widgets/modals/guest_preparation_modal.dart';
 import '../../widgets/modals/host_contract_rejection_modal.dart';
-import '../../widgets/modals/host_contract_modals.dart' show DepositAgreementModal, RequestCancellationModal;
+import '../../widgets/modals/host_contract_modals.dart' show DepositAgreementModal, RequestCancellationModal, HoldRequestModal;
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/common/app_footer.dart';
@@ -431,7 +431,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                 onRequestCheckout: () => _handleRequestCheckout(contract.id),
                 onRequestCancellation: () => _handleRequestCancellation(contract.id),
                 onCheckoutConfirm: _handleHostCheckoutConfirm,
-                onCheckoutPending: _handleHostCheckoutPending,
+                onCheckoutPendingTap: _handleHostCheckoutPending,
                 onDepositAgreement: _handleDepositAgreement,
               ))
           .toList(),
@@ -758,38 +758,53 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
     }
   }
 
-  /// 호스트 퇴실 확인 보류 (모달 표시)
+  /// 호스트 퇴실 확인 보류 — HoldRequestModal을 bottom sheet으로 표시
   Future<void> _handleHostCheckoutPending(int contractId) async {
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (context) => const CheckoutPendingDialog(),
+    final contract = _contracts.cast<ContractListItem?>().firstWhere(
+      (c) => c!.id == contractId,
+      orElse: () => null,
     );
+    final isReapply = contract?.checkoutStatus == CheckoutStatus.holdRejected;
 
-    if (reason == null || reason.isEmpty) return;
-
-    try {
-      await _contractService.hostCheckoutPending(contractId, reason);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('퇴실 확인이 보류되었습니다. 관리자가 확인합니다.'),
-            backgroundColor: Color(0xFFF97316),
-          ),
-        );
-        _loadContracts();
-      }
-    } on UnauthorizedException {
-      if (mounted) context.go('/login');
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('퇴실 보류 처리 실패: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: const Color(0xFFDC2626),
-          ),
-        );
-      }
-    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => HoldRequestModal(
+        isReapply: isReapply,
+        onClose: () => Navigator.of(ctx).pop(),
+        onConfirm: (reason) async {
+          try {
+            await _contractService.hostCheckoutPending(contractId, reason);
+            if (ctx.mounted) Navigator.of(ctx).pop();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(isReapply ? '보류를 재신청했습니다. 관리자가 확인합니다.' : '퇴실 확인이 보류되었습니다. 관리자가 확인합니다.'),
+                  backgroundColor: const Color(0xFFF97316),
+                ),
+              );
+              _loadContracts();
+            }
+          } on UnauthorizedException {
+            if (ctx.mounted) Navigator.of(ctx).pop();
+            if (mounted) context.go('/login');
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('처리 실패: ${e.toString().replaceAll('Exception: ', '')}'),
+                  backgroundColor: const Color(0xFFDC2626),
+                ),
+              );
+            }
+          }
+        },
+      ),
+    );
   }
 
   /// 승인 버튼 클릭

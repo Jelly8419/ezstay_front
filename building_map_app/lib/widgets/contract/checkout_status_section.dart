@@ -45,7 +45,17 @@ class CheckoutStatusSection extends StatelessWidget {
         borderColor = const Color(0xFFFED7AA);
         textColor = const Color(0xFF9A3412);
         title = '보증금 반환 보류 신청중';
-        message = '호스트가 보증금 반환 보류를 신청했습니다. 관리자 승인을 기다리고 있습니다.';
+        if (contract.depositAgreementStatus == 'REQUESTED') {
+          message = '호스트가 보증금 반환 보류를 신청했습니다. 관리자 검토 중입니다.';
+        } else {
+          message = '호스트가 보증금 반환 보류를 신청했습니다. 관리자 승인을 기다리고 있습니다.';
+        }
+      case CheckoutStatus.holdRejected:
+        bgColor = const Color(0xFFFEF2F2); // red-50
+        borderColor = const Color(0xFFFECACA); // red-200
+        textColor = const Color(0xFF991B1B); // red-800
+        title = '보류 신청 반려';
+        message = '호스트의 보증금 반환 보류 신청이 반려되었습니다.';
       case CheckoutStatus.hostPending:
         bgColor = const Color(0xFFFFF7ED);
         borderColor = const Color(0xFFFED7AA);
@@ -59,6 +69,9 @@ class CheckoutStatusSection extends StatelessWidget {
         } else if (contract.depositAgreementStatus == 'SUBMITTED') {
           title = '합의 내용 확인 요청';
           message = '호스트가 보증금 합의 내용을 제출했습니다. 확인해주세요.';
+        } else if (contract.depositAgreementStatus == 'APPROVED') {
+          title = '⚠️ 퇴실 확인 보류';
+          message = '관리자 승인이 완료되었습니다. 호스트가 합의 내용을 작성 중입니다.';
         } else {
           title = '⚠️ 퇴실 확인 보류';
           message = '호스트가 합의 내용을 작성 중입니다.';

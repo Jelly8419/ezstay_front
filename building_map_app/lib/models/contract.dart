@@ -42,6 +42,7 @@ enum CheckoutStatus {
   hostPending('HOST_PENDING', '호스트 확인 보류'),
   agreementSubmitted('AGREEMENT_SUBMITTED', '합의 내용 제출'),
   holdRequested('HOLD_REQUESTED', '보증금 반환 보류 신청중'),
+  holdRejected('HOLD_REJECTED', '보류 신청 반려'),
   autoReturned('AUTO_RETURNED', '보증금 전액 반환');
 
   final String value;
@@ -228,7 +229,8 @@ class ContractListItem {
   agreementDeadline; // 합의 데드라인 ISO8601 (정책 7.9.1: 관리자 승인 시점 + 10일)
   final bool? cancellationRequested; // 취소 요청 여부 (1회 제한)
   final String?
-  depositAgreementStatus; // 합의 상태 (null | SUBMITTED | ACCEPTED | AUTO_RETURNED)
+  depositAgreementStatus; // 합의 상태 (null | REQUESTED | APPROVED | REJECTED | SUBMITTED | ACCEPTED | AUTO_RETURNED)
+  final String? holdRejectedReason; // 보류 신청 반려 사유 (checkoutStatus == HOLD_REJECTED일 때)
 
   // 방 정보
   final int roomId;
@@ -285,6 +287,7 @@ class ContractListItem {
     this.agreementDeadline,
     this.cancellationRequested,
     this.depositAgreementStatus,
+    this.holdRejectedReason,
     required this.roomId,
     required this.roomName,
     required this.roomAddress,
@@ -349,6 +352,7 @@ class ContractListItem {
       agreementDeadline: json['agreementDeadline'] as String?,
       cancellationRequested: json['cancellationRequested'] as bool?,
       depositAgreementStatus: json['depositAgreementStatus'] as String?,
+      holdRejectedReason: json['holdRejectedReason'] as String?,
       // 방 정보 - 백엔드 필드명: roomName, thumbnailUrl
       roomId: room?['id'] as int? ?? 0,
       roomName: room?['roomName'] ?? room?['name'] ?? '',

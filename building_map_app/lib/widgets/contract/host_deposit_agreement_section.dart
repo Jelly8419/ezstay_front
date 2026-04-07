@@ -26,7 +26,7 @@ class HostDepositAgreementSection extends StatelessWidget {
     // HOST_PENDING
     if (status == ContractStatus.inProgress &&
         checkoutStatus == CheckoutStatus.hostPending) {
-      final agreement = contract.depositAgreement;
+      final agreement = contract.depositAgreement ?? contract.depositAgreements.firstOrNull;
       DateTime? deadline = agreement?.agreementDeadline ??
           DateTime.tryParse(contract.checkOutDate)?.add(const Duration(days: 10));
 
@@ -132,7 +132,7 @@ class HostDepositAgreementSection extends StatelessWidget {
     // AGREEMENT_SUBMITTED
     if (status == ContractStatus.inProgress &&
         checkoutStatus == CheckoutStatus.agreementSubmitted) {
-      final agreement = contract.depositAgreement;
+      final agreement = contract.depositAgreement ?? contract.depositAgreements.firstOrNull;
       return Padding(
         padding: const EdgeInsets.only(top: 24),
         child: Container(

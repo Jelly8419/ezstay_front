@@ -20,7 +20,7 @@ class HostContractCard extends StatelessWidget {
   final VoidCallback onRequestCheckout;
   final VoidCallback? onRequestCancellation;
   final Future<void> Function(int contractId, int roomId) onCheckoutConfirm;
-  final Future<void> Function(int contractId) onCheckoutPending;
+  final Future<void> Function(int contractId) onCheckoutPendingTap; // 보류 신청/재신청 버튼 탭
   final Future<void> Function(ContractListItem contract) onDepositAgreement;
 
   const HostContractCard({
@@ -32,7 +32,7 @@ class HostContractCard extends StatelessWidget {
     required this.onRequestCheckout,
     this.onRequestCancellation,
     required this.onCheckoutConfirm,
-    required this.onCheckoutPending,
+    required this.onCheckoutPendingTap,
     required this.onDepositAgreement,
   });
 
@@ -168,7 +168,7 @@ class HostContractCard extends StatelessWidget {
           HostCheckoutSection(
             contract: contract,
             onCheckoutConfirm: onCheckoutConfirm,
-            onCheckoutPending: onCheckoutPending,
+            onCheckoutPendingTap: onCheckoutPendingTap,
             onDepositAgreement: onDepositAgreement,
           ),
 
