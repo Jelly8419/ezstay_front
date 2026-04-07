@@ -84,7 +84,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
     'maintenanceDescription': '',
     'cleaningFee': '',
     'minContractDays': '7',
-    'refundPolicy': '보통',
+    'refundPolicy': '',
     'refundPolicyConfirmed': false,
     'longTermDiscountWeeks': '',
     'longTermDiscountPercent': '',
@@ -267,7 +267,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           _formData['cleaningFee'] = roomData['cleaningFee']?.toString() ?? '';
           _formData['minContractDays'] =
               roomData['minContractDays']?.toString() ?? '7';
-          _formData['refundPolicy'] = roomData['refundPolicy'] ?? '보통';
+          _formData['refundPolicy'] = roomData['refundPolicy'] ?? '';
           _formData['longTermDiscountWeeks'] =
               roomData['longTermWeeks']?.toString() ?? '';
           _formData['longTermDiscountPercent'] =

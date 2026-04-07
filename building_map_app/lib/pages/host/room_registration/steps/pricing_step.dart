@@ -1438,15 +1438,13 @@ class _PricingStepState extends State<PricingStep> {
                         ),
                       ),
                     ),
-                  // 선택된 정책 상세 표 + 안내문
-                  if (_refundPolicy.isNotEmpty &&
-                      _refundPolicies.any(
-                        (p) => p.policyType == _refundPolicy,
-                      )) ...[
+                  // 정책 상세 표 + 안내문 (항상 표시)
+                  if (_refundPolicies.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     _buildRefundPolicyDetail(
                       _refundPolicies.firstWhere(
                         (p) => p.policyType == _refundPolicy,
+                        orElse: () => _refundPolicies.first,
                       ),
                     ),
                   ],
