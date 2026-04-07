@@ -158,13 +158,7 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
     return room.roomTitle;
   }
 
-  int get _totalAmount {
-    final base = _summary?.totalSettlementAmount ?? 0;
-    final deductionTotal = _settlements
-        .where((s) => s.depositDeduction != null)
-        .fold(0, (sum, s) => sum + s.depositDeduction!.amount);
-    return base + deductionTotal;
-  }
+  int get _totalAmount => _summary?.totalSettlementAmount ?? 0;
 
   bool get _hasAnyDeduction =>
       _settlements.any((s) => s.depositDeduction != null);
@@ -655,8 +649,8 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
             child: Row(
               children: [
                 SizedBox(width: 12),
-                Icon(Icons.subdirectory_arrow_right,
-                    size: 14, color: AppColors.warning600),
+                Text('↳',
+                    style: TextStyle(fontSize: 14, color: AppColors.warning600)),
                 SizedBox(width: 4),
                 Text(
                   '보증금 차감 지급',
