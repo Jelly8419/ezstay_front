@@ -53,6 +53,8 @@ class EZStayLogo extends StatelessWidget {
       width: width,
       height: height,
       fit: fit,
+      allowDrawingOutsideViewBox: false,
+      clipBehavior: Clip.hardEdge,
       placeholderBuilder: (_) => SizedBox(width: width, height: height),
     );
   }
