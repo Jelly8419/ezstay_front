@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/theme/app_colors.dart';
 import '../../utils/responsive_util.dart';
 
@@ -36,58 +35,58 @@ class EZStayLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // white variant는 PNG 유지 (SVG 각 path에 색상 개별 지정되어 colorFilter 불가)
-    if (variant == EZStayLogoVariant.white) {
-      return Image.asset(
-        'assets/logos/ezstay_logo_white.png',
-        width: width,
-        height: height,
-        fit: fit,
-        filterQuality: FilterQuality.high,
-        errorBuilder: (context, error, stackTrace) => _fallback(),
-      );
-    }
+    final String assetPath = _getAssetPath();
 
-    return SvgPicture.asset(
-      _getAssetPath(),
+    return Image.asset(
+      assetPath,
       width: width,
       height: height,
       fit: fit,
-      allowDrawingOutsideViewBox: false,
-      clipBehavior: Clip.hardEdge,
-      placeholderBuilder: (_) => SizedBox(width: width, height: height),
-    );
-  }
-
-  Widget _fallback() {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Text(
-          'EZ',
-          style: TextStyle(
-            fontSize: (height ?? 40) * 0.5,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary500,
+      filterQuality: FilterQuality.high,
+      // 로딩 중 투명한 placeholder
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (wasSynchronouslyLoaded) {
+          return child;
+        }
+        return AnimatedOpacity(
+          opacity: frame == null ? 0 : 1,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          child: child,
+        );
+      },
+      // 에러 시 fallback
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
           ),
-        ),
-      ),
+          child: Center(
+            child: Text(
+              'EZ',
+              style: TextStyle(
+                fontSize: (height ?? 40) * 0.5,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary500,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
   String _getAssetPath() {
     switch (variant) {
       case EZStayLogoVariant.primary:
-        return 'assets/logos/ezstay_logo_primary.svg';
+        return 'assets/logos/ezstay_logo_primary.png';
       case EZStayLogoVariant.white:
-        return 'assets/logos/ezstay_logo_white.png'; // 미사용 (위에서 처리)
+        return 'assets/logos/ezstay_logo_white.png';
       case EZStayLogoVariant.iconOnly:
-        return 'assets/logos/ezstay_icon_only.svg';
+        return 'assets/logos/ezstay_icon_only.png';
     }
   }
 }
