@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
 import 'dart:html' as html show window, EventListener, Event, MessageEvent;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/contract_utils.dart';
 import '../../utils/format_utils.dart';
@@ -34,7 +33,6 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final RoomService _roomService = RoomService();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final KakaoMapWebController _mapController = KakaoMapWebController();
   final PageController _mobileCardController = PageController(
     viewportFraction: 0.63, // 카드 너비 210px + 마진 16px ≈ 화면의 63%
@@ -416,22 +414,9 @@ class _MapScreenState extends State<MapScreen> {
     html.window.addEventListener('message', _clusterClickListener);
   }
 
-  /// 저장된 필터 로드
-  Future<void> _loadSavedFilters() async {
-    try {
-      final savedFiltersJson = await _storage.read(key: 'guest_search_filters');
-      if (savedFiltersJson != null) {
-        final filtersMap =
-            json.decode(savedFiltersJson) as Map<String, dynamic>;
-        setState(() {
-          _filters = SearchFilters.fromJson(filtersMap);
-          // 저장된 날짜 필터를 API 요청용 변수에 동기화
-          _syncDatesFromFilters();
-        });
-      }
-    } catch (e) {
-      AppLogger.e('Failed to load saved filters: $e');
-    }
+  /// 저장된 필터 로드 (localStorage - 방 상세 뒤로가기 시에만 복원)
+  void _loadSavedFilters() {
+    // 필터는 _restoreMapStateIfNeeded에서 지도 상태와 함께 복원됨
     _loadRooms();
   }
 
@@ -446,23 +431,12 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  /// 필터 저장
-  Future<void> _saveFilters(SearchFilters filters) async {
-    try {
-      final filtersJson = json.encode(filters.toJson());
-      await _storage.write(key: 'guest_search_filters', value: filtersJson);
-    } catch (e) {
-      AppLogger.e('Failed to save filters: $e');
-    }
-  }
-
   void _onFilterChanged(SearchFilters newFilters) {
     final dateChanged = _filters.dateRange != newFilters.dateRange;
 
     setState(() {
       _filters = newFilters;
     });
-    _saveFilters(newFilters);
 
     // 날짜 필터가 변경된 경우 → API 재호출 (isAvailable 갱신 필요)
     if (dateChanged) {
@@ -484,7 +458,7 @@ class _MapScreenState extends State<MapScreen> {
     // 날짜 외 필터: 프론트엔드 필터링이므로 API 재호출 불필요
   }
 
-  /// 방 상세 진입 전 현재 지도 상태를 localStorage에 저장
+  /// 방 상세 진입 전 현재 지도 상태(줌/위치/마커/필터)를 localStorage에 저장
   void _saveMapState(int roomId) {
     if (_currentSwLat == null || _currentNeLat == null) return;
     final data = jsonEncode({
@@ -492,11 +466,12 @@ class _MapScreenState extends State<MapScreen> {
       'lng': (_currentSwLng! + _currentNeLng!) / 2,
       'zoom': _currentZoomLevel ?? 5,
       'selectedRoomId': roomId,
+      'filters': _filters.toJson(),
     });
     html.window.localStorage['map_restore_state'] = data;
   }
 
-  /// localStorage에서 지도 상태 복원 (카카오맵 초기화 완료 후 호출)
+  /// localStorage에서 지도 상태(줌/위치/마커/필터) 복원 (카카오맵 초기화 완료 후 호출)
   void _restoreMapStateIfNeeded() {
     final raw = html.window.localStorage['map_restore_state'];
     if (raw == null) return;
@@ -508,6 +483,15 @@ class _MapScreenState extends State<MapScreen> {
       final lng = (data['lng'] as num).toDouble();
       final zoom = (data['zoom'] as num).toInt();
       final selectedRoomId = data['selectedRoomId'] as int?;
+
+      // 필터 복원
+      if (data['filters'] != null) {
+        setState(() {
+          _filters = SearchFilters.fromJson(
+              data['filters'] as Map<String, dynamic>);
+          _syncDatesFromFilters();
+        });
+      }
 
       _mapController.focusOnLocation(lat, lng, zoomLevel: zoom);
       if (selectedRoomId != null) {
