@@ -8,7 +8,6 @@ import '../../core/theme/app_spacing.dart';
 import '../../services/auth_service.dart';
 import '../../models/user.dart';
 import '../../providers/gnb_provider.dart';
-import 'ezstay_logo.dart';
 import 'gnb_icon_button.dart';
 import 'gnb_menu_dropdown.dart';
 
@@ -110,7 +109,12 @@ class _AppGNBState extends State<AppGNB> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const EZStayLogo(width: 40, height: 40),
+          Image.asset(
+            'assets/logos/ezstay_logo_gnb.png',
+            width: 40,
+            height: 40,
+            filterQuality: FilterQuality.high,
+          ),
           SizedBox(width: AppSpacing.sm),
           Text(
             'EZstay',
