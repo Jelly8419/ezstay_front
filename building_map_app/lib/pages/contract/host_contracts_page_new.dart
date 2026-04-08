@@ -9,10 +9,10 @@ import '../../services/contract_service.dart';
 import '../../widgets/modals/guest_preparation_modal.dart';
 import '../../widgets/modals/host_contract_rejection_modal.dart';
 import '../../widgets/modals/host_contract_modals.dart' show DepositAgreementModal, RequestCancellationModal, HoldRequestModal;
+import '../../widgets/modals/host_cancel_preview_modal.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/common/app_footer.dart';
-import '../../widgets/contract/host_contract_dialogs.dart';
 import '../../widgets/contract/host_contract_card.dart';
 import '../../widgets/contract/host_info_message.dart';
 import '../../widgets/contract/contract_tab_menu.dart';
@@ -40,6 +40,10 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
   // 거절 모달 상태
   bool _showRejectionModal = false;
   int? _selectedContractIdForRejection;
+
+  // 호스트 취소 미리보기 모달 상태 (PAYMENT_COMPLETED)
+  bool _showCancelPreviewModal = false;
+  int? _selectedContractIdForCancelPreview;
 
   // 게스트 입주 준비 모달 상태
   bool _showGuestPreparationModal = false;
@@ -175,6 +179,27 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
               ),
             ),
           ),
+
+          // 호스트 취소 미리보기 모달 (PAYMENT_COMPLETED)
+          if (_showCancelPreviewModal && _selectedContractIdForCancelPreview != null)
+            HostCancelPreviewModal(
+              contractId: _selectedContractIdForCancelPreview!,
+              onClose: () {
+                setState(() {
+                  _showCancelPreviewModal = false;
+                  _selectedContractIdForCancelPreview = null;
+                });
+              },
+              onSuccess: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('계약이 취소되었습니다. 게스트에게 환불이 진행됩니다.'),
+                    backgroundColor: AppColors.error600,
+                  ),
+                );
+                _loadContracts();
+              },
+            ),
 
           // 거절 모달
           if (_showRejectionModal && _selectedContractIdForRejection != null)
@@ -438,38 +463,12 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
     );
   }
 
-  /// PAYMENT_COMPLETED 상태에서 호스트 계약 취소
-  Future<void> _handleCancelByHost(int contractId) async {
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (context) => const CancelByHostDialog(),
-    );
-
-    if (reason == null || reason.isEmpty) return;
-
-    try {
-      await _contractService.cancelByHost(contractId, reason);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('계약이 취소되었습니다.'),
-            backgroundColor: Color(0xFFF97316),
-          ),
-        );
-        _loadContracts();
-      }
-    } on UnauthorizedException {
-      if (mounted) context.go('/login');
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('계약 취소 실패: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: const Color(0xFFDC2626),
-          ),
-        );
-      }
-    }
+  /// PAYMENT_COMPLETED 상태에서 호스트 계약 취소 (미리보기 모달 표시)
+  void _handleCancelByHost(int contractId) {
+    setState(() {
+      _selectedContractIdForCancelPreview = contractId;
+      _showCancelPreviewModal = true;
+    });
   }
 
   /// IN_PROGRESS 상태에서 퇴실 확인 요청 (호스트 주도)

@@ -1,9 +1,9 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
+import '../models/cancel_preview.dart';
 import '../models/contract.dart';
 import '../models/contract_detail.dart';
 import '../models/room.dart';
@@ -239,7 +239,7 @@ class ContractService {
             parsedContracts.add(contract);
             if (!ApiConfig.isProduction) {
             }
-          } catch (e, stackTrace) {
+          } catch (e) {
             AppLogger.e('❌ [CONTRACT_PARSE] 계약 #${i + 1} 파싱 실패: $e');
             // 파싱 실패한 계약은 건너뛰고 계속 진행
             continue;
@@ -1308,14 +1308,73 @@ class ContractService {
       rethrow;
     }
   }
-  /// 호스트 계약 취소 (PATCH /api/contracts/{id}/cancel-by-host)
+  /// 호스트 취소 부담금 미리보기 (GET /api/contracts/{id}/cancel-by-host/preview)
+  ///
+  /// PAYMENT_COMPLETED 상태에서 취소 시 발생하는 부담금을 미리 조회합니다.
+  Future<CancelPreviewData> getCancelByHostPreview(int contractId) async {
+    try {
+      var token = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (token == null && !ApiConfig.isProduction) {
+        AppLogger.w('⚠️ [CONTRACT] 토큰 갱신 실패, skipExpiryCheck로 재시도');
+        token = await TokenService.getAccessToken(skipExpiryCheck: true);
+      }
+
+      if (token == null) {
+        throw const UnauthorizedException('로그인이 필요합니다.');
+      }
+
+      final url = Uri.parse(
+        '${ApiConfig.baseUrl}/api/contracts/$contractId/cancel-by-host/preview',
+      );
+
+      final response = await http
+          .get(url, headers: {'Authorization': 'Bearer $token'})
+          .timeout(
+            Duration(seconds: ApiConfig.timeoutSeconds),
+            onTimeout: () => throw Exception('요청 시간이 초과되었습니다.'),
+          );
+
+      if (response.statusCode == 200) {
+        final body = json.decode(utf8.decode(response.bodyBytes));
+        return CancelPreviewData.fromJson(body['data'] as Map<String, dynamic>);
+      } else if (response.statusCode == 401) {
+        throw const UnauthorizedException();
+      } else if (response.statusCode == 403) {
+        throw Exception('권한이 없습니다.');
+      } else if (response.statusCode == 404) {
+        throw Exception('계약을 찾을 수 없습니다.');
+      } else {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(
+          error['error']?['message'] ?? error['message'] ?? '부담금 조회에 실패했습니다.',
+        );
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버와 통신할 수 없습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception('요청 시간이 초과되었습니다.');
+      }
+      rethrow;
+    }
+  }
+
+  /// 호스트 계약 취소 (POST /api/contracts/{id}/cancel-by-host)
   ///
   /// PAYMENT_COMPLETED 상태에서 호스트가 계약을 취소합니다.
-  /// [cancellationReason]: 취소 사유 (필수)
+  /// [hostBurdenAmount] > 0 이면 PG 결제 파라미터([recvPayparam], [orderId], [amount])가 필수입니다.
   Future<Map<String, dynamic>> cancelByHost(
-    int contractId,
-    String cancellationReason,
-  ) async {
+    int contractId, {
+    required String cancellationReason,
+    String? recvPayparam,
+    String? payType,
+    String? orderId,
+    int? amount,
+  }) async {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
@@ -1331,35 +1390,38 @@ class ContractService {
         '${ApiConfig.baseUrl}/api/contracts/$contractId/cancel-by-host',
       );
 
+      final body = <String, dynamic>{'cancellationReason': cancellationReason};
+      if (recvPayparam != null) body['recvPayparam'] = recvPayparam;
+      if (payType != null) body['payType'] = payType;
+      if (orderId != null) body['orderId'] = orderId;
+      if (amount != null) body['amount'] = amount;
+
       final response = await http
-          .patch(
+          .post(
             url,
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
             },
-            body: json.encode({'cancellationReason': cancellationReason}),
+            body: json.encode(body),
           )
           .timeout(
             Duration(seconds: ApiConfig.timeoutSeconds),
-            onTimeout: () {
-              throw Exception('요청 시간이 초과되었습니다.');
-            },
+            onTimeout: () => throw Exception('요청 시간이 초과되었습니다.'),
           );
 
       if (response.statusCode == 200) {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
-        if (!ApiConfig.isProduction) {
-        }
         return responseData['data'] ?? responseData;
-      } else if (response.statusCode == 400 ||
-          response.statusCode == 502) {
+      } else if (response.statusCode == 400 || response.statusCode == 502) {
         final error = json.decode(utf8.decode(response.bodyBytes));
         final code = error['error']?['code'] ?? error['code'];
-        throw Exception(_pgErrorMessage(code) ??
+        final msg = _cancelByHostErrorMessage(code) ??
+            _pgErrorMessage(code) ??
             error['error']?['message'] ??
             error['message'] ??
-            '계약을 취소할 수 없습니다.');
+            '계약을 취소할 수 없습니다.';
+        throw Exception(msg);
       } else if (response.statusCode == 401) {
         throw const UnauthorizedException();
       } else if (response.statusCode == 403) {
@@ -1369,10 +1431,12 @@ class ContractService {
       } else {
         final error = json.decode(utf8.decode(response.bodyBytes));
         final code = error['error']?['code'] ?? error['code'];
-        throw Exception(_pgErrorMessage(code) ??
-            error['error']?['message'] ??
-            error['message'] ??
-            '계약 취소에 실패했습니다.');
+        throw Exception(
+          _cancelByHostErrorMessage(code) ??
+              error['error']?['message'] ??
+              error['message'] ??
+              '계약 취소에 실패했습니다.',
+        );
       }
     } on SocketException {
       throw Exception('네트워크 연결을 확인해주세요.');
@@ -1385,6 +1449,28 @@ class ContractService {
         throw Exception('요청 시간이 초과되었습니다.');
       }
       rethrow;
+    }
+  }
+
+  /// cancelByHost 에러 코드 → 사용자 메시지
+  static String? _cancelByHostErrorMessage(dynamic code) {
+    switch (code) {
+      case 4620:
+        return '취소 사유를 입력해주세요.';
+      case 4621:
+        return '결제 완료 상태에서만 취소할 수 있습니다.';
+      case 4624:
+        return '결제 정보가 누락되었습니다. 다시 시도해주세요.';
+      case 4603:
+        return '주문번호가 일치하지 않습니다. 다시 시도해주세요.';
+      case 4604:
+        return '결제 금액이 일치하지 않습니다. 다시 시도해주세요.';
+      case 4605:
+        return '결제에 실패했습니다. 다시 시도해주세요.';
+      case 4900:
+        return '일시적인 오류가 발생했습니다. 고객센터에 문의해주세요.';
+      default:
+        return null;
     }
   }
 

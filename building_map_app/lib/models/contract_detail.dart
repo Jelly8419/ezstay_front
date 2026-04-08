@@ -368,7 +368,7 @@ class ContractDetail {
     );
   }
 
-  /// ContractDetail → Contract 변환 (RefundCalculationModal 등에서 사용)
+  /// ContractDetail → Contract 변환
   Contract toContract() {
     return Contract(
       id: id,
