@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../core/theme/app_spacing.dart';
+import 'common/ezstay_logo.dart';
 
 /// 앱 초기화 중 표시되는 스플래시 화면
 class SplashScreen extends StatelessWidget {
@@ -16,18 +17,9 @@ class SplashScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // 로고
-            Container(
+            const EZStayLogo(
               width: 120,
               height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.primary500.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-              child: const Icon(
-                Icons.home_rounded,
-                size: 64,
-                color: AppColors.primary500,
-              ),
             ),
             SizedBox(height: AppSpacing.xl),
 
