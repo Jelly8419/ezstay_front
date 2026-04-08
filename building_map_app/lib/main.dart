@@ -1,5 +1,6 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:async';
+import 'dart:html' as html show window;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
@@ -12,18 +13,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
 import 'firebase_options.dart';
 import 'config/kakao_config.dart';
-import 'core/theme/app_colors.dart';
-import 'core/theme/app_text_styles.dart';
 import 'core/theme/app_theme.dart';
 import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
-import 'services/room_service.dart';
 import 'services/map_interaction_coordinator.dart';
 import 'services/payment_service_unified.dart';
 import 'providers/gnb_provider.dart';
 import 'providers/map_state_provider.dart';
 import 'router/app_router.dart';
-import 'widgets/kakao_map_web.dart';
 import 'widgets/splash_screen.dart';
 
 /// Flutter Web Focus 에러 방지를 위한 안전한 Focus Traversal Policy
@@ -52,9 +49,168 @@ class SafeFocusTraversalPolicy extends ReadingOrderTraversalPolicy {
   }
 }
 
+/// Flutter 내부 에러(assertion, unhandled exception) 발생 시 표시할 커스텀 위젯
+///
+/// [ErrorWidget.builder]에 등록되며, 기본 빨간 화면 대신 표시됩니다.
+/// GoRouter context가 없는 시점에도 동작해야 하므로 Navigator.pushNamed 대신
+/// html.window.location.href로 홈 이동 처리합니다.
+class _AppErrorWidget extends StatelessWidget {
+  final FlutterErrorDetails details;
+
+  const _AppErrorWidget(this.details);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1565C0),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.home_rounded, color: Colors.white, size: 32),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'EZstay',
+                style: TextStyle(
+                  color: Color(0xFF1565C0),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE3F2FD),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFF1565C0),
+                      size: 36,
+                    ),
+                  ),
+                  Positioned(
+                    right: -8,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF5350),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'ERROR',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                '일시적인 오류가 발생했습니다',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '잠시 후 다시 시도해주세요.\n문제가 지속되면 고객센터로 문의해주세요.',
+                style: TextStyle(color: Color(0xFF6B7280), height: 1.6),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // GoRouter context 없이 홈으로 이동
+                    if (kIsWeb) {
+                      html.window.location.href = '/';
+                    } else if (context.mounted) {
+                      Navigator.of(context, rootNavigator: true)
+                          .pushNamedAndRemoveUntil('/', (_) => false);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1565C0),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    '홈으로 이동',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                '문의: support@ezstay.io',
+                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 앱의 진입점
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Flutter framework 내부 에러(assertion 포함)를 커스텀 위젯으로 교체
+  // 기본 빨간 화면 대신 EZStay 디자인의 에러 화면 표시
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    AppLogger.e('❌ [ErrorWidget] Flutter 에러: ${details.exceptionAsString()}');
+    return _AppErrorWidget(details);
+  };
+
+  // Flutter 프레임워크 에러를 가로채서 로그만 남기고 앱 유지
+  FlutterError.onError = (FlutterErrorDetails details) {
+    AppLogger.e(
+      '❌ [FlutterError] ${details.exceptionAsString()}',
+      error: details.exception,
+      stackTrace: details.stack,
+    );
+    // layout/assertion 에러는 ErrorWidget으로 처리되므로 FlutterError.presentError 호출 안 함
+  };
 
   // .env 파일 로드 (환경별 분리)
   // 빌드 시 --dart-define=ENVIRONMENT=test/production 으로 지정
@@ -235,271 +391,3 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-
-/// 지도 화면을 보여주는 위젯
-class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
-
-  @override
-  State<MapScreen> createState() => _MapScreenState();
-}
-
-/// 지도 화면의 상태를 관리하는 클래스
-class _MapScreenState extends State<MapScreen> {
-  late KakaoMapController mapController; // 카카오 맵 컨트롤러
-  Set<Marker> markers = {}; // 지도에 표시할 마커들
-  final _roomService = RoomService();
-  List<Map<String, dynamic>> _rooms = []; // 서버에서 가져온 방 목록
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadRooms();
-  }
-
-  /// 서버에서 공개된 방 목록을 불러오기
-  Future<void> _loadRooms() async {
-    try {
-      final rooms = await _roomService.getPublishedRooms();
-      if (mounted) {
-        setState(() {
-          _rooms = rooms ?? [];
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      AppLogger.e('❌ [MAP] 방 목록 로드 실패: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  /// 방 데이터를 기반으로 마커를 생성하는 메소드
-  List<Marker> _createMarkers() {
-    if (_rooms.isEmpty) {
-      return [];
-    }
-
-    return _rooms.where((room) {
-      // latitude와 longitude가 존재하고 유효한 경우만 마커 생성
-      return room['latitude'] != null &&
-             room['longitude'] != null &&
-             room['latitude'].toString().isNotEmpty &&
-             room['longitude'].toString().isNotEmpty;
-    }).map((room) {
-      final lat = double.tryParse(room['latitude'].toString());
-      final lng = double.tryParse(room['longitude'].toString());
-
-      if (lat == null || lng == null) {
-        return null;
-      }
-
-      return Marker(
-        markerId: room['id'].toString(),
-        latLng: LatLng(lat, lng),
-        width: 30,
-        height: 40,
-        markerImageSrc: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
-      );
-    }).whereType<Marker>().toList();
-  }
-
-  /// 마커 탭 이벤트 처리
-  void _onMarkerTap(String markerId, LatLng latLng, int zoomLevel) {
-    final room = _rooms.firstWhere(
-      (r) => r['id'].toString() == markerId,
-      orElse: () => {},
-    );
-    if (room.isNotEmpty) {
-      _showRoomDetails(room);
-    }
-  }
-
-  /// 방 상세 정보를 모달로 표시하는 메소드
-  void _showRoomDetails(Map<String, dynamic> room) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-            ),
-          ),
-          padding: const EdgeInsets.all(24.0),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 핸들바
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.neutral300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // 방 이름
-                Text(
-                  room['roomName'] ?? '이름 없음',
-                  style: AppTextStyles.displayLarge,
-                ),
-                const SizedBox(height: 12),
-                // 건물 타입
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary500.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    room['buildingType'] ?? '알 수 없음',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.primary500,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // 주소 정보
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary500.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.location_on,
-                        color: AppColors.primary500,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        room['address'] ?? '주소 없음',
-                        style: AppTextStyles.bodyLarge,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                // 요금 정보
-                if (room['weeklyRent'] != null)
-                  Row(
-                    children: [
-                      const Icon(Icons.attach_money, color: AppColors.primary500, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        '주간 요금: ${room['weeklyRent']}원',
-                        style: AppTextStyles.bodyLarge.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                const SizedBox(height: 12),
-                // 방 정보
-                Row(
-                  children: [
-                    if (room['roomCount'] != null) ...[
-                      const Icon(Icons.bed, color: AppColors.primary500, size: 20),
-                      const SizedBox(width: 4),
-                      Text('방 ${room['roomCount']}개'),
-                      const SizedBox(width: 16),
-                    ],
-                    if (room['bathroomCount'] != null) ...[
-                      const Icon(Icons.bathroom, color: AppColors.primary500, size: 20),
-                      const SizedBox(width: 4),
-                      Text('욕실 ${room['bathroomCount']}개'),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 20),
-                // 방 설명
-                if (room['description'] != null && room['description'].toString().isNotEmpty)
-                  Text(
-                    room['description'],
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                      height: 1.5,
-                    ),
-                  ),
-                const SizedBox(height: 24),
-                // 닫기 버튼
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary500,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('닫기'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// 지도가 생성되었을 때 호출되는 콜백
-  void _onMapCreated(KakaoMapController controller) {
-    mapController = controller;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('EZStay 지도'),
-      ),
-      body: kIsWeb ? _buildWebMap() : _buildNativeMap(),
-    );
-  }
-
-  /// 웹용 지도 (HTML 기반 카카오 지도)
-  Widget _buildWebMap() {
-
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    return KakaoMapWeb(
-      rooms: _rooms,
-      onMarkerTap: _showRoomDetails,
-    );
-  }
-
-  /// 네이티브(Android/iOS)용 카카오 지도
-  Widget _buildNativeMap() {
-    return KakaoMap(
-      onMapCreated: _onMapCreated,
-      onMarkerTap: _onMarkerTap,
-      center: LatLng(37.5666805, 126.9784147), // 서울시청 좌표
-      markers: _createMarkers(),
-      currentLevel: 5,
-      zoomControl: true,
-    );
-  }
-}
