@@ -77,9 +77,6 @@ dependencies:
   # 네트워크 이미지 캐싱
   cached_network_image: ^3.4.1
 
-  # SVG 렌더링
-  flutter_svg: ^2.0.0
-
   # 국제화 및 로케일
   intl: ^0.19.0
 
