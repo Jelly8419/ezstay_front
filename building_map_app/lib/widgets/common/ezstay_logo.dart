@@ -27,13 +27,11 @@ class EZStayLogo extends StatelessWidget {
   });
 
   /// 아이콘 전용 생성자 (정사각형)
-  const EZStayLogo.iconOnly({
-    super.key,
-    double size = 32.0,
-  }) : width = size,
-       height = size,
-       variant = EZStayLogoVariant.iconOnly,
-       fit = BoxFit.contain;
+  const EZStayLogo.iconOnly({super.key, double size = 32.0})
+    : width = size,
+      height = size,
+      variant = EZStayLogoVariant.iconOnly,
+      fit = BoxFit.contain;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +42,7 @@ class EZStayLogo extends StatelessWidget {
       width: width,
       height: height,
       fit: fit,
+      filterQuality: FilterQuality.high,
       // 로딩 중 투명한 placeholder
       frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
         if (wasSynchronouslyLoaded) {
@@ -113,10 +112,7 @@ enum EZStayLogoVariant {
 class ResponsiveEZStayLogo extends StatelessWidget {
   final EZStayLogoVariant? forcedVariant;
 
-  const ResponsiveEZStayLogo({
-    super.key,
-    this.forcedVariant,
-  });
+  const ResponsiveEZStayLogo({super.key, this.forcedVariant});
 
   @override
   Widget build(BuildContext context) {
@@ -138,9 +134,7 @@ class ResponsiveEZStayLogo extends StatelessWidget {
     }
     // 모바일: 아이콘만
     else {
-      return EZStayLogo.iconOnly(
-        size: 32,
-      );
+      return EZStayLogo.iconOnly(size: 32);
     }
   }
 }
