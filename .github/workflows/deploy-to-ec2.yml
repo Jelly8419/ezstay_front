@@ -91,6 +91,18 @@ jobs:
           FIREBASE_MEASUREMENT_ID: ${{ secrets.TEST_FIREBASE_MEASUREMENT_ID }}
           PAYTAG_SHOPCODE: ${{ secrets.TEST_PAYTAG_SHOPCODE }}
         run: |
+          # Secrets에 줄바꿈이 포함될 수 있으므로 tr로 제거
+          KAKAO_JS_KEY=$(echo "${KAKAO_JS_KEY}" | tr -d '\r\n')
+          KAKAO_REST_KEY=$(echo "${KAKAO_REST_KEY}" | tr -d '\r\n')
+          FIREBASE_API_KEY=$(echo "${FIREBASE_API_KEY}" | tr -d '\r\n')
+          FIREBASE_AUTH_DOMAIN=$(echo "${FIREBASE_AUTH_DOMAIN}" | tr -d '\r\n')
+          FIREBASE_PROJECT_ID=$(echo "${FIREBASE_PROJECT_ID}" | tr -d '\r\n')
+          FIREBASE_STORAGE_BUCKET=$(echo "${FIREBASE_STORAGE_BUCKET}" | tr -d '\r\n')
+          FIREBASE_SENDER_ID=$(echo "${FIREBASE_SENDER_ID}" | tr -d '\r\n')
+          FIREBASE_APP_ID=$(echo "${FIREBASE_APP_ID}" | tr -d '\r\n')
+          FIREBASE_MEASUREMENT_ID=$(echo "${FIREBASE_MEASUREMENT_ID}" | tr -d '\r\n')
+          PAYTAG_SHOPCODE=$(echo "${PAYTAG_SHOPCODE}" | tr -d '\r\n')
+
           {
             echo "window.__ENV__ = {"
             echo "  ENVIRONMENT: 'test',"
