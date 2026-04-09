@@ -300,25 +300,11 @@ Future<void> main() async {
 /// Firebase 초기화를 별도 함수로 분리 (백그라운드 실행)
 Future<FirebaseApp> _initializeFirebase() async {
   try {
-    late FirebaseApp app;
-    if (kIsWeb) {
-      // 웹에서는 명시적으로 설정 전달
-      app = await Firebase.initializeApp(
-        options: const FirebaseOptions(
-          apiKey: 'AIzaSyBDwxJU7ivdjfdMOJeA7N_buRjdJLfdKUs',
-          appId: '1:922042336723:web:054fdbcc6b9b219aed1b26',
-          messagingSenderId: '922042336723',
-          projectId: 'ezstay-864bc',
-          authDomain: 'ezstay-864bc.firebaseapp.com',
-          storageBucket: 'ezstay-864bc.firebasestorage.app',
-          measurementId: 'G-1QZK8YMFEV',
-        ),
-      );
-    } else {
-      app = await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
+    // 웹은 index.html의 env_config.js → window.firebaseConfig로 JS SDK가 먼저 초기화함
+    // Flutter SDK는 DefaultFirebaseOptions를 통해 동일하게 처리
+    final app = await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     return app;
   } catch (e) {
     AppLogger.e('❌ [MAIN] Firebase 초기화 실패: $e');
