@@ -602,10 +602,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   /// 옵션 추가 모달 표시 (리액트 UI 기준)
   void _showAddOptionModal(ContractListItem contract) async {
     // 먼저 API 호출
-    List<AvailableRentalItem> availableItems;
+    AvailableRentalItemsResult result;
     try {
       final rentalOrderService = RentalOrderService();
-      availableItems = await rentalOrderService.getAvailableRentalItems(
+      result = await rentalOrderService.getAvailableRentalItems(
         contract.id,
       );
     } on UnauthorizedException {
@@ -629,9 +629,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AddOptionModal(
-        availableOptions: availableItems,
+        availableOptions: result.items,
+        hasPendingDelivery: result.hasPendingDelivery,
         onConfirm: (selectedOptions) {
-          // 결제 페이지로 이동
           _handleAdditionalOptionPayment(contract, selectedOptions);
         },
       ),

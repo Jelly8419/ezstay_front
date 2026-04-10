@@ -129,7 +129,7 @@ class GuestContractOptionService {
 
       // API에서 받아온 이용 가능한 아이템으로 옵션 목록 생성
       final currentItems = contract.rentalItems ?? [];
-      final allOptions = availableItems.map((availableItem) {
+      final allOptions = availableItems.items.map((availableItem) {
         final existingItem = currentItems.firstWhere(
           (item) => item.name == availableItem.name,
           orElse: () => RentalItem(

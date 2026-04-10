@@ -40,7 +40,7 @@ class RentalOrderService {
   /// 계약에서 추가 가능한 렌탈 아이템 목록 조회
   ///
   /// GET /api/contracts/:contractId/available-rental-items
-  Future<List<AvailableRentalItem>> getAvailableRentalItems(
+  Future<AvailableRentalItemsResult> getAvailableRentalItems(
     int contractId,
   ) async {
     final token = await _getToken();
@@ -55,17 +55,21 @@ class RentalOrderService {
     if (response.statusCode == 200) {
       final responseData = json.decode(utf8.decode(response.bodyBytes));
       if (responseData['success'] == true && responseData['data'] != null) {
-        // data가 직접 배열일 경우와 data.items인 경우 모두 처리
         final data = responseData['data'];
-        final List<dynamic> items;
+        final List<dynamic> rawItems;
+        bool hasPendingDelivery = false;
         if (data is List) {
-          items = data;
-        } else if (data is Map && data['items'] != null) {
-          items = data['items'] as List<dynamic>;
+          rawItems = data;
+        } else if (data is Map) {
+          hasPendingDelivery = data['hasPendingDelivery'] == true;
+          rawItems = (data['items'] as List<dynamic>?) ?? [];
         } else {
           throw Exception('예상하지 못한 응답 형식입니다.');
         }
-        return items.map((e) => AvailableRentalItem.fromJson(e)).toList();
+        return AvailableRentalItemsResult(
+          items: rawItems.map((e) => AvailableRentalItem.fromJson(e)).toList(),
+          hasPendingDelivery: hasPendingDelivery,
+        );
       }
       throw Exception('예상하지 못한 응답 형식입니다.');
     }
@@ -621,6 +625,17 @@ class RentalOrderItemDetail {
     }
     return 0;
   }
+}
+
+/// 이용 가능한 렌탈 아이템 조회 결과
+class AvailableRentalItemsResult {
+  final List<AvailableRentalItem> items;
+  final bool hasPendingDelivery;
+
+  const AvailableRentalItemsResult({
+    required this.items,
+    required this.hasPendingDelivery,
+  });
 }
 
 /// 이용 가능한 렌탈 아이템

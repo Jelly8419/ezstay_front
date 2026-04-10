@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../utils/format_utils.dart';
+import '../../utils/price_calculator.dart';
 import '../../services/rental_order_service.dart';
 
 /// 옵션 추가 구매 모달
 class AddOptionModal extends StatefulWidget {
   final List<AvailableRentalItem> availableOptions;
+  final bool hasPendingDelivery;
   final void Function(Map<int, int> selectedOptions) onConfirm;
 
   const AddOptionModal({
     super.key,
     required this.availableOptions,
+    required this.hasPendingDelivery,
     required this.onConfirm,
   });
 
@@ -37,6 +40,11 @@ class _AddOptionModalState extends State<AddOptionModal> {
   }
 
   bool get _hasSelection => _quantities.values.any((q) => q > 0);
+
+  bool get _isBelowMinimum =>
+      !widget.hasPendingDelivery &&
+      _totalAmount > 0 &&
+      PriceCalculator.isInvalidRentalAmount(_totalAmount);
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +167,22 @@ class _AddOptionModalState extends State<AddOptionModal> {
                     ),
                     const SizedBox(height: 16),
 
+                    // 최소 금액 에러 문구
+                    if (_isBelowMinimum) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          PriceCalculator.rentalAmountErrorMessage(
+                            currentAmount: _totalAmount,
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFFDC2626),
+                          ),
+                        ),
+                      ),
+                    ],
+
                     // 버튼
                     Row(
                       children: [
@@ -188,14 +212,18 @@ class _AddOptionModalState extends State<AddOptionModal> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              widget.onConfirm(_quantities);
-                            },
+                            onPressed: _isBelowMinimum
+                                ? null
+                                : () {
+                                    Navigator.pop(context);
+                                    widget.onConfirm(_quantities);
+                                  },
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               backgroundColor: AppColors.primary600,
+                              disabledBackgroundColor: const Color(0xFFD1D5DB),
                               foregroundColor: Colors.white,
+                              disabledForegroundColor: const Color(0xFF9CA3AF),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
