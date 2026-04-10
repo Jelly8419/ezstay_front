@@ -158,14 +158,9 @@
   <!-- API 설정 파일 - 필수이므로 동기 로드 유지 -->
   <script src="js/api_config.js"></script>
 
-  <!-- Kakao Maps JavaScript API - env_config.js의 키로 동적 삽입 -->
+  <!-- Kakao Maps JavaScript API - env_config.js의 키로 동기 로드 -->
   <script>
-    (function () {
-      var s = document.createElement('script');
-      s.type = 'text/javascript';
-      s.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=' + window.__ENV__.KAKAO_JS_KEY;
-      document.head.appendChild(s);
-    })();
+    document.write('<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=' + window.__ENV__.KAKAO_JS_KEY + '"><\/script>');
   </script>
 
   <!-- Daum Postcode API - 필수 API이므로 동기 로딩 유지 -->
