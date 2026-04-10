@@ -180,13 +180,16 @@ void showDepositAgreementReviewDialog(
 /// 환불 정보 및 취소 다이얼로그
 /// [refundData]: 서버에서 받은 환불 정보
 /// [onConfirmRefund]: 사유와 함께 환불 요청 실행
+/// [cancelBlocked]: true이면 미결 옵션 주문이 있어 취소 버튼 비활성화
+/// [pendingAdditionalOrders]: 먼저 환불해야 할 옵션 주문 목록
 void showRefundInfoDialog(
   BuildContext context, {
   required Map<String, dynamic>? refundData,
-  required Future<void> Function(String reason) onConfirmRefund,
+  required Future<void> Function() onConfirmRefund,
   required void Function(String message, bool isSuccess) onShowMessage,
+  bool cancelBlocked = false,
+  List<Map<String, dynamic>> pendingAdditionalOrders = const [],
 }) {
-  final reasonController = TextEditingController();
 
   showDialog(
     context: context,
@@ -367,33 +370,83 @@ void showRefundInfoDialog(
                     ),
                   ),
                 ),
-              const SizedBox(height: 16),
 
-              // 취소 사유 입력
-              const Text(
-                '취소 사유',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF374151),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: reasonController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: '취소 사유를 입력해주세요',
-                  hintStyle: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                  border: OutlineInputBorder(
+              // 미결 옵션 주문 경고 (cancelBlocked == true일 때만 표시)
+              if (cancelBlocked && pendingAdditionalOrders.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFED7AA)),
                   ),
-                  contentPadding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 16,
+                            color: Color(0xFFB45309),
+                          ),
+                          SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '취소 전 옵션 주문을 먼저 환불해주세요',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF92400E),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...pendingAdditionalOrders.map((order) {
+                        final orderId = order['orderId'] ?? '-';
+                        final status = order['status'] ?? '-';
+                        final amount = order['totalAmount'] as num? ?? 0;
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '주문번호: $orderId',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF78350F),
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '$status  ',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFFB45309),
+                                ),
+                              ),
+                              Text(
+                                '${FormatUtils.formatCurrency(amount)}원',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF78350F),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -403,18 +456,19 @@ void showRefundInfoDialog(
             child: const Text('돌아가기'),
           ),
           ElevatedButton(
-            onPressed: () async {
-              final reason = reasonController.text.trim();
-              if (reason.isEmpty) {
-                onShowMessage('취소 사유를 입력해주세요.', false);
-                return;
-              }
-              Navigator.of(dialogContext).pop();
-              await onConfirmRefund(reason);
-            },
+            onPressed: cancelBlocked
+                ? null
+                : () async {
+                    Navigator.of(dialogContext).pop();
+                    await onConfirmRefund();
+                  },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
+              backgroundColor: cancelBlocked
+                  ? const Color(0xFF9CA3AF)
+                  : const Color(0xFFDC2626),
               foregroundColor: Colors.white,
+              disabledBackgroundColor: const Color(0xFF9CA3AF),
+              disabledForegroundColor: Colors.white,
             ),
             child: const Text('환불 요청'),
           ),
