@@ -22,6 +22,9 @@ class CancelPreviewData {
   final int guestRefundAmount;
   final int guestCompensationAmount;
 
+  // 위약금 결제용 주문번호 (백엔드 preview 응답에서 수신)
+  final String? orderId;
+
   // 정책 정보
   final int daysBeforeCheckin;
   final int refundRate;
@@ -30,6 +33,7 @@ class CancelPreviewData {
   final String message;
 
   const CancelPreviewData({
+    this.orderId,
     required this.originalRentalFee,
     required this.originalCleaningFee,
     required this.originalMaintenanceFee,
@@ -55,6 +59,7 @@ class CancelPreviewData {
 
   factory CancelPreviewData.fromJson(Map<String, dynamic> json) {
     return CancelPreviewData(
+      orderId: json['orderId'] as String?,
       originalRentalFee: (json['originalRentalFee'] as num? ?? 0).toInt(),
       originalCleaningFee: (json['originalCleaningFee'] as num? ?? 0).toInt(),
       originalMaintenanceFee: (json['originalMaintenanceFee'] as num? ?? 0).toInt(),

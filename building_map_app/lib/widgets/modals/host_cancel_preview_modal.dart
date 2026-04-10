@@ -8,7 +8,6 @@ import '../../models/cancel_preview.dart';
 import '../../services/contract_service.dart';
 import '../../services/payment_service_web.dart'
     if (dart.library.io) '../../services/payment_service_stub.dart';
-import '../../services/payment_service.dart';
 import '../../utils/format_utils.dart';
 import '../contract/refund_row.dart';
 
@@ -35,7 +34,6 @@ class HostCancelPreviewModal extends StatefulWidget {
 
 class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
   final ContractService _contractService = ContractService();
-  final PaymentService _paymentService = PaymentService();
 
   CancelPreviewData? _preview;
   bool _isLoadingPreview = true;
@@ -110,14 +108,16 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
       return;
     }
 
+    final orderId = preview.orderId;
+    if (orderId == null || orderId.isEmpty) {
+      _showSnackBar('결제 주문번호를 가져오지 못했습니다. 다시 시도해주세요.');
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
-      final paymentInfo =
-          await _paymentService.getPaymentInfo(widget.contractId);
-      final orderId = paymentInfo['orderId'] as String;
-      final pgAmount =
-          paymentInfo['pgAmount'] as int? ?? preview.hostBurdenAmount;
+      final pgAmount = preview.hostBurdenAmount;
 
       final webService = PaymentServiceWeb();
       if (webService.isPopupBlocked()) {
