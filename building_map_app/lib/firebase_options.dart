@@ -45,7 +45,7 @@ class DefaultFirebaseOptions {
 
   // 운영 환경 (ezstay-prod)
   static const FirebaseOptions webProduction = FirebaseOptions(
-    apiKey: 'AlzaSyC37Xu7zGwC9wwTIHURk1OXLo92JoS5zmw',
+    apiKey: 'AIzaSyC37Xu7zGwC9wwTIHURk10XLo92JoS6zmw',
     appId: '1:943255185973:web:d0c8951d279e415fd55c3c',
     messagingSenderId: '943255185973',
     projectId: 'ezstay-prod',
