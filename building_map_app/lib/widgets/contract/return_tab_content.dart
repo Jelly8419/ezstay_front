@@ -44,17 +44,6 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
   final TextEditingController _reasonCtrl = TextEditingController();
   bool _isProcessing = false;
 
-  // 주문 혼합 방지: 현재 선택 중인 주문 ID
-  int? get _selectedOrderId {
-    if (_selectedIds.isEmpty) return null;
-    for (final order in widget.returnableOrders) {
-      if (order.items.any((i) => _selectedIds.contains(i.id))) {
-        return order.id;
-      }
-    }
-    return null;
-  }
-
   @override
   void dispose() {
     _reasonCtrl.dispose();
@@ -155,10 +144,6 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
   }
 
   Widget _buildReturnOrderCard(RentalOrder order) {
-    final lockedOrderId = _selectedOrderId;
-    final isOtherOrder =
-        lockedOrderId != null && lockedOrderId != order.id;
-
     final activeItems = order.items
         .where((i) => i.status == 'ACTIVE')
         .toList();
@@ -167,69 +152,50 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
         .toList();
 
     final allActiveIds = activeItems.map((i) => i.id).toList();
-    final allSelected = !isOtherOrder &&
-        allActiveIds.isNotEmpty &&
-        allActiveIds.every(_selectedIds.contains);
+    final allSelected =
+        allActiveIds.isNotEmpty && allActiveIds.every(_selectedIds.contains);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: isOtherOrder ? AppColors.neutral100 : AppColors.neutral200,
-        ),
+        side: BorderSide(color: AppColors.neutral200),
       ),
-      child: Opacity(
-        opacity: isOtherOrder ? 0.5 : 1.0,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              OrderItemRows.orderCardHeader(
-                order: order,
-                allSelected: allSelected,
-                onSelectAll: isOtherOrder
-                    ? (_) {}
-                    : (v) {
-                        setState(() {
-                          if (v == true) {
-                            _selectedIds.addAll(allActiveIds);
-                          } else {
-                            _selectedIds.removeAll(allActiveIds);
-                          }
-                        });
-                      },
-              ),
-              if (isOtherOrder)
-                Padding(
-                  padding: const EdgeInsets.only(left: 40, top: 4),
-                  child: Text(
-                    '다른 주문이 선택되어 있습니다. 주문별로 각각 신청해 주세요.',
-                    style: TextStyle(fontSize: 11, color: AppColors.neutral400),
-                  ),
-                ),
-              const SizedBox(height: 8),
-              ...activeItems.map((item) => OrderItemRows.itemCheckRow(
-                    item: item,
-                    selected: _selectedIds.contains(item.id),
-                    enabled: !isOtherOrder,
-                    onChanged: isOtherOrder
-                        ? (_) {}
-                        : (v) {
-                            setState(() {
-                              if (v == true) {
-                                _selectedIds.add(item.id);
-                              } else {
-                                _selectedIds.remove(item.id);
-                              }
-                            });
-                          },
-                  )),
-              ...requestedItems.map((item) => OrderItemRows.disabledItemRow(item)),
-            ],
-          ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            OrderItemRows.orderCardHeader(
+              order: order,
+              allSelected: allSelected,
+              onSelectAll: (v) {
+                setState(() {
+                  if (v == true) {
+                    _selectedIds.addAll(allActiveIds);
+                  } else {
+                    _selectedIds.removeAll(allActiveIds);
+                  }
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            ...activeItems.map((item) => OrderItemRows.itemCheckRow(
+                  item: item,
+                  selected: _selectedIds.contains(item.id),
+                  onChanged: (v) {
+                    setState(() {
+                      if (v == true) {
+                        _selectedIds.add(item.id);
+                      } else {
+                        _selectedIds.remove(item.id);
+                      }
+                    });
+                  },
+                )),
+            ...requestedItems.map((item) => OrderItemRows.disabledItemRow(item)),
+          ],
         ),
       ),
     );
