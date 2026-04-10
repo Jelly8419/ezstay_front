@@ -8,9 +8,13 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 class DefaultFirebaseOptions {
+  // --dart-define=ENVIRONMENT=production 으로 환경 분기
+  static const _env = String.fromEnvironment('ENVIRONMENT', defaultValue: 'local');
+  static bool get _isProduction => _env == 'production';
+
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      return _isProduction ? webProduction : web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -39,6 +43,18 @@ class DefaultFirebaseOptions {
     }
   }
 
+  // 운영 환경 (ezstay-prod)
+  static const FirebaseOptions webProduction = FirebaseOptions(
+    apiKey: 'AlzaSyC37Xu7zGwC9wwTIHURk1OXLo92JoS5zmw',
+    appId: '1:943255185973:web:d0c8951d279e415fd55c3c',
+    messagingSenderId: '943255185973',
+    projectId: 'ezstay-prod',
+    authDomain: 'ezstay-prod.firebaseapp.com',
+    storageBucket: 'ezstay-prod.firebasestorage.app',
+    measurementId: 'G-HLOJJSF99W',
+  );
+
+  // 로컬/테스트 환경 (ezstay-864bc)
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyBDwxJU7ivdjfdMOJeA7N_buRjdJLfdKUs',
     appId: '1:922042336723:web:054fdbcc6b9b219aed1b26',
