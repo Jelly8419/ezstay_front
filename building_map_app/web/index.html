@@ -152,24 +152,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Icons&display=swap" rel="stylesheet">
   </noscript>
 
+  <!-- 환경별 설정 - 배포 시 CI/CD가 이 파일을 덮어씀 -->
+  <script src="js/env_config.js"></script>
+
   <!-- API 설정 파일 - 필수이므로 동기 로드 유지 -->
   <script src="js/api_config.js"></script>
 
-  <!-- Kakao Maps JavaScript API - 필수 API이므로 동기 로딩 유지 -->
-  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5e2b60c33562fb4806fde94853956642"></script>
+  <!-- Kakao Maps JavaScript API - env_config.js의 키로 동기 로드 -->
+  <script>
+    document.write('<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=' + window.__ENV__.KAKAO_JS_KEY + '"><\/script>');
+  </script>
 
   <!-- Daum Postcode API - 필수 API이므로 동기 로딩 유지 -->
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 
-  <!-- PayTag PG JavaScript SDK -->
-  <script src="https://apit.paytag.kr/std_pay/paytag_std.js?version=20251104" charset="utf-8"></script>
+  <!-- PayTag PG JavaScript SDK - env_config.js의 URL로 동적 삽입 -->
+  <script>
+    (function () {
+      var s = document.createElement('script');
+      s.src = window.__ENV__.PAYTAG_SDK_URL;
+      s.charset = 'utf-8';
+      document.head.appendChild(s);
+    })();
+  </script>
   <script>
     // PayTag SDK 초기화 (SDK 로드 후 1회 실행)
     window.addEventListener('DOMContentLoaded', function () {
       var checkTag = function (attempts) {
         if (typeof Tag !== 'undefined' && Tag.init) {
-          // shopcode는 환경에 따라 변경 (테스트: 2601031889)
-          var shopcode = window.__PAYTAG_SHOPCODE__ || '2601031889';
+          var shopcode = window.__ENV__.PAYTAG_SHOPCODE || '1901110002';
           Tag.init(shopcode, 'ezstay');
         } else if (attempts < 50) {
           setTimeout(function () { checkTag(attempts + 1); }, 100);
@@ -181,17 +192,16 @@
     });
   </script>
 
-  <!-- Firebase Configuration (설정만 먼저 노출) -->
+  <!-- Firebase Configuration - env_config.js 값으로 구성 -->
   <script>
-    // Firebase 설정을 전역 변수로 노출 (Flutter가 읽을 수 있도록)
     window.firebaseConfig = {
-      apiKey: "AIzaSyBDwxJU7ivdjfdMOJeA7N_buRjdJLfdKUs",
-      authDomain: "ezstay-864bc.firebaseapp.com",
-      projectId: "ezstay-864bc",
-      storageBucket: "ezstay-864bc.firebasestorage.app",
-      messagingSenderId: "922042336723",
-      appId: "1:922042336723:web:054fdbcc6b9b219aed1b26",
-      measurementId: "G-1QZK8YMFEV"
+      apiKey: window.__ENV__.FIREBASE_API_KEY,
+      authDomain: window.__ENV__.FIREBASE_AUTH_DOMAIN,
+      projectId: window.__ENV__.FIREBASE_PROJECT_ID,
+      storageBucket: window.__ENV__.FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: window.__ENV__.FIREBASE_MESSAGING_SENDER_ID,
+      appId: window.__ENV__.FIREBASE_APP_ID,
+      measurementId: window.__ENV__.FIREBASE_MEASUREMENT_ID,
     };
   </script>
 

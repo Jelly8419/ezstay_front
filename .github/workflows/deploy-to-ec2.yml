@@ -12,11 +12,6 @@ permissions:
 env:
   REMOTE_UPLOAD_PATH: '/opt/ezstay/frontend/flutter'
   REMOTE_NGINX_PATH: '/var/www/flutter'
-  # 테스트 서버 고정 설정
-  API_URL: 'https://ezstay-api.duckdns.org'
-  KAKAO_REST_KEY: '32ea67da1f7c3d55fd573c285a5fc0f2'
-  KAKAO_JS_KEY: '8fa88a5c7a3edac4ee6d8dd52af14f60'
-  TOSS_CLIENT_KEY: 'test_ck_PBal2vxj81voBvwla6xG35RQgOAN'
 
 jobs:
   deploy:
@@ -68,22 +63,11 @@ jobs:
         working-directory: ./building_map_app
         run: |
           cat > .env << EOF
-          API_BASE_URL=${{ env.API_URL }}
-          KAKAO_REST_API_KEY=${{ env.KAKAO_REST_KEY }}
-          KAKAO_JAVASCRIPT_KEY=${{ env.KAKAO_JS_KEY }}
+          API_BASE_URL=${{ secrets.TEST_API_URL }}
+          KAKAO_REST_API_KEY=${{ secrets.TEST_KAKAO_REST_KEY }}
+          KAKAO_JAVASCRIPT_KEY=${{ secrets.TEST_KAKAO_JS_KEY }}
           IS_PRODUCTION=false
-          TOSS_CLIENT_KEY=${{ env.TOSS_CLIENT_KEY }}
-          PAYMENT_MOCK_MODE=true
-          API_TIMEOUT_SECONDS=10
-          ENVIRONMENT=test
-          EOF
-
-          cat > .env.test << EOF
-          API_BASE_URL=${{ env.API_URL }}
-          KAKAO_REST_API_KEY=${{ env.KAKAO_REST_KEY }}
-          KAKAO_JAVASCRIPT_KEY=${{ env.KAKAO_JS_KEY }}
-          IS_PRODUCTION=false
-          TOSS_CLIENT_KEY=${{ env.TOSS_CLIENT_KEY }}
+          TOSS_CLIENT_KEY=${{ secrets.TEST_TOSS_CLIENT_KEY }}
           PAYMENT_MOCK_MODE=true
           API_TIMEOUT_SECONDS=10
           ENVIRONMENT=test
@@ -93,34 +77,60 @@ jobs:
         working-directory: ./building_map_app
         run: flutter pub get
 
+      - name: Generate env_config.js (test)
+        working-directory: ./building_map_app/web/js
+        env:
+          KAKAO_JS_KEY: ${{ secrets.TEST_KAKAO_JS_KEY }}
+          KAKAO_REST_KEY: ${{ secrets.TEST_KAKAO_REST_KEY }}
+          FIREBASE_API_KEY: ${{ secrets.TEST_FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ secrets.TEST_FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.TEST_FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.TEST_FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_SENDER_ID: ${{ secrets.TEST_FIREBASE_SENDER_ID }}
+          FIREBASE_APP_ID: ${{ secrets.TEST_FIREBASE_APP_ID }}
+          FIREBASE_MEASUREMENT_ID: ${{ secrets.TEST_FIREBASE_MEASUREMENT_ID }}
+          PAYTAG_SHOPCODE: ${{ secrets.TEST_PAYTAG_SHOPCODE }}
+        run: |
+          # Secrets에 줄바꿈이 포함될 수 있으므로 tr로 제거
+          KAKAO_JS_KEY=$(echo "${KAKAO_JS_KEY}" | tr -d '\r\n')
+          KAKAO_REST_KEY=$(echo "${KAKAO_REST_KEY}" | tr -d '\r\n')
+          FIREBASE_API_KEY=$(echo "${FIREBASE_API_KEY}" | tr -d '\r\n')
+          FIREBASE_AUTH_DOMAIN=$(echo "${FIREBASE_AUTH_DOMAIN}" | tr -d '\r\n')
+          FIREBASE_PROJECT_ID=$(echo "${FIREBASE_PROJECT_ID}" | tr -d '\r\n')
+          FIREBASE_STORAGE_BUCKET=$(echo "${FIREBASE_STORAGE_BUCKET}" | tr -d '\r\n')
+          FIREBASE_SENDER_ID=$(echo "${FIREBASE_SENDER_ID}" | tr -d '\r\n')
+          FIREBASE_APP_ID=$(echo "${FIREBASE_APP_ID}" | tr -d '\r\n')
+          FIREBASE_MEASUREMENT_ID=$(echo "${FIREBASE_MEASUREMENT_ID}" | tr -d '\r\n')
+          PAYTAG_SHOPCODE=$(echo "${PAYTAG_SHOPCODE}" | tr -d '\r\n')
+
+          {
+            echo "window.__ENV__ = {"
+            echo "  ENVIRONMENT: 'test',"
+            echo "  KAKAO_JS_KEY: '${KAKAO_JS_KEY}',"
+            echo "  KAKAO_REST_API_KEY: '${KAKAO_REST_KEY}',"
+            echo "  FIREBASE_API_KEY: '${FIREBASE_API_KEY}',"
+            echo "  FIREBASE_AUTH_DOMAIN: '${FIREBASE_AUTH_DOMAIN}',"
+            echo "  FIREBASE_PROJECT_ID: '${FIREBASE_PROJECT_ID}',"
+            echo "  FIREBASE_STORAGE_BUCKET: '${FIREBASE_STORAGE_BUCKET}',"
+            echo "  FIREBASE_MESSAGING_SENDER_ID: '${FIREBASE_SENDER_ID}',"
+            echo "  FIREBASE_APP_ID: '${FIREBASE_APP_ID}',"
+            echo "  FIREBASE_MEASUREMENT_ID: '${FIREBASE_MEASUREMENT_ID}',"
+            echo "  PAYTAG_SHOPCODE: '${PAYTAG_SHOPCODE}',"
+            echo "  PAYTAG_SDK_URL: 'https://apit.paytag.kr/std_pay/paytag_std.js?version=20251104',"
+            echo "};"
+          } > env_config.js
+
       - name: Build Flutter web
         working-directory: ./building_map_app
         run: |
-          echo "API URL: ${{ env.API_URL }}"
-          echo "Kakao REST Key: ${KAKAO_REST_KEY:0:10}..."
-          echo "Kakao JS Key: ${KAKAO_JS_KEY:0:10}..."
-
           flutter build web --release \
             --base-href=/app/ \
             --pwa-strategy=none \
             --dart-define=ENVIRONMENT=test \
-            --dart-define=API_BASE_URL=${{ env.API_URL }} \
-            --dart-define=KAKAO_REST_API_KEY=${{ env.KAKAO_REST_KEY }} \
-            --dart-define=KAKAO_JAVASCRIPT_KEY=${{ env.KAKAO_JS_KEY }} \
-            --dart-define=TOSS_CLIENT_KEY=${{ env.TOSS_CLIENT_KEY }}
-        env:
-          KAKAO_REST_KEY: ${{ env.KAKAO_REST_KEY }}
-          KAKAO_JS_KEY: ${{ env.KAKAO_JS_KEY }}
-
-      - name: Inject Kakao Key into index.html
-        working-directory: ./building_map_app/build/web
-        run: |
-          # index.html 원본에 하드코딩된 로컬 개발용 키(5e2b...)를 테스트 서버 키로 교체
-          sed -i "s/appkey=5e2b60c33562fb4806fde94853956642/appkey=${{ env.KAKAO_JS_KEY }}/g" index.html
-
-          # 교체 결과 확인
-          echo "Kakao SDK script tag:"
-          grep "dapi.kakao.com/v2/maps/sdk.js" index.html || echo "Kakao script tag not found!"
+            --dart-define=API_BASE_URL=${{ secrets.TEST_API_URL }} \
+            --dart-define=KAKAO_REST_API_KEY=${{ secrets.TEST_KAKAO_REST_KEY }} \
+            --dart-define=KAKAO_JAVASCRIPT_KEY=${{ secrets.TEST_KAKAO_JS_KEY }} \
+            --dart-define=TOSS_CLIENT_KEY=${{ secrets.TEST_TOSS_CLIENT_KEY }}
 
       - name: Add cache busting
         working-directory: ./building_map_app/build/web
@@ -252,9 +262,8 @@ jobs:
           echo "  Test Server Deployment Successful!"
           echo "======================================"
           echo ""
-          echo "API URL: ${{ env.API_URL }}"
+          echo "API URL: ${{ secrets.TEST_API_URL }}"
           echo "Server: ${{ secrets.TEST_SERVER_HOST }}"
-          echo "Kakao JS Key: 8fa88a...f60"
           echo ""
 
       - name: Slack 배포 알림

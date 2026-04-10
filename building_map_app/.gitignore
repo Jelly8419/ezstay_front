@@ -27,6 +27,9 @@ migrate_working_dir/
 # lib/config/api_config.dart
 # web/js/api_config.js
 
+# 로컬 env_config 오버라이드 (환경별 기본값은 web/js/env_config.js가 담당)
+web/js/env_config.local.js
+
 # Deployment scripts (contains server IP, PEM key paths)
 deploy.ps1
 deploy_to_ec2.ps1
