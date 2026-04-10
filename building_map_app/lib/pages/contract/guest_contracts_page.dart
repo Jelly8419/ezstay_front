@@ -338,13 +338,22 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     if (!mounted) return;
     Navigator.of(context, rootNavigator: false).pop(); // 로딩 닫기
 
-    // 2단계: 환불 정보 모달 표시
+    // 2단계: cancelBlocked / pendingAdditionalOrders 파싱
+    final cancelBlocked = refundData?['cancelBlocked'] as bool? ?? false;
+    final pendingAdditionalOrders =
+        (refundData?['pendingAdditionalOrders'] as List?)
+            ?.cast<Map<String, dynamic>>() ??
+        [];
+
+    // 3단계: 환불 정보 모달 표시
     showRefundInfoDialog(
       context,
       refundData: refundData,
-      onConfirmRefund: (reason) async {
+      cancelBlocked: cancelBlocked,
+      pendingAdditionalOrders: pendingAdditionalOrders,
+      onConfirmRefund: () async {
         try {
-          await _contractService.requestRefund(contract.id, reason);
+          await _contractService.requestRefund(contract.id);
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

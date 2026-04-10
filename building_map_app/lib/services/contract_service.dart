@@ -657,9 +657,9 @@ class ContractService {
   ///
   /// PAYMENT_COMPLETED 또는 IN_PROGRESS 상태에서 게스트가 환불을 요청합니다.
   Future<Map<String, dynamic>> requestRefund(
-    int contractId,
-    String cancellationReason,
-  ) async {
+    int contractId, [
+    String cancellationReason = '',
+  ]) async {
     try {
       var token = await TokenService.getValidAccessToken(autoRefresh: true);
       if (token == null && !ApiConfig.isProduction) {
