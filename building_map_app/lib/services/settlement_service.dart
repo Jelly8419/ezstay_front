@@ -145,6 +145,14 @@ class SettlementService {
       final response = await http.get(uri, headers: headers).timeout(ApiConfig.timeout);
 
       if (response.statusCode == 200) {
+        // Content-Disposition 헤더에서 파일명 추출, 없으면 fallback
+        final disposition = response.headers['content-disposition'] ?? '';
+        String fileName = '정산내역.xlsx';
+        final fileNameMatch = RegExp(r"filename\*?=(?:UTF-8'')?([^;]+)", caseSensitive: false).firstMatch(disposition);
+        if (fileNameMatch != null) {
+          fileName = Uri.decodeComponent(fileNameMatch.group(1)!.replaceAll('"', '').trim());
+        }
+
         final blob = web.Blob(
           [response.bodyBytes.toJS].toJS,
           web.BlobPropertyBag(type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
@@ -152,7 +160,7 @@ class SettlementService {
         final url = web.URL.createObjectURL(blob);
         (web.document.createElement('a') as web.HTMLAnchorElement)
           ..href = url
-          ..setAttribute('download', '정산내역.xlsx')
+          ..setAttribute('download', fileName)
           ..click();
         web.URL.revokeObjectURL(url);
         return true;

@@ -54,6 +54,7 @@ class RefundPolicySection extends StatelessWidget {
                       daysBeforeMin: r.daysBeforeMin,
                       daysBeforeMax: r.daysBeforeMax,
                       description: r.description,
+                      refundRate: r.refundRate,
                     ),
                   )),
         ] else ...[

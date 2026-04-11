@@ -1363,6 +1363,58 @@ class ContractService {
     }
   }
 
+  /// 호스트 부담금 결제 prepare (POST /api/contracts/{id}/cancel-by-host/prepare)
+  ///
+  /// 취소 확정 버튼 클릭 시 호출. orderId 발급 및 결제 금액 확정.
+  /// hostBurdenAmount == 0 이면 PG 결제 없이 바로 cancelByHost 호출.
+  Future<CancelPaymentInfo> prepareCancelByHost(int contractId) async {
+    try {
+      var token = await TokenService.getValidAccessToken(autoRefresh: true);
+      if (token == null && !ApiConfig.isProduction) {
+        token = await TokenService.getAccessToken(skipExpiryCheck: true);
+      }
+      if (token == null) throw const UnauthorizedException('로그인이 필요합니다.');
+
+      final url = Uri.parse(
+        '${ApiConfig.baseUrl}/api/contracts/$contractId/cancel-by-host/prepare',
+      );
+
+      final response = await http
+          .post(url, headers: {'Authorization': 'Bearer $token'})
+          .timeout(
+            Duration(seconds: ApiConfig.timeoutSeconds),
+            onTimeout: () => throw Exception('요청 시간이 초과되었습니다.'),
+          );
+
+      if (response.statusCode == 200) {
+        final body = json.decode(utf8.decode(response.bodyBytes));
+        return CancelPaymentInfo.fromJson(body['data'] as Map<String, dynamic>);
+      } else if (response.statusCode == 401) {
+        throw const UnauthorizedException();
+      } else if (response.statusCode == 403) {
+        throw Exception('권한이 없습니다.');
+      } else if (response.statusCode == 404) {
+        throw Exception('계약을 찾을 수 없습니다.');
+      } else {
+        final error = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(
+          error['error']?['message'] ?? error['message'] ?? '결제 준비에 실패했습니다.',
+        );
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결을 확인해주세요.');
+    } on HttpException {
+      throw Exception('서버와 통신할 수 없습니다.');
+    } on FormatException {
+      throw Exception('잘못된 응답 형식입니다.');
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception('요청 시간이 초과되었습니다.');
+      }
+      rethrow;
+    }
+  }
+
   /// 호스트 계약 취소 (POST /api/contracts/{id}/cancel-by-host)
   ///
   /// PAYMENT_COMPLETED 상태에서 호스트가 계약을 취소합니다.

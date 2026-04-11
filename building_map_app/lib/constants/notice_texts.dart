@@ -38,12 +38,14 @@ class NoticeTexts {
     required int? daysBeforeMin,
     required int? daysBeforeMax,
     required String description,
+    int refundRate = 0,
   }) {
     if (daysBeforeMin == 0) {
       return '입주일 당일 이후 취소 시, $description';
     }
     final int daysCount = (daysBeforeMax ?? daysBeforeMin)!;
-    return '입주일 $daysCount일 이전 취소 시, $description 및 수수료';
+    final suffix = refundRate == 100 ? '' : ' 및 수수료';
+    return '입주일 $daysCount일 이전 취소 시, $description$suffix';
   }
 
   /// 환불 규정 섹션 고정 안내 문구
