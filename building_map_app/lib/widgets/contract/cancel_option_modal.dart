@@ -55,13 +55,19 @@ class _CancelOptionModalState extends State<CancelOptionModal>
 
   List<RentalOrder> get _cancelableOrders => widget.orders
       .where((o) =>
-          (o.status == 'PAID' || o.status == 'PARTIAL_REFUND') &&
+          (o.status == 'PAID' ||
+              o.status == 'PARTIAL_REFUND' ||
+              o.status == 'FULLY_REFUNDED' ||
+              o.status == 'CANCELLED') &&
           o.deliveryStatus == 'PENDING')
       .toList();
 
   List<RentalOrder> get _returnableOrders => widget.orders
       .where((o) =>
-          (o.status == 'PAID' || o.status == 'PARTIAL_REFUND') &&
+          (o.status == 'PAID' ||
+              o.status == 'PARTIAL_REFUND' ||
+              o.status == 'FULLY_REFUNDED' ||
+              o.status == 'CANCELLED') &&
           (o.deliveryStatus == 'IN_TRANSIT' ||
               o.deliveryStatus == 'DELIVERED'))
       .toList();

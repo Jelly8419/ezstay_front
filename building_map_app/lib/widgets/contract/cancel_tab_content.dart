@@ -171,6 +171,14 @@ class _CancelTabContentState extends State<CancelTabContent> {
                         setState(() => _cancelQuantities[item.id] = qty);
                       },
                     )),
+            ...order.items
+                .where((i) =>
+                    i.status == 'CANCELLED' || i.status == 'REFUNDED')
+                .map((item) => OrderItemRows.disabledItemRow(
+                      item,
+                      label: item.status == 'REFUNDED' ? '환불완료' : '취소완료',
+                      badgeColor: DisabledItemBadgeColor.neutral,
+                    )),
           ],
         ),
       ),
