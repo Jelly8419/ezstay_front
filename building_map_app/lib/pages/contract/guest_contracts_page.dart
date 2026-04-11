@@ -351,6 +351,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       refundData: refundData,
       cancelBlocked: cancelBlocked,
       pendingAdditionalOrders: pendingAdditionalOrders,
+      onCancelOption: cancelBlocked
+          ? () => _showCancelOptionModal(contract)
+          : null,
       onConfirmRefund: () async {
         try {
           await _contractService.requestRefund(contract.id);

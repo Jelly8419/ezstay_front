@@ -41,7 +41,6 @@ class CancelTabContent extends StatefulWidget {
 class _CancelTabContentState extends State<CancelTabContent> {
   /// key: item.id, value: 취소할 수량 (0 = 선택 안 함)
   final Map<int, int> _cancelQuantities = {};
-  final TextEditingController _reasonCtrl = TextEditingController();
   bool _isProcessing = false;
 
   // ── 금액 계산 ──────────────────────────────────────────
@@ -103,7 +102,6 @@ class _CancelTabContentState extends State<CancelTabContent> {
 
   @override
   void dispose() {
-    _reasonCtrl.dispose();
     super.dispose();
   }
 
@@ -123,24 +121,6 @@ class _CancelTabContentState extends State<CancelTabContent> {
             padding: const EdgeInsets.all(16),
             children: [
               ...orders.map((order) => _buildCancelOrderCard(order)),
-              const SizedBox(height: 8),
-              const Text('취소 사유 (선택)',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 6),
-              TextField(
-                controller: _reasonCtrl,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  hintText: '취소 사유를 입력해 주세요. (선택)',
-                  hintStyle:
-                      TextStyle(fontSize: 13, color: AppColors.neutral400),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppColors.neutral300),
-                  ),
-                  contentPadding: const EdgeInsets.all(12),
-                ),
-              ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -302,7 +282,7 @@ class _CancelTabContentState extends State<CancelTabContent> {
       final result = await widget.onCancelItems(
         widget.contractId,
         requestItems,
-        _reasonCtrl.text.trim(),
+        '',
       );
       if (!mounted) return;
 
