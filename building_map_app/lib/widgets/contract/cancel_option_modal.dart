@@ -19,7 +19,7 @@ class CancelOptionModal extends StatefulWidget {
   ) onCancelItems;
   final Future<void> Function(
     int contractId,
-    List<int> itemIds,
+    List<RentalItemReturnRequest> items,
     String reason,
   ) onReturnRequest;
   final Future<ReturnPreviewResponse> Function(

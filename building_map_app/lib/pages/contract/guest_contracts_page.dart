@@ -699,8 +699,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
             reason: reason,
           );
         },
-        onReturnRequest: (contractId, itemIds, reason) async {
-          await _handleReturnRequest(contractId, itemIds, reason: reason);
+        onReturnRequest: (contractId, items, reason) async {
+          await _handleReturnRequest(contractId, items, reason: reason);
         },
         onGetReturnPreview: (contractId, itemIds) async {
           return await _handleGetReturnPreview(contractId, itemIds);
@@ -777,14 +777,14 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   /// 반품 신청 (단일 주문 내 아이템, 주문별 개별 호출)
   Future<void> _handleReturnRequest(
     int contractId,
-    List<int> itemIds, {
+    List<RentalItemReturnRequest> items, {
     required String reason,
   }) async {
     try {
       final rentalOrderService = RentalOrderService();
       await rentalOrderService.returnRequestRentalItems(
         contractId: contractId,
-        itemIds: itemIds,
+        items: items,
         reason: reason,
       );
       _loadContracts();
