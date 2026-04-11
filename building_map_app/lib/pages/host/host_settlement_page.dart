@@ -40,6 +40,9 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
 
+  // 방 필터 버튼 위치 추적 (데스크탑 드롭다운용)
+  final GlobalKey _roomFilterButtonKey = GlobalKey();
+
   // API 데이터
   List<Settlement> _settlements = [];
   List<SettlementRoom> _rooms = [];
@@ -489,13 +492,27 @@ class _HostSettlementPageState extends State<HostSettlementPage> {
 
   Widget _buildRoomFilterButton() {
     return InkWell(
+      key: _roomFilterButtonKey,
       onTap: () {
-        showSettlementFilterBottomSheet(
-          context: context,
-          rooms: _rooms,
-          selectedRoomId: _selectedRoomId?.toString() ?? 'all',
-          onSelectRoom: _onRoomFilterChange,
-        );
+        final isDesktop = MediaQuery.of(context).size.width >= 1024;
+        if (isDesktop) {
+          final buttonBox = _roomFilterButtonKey.currentContext?.findRenderObject() as RenderBox?;
+          if (buttonBox == null) return;
+          showSettlementRoomDropdown(
+            context: context,
+            buttonBox: buttonBox,
+            rooms: _rooms,
+            selectedRoomId: _selectedRoomId?.toString() ?? 'all',
+            onSelectRoom: _onRoomFilterChange,
+          );
+        } else {
+          showSettlementFilterBottomSheet(
+            context: context,
+            rooms: _rooms,
+            selectedRoomId: _selectedRoomId?.toString() ?? 'all',
+            onSelectRoom: _onRoomFilterChange,
+          );
+        }
       },
       borderRadius: BorderRadius.circular(8),
       child: Container(
