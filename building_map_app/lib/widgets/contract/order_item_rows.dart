@@ -72,6 +72,63 @@ class OrderItemRows {
     );
   }
 
+  /// 취소 수량 조절 행 (quantity > 1 이면 스피너 표시, 1 이면 체크박스만)
+  ///
+  /// [cancelQuantity] 0 = 선택 안 함, 1~quantity = 취소할 수량
+  /// [onQuantityChanged] 수량 변경 콜백
+  static Widget itemCancelQuantityRow({
+    required RentalOrderItemDetail item,
+    required int cancelQuantity,
+    required ValueChanged<int> onQuantityChanged,
+  }) {
+    final bool selected = cancelQuantity > 0;
+    final bool isMultiple = item.quantity > 1;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          // 선택 체크박스
+          Checkbox(
+            value: selected,
+            onChanged: (v) =>
+                onQuantityChanged(v == true ? item.quantity : 0),
+            activeColor: AppColors.blue600,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          // 아이템명
+          Expanded(
+            child: Text(
+              item.name,
+              style: TextStyle(
+                fontSize: 13,
+                color: selected ? null : AppColors.neutral400,
+              ),
+            ),
+          ),
+          // quantity > 1 이고 선택된 경우 수량 스피너 표시
+          if (isMultiple && selected) ...[
+            _QuantitySpinner(
+              value: cancelQuantity,
+              min: 1,
+              max: item.quantity,
+              onChanged: onQuantityChanged,
+            ),
+            const SizedBox(width: 8),
+          ],
+          // 취소 금액 (cancelQuantity × pricePerItem)
+          Text(
+            '${FormatUtils.formatCurrency(item.price * (selected ? cancelQuantity : item.quantity))}원',
+            style: TextStyle(
+              fontSize: 13,
+              color: selected ? AppColors.neutral700 : AppColors.neutral400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// CANCEL_REQUESTED 아이템 표시 (체크박스 없이 비활성 + 취소선)
   static Widget disabledItemRow(RentalOrderItemDetail item) {
     return Padding(
@@ -106,4 +163,72 @@ class OrderItemRows {
     );
   }
 
+}
+
+/// 수량 증감 스피너 (취소 수량 선택용)
+class _QuantitySpinner extends StatelessWidget {
+  final int value;
+  final int min;
+  final int max;
+  final ValueChanged<int> onChanged;
+
+  const _QuantitySpinner({
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _spinnerButton(
+          icon: Icons.remove,
+          enabled: value > min,
+          onTap: () => onChanged(value - 1),
+        ),
+        Container(
+          constraints: const BoxConstraints(minWidth: 28),
+          alignment: Alignment.center,
+          child: Text(
+            '$value / $max',
+            style: TextStyle(fontSize: 12, color: AppColors.neutral700),
+          ),
+        ),
+        _spinnerButton(
+          icon: Icons.add,
+          enabled: value < max,
+          onTap: () => onChanged(value + 1),
+        ),
+      ],
+    );
+  }
+
+  Widget _spinnerButton({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: enabled ? AppColors.neutral300 : AppColors.neutral200,
+          ),
+          borderRadius: BorderRadius.circular(4),
+          color: enabled ? Colors.white : AppColors.neutral100,
+        ),
+        child: Icon(
+          icon,
+          size: 14,
+          color: enabled ? AppColors.neutral700 : AppColors.neutral300,
+        ),
+      ),
+    );
+  }
 }

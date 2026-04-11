@@ -11,7 +11,8 @@ import 'guest_contract_dialogs.dart';
 import 'order_item_rows.dart';
 
 /// 결제취소 탭 독립 위젯
-/// - 선택 상태를 자체 관리
+/// - 아이템별 취소 수량을 Map<itemId, cancelQuantity>로 관리
+/// - quantity > 1 이면 수량 스피너 표시, 부분 취소 가능
 /// - 제출 완료 시 [onComplete] 콜백으로 부모에 통보
 class CancelTabContent extends StatefulWidget {
   final bool enabled;
@@ -19,7 +20,7 @@ class CancelTabContent extends StatefulWidget {
   final int contractId;
   final Future<RentalItemCancelResponse> Function(
     int contractId,
-    List<int> itemIds,
+    List<RentalItemCancelRequest> items,
     String reason,
   ) onCancelItems;
   final VoidCallback onComplete;
@@ -38,22 +39,26 @@ class CancelTabContent extends StatefulWidget {
 }
 
 class _CancelTabContentState extends State<CancelTabContent> {
-  final Set<int> _selectedIds = {};
+  /// key: item.id, value: 취소할 수량 (0 = 선택 안 함)
+  final Map<int, int> _cancelQuantities = {};
   final TextEditingController _reasonCtrl = TextEditingController();
   bool _isProcessing = false;
 
+  // ── 금액 계산 ──────────────────────────────────────────
+
+  /// 선택된 취소 총액 (cancelQuantity × pricePerItem)
   int get _selectedTotalAmount {
     int total = 0;
     for (final order in widget.cancelableOrders) {
       for (final item in order.items) {
-        if (_selectedIds.contains(item.id)) {
-          total += item.price * item.quantity;
-        }
+        final qty = _cancelQuantities[item.id] ?? 0;
+        if (qty > 0) total += item.price * qty;
       }
     }
     return total;
   }
 
+  /// 전체 ACTIVE 아이템 총액
   int get _totalActiveAmount {
     int total = 0;
     for (final order in widget.cancelableOrders) {
@@ -66,11 +71,35 @@ class _CancelTabContentState extends State<CancelTabContent> {
     return total;
   }
 
+  /// 취소 후 잔액
   int get _remainingAmountAfterCancel =>
       _totalActiveAmount - _selectedTotalAmount;
 
   bool get _hasInvalidRemainingAmount =>
       PriceCalculator.isInvalidRentalAmount(_remainingAmountAfterCancel);
+
+  /// 1개 이상 선택된 아이템이 있는지
+  bool get _hasAnySelected =>
+      _cancelQuantities.values.any((q) => q > 0);
+
+  // ── 선택 헬퍼 ──────────────────────────────────────────
+
+  /// 주문 내 ACTIVE 아이템 전체 선택 여부 (각 아이템이 quantity 전량 선택된 경우)
+  bool _isOrderFullySelected(RentalOrder order) {
+    final activeItems = order.items.where((i) => i.status == 'ACTIVE').toList();
+    if (activeItems.isEmpty) return false;
+    return activeItems.every(
+      (i) => (_cancelQuantities[i.id] ?? 0) == i.quantity,
+    );
+  }
+
+  void _selectAllInOrder(RentalOrder order, bool select) {
+    setState(() {
+      for (final item in order.items.where((i) => i.status == 'ACTIVE')) {
+        _cancelQuantities[item.id] = select ? item.quantity : 0;
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -78,11 +107,14 @@ class _CancelTabContentState extends State<CancelTabContent> {
     super.dispose();
   }
 
+  // ── 빌드 ───────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final orders = widget.cancelableOrders;
     if (!widget.enabled || orders.isEmpty) {
-      return _buildDisabledMsg('결제 취소 가능한 주문이 없습니다.\n(결제 취소 가능한 상태의 주문만 표시됩니다.)');
+      return _buildDisabledMsg(
+          '결제 취소 가능한 주문이 없습니다.\n(결제 취소 가능한 상태의 주문만 표시됩니다.)');
     }
     return Column(
       children: [
@@ -93,8 +125,7 @@ class _CancelTabContentState extends State<CancelTabContent> {
               ...orders.map((order) => _buildCancelOrderCard(order)),
               const SizedBox(height: 8),
               const Text('취소 사유 (선택)',
-                  style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600)),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               TextField(
                 controller: _reasonCtrl,
@@ -132,12 +163,7 @@ class _CancelTabContentState extends State<CancelTabContent> {
   }
 
   Widget _buildCancelOrderCard(RentalOrder order) {
-    final allItemIds = order.items
-        .where((i) => i.status == 'ACTIVE')
-        .map((i) => i.id)
-        .toList();
-    final allSelected =
-        allItemIds.isNotEmpty && allItemIds.every(_selectedIds.contains);
+    final allSelected = _isOrderFullySelected(order);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
@@ -153,30 +179,16 @@ class _CancelTabContentState extends State<CancelTabContent> {
             OrderItemRows.orderCardHeader(
               order: order,
               allSelected: allSelected,
-              onSelectAll: (v) {
-                setState(() {
-                  if (v == true) {
-                    _selectedIds.addAll(allItemIds);
-                  } else {
-                    _selectedIds.removeAll(allItemIds);
-                  }
-                });
-              },
+              onSelectAll: (v) => _selectAllInOrder(order, v == true),
             ),
             const SizedBox(height: 8),
             ...order.items
                 .where((i) => i.status == 'ACTIVE')
-                .map((item) => OrderItemRows.itemCheckRow(
+                .map((item) => OrderItemRows.itemCancelQuantityRow(
                       item: item,
-                      selected: _selectedIds.contains(item.id),
-                      onChanged: (v) {
-                        setState(() {
-                          if (v == true) {
-                            _selectedIds.add(item.id);
-                          } else {
-                            _selectedIds.remove(item.id);
-                          }
-                        });
+                      cancelQuantity: _cancelQuantities[item.id] ?? 0,
+                      onQuantityChanged: (qty) {
+                        setState(() => _cancelQuantities[item.id] = qty);
                       },
                     )),
           ],
@@ -186,7 +198,8 @@ class _CancelTabContentState extends State<CancelTabContent> {
   }
 
   Widget _buildFooter() {
-    final selectedCount = _selectedIds.length;
+    final selectedCount =
+        _cancelQuantities.values.where((q) => q > 0).length;
     final totalAmount = _selectedTotalAmount;
     final invalidRemaining = _hasInvalidRemainingAmount;
     return Container(
@@ -200,7 +213,8 @@ class _CancelTabContentState extends State<CancelTabContent> {
           if (invalidRemaining) ...[
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
                 color: AppColors.error50,
@@ -221,11 +235,11 @@ class _CancelTabContentState extends State<CancelTabContent> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '$selectedCount개 선택됨',
+                      '$selectedCount개 품목 선택됨',
                       style: TextStyle(
                           fontSize: 13, color: AppColors.neutral600),
                     ),
-                    if (selectedCount > 0)
+                    if (_hasAnySelected)
                       Text(
                         '환불 예정: ${FormatUtils.formatCurrency(totalAmount)}원',
                         style: const TextStyle(
@@ -246,7 +260,9 @@ class _CancelTabContentState extends State<CancelTabContent> {
               ),
               const SizedBox(width: 8),
               ElevatedButton(
-                onPressed: (selectedCount > 0 && !_isProcessing && !invalidRemaining)
+                onPressed: (_hasAnySelected &&
+                        !_isProcessing &&
+                        !invalidRemaining)
                     ? _submitCancelItems
                     : null,
                 style: ElevatedButton.styleFrom(
@@ -270,20 +286,29 @@ class _CancelTabContentState extends State<CancelTabContent> {
     );
   }
 
+  // ── 제출 ───────────────────────────────────────────────
+
   Future<void> _submitCancelItems() async {
-    if (_selectedIds.isEmpty) return;
+    if (!_hasAnySelected) return;
+
+    final requestItems = _cancelQuantities.entries
+        .where((e) => e.value > 0)
+        .map((e) =>
+            RentalItemCancelRequest(id: e.key, cancelQuantity: e.value))
+        .toList();
+
     setState(() => _isProcessing = true);
     try {
       final result = await widget.onCancelItems(
         widget.contractId,
-        _selectedIds.toList(),
+        requestItems,
         _reasonCtrl.text.trim(),
       );
       if (!mounted) return;
+
       if (result.hasFailures) {
-        final failMsg = result.failed
-            .map((f) => '주문 #${f.orderId}: ${f.reason}')
-            .join('\n');
+        final failMsg =
+            result.failed.map((f) => '주문 #${f.orderId}: ${f.reason}').join('\n');
         await showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -310,9 +335,7 @@ class _CancelTabContentState extends State<CancelTabContent> {
           ),
         );
       }
-      if (mounted) {
-        widget.onComplete();
-      }
+      if (mounted) widget.onComplete();
     } on UnauthorizedException {
       if (mounted) context.go('/login');
     } catch (e) {

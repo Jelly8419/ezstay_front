@@ -14,7 +14,7 @@ class CancelOptionModal extends StatefulWidget {
   final List<RentalOrder> orders;
   final Future<RentalItemCancelResponse> Function(
     int contractId,
-    List<int> itemIds,
+    List<RentalItemCancelRequest> items,
     String reason,
   ) onCancelItems;
   final Future<void> Function(
