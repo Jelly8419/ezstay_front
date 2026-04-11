@@ -10,6 +10,7 @@ import '../../services/payment_service_web.dart'
     if (dart.library.io) '../../services/payment_service_stub.dart';
 import '../../utils/format_utils.dart';
 import '../contract/refund_row.dart';
+import '../payment_method_modal.dart';
 
 /// 호스트 귀책 계약 취소 모달 (PAYMENT_COMPLETED 전용)
 ///
@@ -136,6 +137,16 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
 
   Future<void> _handlePayAndCancel(CancelPaymentInfo paymentInfo) async {
     try {
+      // 결제 수단 선택
+      final selectedMethod = await showPaymentMethodModal(
+        context,
+        totalAmount: paymentInfo.hostBurdenAmount,
+      );
+      if (!mounted || selectedMethod == null) {
+        setState(() => _isSubmitting = false);
+        return;
+      }
+
       final webService = PaymentServiceWeb();
       if (webService.isPopupBlocked()) {
         setState(() => _isSubmitting = false);
@@ -150,7 +161,7 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
           orderId: paymentInfo.orderId,
           amount: paymentInfo.sdkAmount,
           orderName: '계약 취소 부담금',
-          payType: 'BC',
+          payType: selectedMethod.value,
           customerName: paymentInfo.customerName,
           customerPhone: paymentInfo.customerPhone,
         ).timeout(
