@@ -212,6 +212,10 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                 });
               },
               onConfirm: _submitRejection,
+              isWithdrawal: _contracts
+                  .where((c) => c.id == _selectedContractIdForRejection)
+                  .firstOrNull
+                  ?.status == ContractStatus.approved,
             ),
 
           // 게스트 입주 준비 모달

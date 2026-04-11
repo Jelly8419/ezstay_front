@@ -178,6 +178,31 @@ class HostContractCard extends StatelessWidget {
             _buildActionButtons(),
           ],
 
+          // APPROVED: 승인 철회 버튼
+          if (contract.status == ContractStatus.approved) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onReject,
+                icon: const Icon(Icons.close, size: 16),
+                label: Text(
+                  '승인 철회',
+                  style: AppTextStyles.labelLarge,
+                ),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF6B7280),
+                  side: const BorderSide(color: Color(0xFFD1D5DB), width: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+          ],
+
           // PAYMENT_COMPLETED: 계약 취소 버튼
           if (contract.status == ContractStatus.paymentCompleted) ...[
             const SizedBox(height: 16),

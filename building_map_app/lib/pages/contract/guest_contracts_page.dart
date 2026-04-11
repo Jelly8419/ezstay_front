@@ -351,6 +351,9 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       refundData: refundData,
       cancelBlocked: cancelBlocked,
       pendingAdditionalOrders: pendingAdditionalOrders,
+      onCancelOption: cancelBlocked
+          ? () => _showCancelOptionModal(contract)
+          : null,
       onConfirmRefund: () async {
         try {
           await _contractService.requestRefund(contract.id);
@@ -689,10 +692,10 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
       builder: (_) => CancelOptionModal(
         contract: contract,
         orders: response.orders,
-        onCancelItems: (contractId, itemIds, reason) async {
+        onCancelItems: (contractId, items, reason) async {
           return await _handleCancelItems(
             contractId,
-            itemIds,
+            items,
             reason: reason,
           );
         },
@@ -750,17 +753,17 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
     }
   }
 
-  /// 결제취소 (아이템 단위 즉시환불)
+  /// 결제취소 (아이템 단위 즉시환불, 수량 부분 취소 지원)
   Future<RentalItemCancelResponse> _handleCancelItems(
     int contractId,
-    List<int> itemIds, {
+    List<RentalItemCancelRequest> items, {
     String reason = '',
   }) async {
     try {
       final rentalOrderService = RentalOrderService();
       final result = await rentalOrderService.cancelRentalItems(
         contractId: contractId,
-        itemIds: itemIds,
+        items: items,
         reason: reason,
       );
       _loadContracts();

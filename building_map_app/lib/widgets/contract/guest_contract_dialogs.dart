@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/rental_order_service.dart';
 import '../../utils/format_utils.dart';
@@ -13,7 +12,6 @@ void showRentalPaymentSuccessDialog(
   VoidCallback? onConfirm,
 }) {
   final paidAmount = result['paidAmount'] as int?;
-  final receiptUrl = result['receiptUrl'] as String?;
 
   showDialog(
     context: context,
@@ -35,22 +33,6 @@ void showRentalPaymentSuccessDialog(
             Text(
               '결제 금액: ${FormatUtils.formatCurrency(paidAmount)}원',
               style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ],
-          if (receiptUrl != null && receiptUrl.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => launchUrl(
-                Uri.parse(receiptUrl),
-                mode: LaunchMode.externalApplication,
-              ),
-              child: Text(
-                '영수증 확인',
-                style: TextStyle(
-                  color: AppColors.primary500,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
             ),
           ],
         ],
@@ -180,8 +162,9 @@ void showDepositAgreementReviewDialog(
 /// 환불 정보 및 취소 다이얼로그
 /// [refundData]: 서버에서 받은 환불 정보
 /// [onConfirmRefund]: 사유와 함께 환불 요청 실행
-/// [cancelBlocked]: true이면 미결 옵션 주문이 있어 취소 버튼 비활성화
+/// [cancelBlocked]: true이면 미결 옵션 주문이 있어 취소 대신 옵션 취소 모달로 유도
 /// [pendingAdditionalOrders]: 먼저 환불해야 할 옵션 주문 목록
+/// [onCancelOption]: cancelBlocked일 때 환불 요청 버튼 클릭 시 옵션 취소 모달 오픈 콜백
 void showRefundInfoDialog(
   BuildContext context, {
   required Map<String, dynamic>? refundData,
@@ -189,6 +172,7 @@ void showRefundInfoDialog(
   required void Function(String message, bool isSuccess) onShowMessage,
   bool cancelBlocked = false,
   List<Map<String, dynamic>> pendingAdditionalOrders = const [],
+  VoidCallback? onCancelOption,
 }) {
 
   showDialog(
@@ -457,20 +441,21 @@ void showRefundInfoDialog(
           ),
           ElevatedButton(
             onPressed: cancelBlocked
-                ? null
+                ? () {
+                    Navigator.of(dialogContext).pop();
+                    onCancelOption?.call();
+                  }
                 : () async {
                     Navigator.of(dialogContext).pop();
                     await onConfirmRefund();
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: cancelBlocked
-                  ? const Color(0xFF9CA3AF)
+                  ? const Color(0xFFB45309)
                   : const Color(0xFFDC2626),
               foregroundColor: Colors.white,
-              disabledBackgroundColor: const Color(0xFF9CA3AF),
-              disabledForegroundColor: Colors.white,
             ),
-            child: const Text('환불 요청'),
+            child: Text(cancelBlocked ? '옵션 취소하기' : '환불 요청'),
           ),
         ],
       );
@@ -537,7 +522,7 @@ Widget buildReturnPreviewConfirmContent(ReturnPreviewResponse? preview) {
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           Text(
-            '${FormatUtils.formatCurrency(summary.totalRefundAmount)}원',
+            '${FormatUtils.formatCurrency(summary.totalRefundAmount < 0 ? 0 : summary.totalRefundAmount)}원',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,

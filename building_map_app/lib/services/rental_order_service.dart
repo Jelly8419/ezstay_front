@@ -225,9 +225,10 @@ class RentalOrderService {
   /// 배송전 아이템을 선택해 즉시 PG 환불 처리
   ///
   /// POST /api/contracts/:contractId/rental-items/cancel
+  /// [items] 취소할 아이템 목록. cancelQuantity 가 item.quantity 미만이면 부분 취소.
   Future<RentalItemCancelResponse> cancelRentalItems({
     required int contractId,
-    required List<int> itemIds,
+    required List<RentalItemCancelRequest> items,
     String reason = '',
   }) async {
     final token = await _getToken();
@@ -236,7 +237,7 @@ class RentalOrderService {
     );
 
     final body = {
-      'itemIds': itemIds,
+      'items': items.map((e) => e.toJson()).toList(),
       if (reason.isNotEmpty) 'reason': reason,
     };
 
@@ -743,6 +744,24 @@ class RentalOrderResponse {
       paymentUrl: json['paymentUrl'],
     );
   }
+}
+
+// ========== 결제취소 요청 모델 ==========
+
+/// 취소 요청 아이템 단위 (수량 부분 취소 지원)
+class RentalItemCancelRequest {
+  final int id;
+  final int cancelQuantity;
+
+  const RentalItemCancelRequest({
+    required this.id,
+    required this.cancelQuantity,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'cancelQuantity': cancelQuantity,
+      };
 }
 
 // ========== 결제취소 응답 모델 ==========
