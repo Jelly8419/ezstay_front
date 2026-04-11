@@ -22,7 +22,7 @@ class ReturnTabContent extends StatefulWidget {
   ) onReturnRequest;
   final Future<ReturnPreviewResponse> Function(
     int contractId,
-    List<int> itemIds,
+    List<RentalItemReturnRequest> items,
   ) onGetReturnPreview;
   final VoidCallback onComplete;
 
@@ -67,11 +67,12 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
     });
   }
 
-  /// 선택된 아이템 ID 목록 (preview 조회용 — 전체 수량 선택 여부 무관하게 id만 전달)
-  List<int> get _selectedItemIds => _returnQuantities.entries
-      .where((e) => e.value > 0)
-      .map((e) => e.key)
-      .toList();
+  /// 선택된 아이템 반품 요청 목록 (preview 및 실제 신청 공통 사용)
+  List<RentalItemReturnRequest> get _selectedReturnItems =>
+      _returnQuantities.entries
+          .where((e) => e.value > 0)
+          .map((e) => RentalItemReturnRequest(id: e.key, returnQuantity: e.value))
+          .toList();
 
   @override
   void dispose() {
@@ -84,7 +85,7 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
     try {
       return await widget.onGetReturnPreview(
         widget.contractId,
-        _selectedItemIds,
+        _selectedReturnItems,
       );
     } catch (_) {
       return null;

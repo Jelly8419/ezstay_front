@@ -702,8 +702,8 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         onReturnRequest: (contractId, items, reason) async {
           await _handleReturnRequest(contractId, items, reason: reason);
         },
-        onGetReturnPreview: (contractId, itemIds) async {
-          return await _handleGetReturnPreview(contractId, itemIds);
+        onGetReturnPreview: (contractId, items) async {
+          return await _handleGetReturnPreview(contractId, items);
         },
         onRefreshContracts: _loadContracts,
       ),
@@ -797,13 +797,13 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
   /// 반품 예상 금액 조회
   Future<ReturnPreviewResponse> _handleGetReturnPreview(
     int contractId,
-    List<int> itemIds,
+    List<RentalItemReturnRequest> items,
   ) async {
     try {
       final rentalOrderService = RentalOrderService();
       return await rentalOrderService.getReturnPreview(
         contractId: contractId,
-        itemIds: itemIds,
+        items: items,
       );
     } on UnauthorizedException {
       if (mounted) context.go('/login');
