@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 
 /// 호스트 계약 거절 모달
+///
+/// [isWithdrawal] true이면 '승인 철회' 문구 사용 (APPROVED 상태에서 호출)
 class HostContractRejectionModal extends StatelessWidget {
   final int contractId;
   final VoidCallback onClose;
   final Function(String rejectionReason) onConfirm;
+  final bool isWithdrawal;
 
   const HostContractRejectionModal({
     required this.contractId,
     required this.onClose,
     required this.onConfirm,
+    this.isWithdrawal = false,
     Key? key,
   }) : super(key: key);
 
@@ -39,9 +43,9 @@ class HostContractRejectionModal extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 제목
-                const Text(
-                  '계약 거절',
-                  style: TextStyle(
+                Text(
+                  isWithdrawal ? '승인 철회' : '계약 거절',
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF111827),
@@ -50,9 +54,11 @@ class HostContractRejectionModal extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // 설명
-                const Text(
-                  '해당 계약 승인 요청을 거절하시겠습니까?',
-                  style: TextStyle(
+                Text(
+                  isWithdrawal
+                      ? '해당 승인 계약을 철회하시겠습니까?'
+                      : '해당 계약 승인 요청을 거절하시겠습니까?',
+                  style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF6B7280),
                   ),
@@ -84,7 +90,7 @@ class HostContractRejectionModal extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // 거절하기 버튼
+                    // 확인 버튼
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () => onConfirm(''),
@@ -97,9 +103,9 @@ class HostContractRejectionModal extends StatelessWidget {
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          '거절하기',
-                          style: TextStyle(
+                        child: Text(
+                          isWithdrawal ? '철회하기' : '거절하기',
+                          style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ),

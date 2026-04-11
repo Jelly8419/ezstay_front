@@ -21,6 +21,7 @@ import '../../widgets/contract/host_contract_party_info_section.dart';
 import '../../widgets/contract/guest_contract_cancellation_section.dart';
 import '../../widgets/contract/guest_contract_payment_history_section.dart';
 import '../../widgets/modals/host_contract_modals.dart' show DepositAgreementModal, RequestCancellationModal;
+import '../../widgets/modals/host_contract_rejection_modal.dart';
 
 /// 호스트 계약 상세 페이지
 class HostContractDetailPage extends StatefulWidget {
@@ -46,6 +47,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
   // 모달 상태
   bool _showCancellationModal = false;
   bool _showDepositAgreementModal = false;
+  bool _showRejectionModal = false;
 
   @override
   void initState() {
@@ -185,6 +187,41 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
     }
   }
 
+  /// APPROVED 상태에서 승인 철회 (거절 모달 표시)
+  void _handleReject() {
+    setState(() {
+      _showRejectionModal = true;
+    });
+  }
+
+  /// 거절 API 호출
+  Future<void> _submitRejection(String reason) async {
+    setState(() {
+      _showRejectionModal = false;
+    });
+
+    try {
+      await _contractService.rejectContract(widget.contractId, reason);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('승인이 철회되었습니다.')),
+        );
+        _loadContractDetail();
+      }
+    } on UnauthorizedException {
+      if (mounted) context.go('/login');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('승인 철회 실패: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: AppColors.error600,
+          ),
+        );
+      }
+    }
+  }
+
   /// IN_PROGRESS 상태에서 취소 요청 (관리자 승인 필요)
   void _handleRequestCancellation() {
     setState(() {
@@ -307,6 +344,14 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
             initialDeductAmount: _contract!.depositAgreement?.deductAmount,
             initialAgreementText: _contract!.depositAgreement?.agreementText,
           ),
+
+        if (_showRejectionModal)
+          HostContractRejectionModal(
+            contractId: widget.contractId,
+            onClose: () => setState(() => _showRejectionModal = false),
+            onConfirm: _submitRejection,
+            isWithdrawal: true,
+          ),
       ],
     );
   }
@@ -384,6 +429,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
             contract: contract,
             onRequestCheckout: _handleRequestCheckout,
             onRequestCancellation: _handleRequestCancellation,
+            onReject: _handleReject,
           ),
 
           HostDepositAgreementSection(
