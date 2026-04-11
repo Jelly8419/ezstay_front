@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/rental_order_service.dart';
 import '../../utils/format_utils.dart';
@@ -13,7 +12,6 @@ void showRentalPaymentSuccessDialog(
   VoidCallback? onConfirm,
 }) {
   final paidAmount = result['paidAmount'] as int?;
-  final receiptUrl = result['receiptUrl'] as String?;
 
   showDialog(
     context: context,
@@ -35,22 +33,6 @@ void showRentalPaymentSuccessDialog(
             Text(
               '결제 금액: ${FormatUtils.formatCurrency(paidAmount)}원',
               style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ],
-          if (receiptUrl != null && receiptUrl.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => launchUrl(
-                Uri.parse(receiptUrl),
-                mode: LaunchMode.externalApplication,
-              ),
-              child: Text(
-                '영수증 확인',
-                style: TextStyle(
-                  color: AppColors.primary500,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
             ),
           ],
         ],
