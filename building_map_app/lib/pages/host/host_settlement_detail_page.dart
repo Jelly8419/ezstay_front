@@ -525,7 +525,8 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
     final settlement = detail.settlement;
     final isRefund = detail.refund.hasRefund;
 
-    if (settlement.status == 'pending') {
+    const pendingStatuses = ['PENDING', 'READY', 'PROCESSING', 'ON_HOLD', 'FAILED'];
+    if (pendingStatuses.contains(settlement.status)) {
       // 정산 예정
       return Container(
         padding: EdgeInsets.all(16),
@@ -555,7 +556,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
           ],
         ),
       );
-    } else if (settlement.status == 'completed' && !isRefund) {
+    } else if (settlement.status == 'COMPLETED' && !isRefund) {
       // 정산 완료
       return Container(
         padding: EdgeInsets.all(16),
@@ -585,7 +586,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
           ],
         ),
       );
-    } else if (settlement.status == 'completed' && isRefund) {
+    } else if (settlement.status == 'COMPLETED' && isRefund) {
       // 취소 환불 정산 완료
       return Container(
         padding: EdgeInsets.all(16),

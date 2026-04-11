@@ -77,7 +77,7 @@ class Settlement {
   final int rentalDays;
   final int settlementAmount;
   final String settlementDate; // YYYY-MM-DD
-  final String status; // 'pending' | 'completed'
+  final String status; // 'PENDING' | 'READY' | 'PROCESSING' | 'COMPLETED' | 'ON_HOLD' | 'FAILED'
   final String statusLabel;
   final bool hasRefund;
   final int refundAmount;
