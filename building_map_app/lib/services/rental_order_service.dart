@@ -259,12 +259,12 @@ class RentalOrderService {
   // ========== 8. 반품 신청 ==========
 
   /// 배송중/배송완료 아이템을 선택해 반품 신청 접수
-  /// 단일 주문 내 아이템만 가능 (주문 혼합 불가)
+  /// [items] 반품 아이템 목록. returnQuantity 가 item.quantity 미만이면 부분 반품.
   ///
   /// POST /api/contracts/:contractId/rental-items/return-request
   Future<void> returnRequestRentalItems({
     required int contractId,
-    required List<int> itemIds,
+    required List<RentalItemReturnRequest> items,
     required String reason,
   }) async {
     final token = await _getToken();
@@ -273,7 +273,7 @@ class RentalOrderService {
     );
 
     final body = {
-      'itemIds': itemIds,
+      'items': items.map((e) => e.toJson()).toList(),
       'reason': reason,
     };
 
@@ -761,6 +761,24 @@ class RentalItemCancelRequest {
   Map<String, dynamic> toJson() => {
         'id': id,
         'cancelQuantity': cancelQuantity,
+      };
+}
+
+// ========== 반품 요청 모델 ==========
+
+/// 반품 요청 아이템 단위 (수량 부분 반품 지원)
+class RentalItemReturnRequest {
+  final int id;
+  final int returnQuantity;
+
+  const RentalItemReturnRequest({
+    required this.id,
+    required this.returnQuantity,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'returnQuantity': returnQuantity,
       };
 }
 
