@@ -295,19 +295,23 @@ class RentalOrderService {
   /// 반품 신청 전 예상 환불 금액 미리보기
   /// 수거비 면제 여부를 서버에서 계산해 반환
   ///
-  /// GET /api/contracts/:contractId/rental-items/return-preview?itemIds=12,13
+  /// POST /api/contracts/:contractId/rental-items/return-preview
+  /// body: { items: [{ id, returnQuantity }] }
   Future<ReturnPreviewResponse> getReturnPreview({
     required int contractId,
-    required List<int> itemIds,
+    required List<RentalItemReturnRequest> items,
   }) async {
     final token = await _getToken();
     final url = Uri.parse(
-      '${ApiConfig.baseUrl}/api/contracts/$contractId/rental-items/return-preview'
-      '?itemIds=${itemIds.join(',')}',
+      '${ApiConfig.baseUrl}/api/contracts/$contractId/rental-items/return-preview',
     );
 
+    final body = {
+      'items': items.map((e) => e.toJson()).toList(),
+    };
+
     final response = await http
-        .get(url, headers: _buildHeaders(token))
+        .post(url, headers: _buildHeaders(token), body: json.encode(body))
         .timeout(Duration(seconds: ApiConfig.timeoutSeconds));
 
     if (response.statusCode == 200) {

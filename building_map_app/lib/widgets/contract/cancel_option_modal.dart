@@ -24,7 +24,7 @@ class CancelOptionModal extends StatefulWidget {
   ) onReturnRequest;
   final Future<ReturnPreviewResponse> Function(
     int contractId,
-    List<int> itemIds,
+    List<RentalItemReturnRequest> items,
   ) onGetReturnPreview;
   final VoidCallback onRefreshContracts;
 
