@@ -129,8 +129,25 @@ class OrderItemRows {
     );
   }
 
-  /// CANCEL_REQUESTED 아이템 표시 (체크박스 없이 비활성 + 취소선)
-  static Widget disabledItemRow(RentalOrderItemDetail item) {
+  /// 비활성 아이템 행 (체크박스 없이 취소선 + 상태 뱃지)
+  ///
+  /// [label] 뱃지 텍스트 (기본: '반품 신청됨')
+  /// [badgeColor] 뱃지 배경색 계열 — warning(기본) / neutral
+  static Widget disabledItemRow(
+    RentalOrderItemDetail item, {
+    String label = '반품 신청됨',
+    DisabledItemBadgeColor badgeColor = DisabledItemBadgeColor.warning,
+  }) {
+    final Color bgColor = badgeColor == DisabledItemBadgeColor.neutral
+        ? AppColors.neutral100
+        : AppColors.warning50;
+    final Color borderColor = badgeColor == DisabledItemBadgeColor.neutral
+        ? AppColors.neutral300
+        : AppColors.warning500;
+    final Color textColor = badgeColor == DisabledItemBadgeColor.neutral
+        ? AppColors.neutral500
+        : AppColors.warning700;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -149,13 +166,13 @@ class OrderItemRows {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: AppColors.warning50,
+              color: bgColor,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: AppColors.warning500),
+              border: Border.all(color: borderColor),
             ),
             child: Text(
-              '반품 신청됨',
-              style: TextStyle(fontSize: 10, color: AppColors.warning700),
+              label,
+              style: TextStyle(fontSize: 10, color: textColor),
             ),
           ),
         ],
@@ -164,6 +181,9 @@ class OrderItemRows {
   }
 
 }
+
+/// 비활성 아이템 행 뱃지 색상 종류
+enum DisabledItemBadgeColor { warning, neutral }
 
 /// 수량 증감 스피너 (취소 수량 선택용)
 class _QuantitySpinner extends StatelessWidget {
