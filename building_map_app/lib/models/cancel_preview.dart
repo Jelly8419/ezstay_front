@@ -25,6 +25,10 @@ class CancelPreviewData {
   // 위약금 결제용 주문번호 (백엔드 preview 응답에서 수신)
   final String? orderId;
 
+  // 결제자 정보 (PayTag SDK order_name, order_hp 파라미터용)
+  final String? customerName;
+  final String? customerPhone;
+
   // 정책 정보
   final int daysBeforeCheckin;
   final int refundRate;
@@ -34,6 +38,8 @@ class CancelPreviewData {
 
   const CancelPreviewData({
     this.orderId,
+    this.customerName,
+    this.customerPhone,
     required this.originalRentalFee,
     required this.originalCleaningFee,
     required this.originalMaintenanceFee,
@@ -60,6 +66,8 @@ class CancelPreviewData {
   factory CancelPreviewData.fromJson(Map<String, dynamic> json) {
     return CancelPreviewData(
       orderId: json['orderId'] as String?,
+      customerName: json['customerName'] as String?,
+      customerPhone: json['customerPhone'] as String?,
       originalRentalFee: (json['originalRentalFee'] as num? ?? 0).toInt(),
       originalCleaningFee: (json['originalCleaningFee'] as num? ?? 0).toInt(),
       originalMaintenanceFee: (json['originalMaintenanceFee'] as num? ?? 0).toInt(),
@@ -85,4 +93,35 @@ class CancelPreviewData {
   }
 
   bool get hasBurden => hostBurdenAmount > 0;
+}
+
+/// 호스트 귀책 취소 결제 prepare 데이터
+/// GET /api/contracts/:contractId/cancel-by-host/payment-info
+class CancelPaymentInfo {
+  final String orderId;
+  final int hostBurdenAmount;
+  final int? pgAmount; // 테스트 환경에서만 존재
+  final String? customerName;
+  final String? customerPhone;
+
+  const CancelPaymentInfo({
+    required this.orderId,
+    required this.hostBurdenAmount,
+    this.pgAmount,
+    this.customerName,
+    this.customerPhone,
+  });
+
+  factory CancelPaymentInfo.fromJson(Map<String, dynamic> json) {
+    return CancelPaymentInfo(
+      orderId: json['orderId'] as String,
+      hostBurdenAmount: (json['hostBurdenAmount'] as num).toInt(),
+      pgAmount: (json['pgAmount'] as num?)?.toInt(),
+      customerName: json['customerName'] as String?,
+      customerPhone: json['customerPhone'] as String?,
+    );
+  }
+
+  /// SDK에 전달할 실제 결제 금액 (테스트 환경이면 pgAmount 우선)
+  int get sdkAmount => pgAmount ?? hostBurdenAmount;
 }

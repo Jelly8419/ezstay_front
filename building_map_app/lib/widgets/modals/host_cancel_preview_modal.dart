@@ -73,20 +73,52 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
   }
 
   Future<void> _handleConfirm() async {
-    final preview = _preview!;
-    if (preview.hasBurden) {
-      await _handlePayAndCancel(preview);
-    } else {
-      await _handleCancelNoBurden();
+    if (!kIsWeb) {
+      _showSnackBar('결제는 현재 웹에서만 지원됩니다.');
+      return;
     }
+
+    setState(() => _isSubmitting = true);
+
+    // 1. prepare: orderId, hostBurdenAmount, customerName, customerPhone 확정
+    final CancelPaymentInfo paymentInfo;
+    try {
+      paymentInfo = await _contractService.prepareCancelByHost(widget.contractId);
+    } on UnauthorizedException {
+      if (mounted) widget.onClose();
+      return;
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        _showSnackBar(e.toString().replaceAll('Exception: ', ''));
+      }
+      return;
+    }
+
+    // 2. 부담금 없으면 PG 생략하고 바로 취소 확정
+    if (paymentInfo.hostBurdenAmount == 0) {
+      await _confirmCancel();
+      return;
+    }
+
+    // 3. 부담금 있으면 PG 결제
+    await _handlePayAndCancel(paymentInfo);
   }
 
-  Future<void> _handleCancelNoBurden() async {
-    setState(() => _isSubmitting = true);
+  Future<void> _confirmCancel({
+    String? recvPayparam,
+    String? payType,
+    String? orderId,
+    int? amount,
+  }) async {
     try {
       await _contractService.cancelByHost(
         widget.contractId,
         cancellationReason: '',
+        recvPayparam: recvPayparam,
+        payType: payType,
+        orderId: orderId,
+        amount: amount,
       );
       if (mounted) {
         widget.onClose();
@@ -102,23 +134,8 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
     }
   }
 
-  Future<void> _handlePayAndCancel(CancelPreviewData preview) async {
-    if (!kIsWeb) {
-      _showSnackBar('결제는 현재 웹에서만 지원됩니다.');
-      return;
-    }
-
-    final orderId = preview.orderId;
-    if (orderId == null || orderId.isEmpty) {
-      _showSnackBar('결제 주문번호를 가져오지 못했습니다. 다시 시도해주세요.');
-      return;
-    }
-
-    setState(() => _isSubmitting = true);
-
+  Future<void> _handlePayAndCancel(CancelPaymentInfo paymentInfo) async {
     try {
-      final pgAmount = preview.hostBurdenAmount;
-
       final webService = PaymentServiceWeb();
       if (webService.isPopupBlocked()) {
         setState(() => _isSubmitting = false);
@@ -126,12 +143,27 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
         return;
       }
 
-      final response = await webService.requestPayment(
-        orderId: orderId,
-        amount: pgAmount,
-        orderName: '계약 취소 부담금',
-        payType: 'BC',
-      );
+      // SDK 호출
+      final PayTagResponse response;
+      try {
+        response = await webService.requestPayment(
+          orderId: paymentInfo.orderId,
+          amount: paymentInfo.sdkAmount,
+          orderName: '계약 취소 부담금',
+          payType: 'BC',
+          customerName: paymentInfo.customerName,
+          customerPhone: paymentInfo.customerPhone,
+        ).timeout(
+          const Duration(minutes: 10),
+          onTimeout: () => throw Exception('결제 시간이 초과되었습니다. 다시 시도해주세요.'),
+        );
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isSubmitting = false);
+          _showSnackBar(e.toString().replaceAll('Exception: ', ''));
+        }
+        return;
+      }
 
       if (!response.isSuccess) {
         if (mounted) {
@@ -142,21 +174,13 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
         return;
       }
 
-      await _contractService.cancelByHost(
-        widget.contractId,
-        cancellationReason: '',
+      // 취소 확정
+      await _confirmCancel(
         recvPayparam: response.recvPayparam,
         payType: response.payType ?? 'BC',
-        orderId: orderId,
-        amount: preview.hostBurdenAmount,
+        orderId: paymentInfo.orderId,
+        amount: paymentInfo.hostBurdenAmount,
       );
-
-      if (mounted) {
-        widget.onClose();
-        widget.onSuccess();
-      }
-    } on UnauthorizedException {
-      if (mounted) widget.onClose();
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -268,105 +292,30 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
           _buildPolicyBanner(p),
           SizedBox(height: AppSpacing.lg),
 
-          // 환불 내역
-          Text(
-            '환불 내역',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF374151),
-            ),
-          ),
-          SizedBox(height: AppSpacing.sm),
-
-          // 항목별 환불 행
+          // 임대료 위약금 (호스트 부담)
           RefundRow(
-            label: '임대료 (${ p.refundRate}% 환불)',
-            value: '${FormatUtils.formatCurrency(p.rentalFeeRefundAmount)}원',
-            subLabel: '결제액 ${FormatUtils.formatCurrency(p.originalRentalFee)}원',
-          ),
-          if (p.originalMaintenanceFee > 0)
-            RefundRow(
-              label: '관리비',
-              value:
-                  '${FormatUtils.formatCurrency(p.maintenanceFeeRefundAmount)}원',
-              subLabel:
-                  '결제액 ${FormatUtils.formatCurrency(p.originalMaintenanceFee)}원',
-            ),
-          if (p.originalCleaningFee > 0)
-            RefundRow(
-              label: '청소비',
-              value:
-                  '${FormatUtils.formatCurrency(p.cleaningFeeRefundAmount)}원',
-              subLabel:
-                  '결제액 ${FormatUtils.formatCurrency(p.originalCleaningFee)}원',
-            ),
-          if (p.originalRentalItemsFee > 0)
-            RefundRow(
-              label: '옵션상품',
-              value:
-                  '${FormatUtils.formatCurrency(p.rentalItemsFeeRefundAmount)}원',
-              subLabel:
-                  '결제액 ${FormatUtils.formatCurrency(p.originalRentalItemsFee)}원',
-            ),
-          if (p.originalDeposit > 0)
-            RefundRow(
-              label: '보증금',
-              value: '${FormatUtils.formatCurrency(p.depositRefundAmount)}원',
-              subLabel:
-                  '결제액 ${FormatUtils.formatCurrency(p.originalDeposit)}원',
-            ),
-          RefundRow(
-            label: '서비스 수수료',
-            value: '환불 대상 제외',
-            subLabel:
-                '결제액 ${FormatUtils.formatCurrency(p.originalPlatformFee)}원',
+            label: '임대료 ${p.refundRate}%',
+            value: '-${FormatUtils.formatCurrency(p.penaltyAmount)}원',
             isWarning: true,
           ),
 
-          const Divider(height: 20),
-
-          // 위약금 / 차감 항목
-          if (p.penaltyAmount > 0)
-            RefundRow(
-              label: '위약금',
-              value: '-${FormatUtils.formatCurrency(p.penaltyAmount)}원',
-              isWarning: true,
-            ),
+          // 차감 수수료
           if (p.originalPlatformFee > 0)
             RefundRow(
-              label: '차감 수수료',
+              label: '수수료',
               value: '-${FormatUtils.formatCurrency(p.originalPlatformFee)}원',
               isWarning: true,
             ),
-
-          // 게스트 즉시 환불 합계
-          RefundRow(
-            label: '게스트 즉시 환불',
-            value: '${FormatUtils.formatCurrency(p.guestRefundAmount)}원',
-            isBold: true,
-            isHighlight: true,
-          ),
-
-          // 게스트 보전액
-          if (p.guestCompensationAmount > 0)
-            RefundRow(
-              label: '게스트 보전액 (3영업일 후)',
-              value:
-                  '${FormatUtils.formatCurrency(p.guestCompensationAmount)}원',
-              isBold: true,
-              isHighlight: true,
-            ),
-
-          SizedBox(height: AppSpacing.md),
-
-          // 서버 안내 메시지
-          if (p.message.isNotEmpty) _buildMessageBox(p.message),
 
           SizedBox(height: AppSpacing.lg),
 
           // 호스트 부담금 강조 박스
           _buildBurdenBox(p),
+
+          SizedBox(height: AppSpacing.lg),
+
+          // 서버 안내 메시지
+          if (p.message.isNotEmpty) _buildMessageBox(p.message),
 
           SizedBox(height: AppSpacing.lg),
 
