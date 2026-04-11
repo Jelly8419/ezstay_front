@@ -106,17 +106,25 @@ class OrderItemRows {
               ),
             ),
           ),
-          // quantity > 1 이고 선택된 경우 수량 스피너 표시
-          if (isMultiple && selected) ...[
-            _QuantitySpinner(
-              value: cancelQuantity,
-              min: 1,
-              max: item.quantity,
-              onChanged: onQuantityChanged,
-            ),
+          // quantity > 1: 선택 여부와 무관하게 수량 표시
+          // - 선택됨: 스피너로 수량 조절 가능
+          // - 미선택: 총 수량 텍스트만 표시
+          if (isMultiple) ...[
+            if (selected)
+              _QuantitySpinner(
+                value: cancelQuantity,
+                min: 1,
+                max: item.quantity,
+                onChanged: onQuantityChanged,
+              )
+            else
+              Text(
+                '${item.quantity}개',
+                style: TextStyle(fontSize: 12, color: AppColors.neutral400),
+              ),
             const SizedBox(width: 8),
           ],
-          // 취소 금액 (cancelQuantity × pricePerItem)
+          // 금액 (선택 시 cancelQuantity × price, 미선택 시 전체 금액)
           Text(
             '${FormatUtils.formatCurrency(item.price * (selected ? cancelQuantity : item.quantity))}원',
             style: TextStyle(
