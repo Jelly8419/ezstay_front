@@ -203,7 +203,6 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
 
   Widget _buildFooter() {
     final selectedCount = _selectedIds.length;
-    final hasReason = _reasonCtrl.text.trim().isNotEmpty;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: BoxDecoration(
@@ -228,7 +227,7 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
           const SizedBox(width: 8),
           ElevatedButton(
             onPressed:
-                (selectedCount > 0 && hasReason && !_isProcessing)
+                (selectedCount > 0 && !_isProcessing)
                     ? _submitReturnRequest
                     : null,
             style: ElevatedButton.styleFrom(
@@ -253,7 +252,25 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
   Future<void> _submitReturnRequest() async {
     if (_selectedIds.isEmpty) return;
     final reason = _reasonCtrl.text.trim();
-    if (reason.isEmpty) return;
+    if (reason.isEmpty) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('반품 사유 필요'),
+          content: const Text('반품 사유를 입력해 주세요.'),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.warning600),
+              child: const Text('확인',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     setState(() => _isProcessing = true);
 
     try {
