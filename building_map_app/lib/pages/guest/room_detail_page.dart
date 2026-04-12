@@ -1617,7 +1617,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         _bookingState.hasSelectedDates &&
         validationError == null &&
         _validationError == null &&
-        !hasInvalidRentalAmount;
+        !hasInvalidRentalAmount &&
+        priceBreakdown.total > 0; // 할인 과다로 결제 예상 금액이 0 이하면 요청 불가
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.lg),
@@ -1930,7 +1931,11 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                 shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
               ),
               child: Text(
-                canRequestContract ? '계약 요청' : '날짜를 선택해주세요',
+                canRequestContract
+                    ? '계약 요청'
+                    : (_bookingState.hasSelectedDates && priceBreakdown.total <= 0)
+                        ? '결제 금액을 확인해주세요'
+                        : '날짜를 선택해주세요',
                 style: AppTextStyles.buttonText,
               ),
             ),
