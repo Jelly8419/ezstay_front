@@ -303,18 +303,18 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
           _buildPolicyBanner(p),
           SizedBox(height: AppSpacing.lg),
 
-          // 임대료 위약금 (호스트 부담)
+          // 임대료 위약금 (호스트 부담) — (100 - refundRate)%가 호스트 부담율
           RefundRow(
-            label: '임대료 ${p.refundRate}%',
+            label: '임대료 ${100 - p.refundRate}%',
             value: '-${FormatUtils.formatCurrency(p.penaltyAmount)}원',
             isWarning: true,
           ),
 
-          // 차감 수수료
-          if (p.originalPlatformFee > 0)
+          // 차감 수수료 (0이면 숨김)
+          if (p.platformFeeRefundAmount > 0)
             RefundRow(
               label: '수수료',
-              value: '-${FormatUtils.formatCurrency(p.originalPlatformFee)}원',
+              value: '-${FormatUtils.formatCurrency(p.platformFeeRefundAmount)}원',
               isWarning: true,
             ),
 
@@ -326,7 +326,7 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
           SizedBox(height: AppSpacing.lg),
 
           // 서버 안내 메시지
-          if (p.message.isNotEmpty) _buildMessageBox(p.message),
+          _buildMessageBox('계약 취소 시, 위약금 및 수수료가 발생하며 임차인에게 위약금 지급 및 전액 환불됩니다.'),
 
           SizedBox(height: AppSpacing.lg),
 
