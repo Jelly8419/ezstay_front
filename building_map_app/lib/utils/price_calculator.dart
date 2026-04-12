@@ -97,7 +97,11 @@ class PriceCalculator {
         room.quickMoveInDiscount! > 0 &&
         bookingState.checkInDate != null) {
       final now = DateTime.now();
-      final daysUntilCheckIn = bookingState.checkInDate!.difference(now).inDays;
+      // 시분초를 제거한 캘린더 날짜 단위로 비교 (시간대에 따른 오차 방지)
+      // 예: quickMoveIn=0(당일 입주만 할인) 시 내일 입주는 calendarDaysDiff=1이므로 미적용
+      final today = DateTime(now.year, now.month, now.day);
+      final checkInDay = DateTime(bookingState.checkInDate!.year, bookingState.checkInDate!.month, bookingState.checkInDate!.day);
+      final daysUntilCheckIn = checkInDay.difference(today).inDays;
 
       // 빠른 입주 기준 일수 이내면 할인 적용
       if (daysUntilCheckIn <= room.quickMoveIn!) {
