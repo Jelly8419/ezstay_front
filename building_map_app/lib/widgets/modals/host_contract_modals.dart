@@ -324,18 +324,10 @@ class _RequestCancellationModalState extends State<RequestCancellationModal> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '입주일 이후 계약 취소는 게스트와의 협의가 필요합니다.',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade900,
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '• 취소 요청 사유를 게스트에게 전달합니다.\n'
-                    '• 게스트가 동의하면 계약이 취소됩니다.\n'
-                    '• 게스트가 거절하면 계약이 유지됩니다.\n'
-                    '• 최소 10자 이상 입력해주세요.',
+                    '• 입주일 이후 취소 요청 시, 관리자의 승인이 필요합니다.\n'
+                    '• 임대인과 임차인의 합의된 내용으로 계약 취소가 진행될 수 있습니다.\n'
+                    '• 계약 취소 시, 수수료는 환불이 불가능할 수 있습니다.\n'
+                    '• 귀책 사유 제공자는 서비스 이용에 불이익을 받을 수 있습니다.',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: Colors.orange.shade800,
                       fontSize: 12,

@@ -114,15 +114,6 @@ class _CancelRequestModalState extends State<CancelRequestModal> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // 설명
-                      const Text(
-                        '입주일 이후에는 호스트와 직접 합의 후 관리자 승인이 필요합니다.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF4B5563), // gray-600
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       // 안내사항 박스
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -133,11 +124,13 @@ class _CancelRequestModalState extends State<CancelRequestModal> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildInfoItem('결제 취소는 불가하며, 정상 정산됩니다.'),
+                            _buildInfoItem('입주일 이후 취소 요청 시, 관리자의 승인이 필요합니다.'),
                             const SizedBox(height: 8),
-                            _buildInfoItem(
-                              '게스트 의사 확인 및 관리자 승인 후 해당 기간은 다시 임대 가능 상태로 변경됩니다.',
-                            ),
+                            _buildInfoItem('임대인과 임차인의 합의된 내용으로 계약 취소가 진행될 수 있습니다.'),
+                            const SizedBox(height: 8),
+                            _buildInfoItem('계약 취소 시, 수수료는 환불이 불가능할 수 있습니다.'),
+                            const SizedBox(height: 8),
+                            _buildInfoItem('귀책 사유 제공자는 서비스 이용에 불이익을 받을 수 있습니다.'),
                           ],
                         ),
                       ),
