@@ -389,6 +389,8 @@ class _ContractStartPageState extends State<ContractStartPage> {
     String buttonText;
     if (!_hasValidDates) {
       buttonText = '날짜를 선택해주세요';
+    } else if (widget.calculatedPricing.finalTotalAmount <= 0) {
+      buttonText = '결제 금액을 확인해주세요';
     } else {
       buttonText = '계약 요청하기'; // React와 동일
     }
