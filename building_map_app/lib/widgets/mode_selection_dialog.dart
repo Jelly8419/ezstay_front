@@ -3,7 +3,6 @@ import '../models/user.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart';
 import '../core/theme/app_text_styles.dart';
-import 'common/ezstay_logo.dart';
 
 /// 게스트/호스트 모드 선택 다이얼로그
 /// 회원가입 시 사용자 모드를 선택하는 팝업
@@ -35,8 +34,13 @@ class ModeSelectionDialog extends StatelessWidget {
             // 헤더
             Row(
               children: [
-                // 로고
-                EZStayLogo.iconOnly(size: 36),
+                // 로고 (투명 배경 GNB 로고 사용)
+                Image.asset(
+                  'assets/logos/ezstay_logo_gnb.png',
+                  width: 36,
+                  height: 36,
+                  filterQuality: FilterQuality.high,
+                ),
                 SizedBox(width: AppSpacing.sm),
                 Text(
                   'EZStay',
