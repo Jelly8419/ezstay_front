@@ -466,7 +466,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
 
         // 호스트/게스트 정보
         FormSection(
-          title: widget.isHostViewing ? '게스트 정보' : '호스트 정보',
+          title: widget.isHostViewing ? '임차인 정보' : '임대인 정보',
           child: _buildPartyContent(),
         ),
         const SizedBox(height: 100), // 하단 바 공간
@@ -490,7 +490,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         FormSection(title: '요금 안내', child: _buildPricingContent()),
         const SizedBox(height: 24),
         FormSection(
-          title: widget.isHostViewing ? '게스트 정보' : '호스트 정보',
+          title: widget.isHostViewing ? '임차인 정보' : '임대인 정보',
           child: _buildPartyContent(),
         ),
       ],
@@ -1175,12 +1175,12 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     if (widget.isHostViewing && _room!.guestName != null) {
       displayName = _room!.guestNickname ?? _room!.guestName!;
       isVerified = _room!.guestPhoneVerified == true;
-      roleLabel = '게스트';
+      roleLabel = '임차인';
     } else {
       displayName = _room!.hostDisplayName;
       isVerified =
           _room!.hostPhoneVerified == true || _room!.hostAccountVerified == true;
-      roleLabel = '호스트';
+      roleLabel = '임대인';
     }
 
     final initial = displayName.isNotEmpty ? displayName[0] : '?';

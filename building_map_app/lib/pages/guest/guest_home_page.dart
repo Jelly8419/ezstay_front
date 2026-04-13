@@ -415,7 +415,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
         children: [
           // 게스트 4-Step 가이드
           _buildStepGuideBlock(
-            title: '게스트 이용 방법',
+            title: '임차인 이용 방법',
             subtitle: '예약부터 입주까지 간단하게',
             steps: [
               _StepInfo(
@@ -434,7 +434,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                 emoji: '💳',
                 stepNumber: 3,
                 title: '계약 결제',
-                description: '호스트 승인 후 필요한\n물품과 함께 결제',
+                description: '임대인 승인 후 필요한\n물품과 함께 결제',
               ),
               _StepInfo(
                 emoji: '🏠',
@@ -456,7 +456,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
               borderRadius: AppRadius.radiusLg,
             ),
             child: _buildStepGuideBlock(
-              title: '호스트 이용 방법',
+              title: '임대인 이용 방법',
               subtitle: '매물 등록부터 정산까지 간단하게',
               steps: [
                 _StepInfo(
@@ -469,7 +469,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                   emoji: '🤝',
                   stepNumber: 2,
                   title: '계약 관리',
-                  description: '게스트 계약 요청을\n확인하고 승인하세요',
+                  description: '임차인 계약 요청을\n확인하고 승인하세요',
                 ),
                 _StepInfo(
                   emoji: '💰',

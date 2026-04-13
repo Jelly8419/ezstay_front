@@ -3,7 +3,7 @@ enum SenderRole {
   host,
   guest;
 
-  String get displayName => this == SenderRole.host ? '호스트' : '게스트';
+  String get displayName => this == SenderRole.host ? '임대인' : '임차인';
 }
 
 /// 채팅방 모델

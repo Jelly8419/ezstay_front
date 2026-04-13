@@ -375,7 +375,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           const SizedBox(height: 8),
           // React: helper text with asterisk
           Text(
-            '임대 목적을 호스트에게 미리 전달해주세요.',
+            '임대 목적을 임대인에게 미리 전달해주세요.',
             style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
           ),
         ],

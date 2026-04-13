@@ -107,7 +107,7 @@ class _RejectContractModalState extends State<RejectContractModal> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '게스트에게 전달할 거절 사유를 입력해주세요.',
+                    '임차인에게 전달할 거절 사유를 입력해주세요.',
                     style: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.red.shade900,
@@ -116,7 +116,7 @@ class _RejectContractModalState extends State<RejectContractModal> {
                   SizedBox(height: AppSpacing.xs),
                   Text(
                     '• 정중하고 명확한 사유를 작성해주세요.\n'
-                    '• 게스트는 이 메시지를 통해 거절 이유를 확인합니다.\n'
+                    '• 임차인은 이 메시지를 통해 거절 이유를 확인합니다.\n'
                     '• 최소 10자 이상 입력해주세요.',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: Colors.red.shade800,
@@ -142,7 +142,7 @@ class _RejectContractModalState extends State<RejectContractModal> {
               maxLines: 5,
               maxLength: 500,
               decoration: InputDecoration(
-                hintText: '예: 해당 기간에 이미 다른 게스트의 계약이 예정되어 있어 승인이 어렵습니다.\n'
+                hintText: '예: 해당 기간에 이미 다른 임차인의 계약이 예정되어 있어 승인이 어렵습니다.\n'
                     '다른 날짜로 다시 요청해주시면 감사하겠습니다.',
                 hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
                 border: OutlineInputBorder(
@@ -475,7 +475,7 @@ class GuestPreparationModal extends StatelessWidget {
                   SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
-                      '게스트 입주 준비',
+                      '임차인 입주 준비',
                       style: AppTextStyles.headingMedium,
                     ),
                   ),
@@ -533,8 +533,8 @@ class GuestPreparationModal extends StatelessWidget {
               _buildSection(
                 title: '🔑 입주일 당일',
                 items: [
-                  '게스트에게 입주 방법 안내 (비밀번호, 키박스 등)',
-                  '게스트 도착 시간 확인',
+                  '임차인에게 입주 방법 안내 (비밀번호, 키박스 등)',
+                  '임차인 도착 시간 확인',
                   '비상 연락처 공유',
                   '주차 방법 및 쓰레기 배출 방법 안내',
                 ],
@@ -542,7 +542,7 @@ class GuestPreparationModal extends StatelessWidget {
               SizedBox(height: AppSpacing.sm),
 
               _buildSection(
-                title: '💡 게스트 소통 팁',
+                title: '💡 임차인 소통 팁',
                 items: [
                   '입주 전날 리마인드 메시지 전송',
                   '주변 편의시설 정보 제공',
@@ -804,7 +804,7 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
     if (_isDeadlinePassed) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('제출 기한이 초과되었습니다. 보증금이 게스트에게 자동 반환됩니다.'),
+          content: Text('제출 기한이 초과되었습니다. 보증금이 임차인에게 자동 반환됩니다.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -901,10 +901,10 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                     SizedBox(height: AppSpacing.xs),
                     Text(
                       _isDeadlinePassed
-                          ? '합의 기한이 경과하여 보증금이 게스트에게 전액 자동 반환됩니다.'
+                          ? '합의 기한이 경과하여 보증금이 임차인에게 전액 자동 반환됩니다.'
                           : '• 관리자 승인일로부터 10일 이내에 합의 내용을 제출해야 합니다.\n'
-                              '• 기한 내 미제출 시 보증금이 게스트에게 전액 자동 반환됩니다.\n'
-                              '• 게스트가 합의에 동의하면 차감 금액이 정산됩니다.',
+                              '• 기한 내 미제출 시 보증금이 임차인에게 전액 자동 반환됩니다.\n'
+                              '• 임차인이 합의에 동의하면 차감 금액이 정산됩니다.',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: _isDeadlinePassed
                             ? Colors.red.shade600
@@ -1046,7 +1046,7 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                 maxLength: 1000,
                 decoration: InputDecoration(
                   hintText:
-                      '게스트와 합의한 내용을 상세히 작성해주세요.\n'
+                      '임차인과 합의한 내용을 상세히 작성해주세요.\n'
                       '예: 벽지 파손으로 인한 복구 비용 50,000원 차감에 합의하였습니다.',
                   hintStyle:
                       TextStyle(color: Colors.grey.shade400, fontSize: 13),

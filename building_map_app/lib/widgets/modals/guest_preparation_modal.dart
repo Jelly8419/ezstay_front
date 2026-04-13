@@ -121,7 +121,7 @@ class _GuestPreparationModalState extends State<GuestPreparationModal> {
               children: [
                 // 제목
                 const Text(
-                  '게스트 입주 도와주기',
+                  '임차인 입주 도와주기',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -132,7 +132,7 @@ class _GuestPreparationModalState extends State<GuestPreparationModal> {
 
                 // 설명
                 const Text(
-                  '이지스테이에서 게스트가 입주에 필요한 상품들을 미리 선택 구매할 수 있도록 안내할 수 있어요.',
+                  '이지스테이에서 임차인이 입주에 필요한 상품들을 미리 선택 구매할 수 있도록 안내할 수 있어요.',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.black,

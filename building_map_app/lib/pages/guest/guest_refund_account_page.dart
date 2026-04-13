@@ -257,7 +257,7 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
 
                     // 안내 문구
                     Text(
-                      '호스트 귀책으로 계약 취소 시, 위약금을 환급받을 계좌를 등록해주세요.',
+                      '임대인 귀책으로 계약 취소 시, 위약금을 환급받을 계좌를 등록해주세요.',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),

@@ -269,13 +269,13 @@ class HostContractCard extends StatelessWidget {
     Color color = Colors.grey;
 
     if (status == ContractStatus.pendingApproval) {
-      message = '게스트의 계약 요청을 검토해주세요.';
+      message = '임차인의 계약 요청을 검토해주세요.';
       color = const Color(0xFFCA8A04);
     } else if (status == ContractStatus.approved) {
-      message = '게스트가 결제하면 계약이 확정됩니다.';
+      message = '임차인이 결제하면 계약이 확정됩니다.';
       color = AppColors.primary600;
     } else if (status == ContractStatus.paymentCompleted) {
-      message = '입주일에 맞춰 게스트를 맞이해주세요.';
+      message = '입주일에 맞춰 임차인을 맞이해주세요.';
       color = const Color(0xFF059669);
     }
 
@@ -326,7 +326,7 @@ class HostContractCard extends StatelessWidget {
         SizedBox(
           width: 80,
           child: Text(
-            '게스트',
+            '임차인',
             style: AppTextStyles.bodyLarge.copyWith(
               color: const Color(0xFF6B7280),
               fontWeight: FontWeight.w500,
@@ -391,7 +391,7 @@ class HostContractCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '게스트 메시지',
+            '임차인 메시지',
             style: AppTextStyles.labelLarge.copyWith(
               color: Colors.black,
             ),

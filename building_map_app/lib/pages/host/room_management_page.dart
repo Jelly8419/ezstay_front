@@ -643,7 +643,7 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
                 Text(
                   _searchQuery.isNotEmpty || _selectedStatus != 'all'
                       ? '다른 검색어나 필터를 시도해보세요'
-                      : '새로운 방을 등록하고 게스트를 맞이해보세요',
+                      : '새로운 방을 등록하고 임차인을 맞이해보세요',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                   ),

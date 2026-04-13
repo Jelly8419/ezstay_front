@@ -263,7 +263,7 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
           controller: _contentController,
           focusNode: _contentFocusNode,
           maxLines: 8,
-          decoration: _inputDecoration('게스트에게 전달할 메시지를 입력하세요...'),
+          decoration: _inputDecoration('임차인에게 전달할 메시지를 입력하세요...'),
         ),
         const SizedBox(height: 8),
         Row(
@@ -281,7 +281,7 @@ class _AutoMessageFormModalState extends State<AutoMessageFormModal> {
         ),
         const SizedBox(height: 8),
         Text(
-          '버튼을 클릭하여 입력된 텍스트는 게스트에게 전송 시, 해당 방 정보에 저장된 내용으로 보여집니다. (예 : {방 비밀번호} > *1234)',
+          '버튼을 클릭하여 입력된 텍스트는 임차인에게 전송 시, 해당 방 정보에 저장된 내용으로 보여집니다. (예 : {방 비밀번호} > *1234)',
           style: AppTextStyles.bodySmall.copyWith(color: AppColors.neutral500),
         ),
       ],

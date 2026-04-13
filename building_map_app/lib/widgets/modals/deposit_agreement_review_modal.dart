@@ -71,7 +71,7 @@ class DepositAgreementReviewModal extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        '호스트가 제출한 합의 내용을 확인해주세요.',
+                        '임대인이 제출한 합의 내용을 확인해주세요.',
                         style: TextStyle(
                           fontSize: 14,
                           color: Color(0xFF4B5563),

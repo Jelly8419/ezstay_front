@@ -172,7 +172,7 @@ class _CheckoutConfirmationWidgetState
 
           // 게스트 퇴실 확인 상태
           _buildCheckRow(
-            label: '게스트 퇴실 확인',
+            label: '임차인 퇴실 확인',
             isConfirmed: _guestConfirmed,
             confirmedAt: widget.contract.guestCheckoutConfirmedAt,
             showButton: !widget.isHost && !_guestConfirmed,
@@ -183,7 +183,7 @@ class _CheckoutConfirmationWidgetState
 
           // 호스트 퇴실 확인 상태
           _buildCheckRow(
-            label: '호스트 퇴실 확인',
+            label: '임대인 퇴실 확인',
             isConfirmed: _hostConfirmed,
             confirmedAt: widget.contract.hostCheckoutConfirmedAt,
             showButton: widget.isHost && _guestConfirmed && !_hostConfirmed,
@@ -235,7 +235,7 @@ class _CheckoutConfirmationWidgetState
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '게스트 미처리 시 자동 퇴실완료까지 ${_formatDuration(_guestAutoCheckoutRemaining)}',
+                      '임차인 미처리 시 자동 퇴실완료까지 ${_formatDuration(_guestAutoCheckoutRemaining)}',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: const Color(0xFF92400E),
                       ),
@@ -289,7 +289,7 @@ class _CheckoutConfirmationWidgetState
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '호스트 미확인 시 자동 확정까지 ${_formatDuration(_hostAutoConfirmRemaining)}',
+                        '임대인 미확인 시 자동 확정까지 ${_formatDuration(_hostAutoConfirmRemaining)}',
                         style: AppTextStyles.bodySmall.copyWith(
                           color: const Color(0xFF92400E),
                         ),

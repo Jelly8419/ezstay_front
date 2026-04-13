@@ -82,9 +82,9 @@ class ContractStatusHelper {
   static String getStatusMessage(ContractStatus status) {
     switch (status) {
       case ContractStatus.pendingApproval:
-        return '호스트의 승인/거절을 기다리고 있습니다.';
+        return '임대인의 승인/거절을 기다리고 있습니다.';
       case ContractStatus.approved:
-        return '호스트가 승인했습니다. 결제를 진행해주세요.';
+        return '임대인이 승인했습니다. 결제를 진행해주세요.';
       case ContractStatus.paymentCompleted:
         return '입주일에 맞춰 방문해주세요.';
       case ContractStatus.inProgress:

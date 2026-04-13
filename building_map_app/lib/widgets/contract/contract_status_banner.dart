@@ -207,11 +207,11 @@ class _ContractStatusBannerState extends State<ContractStatusBanner> {
         return _BannerConfig(
           icon: Icons.schedule,
           title: isHost
-              ? '게스트의 계약 요청이 도착했습니다'
-              : '호스트의 승인을 기다리고 있습니다',
+              ? '임차인의 계약 요청이 도착했습니다'
+              : '임대인의 승인을 기다리고 있습니다',
           subtitle: isHost
               ? '기한 내 승인 또는 거절해주세요'
-              : '호스트가 72시간 내 응답하지 않으면 자동 만료됩니다',
+              : '임대인이 72시간 내 응답하지 않으면 자동 만료됩니다',
           bgColor: const Color(0xFFFFFBEB), // yellow-50
           borderColor: const Color(0xFFFDE68A), // yellow-200
           iconColor: const Color(0xFFD97706), // yellow-600
@@ -223,10 +223,10 @@ class _ContractStatusBannerState extends State<ContractStatusBanner> {
         return _BannerConfig(
           icon: Icons.payment,
           title: isHost
-              ? '게스트의 결제를 기다리고 있습니다'
+              ? '임차인의 결제를 기다리고 있습니다'
               : '24시간 내 결제를 완료해주세요',
           subtitle: isHost
-              ? '게스트가 24시간 내 결제하지 않으면 자동 만료됩니다'
+              ? '임차인이 24시간 내 결제하지 않으면 자동 만료됩니다'
               : '기한 내 결제하지 않으면 계약이 자동 만료됩니다',
           bgColor: const Color(0xFFEFF6FF), // blue-50
           borderColor: const Color(0xFFBFDBFE), // blue-200
@@ -261,7 +261,7 @@ class _ContractStatusBannerState extends State<ContractStatusBanner> {
           return _BannerConfig(
             icon: Icons.warning_amber,
             title: '보증금 반환이 보류 중입니다',
-            subtitle: '퇴실일: $checkOut · 관리자 또는 호스트에 의해 보증금 반환이 보류되었습니다',
+            subtitle: '퇴실일: $checkOut · 관리자 또는 임대인에 의해 보증금 반환이 보류되었습니다',
             bgColor: const Color(0xFFFFF7ED), // orange-50
             borderColor: const Color(0xFFFED7AA), // orange-200
             iconColor: const Color(0xFFF97316), // orange-500
@@ -308,7 +308,7 @@ class _ContractStatusBannerState extends State<ContractStatusBanner> {
           icon: Icons.timer_off,
           title: '기한 만료로 계약이 취소되었습니다',
           subtitle: status == 'APPROVAL_EXPIRED'
-              ? '호스트가 기한 내 응답하지 않았습니다'
+              ? '임대인이 기한 내 응답하지 않았습니다'
               : '결제 기한이 만료되었습니다',
           bgColor: AppColors.gray50,
           borderColor: AppColors.gray200,
@@ -320,7 +320,7 @@ class _ContractStatusBannerState extends State<ContractStatusBanner> {
       case 'REJECTED':
         return _BannerConfig(
           icon: Icons.cancel,
-          title: '호스트가 계약 요청을 거절했습니다',
+          title: '임대인이 계약 요청을 거절했습니다',
           subtitle: null,
           bgColor: const Color(0xFFFEF2F2), // red-50
           borderColor: const Color(0xFFFECACA), // red-200
@@ -334,8 +334,8 @@ class _ContractStatusBannerState extends State<ContractStatusBanner> {
         return _BannerConfig(
           icon: Icons.cancel,
           title: status == 'CANCELLED_BY_GUEST'
-              ? '게스트가 계약을 취소했습니다'
-              : '호스트가 계약을 취소했습니다',
+              ? '임차인이 계약을 취소했습니다'
+              : '임대인이 계약을 취소했습니다',
           subtitle: null,
           bgColor: AppColors.gray50,
           borderColor: AppColors.gray200,

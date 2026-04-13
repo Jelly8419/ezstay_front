@@ -96,7 +96,7 @@ class PropertyListPanel extends StatelessWidget {
               'photos': photos,
               'isNearSubway': false,
               'isAvailable': roomData['isAvailable'] ?? true,
-              'hostName': '호스트',
+              'hostName': '임대인',
               'hostId': 1,
               'status': 'published',
             };

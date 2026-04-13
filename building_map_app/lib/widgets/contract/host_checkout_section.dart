@@ -44,7 +44,7 @@ class HostCheckoutSection extends StatelessWidget {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '게스트가 퇴실을 완료했습니다. 확인해주세요.',
+                        '임차인이 퇴실을 완료했습니다. 확인해주세요.',
                         style: TextStyle(
                           fontSize: 14,
                           color: Color(0xFF92400E), // yellow-800
@@ -307,7 +307,7 @@ class HostCheckoutSection extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      '관리자가 확인 중입니다. 게스트와 합의가 되었다면 합의 내용을 제출해주세요.',
+                      '관리자가 확인 중입니다. 임차인과 합의가 되었다면 합의 내용을 제출해주세요.',
                       style: TextStyle(
                         fontSize: 13,
                         color: Color(0xFF9A3412),
@@ -377,7 +377,7 @@ class HostCheckoutSection extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  '게스트 확인을 기다리고 있습니다.',
+                  '임차인 확인을 기다리고 있습니다.',
                   style: TextStyle(
                     fontSize: 13,
                     color: Color(0xFF1E40AF),
@@ -413,7 +413,7 @@ class HostCheckoutSection extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  '합의 기한이 경과하여 보증금이 게스트에게 전액 반환되었습니다.',
+                  '합의 기한이 경과하여 보증금이 임차인에게 전액 반환되었습니다.',
                   style: TextStyle(
                     fontSize: 13,
                     color: Color(0xFF166534),

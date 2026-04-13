@@ -98,7 +98,7 @@ class HostContractAmountSection extends StatelessWidget {
 
         Padding(
           padding: const EdgeInsets.only(left: 12),
-          child: _row('호스트 수수료', -s.hostPlatformFee, valueColor: AppColors.neutral700),
+          child: _row('임대인 수수료', -s.hostPlatformFee, valueColor: AppColors.neutral700),
         ),
 
         _dividerRow(
@@ -125,7 +125,7 @@ class HostContractAmountSection extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '보증금 ₩${FormatUtils.formatCurrency(contract.deposit)}은 게스트 퇴실 후 별도로 환급됩니다.',
+                    '보증금 ₩${FormatUtils.formatCurrency(contract.deposit)}은 임차인 퇴실 후 별도로 환급됩니다.',
                     style: TextStyle(fontSize: 13, color: AppColors.blue900, height: 1.4),
                   ),
                 ),

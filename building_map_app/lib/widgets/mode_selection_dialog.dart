@@ -34,18 +34,12 @@ class ModeSelectionDialog extends StatelessWidget {
             // 헤더
             Row(
               children: [
-                // 로고
-                Container(
-                  padding: EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary100,
-                    borderRadius: AppRadius.radiusSm,
-                  ),
-                  child: Icon(
-                    Icons.home,
-                    color: AppColors.primary600,
-                    size: AppSizes.iconMd,
-                  ),
+                // 로고 (투명 배경 GNB 로고 사용)
+                Image.asset(
+                  'assets/logos/ezstay_logo_gnb.png',
+                  width: 36,
+                  height: 36,
+                  filterQuality: FilterQuality.high,
                 ),
                 SizedBox(width: AppSpacing.sm),
                 Text(
@@ -88,7 +82,7 @@ class ModeSelectionDialog extends StatelessWidget {
                       child: _buildModeCard(
                         context: context,
                         mode: UserMode.guest,
-                        title: '집을 찾고 있어요',
+                        title: '임차인',
                         icon: Icons.search,
                         features: [
                           _Feature(
@@ -110,7 +104,7 @@ class ModeSelectionDialog extends StatelessWidget {
                       child: _buildModeCard(
                         context: context,
                         mode: UserMode.host,
-                        title: '집을 내놓고 싶어요',
+                        title: '임대인',
                         icon: Icons.home_work,
                         features: [
                           _Feature(

@@ -27,7 +27,7 @@ class HostAccountSetupStandalonePage extends StatelessWidget {
           },
         ),
         title: const Text(
-          '호스트 전환',
+          '임대인 전환',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,

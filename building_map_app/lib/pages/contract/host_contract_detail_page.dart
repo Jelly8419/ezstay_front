@@ -282,7 +282,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('합의 내용이 제출되었습니다. 게스트 확인을 기다립니다.'),
+            content: const Text('합의 내용이 제출되었습니다. 임차인 확인을 기다립니다.'),
             backgroundColor: AppColors.success500,
           ),
         );

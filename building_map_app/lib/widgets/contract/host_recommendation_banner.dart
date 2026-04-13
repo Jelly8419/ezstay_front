@@ -30,7 +30,7 @@ class HostRecommendationBanner extends StatelessWidget {
               ),
               SizedBox(width: 6),
               Text(
-                '호스트가 입주 전 챙기면 좋을 상품을 안내해뒀어요',
+                '임대인이 입주 전 챙기면 좋을 상품을 안내해뒀어요',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,

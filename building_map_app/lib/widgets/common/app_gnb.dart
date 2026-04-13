@@ -211,7 +211,7 @@ class _AppGNBState extends State<AppGNB> {
             shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
           ),
           child: Text(
-            '호스트 모드로 전환',
+            '임대인 모드로 전환',
             style: AppTextStyles.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -267,7 +267,7 @@ class _AppGNBState extends State<AppGNB> {
             shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
           ),
           child: Text(
-            isHostMode ? '게스트 모드로 전환' : '호스트 모드로 전환',
+            isHostMode ? '임차인 모드로 전환' : '임대인 모드로 전환',
             style: AppTextStyles.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -317,13 +317,13 @@ class _AppGNBState extends State<AppGNB> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(
-          isCurrentlyHostMode ? '게스트 모드로 전환' : '호스트 모드로 전환',
+          isCurrentlyHostMode ? '임차인 모드로 전환' : '임대인 모드로 전환',
           style: AppTextStyles.headingSmall,
         ),
         content: Text(
           isCurrentlyHostMode
-              ? '게스트 모드로 전환하시겠습니까?\n방 검색 및 예약 기능을 사용할 수 있습니다.'
-              : '호스트 모드로 전환하시겠습니까?\n방 등록 및 관리 기능을 사용할 수 있습니다.',
+              ? '임차인 모드로 전환하시겠습니까?\n방 검색 및 예약 기능을 사용할 수 있습니다.'
+              : '임대인 모드로 전환하시겠습니까?\n방 등록 및 관리 기능을 사용할 수 있습니다.',
           style: AppTextStyles.bodyMedium,
         ),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),

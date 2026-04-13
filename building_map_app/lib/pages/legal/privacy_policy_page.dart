@@ -125,7 +125,7 @@ class PrivacyPolicyPage extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           _buildInfoRow(textStyle, '1.', '회원가입 시: 이름, 휴대전화 번호, 이메일, 비밀번호, 본인인증 연계정보(CI/DI)'),
           _buildInfoRow(textStyle, '2.', '예약/결제 시: 신용카드 정보, 은행 계좌 번호, 체류 목적'),
-          _buildInfoRow(textStyle, '3.', '호스트 등록 시: 신분증 또는 사업자등록증 사본, 공간 주소 정보'),
+          _buildInfoRow(textStyle, '3.', '임대인 등록 시: 신분증 또는 사업자등록증 사본, 공간 주소 정보'),
           const SizedBox(height: AppSpacing.xs),
           Padding(
             padding: const EdgeInsets.only(left: 24),
@@ -186,7 +186,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             style: textStyle,
           ),
           const SizedBox(height: AppSpacing.sm),
-          _buildLabeledRow(textStyle, '제공받는 자', '예약이 성립된 계약의 상대방 (호스트 ↔ 게스트)'),
+          _buildLabeledRow(textStyle, '제공받는 자', '예약이 성립된 계약의 상대방 (임대인 ↔ 임차인)'),
           _buildLabeledRow(textStyle, '제공 목적', '원활한 입퇴실, 옵션 상품 이용 안내 및 상호 연락'),
           _buildLabeledRow(textStyle, '제공 항목', '이름, 휴대전화 번호'),
           _buildLabeledRow(textStyle, '보유 및 이용 기간', '계약 종료(정산 완료) 후 1년'),

@@ -193,7 +193,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
               onSuccess: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('계약이 취소되었습니다. 게스트에게 환불이 진행됩니다.'),
+                    content: Text('계약이 취소되었습니다. 임차인에게 환불이 진행됩니다.'),
                     backgroundColor: AppColors.error600,
                   ),
                 );
@@ -596,7 +596,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('합의 내용이 제출되었습니다. 게스트 확인을 기다립니다.'),
+          content: Text('합의 내용이 제출되었습니다. 임차인 확인을 기다립니다.'),
           backgroundColor: AppColors.green500,
         ),
       );
@@ -870,7 +870,7 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('계약이 승인되었습니다. 게스트가 결제하면 계약이 확정됩니다.')),
+        const SnackBar(content: Text('계약이 승인되었습니다. 임차인이 결제하면 계약이 확정됩니다.')),
       );
 
       // 계약 목록 새로고침
