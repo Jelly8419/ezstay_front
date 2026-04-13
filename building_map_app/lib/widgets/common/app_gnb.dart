@@ -349,14 +349,17 @@ class _AppGNBState extends State<AppGNB> {
                 final currentUser = authService.currentUser;
 
                 if (currentUser != null) {
-                  // 1. 본인인증 완료 + 계좌 등록 완료 → 바로 호스트 홈으로
+                  // 1. 본인인증 완료 + 계좌 등록 완료 → 서버 모드 전환 후 호스트 홈으로
                   if (currentUser.phoneVerified && currentUser.hasBank) {
-                    await authService.switchUserMode(newMode);
-                    // 모드 전환 후 배지 상태 재체크 + 실시간 구독 재시작
-                    if (context.mounted) {
+                    try {
+                      final ok = await authService.switchUserMode(newMode);
+                      if (!ok || !context.mounted) return;
                       final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
                       if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid, userMode: 'host');
                       context.go('/host');
+                    } on SwitchModeRequiresBankException {
+                      // 서버 측 403: 계좌 없음 (로컬 hasBank=true와 불일치)
+                      if (context.mounted) context.go('/host/account-setup-standalone');
                     }
                     return;
                   }
@@ -379,17 +382,14 @@ class _AppGNBState extends State<AppGNB> {
                 return;
               }
 
-              // 호스트→게스트 전환 (단순 모드 변경)
-              await authService.switchUserMode(newMode);
+              // 호스트→게스트 전환
+              final ok = await authService.switchUserMode(newMode);
+              if (!ok || !context.mounted) return;
 
-              if (context.mounted) {
-                // 모드 전환 후 배지 상태 재체크 + 실시간 구독 재시작
-                final newUserMode = isCurrentlyHostMode ? 'guest' : 'host';
-                final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
-                if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid, userMode: newUserMode);
-                final route = isCurrentlyHostMode ? '/' : '/host';
-                context.go(route);
-              }
+              final newUserMode = isCurrentlyHostMode ? 'guest' : 'host';
+              final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
+              if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid, userMode: newUserMode);
+              context.go(isCurrentlyHostMode ? '/' : '/host');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary500,

@@ -13,6 +13,9 @@ import '../config/api_config.dart';
 import 'token_service.dart';
 import '../repositories/user_repository.dart';
 
+/// 계좌 미등록 상태에서 host 모드 전환 시도 시 발생
+class SwitchModeRequiresBankException implements Exception {}
+
 /// 인증 서비스 클래스
 class AuthService extends ChangeNotifier {
   User? _currentUser;
@@ -998,23 +1001,59 @@ class AuthService extends ChangeNotifier {
   }
 
   /// 사용자 모드 변경
-  Future<void> switchUserMode(UserMode newMode) async {
-    if (_currentUser != null) {
-      _currentUser = User(
-        id: _currentUser!.id,
-        email: _currentUser!.email,
-        name: _currentUser!.name,
-        nickname: _currentUser!.nickname, // 유지
-        profileImageUrl: _currentUser!.profileImageUrl,
-        mode: newMode,
-        provider: _currentUser!.provider,
-        phoneVerified: _currentUser!.phoneVerified, // 유지
-        hasBank: _currentUser!.hasBank, // 유지
-        accountStatus: _currentUser!.accountStatus, // 유지
-        suspensionReason: _currentUser!.suspensionReason, // 유지
-      );
-      await UserRepository.updateUserMode(newMode);
-      notifyListeners();
+  /// 유저 모드 전환 (서버 저장 후 로컬 반영)
+  ///
+  /// 반환값:
+  ///   true  — 전환 성공
+  ///   false — 서버 오류 (400 잘못된 값, 네트워크 등)
+  ///
+  /// throws [SwitchModeRequiresBankException] — 403: 계좌 미등록 상태에서 host 전환 시도
+  Future<bool> switchUserMode(UserMode newMode) async {
+    if (_currentUser == null) return false;
+
+    final token = await getAccessToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http
+          .patch(
+            Uri.parse(ApiConfig.authModeUrl),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({'mode': newMode.name}),
+          )
+          .timeout(ApiConfig.timeout);
+
+      if (response.statusCode == 200) {
+        _currentUser = User(
+          id: _currentUser!.id,
+          email: _currentUser!.email,
+          name: _currentUser!.name,
+          nickname: _currentUser!.nickname,
+          profileImageUrl: _currentUser!.profileImageUrl,
+          mode: newMode,
+          provider: _currentUser!.provider,
+          phoneVerified: _currentUser!.phoneVerified,
+          hasBank: _currentUser!.hasBank,
+          accountStatus: _currentUser!.accountStatus,
+          suspensionReason: _currentUser!.suspensionReason,
+        );
+        await UserRepository.updateUserMode(newMode);
+        notifyListeners();
+        return true;
+      } else if (response.statusCode == 403) {
+        AppLogger.w('⚠️ [SWITCH_MODE] 계좌 미등록 상태 — host 전환 불가 (403)');
+        throw SwitchModeRequiresBankException();
+      } else {
+        AppLogger.e('❌ [SWITCH_MODE] 서버 오류: ${response.statusCode} ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      if (e is SwitchModeRequiresBankException) rethrow;
+      AppLogger.e('❌ [SWITCH_MODE] 네트워크 오류: $e');
+      return false;
     }
   }
 }
