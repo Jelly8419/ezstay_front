@@ -50,7 +50,7 @@ class ContractStartDialogs {
             ),
             const SizedBox(height: 12),
             Text(
-              '호스트가 승인하면 결제가 진행됩니다.',
+              '임대인이 승인하면 결제가 진행됩니다.',
               style: AppTextStyles.bodySmall.copyWith(
                 fontSize: 13,
                 color: Colors.grey[600],
@@ -106,7 +106,7 @@ class ContractStartDialogs {
             const Text('요청 완료'),
           ],
         ),
-        content: const Text('계약 요청이 완료되었습니다.\n호스트가 승인하면 결제를 진행할 수 있습니다.'),
+        content: const Text('계약 요청이 완료되었습니다.\n임대인이 승인하면 결제를 진행할 수 있습니다.'),
         actions: [
           ElevatedButton(
             onPressed: () {

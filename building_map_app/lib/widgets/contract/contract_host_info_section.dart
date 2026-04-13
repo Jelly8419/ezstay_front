@@ -25,7 +25,7 @@ class ContractHostInfoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('호스트', style: AppTextStyles.headingSmall),
+          Text('임대인', style: AppTextStyles.headingSmall),
           const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,7 +50,7 @@ class ContractHostInfoSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      hostName ?? '호스트',
+                      hostName ?? '임대인',
                       style: AppTextStyles.labelLarge.copyWith(
                         color: const Color(0xFF111827),
                       ),
@@ -81,7 +81,7 @@ class ContractHostInfoSection extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '호스트의 연락처는 계약이 확정된 후 공개됩니다.',
+                    '임대인의 연락처는 계약이 확정된 후 공개됩니다.',
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: const Color(0xFF1E40AF),
                     ),

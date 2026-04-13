@@ -607,7 +607,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
             ),
             SizedBox(height: 4),
             Text(
-              '게스트 취소로 인한 수수료가 정산되었습니다.',
+              '임차인 취소로 인한 수수료가 정산되었습니다.',
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.info700,

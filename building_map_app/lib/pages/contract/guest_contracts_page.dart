@@ -404,7 +404,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('퇴실 완료가 처리되었습니다. 호스트의 확인을 기다려주세요.'),
+            content: Text('퇴실 완료가 처리되었습니다. 임대인의 확인을 기다려주세요.'),
             backgroundColor: Color(0xFF10B981),
           ),
         );

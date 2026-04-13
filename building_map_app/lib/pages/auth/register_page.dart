@@ -151,7 +151,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   // 부제목 (선택한 모드 표시)
                   Text(
-                    widget.mode == UserMode.guest ? '게스트로 가입하기' : '호스트로 가입하기',
+                    widget.mode == UserMode.guest ? '임차인으로 가입하기' : '임대인으로 가입하기',
                     style: AppTextStyles.bodyMedium.copyWith(color: textGray),
                     textAlign: TextAlign.center,
                   ),

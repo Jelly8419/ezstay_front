@@ -82,14 +82,14 @@ class HostDepositAgreementSection extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '게스트와 합의가 되었다면 합의 내용을 제출해주세요.',
+                      '임차인과 합의가 되었다면 합의 내용을 제출해주세요.',
                       style: TextStyle(fontSize: 13, color: AppColors.warning700),
                     ),
                     if (daysRemaining != null) ...[
                       const SizedBox(height: 8),
                       Text(
                         isExpired
-                            ? '⏰ 제출 기한이 만료되었습니다. 보증금이 게스트에게 전액 반환됩니다.'
+                            ? '⏰ 제출 기한이 만료되었습니다. 보증금이 임차인에게 전액 반환됩니다.'
                             : '⏰ 제출 기한: $daysRemaining일 남음',
                         style: TextStyle(
                           fontSize: 13,
@@ -180,7 +180,7 @@ class HostDepositAgreementSection extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '게스트 확인을 기다리고 있습니다.',
+                      '임차인 확인을 기다리고 있습니다.',
                       style: TextStyle(fontSize: 13, color: AppColors.blue900),
                     ),
                   ],

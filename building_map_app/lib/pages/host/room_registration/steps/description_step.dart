@@ -366,7 +366,7 @@ class _DescriptionStepState extends State<DescriptionStep> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  '* 게스트가 방을 선택하는 데 도움이 되는 정보를 상세히 작성해주세요',
+                  '* 임차인이 방을 선택하는 데 도움이 되는 정보를 상세히 작성해주세요',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,

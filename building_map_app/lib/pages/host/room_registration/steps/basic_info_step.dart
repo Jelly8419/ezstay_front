@@ -359,7 +359,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'ⓘ 상세주소는 입주 당일 게스트에게 공개됩니다.',
+                  'ⓘ 상세주소는 입주 당일 임차인에게 공개됩니다.',
                   style: AppTextStyles.caption.copyWith(color: AppColors.primary600),
                 ),
               ],

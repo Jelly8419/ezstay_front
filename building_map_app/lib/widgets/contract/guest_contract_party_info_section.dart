@@ -63,7 +63,7 @@ class GuestContractPartyInfoSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '호스트',
+            '임대인',
             style: AppTextStyles.headingMedium.copyWith(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -150,7 +150,7 @@ class GuestContractPartyInfoSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '게스트',
+                '임차인',
                 style: AppTextStyles.headingMedium.copyWith(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

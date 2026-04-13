@@ -398,7 +398,7 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '호스트 부담금',
+            '임대인 부담금',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,

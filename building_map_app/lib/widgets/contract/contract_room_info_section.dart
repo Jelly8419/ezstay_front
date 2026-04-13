@@ -151,7 +151,7 @@ class _HostRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labelWidget = Text(
-      '호스트',
+      '임대인',
       style: const TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w500,

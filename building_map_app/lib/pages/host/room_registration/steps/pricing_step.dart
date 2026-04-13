@@ -365,7 +365,7 @@ class _PricingStepState extends State<PricingStep> {
           fontSize: 18,
           color: AppColors.textPrimary,
         ),
-        content: const Text('청소 서비스 선택 시, 호스트님은 청소비를 설정 및 정산받을 수 없습니다.'),
+        content: const Text('청소 서비스 선택 시, 임대인님은 청소비를 설정 및 정산받을 수 없습니다.'),
         contentTextStyle: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.textSecondary,
           height: 1.5,
@@ -1165,8 +1165,8 @@ class _PricingStepState extends State<PricingStep> {
                             const SizedBox(height: 4),
                             Text(
                               _cleaningService
-                                  ? '* 이지스테이에서 게스트 퇴실 이후 부터 다음날 오전까지(부득이한 사정으로 인해 지연 시 사전 안내 예정) 청소를 진행합니다.\n  기본요금은 5만원이며, 10평마다 2만원이 추가되어 게스트에게 청구됩니다. (예 : 7평 5만원, 15평 7만원, 기존에 설정한 청소비는 게스트에게 이중 부과되지 않습니다.)'
-                                  : '* 이지스테이에서 게스트 퇴실 이후 부터 다음날 오전까지(부득이한 사정으로 인해 지연 시 사전 안내 예정) 청소를 진행합니다.\n  기본요금은 5만원, 등록된 방 평수 기준으로 10평마다 2만원이 추가되어 게스트에게 청구되며 해당 요금은 정산받을 수 없습니다. (예 : 7평 5만원, 15평 7만원)',
+                                  ? '* 이지스테이에서 임차인 퇴실 이후 부터 다음날 오전까지(부득이한 사정으로 인해 지연 시 사전 안내 예정) 청소를 진행합니다.\n  기본요금은 5만원이며, 10평마다 2만원이 추가되어 임차인에게 청구됩니다. (예 : 7평 5만원, 15평 7만원, 기존에 설정한 청소비는 임차인에게 이중 부과되지 않습니다.)'
+                                  : '* 이지스테이에서 임차인 퇴실 이후 부터 다음날 오전까지(부득이한 사정으로 인해 지연 시 사전 안내 예정) 청소를 진행합니다.\n  기본요금은 5만원, 등록된 방 평수 기준으로 10평마다 2만원이 추가되어 임차인에게 청구되며 해당 요금은 정산받을 수 없습니다. (예 : 7평 5만원, 15평 7만원)',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textSecondary,

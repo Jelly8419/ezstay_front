@@ -114,7 +114,7 @@ class Room {
 
   /// 호스트 표시명 (닉네임 우선, 없으면 이름)
   String get hostDisplayName =>
-      (hostNickname?.isNotEmpty == true) ? hostNickname! : (hostName ?? '호스트');
+      (hostNickname?.isNotEmpty == true) ? hostNickname! : (hostName ?? '임대인');
 
   /// 승인된 방인지 확인
   bool get isApproved => status == 'approved';

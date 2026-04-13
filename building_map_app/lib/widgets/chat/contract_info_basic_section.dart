@@ -215,9 +215,9 @@ class _ContractStatusBadge extends StatelessWidget {
       case 'REJECTED':
         return '거절됨';
       case 'CANCELLED_BY_GUEST':
-        return userMode == 'guest' ? '계약 취소' : '게스트 취소';
+        return userMode == 'guest' ? '계약 취소' : '임차인 취소';
       case 'CANCELLED_BY_HOST':
-        return '호스트 취소';
+        return '임대인 취소';
       case 'CANCELLED_BY_ADMIN_WITH_REFUND':
         return '관리자 취소 (환불)';
       case 'CANCELLED_BY_ADMIN_NO_REFUND':

@@ -37,9 +37,9 @@ enum ContractStatus {
 /// 퇴실 상태
 enum CheckoutStatus {
   notStarted('NOT_STARTED', '퇴실 전'),
-  guestCompleted('GUEST_COMPLETED', '게스트 퇴실 완료'),
-  hostConfirmed('HOST_CONFIRMED', '호스트 확인 완료'),
-  hostPending('HOST_PENDING', '호스트 확인 보류'),
+  guestCompleted('GUEST_COMPLETED', '임차인 퇴실 완료'),
+  hostConfirmed('HOST_CONFIRMED', '임대인 확인 완료'),
+  hostPending('HOST_PENDING', '임대인 확인 보류'),
   agreementSubmitted('AGREEMENT_SUBMITTED', '합의 내용 제출'),
   holdRequested('HOLD_REQUESTED', '보증금 반환 보류 신청중'),
   holdRejected('HOLD_REJECTED', '보류 신청 반려'),

@@ -125,7 +125,7 @@ class _ContractPricingSectionState extends State<ContractPricingSection> {
 
               Padding(
                 padding: const EdgeInsets.only(left: 12),
-                child: _buildRow('호스트 수수료', -settlement.hostPlatformFee,
+                child: _buildRow('임대인 수수료', -settlement.hostPlatformFee,
                     valueColor: const Color(0xFF374151)),
               ),
 
@@ -155,7 +155,7 @@ class _ContractPricingSectionState extends State<ContractPricingSection> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '보증금 ₩${FormatUtils.formatCurrency(widget.contract.deposit ?? 0)}은 게스트 퇴실 후 별도로 환급됩니다.',
+                          '보증금 ₩${FormatUtils.formatCurrency(widget.contract.deposit ?? 0)}은 임차인 퇴실 후 별도로 환급됩니다.',
                           style: const TextStyle(fontSize: 13, color: Color(0xFF1D4ED8), height: 1.4),
                         ),
                       ),

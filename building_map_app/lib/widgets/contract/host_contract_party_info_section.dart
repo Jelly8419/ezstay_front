@@ -57,7 +57,7 @@ class HostContractPartyInfoSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '호스트 정보',
+            '임대인 정보',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -152,7 +152,7 @@ class HostContractPartyInfoSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '게스트 정보',
+            '임차인 정보',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -238,7 +238,7 @@ class HostContractPartyInfoSection extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '게스트 메시지',
+                              '임차인 메시지',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,

@@ -149,10 +149,10 @@ class HostPenaltyPaymentConfirmDialog extends StatelessWidget {
     return AlertDialog(
       title: const Text('위약금 결제'),
       content: Text(
-        '호스트 귀책 취소를 위해 위약금을 결제해야 합니다.\n\n'
+        '임대인 귀책 취소를 위해 위약금을 결제해야 합니다.\n\n'
         '위약금: ${FormatUtils.formatCurrency(penaltyAmount)}원\n'
-        '(임대료 위약금 + 게스트 서비스 수수료)\n\n'
-        '결제 후 게스트에게 전액 환불 및 보전 지급이 처리됩니다.',
+        '(임대료 위약금 + 임차인 서비스 수수료)\n\n'
+        '결제 후 임차인에게 전액 환불 및 보전 지급이 처리됩니다.',
       ),
       actions: [
         TextButton(

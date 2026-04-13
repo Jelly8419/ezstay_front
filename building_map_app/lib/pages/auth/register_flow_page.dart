@@ -376,7 +376,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
           },
         ),
         title: Text(
-          widget.mode == UserMode.guest ? '게스트 가입' : '호스트 가입',
+          widget.mode == UserMode.guest ? '임차인 가입' : '임대인 가입',
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,

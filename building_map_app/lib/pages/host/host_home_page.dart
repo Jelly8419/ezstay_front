@@ -50,7 +50,6 @@ class _HostHomePageState extends State<HostHomePage> {
 
   /// 등록 중인 방 확인
   Future<void> _checkInProgressRooms() async {
-
     final rooms = await _roomService.getInProgressRooms();
 
     if (rooms != null && rooms.isNotEmpty) {
@@ -79,7 +78,6 @@ class _HostHomePageState extends State<HostHomePage> {
         });
       }
     }
-
   }
 
   /// 진행 중인 단계에 따라 페이지 이동
@@ -297,7 +295,6 @@ class _HostHomePageState extends State<HostHomePage> {
     final photos = room['photos'] as List<dynamic>?;
     String photoUrl = '';
 
-
     if (photos != null && photos.isNotEmpty) {
       final firstPhoto = photos.first;
 
@@ -306,12 +303,12 @@ class _HostHomePageState extends State<HostHomePage> {
         photoUrl = firstPhoto;
       } else if (firstPhoto is Map) {
         // 객체인 경우 (url 또는 photoUrl 필드 추출)
-        photoUrl = (firstPhoto['url'] ?? firstPhoto['photoUrl'] ?? '') as String;
+        photoUrl =
+            (firstPhoto['url'] ?? firstPhoto['photoUrl'] ?? '') as String;
       }
 
       // 상대 경로를 절대 URL로 변환
       photoUrl = ContractUtils.getFullImageUrl(photoUrl);
-
     }
 
     final hasPhoto = photoUrl.isNotEmpty;
@@ -365,7 +362,8 @@ class _HostHomePageState extends State<HostHomePage> {
                                     return Container(
                                       color: AppColors.neutral100,
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Icon(
                                             Icons.broken_image_outlined,
@@ -375,10 +373,12 @@ class _HostHomePageState extends State<HostHomePage> {
                                           SizedBox(height: 4),
                                           Text(
                                             '이미지 없음',
-                                            style: AppTextStyles.bodySmall.copyWith(
-                                              color: AppColors.textSecondary,
-                                              fontSize: 10,
-                                            ),
+                                            style: AppTextStyles.bodySmall
+                                                .copyWith(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                  fontSize: 10,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -522,7 +522,7 @@ class _HostHomePageState extends State<HostHomePage> {
                   ),
                   SizedBox(height: AppSpacing.sm),
                   Text(
-                    '호스트는 방에 직접 가지 않아도 되는 단기임대를 경험해보세요',
+                    '임대인은 방에 직접 가지 않아도 되는 단기임대를 경험해보세요',
                     style: AppTextStyles.bodyLarge.copyWith(
                       color: AppColors.blue50,
                       fontWeight: FontWeight.bold,

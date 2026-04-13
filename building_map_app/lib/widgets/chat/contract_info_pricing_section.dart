@@ -89,7 +89,7 @@ class ContractInfoPricingSection extends StatelessWidget {
                               color: AppColors.gray900,
                               fontWeight: FontWeight.w700,
                             )),
-                        Text('(게스트 퇴실 후 환급)',
+                        Text('(임차인 퇴실 후 환급)',
                             style: AppTextStyles.caption
                                 .copyWith(color: AppColors.neutral500)),
                       ],
@@ -127,7 +127,7 @@ class ContractInfoPricingSection extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('호스트 계약수수료',
+                    Text('임대인 계약수수료',
                         style: AppTextStyles.bodySmall
                             .copyWith(color: AppColors.gray900)),
                     Text('- ${FormatUtils.formatKRW(_hostCommissionFee)}',

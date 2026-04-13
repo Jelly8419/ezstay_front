@@ -211,7 +211,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
       AppLogger.e('❌ [REGISTER] 에러: $e');
       _showErrorDialog(
         widget.isStandaloneMode
-            ? '호스트 전환에 실패했습니다.\n${e.toString()}'
+            ? '임대인 전환에 실패했습니다.\n${e.toString()}'
             : '회원가입에 실패했습니다.\n${e.toString()}',
       );
     }
@@ -434,8 +434,8 @@ class _HostAccountStepState extends State<HostAccountStep> {
           const SizedBox(height: 8),
           Text(
             widget.isStandaloneMode
-                ? '호스트로 활동하시려면 정산 계좌 정보를 등록해주세요.'
-                : '호스트로 활동하시려면 정산 계좌 정보가 필요합니다.',
+                ? '임대인으로 활동하시려면 정산 계좌 정보를 등록해주세요.'
+                : '임대인으로 활동하시려면 정산 계좌 정보가 필요합니다.',
             style: AppTextStyles.bodySmall.copyWith(color: secondaryGray),
           ),
           const SizedBox(height: 32),
@@ -668,7 +668,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
                       ),
                     )
                   : Text(
-                      widget.isStandaloneMode ? '호스트 전환 완료' : '회원가입 완료',
+                      widget.isStandaloneMode ? '임대인 전환 완료' : '회원가입 완료',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -692,7 +692,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
                   ),
                 ),
                 child: const Text(
-                  '나중에 입력 (게스트로 활동)',
+                  '나중에 입력 (임차인으로 활동)',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,

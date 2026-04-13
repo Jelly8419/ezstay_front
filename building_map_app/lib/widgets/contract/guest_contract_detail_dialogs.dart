@@ -41,7 +41,7 @@ class GuestCheckoutConfirmDialog extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '방 도어락 비밀번호를 임의 변경 후 퇴실하셨을 경우, 퇴실 확인 전에 호스트에게 비밀번호를 안내하지 않으면 보증금 환급 절차에 불이익이 발생할 수 있습니다.',
+                    '방 도어락 비밀번호를 임의 변경 후 퇴실하셨을 경우, 퇴실 확인 전에 임대인에게 비밀번호를 안내하지 않으면 보증금 환급 절차에 불이익이 발생할 수 있습니다.',
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.error700,

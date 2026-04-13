@@ -25,7 +25,7 @@ class ContractInfoPartySection extends StatelessWidget {
       children: [
         Expanded(
           child: _PartyCard(
-            title: '호스트',
+            title: '임대인',
             name: contract.hostDisplayName,
             phone: _isPaymentConfirmed ? contract.hostPhoneNumber : null,
             profileImage: contract.hostProfileImage,
@@ -150,7 +150,7 @@ class _GuestCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('게스트',
+          Text('임차인',
               style: AppTextStyles.labelMedium.copyWith(color: AppColors.gray900)),
           const SizedBox(height: 12),
           Row(
@@ -202,7 +202,7 @@ class _GuestCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '게스트 메시지',
+                          '임차인 메시지',
                           style: AppTextStyles.caption.copyWith(
                             color: AppColors.neutral700,
                             fontWeight: FontWeight.w700,

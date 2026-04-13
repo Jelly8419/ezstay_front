@@ -896,7 +896,7 @@ class _MapScreenState extends State<MapScreen> {
       'photos': photos,
       'isNearSubway': false,
       'isAvailable': rawMarkerData['isAvailable'] ?? true,
-      'hostName': '호스트',
+      'hostName': '임대인',
       'hostId': 1,
       'status': 'published',
     };

@@ -209,9 +209,9 @@ class _ChatStatusDropdown extends StatelessWidget {
             DropdownMenuItem(value: 'IN_PROGRESS', child: Text('임대 중')),
             DropdownMenuItem(value: 'COMPLETED', child: Text('계약 종료')),
             DropdownMenuItem(
-                value: 'CANCELLED_BY_GUEST', child: Text('게스트 취소')),
+                value: 'CANCELLED_BY_GUEST', child: Text('임차인 취소')),
             DropdownMenuItem(
-                value: 'CANCELLED_BY_HOST', child: Text('호스트 취소')),
+                value: 'CANCELLED_BY_HOST', child: Text('임대인 취소')),
             DropdownMenuItem(value: 'REJECTED', child: Text('거절됨')),
           ],
           onChanged: (v) {
