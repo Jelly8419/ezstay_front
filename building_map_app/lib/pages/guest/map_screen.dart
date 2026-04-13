@@ -69,7 +69,6 @@ class _MapScreenState extends State<MapScreen> {
   html.EventListener? _clusterClickListener; // 클러스터 클릭 이벤트 리스너
 
   // 초기 로드 시 photos 누락 대응
-  bool _hasRetriedForPhotos = false; // photos 누락 재시도 여부 추적
 
   // 지도 초기화 후 localStorage 복원 여부 (onBoundsChanged 최초 1회)
   bool _mapRestoreAttempted = false;
@@ -232,7 +231,6 @@ class _MapScreenState extends State<MapScreen> {
         _currentNeLat = neLat;
         _currentNeLng = neLng;
         _currentZoomLevel = zoom;
-        _hasRetriedForPhotos = false; // 새로운 bounds에서는 재시도 플래그 리셋
       });
 
       // 날짜를 YYYY-MM-DD 형식 문자열로 변환
@@ -262,34 +260,6 @@ class _MapScreenState extends State<MapScreen> {
           if (room['thumbnail'] != null) {
             room['thumbnail'] = ContractUtils.getFullImageUrl(room['thumbnail'].toString());
           }
-        }
-
-        bool hasPhotos = false;
-        if (rooms.isNotEmpty) {
-          final photos = rooms.first['photos'];
-          hasPhotos = photos is List && photos.isNotEmpty;
-        }
-
-        // photos 누락 시 자동 재시도 (초기 로드 시 한 번만)
-        if (!hasPhotos && !_hasRetriedForPhotos && rooms.isNotEmpty) {
-          _hasRetriedForPhotos = true;
-
-          // 1초 대기 후 동일한 파라미터로 재호출
-          Future.delayed(const Duration(seconds: 1), () {
-            if (mounted &&
-                _currentSwLat != null &&
-                _currentSwLng != null &&
-                _currentNeLat != null &&
-                _currentNeLng != null) {
-              _loadRoomsByBounds(
-                _currentSwLat!,
-                _currentSwLng!,
-                _currentNeLat!,
-                _currentNeLng!,
-                zoom: _currentZoomLevel,
-              );
-            }
-          });
         }
 
         setState(() {
