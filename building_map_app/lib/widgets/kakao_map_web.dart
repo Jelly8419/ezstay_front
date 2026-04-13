@@ -827,31 +827,6 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
             };
 
             console.log('✅ 지도 생성 완료, 헬퍼 함수 등록됨');
-
-            // 초기 로드를 위해 수동으로 bounds_changed 트리거
-            setTimeout(function() {
-              var bounds = map.getBounds();
-              var sw = bounds.getSouthWest();
-              var ne = bounds.getNorthEast();
-              var currentZoom = map.getLevel();
-
-              // 줌 레벨 체크
-              if (currentZoom >= 6) {
-                console.log('🚫 초기 줌 레벨 ' + currentZoom + ' - 확대 필요');
-                return;
-              }
-
-              console.log('📍 [초기 로드] 수동으로 API 호출 트리거');
-
-              window.postMessage({
-                type: 'bounds_changed',
-                swLat: sw.getLat(),
-                swLng: sw.getLng(),
-                neLat: ne.getLat(),
-                neLng: ne.getLng(),
-                zoom: currentZoom
-              }, '*');
-            }, 500);
           })();
         ''';
 
