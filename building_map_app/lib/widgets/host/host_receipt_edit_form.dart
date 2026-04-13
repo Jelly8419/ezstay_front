@@ -150,6 +150,7 @@ class HostReceiptEditForm extends StatelessWidget {
             controller: receiptNumberController,
             keyboardType: TextInputType.number,
             errorText: receiptFieldErrors['number'],
+            onFieldChanged: onFieldChanged,
           ),
         ],
 
@@ -192,6 +193,7 @@ class HostReceiptEditForm extends StatelessWidget {
             controller: receiptNumberController,
             keyboardType: TextInputType.number,
             errorText: receiptFieldErrors['number'],
+            onFieldChanged: onFieldChanged,
           ),
         ],
 
@@ -204,6 +206,7 @@ class HostReceiptEditForm extends StatelessWidget {
             controller: receiptNumberController,
             keyboardType: TextInputType.number,
             errorText: receiptFieldErrors['number'],
+            onFieldChanged: onFieldChanged,
           ),
           SizedBox(height: AppSpacing.md),
           _buildReceiptInputField(
@@ -211,6 +214,7 @@ class HostReceiptEditForm extends StatelessWidget {
             placeholder: '사업자명을 입력해 주세요.',
             controller: receiptBusinessNameController,
             errorText: receiptFieldErrors['businessName'],
+            onFieldChanged: onFieldChanged,
           ),
           SizedBox(height: AppSpacing.md),
           _buildReceiptInputField(
@@ -218,6 +222,7 @@ class HostReceiptEditForm extends StatelessWidget {
             placeholder: '대표자 이름을 입력해 주세요',
             controller: receiptRepNameController,
             errorText: receiptFieldErrors['repName'],
+            onFieldChanged: onFieldChanged,
           ),
           SizedBox(height: AppSpacing.md),
           _buildReceiptInputField(
@@ -226,6 +231,7 @@ class HostReceiptEditForm extends StatelessWidget {
             controller: receiptEmailController,
             keyboardType: TextInputType.emailAddress,
             errorText: receiptFieldErrors['email'],
+            onFieldChanged: onFieldChanged,
           ),
         ],
 
