@@ -1,5 +1,6 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:ui_web' as ui_web;
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
@@ -67,6 +68,7 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
   late final html.DivElement _mapElement;
   html.EventListener? _boundsChangedListener;
   html.EventListener? _markerClickListener;
+  Timer? _markerUpdateTimer;
 
   @override
   void initState() {
@@ -191,11 +193,10 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
     if (roomsChanged) {
 
-      // 지도 초기화를 기다린 후 마커 업데이트 (약간의 딜레이)
-      Future.delayed(Duration(milliseconds: 500), () {
-        if (mounted) {
-          _updateMarkers();
-        }
+      // 연속 호출 시 이전 예약 취소 후 재시작
+      _markerUpdateTimer?.cancel();
+      _markerUpdateTimer = Timer(const Duration(milliseconds: 50), () {
+        if (mounted) _updateMarkers();
       });
     } else {
     }
@@ -212,6 +213,7 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
 
   @override
   void dispose() {
+    _markerUpdateTimer?.cancel();
     widget.controller?._detach();
     if (_boundsChangedListener != null) {
       html.window.removeEventListener('message', _boundsChangedListener);
@@ -222,10 +224,8 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
     super.dispose();
   }
 
-  /// 마커 업데이트 (기존 마커 제거 후 새로 생성)
+  /// 마커 diff 업데이트 (삭제/추가/스타일 갱신만 수행)
   void _updateMarkers() {
-
-    // 방 데이터를 JavaScript로 전달하여 마커 재생성
     final roomsJsonString = widget.rooms
         .map((room) {
           final weeklyRent =
@@ -242,134 +242,81 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
         })
         .join(',');
 
-    final jsCode =
-        '''
+    final jsCode = '''
       (function() {
         var container = document.getElementById('$_viewId');
         if (!container || !container._kakaoMap) {
           console.warn('🔄 [JS] 지도가 아직 초기화되지 않음 - 마커 업데이트 스킵');
           return;
         }
-
-        // 마커 배열이 없으면 초기화
-        if (!container._markers) {
-          console.warn('🔄 [JS] 마커 배열 없음 - 초기화');
-          container._markers = [];
-        }
-
-        var map = container._kakaoMap;
-        var markers = container._markers;
-
-        console.log('🔄 [JS] 마커 업데이트 시작 - 기존 마커: ' + markers.length + '개');
-
-        // 기존 마커 모두 제거
-        markers.forEach(function(marker) {
-          marker.setMap(null);
-        });
-        markers = [];
-
-        // 새로운 방 데이터
-        var allRooms = [$roomsJsonString];
-        console.log('🔄 [JS] 새로운 방 데이터: ' + allRooms.length + '개');
-
-        // 현재 줌 레벨
-        var currentZoomLevel = map.getLevel();
-
-        // 헬퍼 함수가 없으면 스킵
         if (!container._getClusterDistance || !container._clusterRooms) {
           console.warn('🔄 [JS] 클러스터링 함수 없음 - 마커 업데이트 스킵');
           return;
         }
 
-        // 클러스터링 (기존 로직 재사용)
-        var clusterDistance = container._getClusterDistance(currentZoomLevel);
-        var clusters = container._clusterRooms(allRooms, clusterDistance);
+        var map = container._kakaoMap;
+        var currentZoomLevel = map.getLevel();
 
-        console.log('🔄 [JS] 클러스터링 완료: ' + clusters.length + '개');
+        // _markerMap: { clusterKey -> { overlay, content, firstRoomId, allUnavailable, text } }
+        if (!container._markerMap) container._markerMap = {};
+        if (container._selectedMarkerId === undefined) container._selectedMarkerId = null;
 
-        // 선택된 마커 ID 초기화 (없으면)
-        if (!container._selectedMarkerId) {
-          container._selectedMarkerId = null;
+        // ── 헬퍼: 클러스터 키 생성 (소속 방 ID 정렬 조인) ──────────────────
+        function clusterKey(cluster) {
+          return cluster.rooms.map(function(r) { return r.id; }).sort().join(',');
         }
 
-        // 마커 재생성
-        clusters.forEach(function(cluster) {
-          if (cluster.minPrice === 0) return;
-
-          var markerPosition = new kakao.maps.LatLng(cluster.centerLat, cluster.centerLng);
-          var priceInManWon = Math.round(cluster.minPrice / 10000);
-          var roomCount = cluster.rooms.length;
-
-          var markerText = roomCount > 1
-            ? priceInManWon + '만원 외 ' + (roomCount - 1) + '개'
-            : priceInManWon + '만원';
-
-          var content = document.createElement('div');
-          content.className = 'price-marker';
-
-          // 첫 번째 방 ID로 선택 여부 판단
-          var firstRoomId = cluster.rooms[0].id;
-          var isSelected = container._selectedMarkerId === firstRoomId;
-
-          // 클러스터 내 모든 방이 예약 불가인 경우 회색 마커로 표시
-          var allUnavailable = cluster.rooms.every(function(r) { return r.isAvailable === false; });
-
-          // 기본: 흰색 배경, 선택 시: 파란색 배경, 비가용 시: 회색
+        // ── 헬퍼: 마커 스타일 적용 ──────────────────────────────────────────
+        function applyStyle(content, isSelected, allUnavailable) {
           var baseStyle = isSelected
             ? 'background:#3B82F6;color:white;border:none;'
             : allUnavailable
             ? 'background:#E5E7EB;color:#9CA3AF;border:1px solid #D1D5DB;'
             : 'background:white;color:#1F2937;border:1px solid #E5E7EB;';
+          content.style.cssText = baseStyle +
+            'padding:8px 14px;border-radius:20px;font-size:14px;font-weight:600;' +
+            'cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);white-space:nowrap;' +
+            'transition:all 0.2s ease;z-index:' + (isSelected ? '20' : '10') + ';position:relative;';
+        }
 
-          content.style.cssText = baseStyle + 'padding:8px 14px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);white-space:nowrap;transition:all 0.2s ease;z-index:' + (isSelected ? '20' : '10') + ';position:relative;';
+        // ── 헬퍼: 오버레이 신규 생성 ────────────────────────────────────────
+        function createOverlay(cluster) {
+          var firstRoomId = cluster.rooms[0].id;
+          var allUnavailable = cluster.rooms.every(function(r) { return r.isAvailable === false; });
+          var priceInManWon = Math.round(cluster.minPrice / 10000);
+          var roomCount = cluster.rooms.length;
+          var markerText = roomCount > 1
+            ? priceInManWon + '만원 외 ' + (roomCount - 1) + '개'
+            : priceInManWon + '만원';
+          var isSelected = container._selectedMarkerId === firstRoomId;
+
+          var content = document.createElement('div');
+          content.className = 'price-marker';
           content.textContent = markerText;
-
           content.dataset.clusterRooms = JSON.stringify(cluster.rooms.map(function(r) { return r.id; }));
           content.dataset.firstRoomId = firstRoomId;
           content.dataset.unavailable = allUnavailable ? 'true' : 'false';
+          applyStyle(content, isSelected, allUnavailable);
 
-          var overlay = new kakao.maps.CustomOverlay({
-            position: markerPosition,
-            content: content,
-            yAnchor: 1.2
-          });
-
-          // 줌 레벨 6 미만(확대)일 때만 마커 표시
-          var shouldShow = currentZoomLevel < 6;
-          if (shouldShow) {
-            overlay.setMap(map);
-          }
-          markers.push(overlay);
-
-          // 호버 효과 (선택 상태에 따라 다른 색상, 비가용 마커는 회색 유지)
+          // 호버 효과
           content.addEventListener('mouseover', function() {
-            if (allUnavailable) return; // 비가용 마커는 호버 효과 없음
-            var currentlySelected = container._selectedMarkerId === firstRoomId;
-            if (currentlySelected) {
-              // 선택된 마커: blue-700 (더 진한 파란색)
-              content.style.backgroundColor = '#2563EB';
-            } else {
-              // 기본 마커: gray-100 (연한 회색)
-              content.style.backgroundColor = '#F3F4F6';
-            }
+            if (allUnavailable) return;
+            var sel = container._selectedMarkerId === firstRoomId;
+            content.style.backgroundColor = sel ? '#2563EB' : '#F3F4F6';
             content.style.transform = 'scale(1.05)';
             content.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
           });
-
           content.addEventListener('mouseout', function() {
-            var currentlySelected = container._selectedMarkerId === firstRoomId;
-            if (currentlySelected) {
-              // 선택된 마커: blue-600으로 복귀
+            var sel = container._selectedMarkerId === firstRoomId;
+            if (sel) {
               content.style.backgroundColor = '#3B82F6';
               content.style.color = 'white';
               content.style.border = 'none';
             } else if (allUnavailable) {
-              // 비가용 마커: 회색으로 복귀
               content.style.backgroundColor = '#E5E7EB';
               content.style.color = '#9CA3AF';
               content.style.border = '1px solid #D1D5DB';
             } else {
-              // 기본 마커: 흰색으로 복귀
               content.style.backgroundColor = 'white';
               content.style.color = '#1F2937';
               content.style.border = '1px solid #E5E7EB';
@@ -378,78 +325,124 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
             content.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
           });
 
-          // 클릭 이벤트 - 마커 선택 토글
+          // 클릭 이벤트
           content.addEventListener('click', function(event) {
-            // 이벤트 전파 중지 (지도 드래그 동작 보호)
             event.stopPropagation();
-
             var clickedRoomId = parseInt(content.dataset.firstRoomId);
-            var clusterRoomIds = JSON.parse(content.dataset.clusterRooms); // 클러스터 전체 방 ID 목록
-            console.log('마커 클릭, 방 ID:', clickedRoomId, '클러스터 방 개수:', clusterRoomIds.length);
+            var clusterRoomIds = JSON.parse(content.dataset.clusterRooms);
 
-            // 같은 마커 재클릭 시 토글 (선택 해제)
+            // 같은 마커 재클릭 → 선택 해제
             if (container._selectedMarkerId === clickedRoomId) {
-              console.log('🔄 [JS] 같은 마커 재클릭 - 선택 해제');
               container._selectedMarkerId = null;
-              if (content.dataset.unavailable === 'true') {
-                content.style.backgroundColor = '#E5E7EB';
-                content.style.color = '#9CA3AF';
-                content.style.border = '1px solid #D1D5DB';
-              } else {
-                content.style.backgroundColor = 'white';
-                content.style.color = '#1F2937';
-                content.style.border = '1px solid #E5E7EB';
-              }
-              content.style.zIndex = '10';
-
-              // Flutter로 메시지 전송 (개별 마커 재클릭이므로 clusterRoomIds 필드 제외)
-              window.postMessage({
-                type: 'marker_click',
-                roomId: -1
-                // clusterRoomIds 필드 제거 → 개별 마커 재클릭임을 나타냄
-              }, '*');
-              return; // 조기 종료
+              applyStyle(content, false, content.dataset.unavailable === 'true');
+              window.postMessage({ type: 'marker_click', roomId: -1 }, '*');
+              return;
             }
 
-            // 이전 선택 마커 찾아서 스타일 초기화
-            if (container._selectedMarkerId !== null && container._selectedMarkerId !== clickedRoomId) {
-              var oldMarkerElements = document.querySelectorAll('.price-marker');
-              oldMarkerElements.forEach(function(el) {
-                if (parseInt(el.dataset.firstRoomId) === container._selectedMarkerId) {
-                  if (el.dataset.unavailable === 'true') {
-                    el.style.backgroundColor = '#E5E7EB';
-                    el.style.color = '#9CA3AF';
-                    el.style.border = '1px solid #D1D5DB';
-                  } else {
-                    el.style.backgroundColor = 'white';
-                    el.style.color = '#1F2937';
-                    el.style.border = '1px solid #E5E7EB';
-                  }
-                  el.style.zIndex = '10';
-                }
+            // 이전 선택 마커 스타일 초기화
+            if (container._selectedMarkerId !== null) {
+              var prevKey = null;
+              Object.keys(container._markerMap).forEach(function(k) {
+                if (container._markerMap[k].firstRoomId === container._selectedMarkerId) prevKey = k;
               });
+              if (prevKey) {
+                var prev = container._markerMap[prevKey];
+                applyStyle(prev.content, false, prev.allUnavailable);
+              }
             }
 
-            // 현재 마커 선택 상태로 변경
+            // 현재 마커 선택
             container._selectedMarkerId = clickedRoomId;
-            content.style.backgroundColor = '#3B82F6';
-            content.style.color = 'white';
-            content.style.border = 'none';
-            content.style.zIndex = '20';
-
-            // Flutter로 메시지 전송 (클러스터 전체 방 ID 목록 포함)
+            applyStyle(content, true, false);
             window.postMessage({
               type: 'marker_click',
               roomId: clickedRoomId,
-              clusterRoomIds: clusterRoomIds // 클러스터에 포함된 모든 방 ID
+              clusterRoomIds: clusterRoomIds
             }, '*');
           });
+
+          var overlay = new kakao.maps.CustomOverlay({
+            position: new kakao.maps.LatLng(cluster.centerLat, cluster.centerLng),
+            content: content,
+            yAnchor: 1.2
+          });
+          if (currentZoomLevel < 6) overlay.setMap(map);
+
+          return { overlay: overlay, content: content, firstRoomId: firstRoomId,
+                   allUnavailable: allUnavailable, text: markerText };
+        }
+
+        // ── 새 클러스터 계산 ─────────────────────────────────────────────────
+        var allRooms = [$roomsJsonString];
+        var clusterDistance = container._getClusterDistance(currentZoomLevel);
+        var newClusters = container._clusterRooms(allRooms, clusterDistance);
+
+        // 가격 0인 클러스터 제외
+        newClusters = newClusters.filter(function(c) { return c.minPrice > 0; });
+
+        // 새 클러스터 맵 구성
+        var newClusterMap = {};
+        newClusters.forEach(function(c) { newClusterMap[clusterKey(c)] = c; });
+
+        var oldKeys = Object.keys(container._markerMap);
+        var newKeys = Object.keys(newClusterMap);
+
+        var removed = 0, added = 0, updated = 0;
+
+        // ── 1. 없어진 클러스터 제거 ──────────────────────────────────────────
+        oldKeys.forEach(function(k) {
+          if (!newClusterMap[k]) {
+            container._markerMap[k].overlay.setMap(null);
+            // 제거된 마커가 선택 상태였으면 초기화
+            if (container._selectedMarkerId === container._markerMap[k].firstRoomId) {
+              container._selectedMarkerId = null;
+            }
+            delete container._markerMap[k];
+            removed++;
+          }
         });
 
-        // 업데이트된 마커 배열을 컨테이너에 저장
-        container._markers = markers;
+        // ── 2. 새 클러스터 추가 / 기존 클러스터 스타일 갱신 ─────────────────
+        newKeys.forEach(function(k) {
+          var cluster = newClusterMap[k];
+          var firstRoomId = cluster.rooms[0].id;
+          var allUnavailable = cluster.rooms.every(function(r) { return r.isAvailable === false; });
+          var priceInManWon = Math.round(cluster.minPrice / 10000);
+          var roomCount = cluster.rooms.length;
+          var markerText = roomCount > 1
+            ? priceInManWon + '만원 외 ' + (roomCount - 1) + '개'
+            : priceInManWon + '만원';
 
-        console.log('✅ [JS] 마커 업데이트 완료 - 새 마커: ' + markers.length + '개');
+          if (!container._markerMap[k]) {
+            // 신규 추가
+            container._markerMap[k] = createOverlay(cluster);
+            added++;
+          } else {
+            // 기존 유지 — 가격 또는 isAvailable 변경 시만 스타일 갱신
+            var existing = container._markerMap[k];
+            var isSelected = container._selectedMarkerId === firstRoomId;
+            var textChanged = existing.text !== markerText;
+            var unavailableChanged = existing.allUnavailable !== allUnavailable;
+
+            if (textChanged || unavailableChanged) {
+              existing.content.textContent = markerText;
+              existing.content.dataset.unavailable = allUnavailable ? 'true' : 'false';
+              applyStyle(existing.content, isSelected, allUnavailable);
+              existing.text = markerText;
+              existing.allUnavailable = allUnavailable;
+              updated++;
+            }
+
+            // 줌 레벨 변경에 따른 표시/숨김 동기화
+            if (currentZoomLevel < 6) {
+              existing.overlay.setMap(map);
+            } else {
+              existing.overlay.setMap(null);
+            }
+          }
+        });
+
+        console.log('✅ [JS] 마커 diff 완료 - 제거:' + removed + ' 추가:' + added + ' 갱신:' + updated);
       })();
     ''';
 
@@ -634,83 +627,68 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
             // 마커 배열 저장
             var markers = [];
 
-            // 지도 영역 변경 이벤트 리스너 (드래그 후, 줌 후)
-            var boundsChangedTimeout;
+            // 지도 영역 변경 이벤트 리스너 (dragend / zoom_changed)
             var lastBounds = null;
             var isInitialLoad = true;
 
-            kakao.maps.event.addListener(map, 'bounds_changed', function() {
-              // 디바운스: 1초 후에 실행
-              clearTimeout(boundsChangedTimeout);
-              boundsChangedTimeout = setTimeout(function() {
-                var bounds = map.getBounds();
-                var sw = bounds.getSouthWest();
-                var ne = bounds.getNorthEast();
+            // 공통 전송 함수
+            function sendBoundsToFlutter() {
+              var bounds = map.getBounds();
+              var sw = bounds.getSouthWest();
+              var ne = bounds.getNorthEast();
+              var currentZoom = map.getLevel();
 
-                // 현재 줌 레벨 가져오기
-                var currentZoom = map.getLevel();
-
-                // 줌 레벨 6 이상(축소)이면 API 호출 및 마커 표시 중단
-                if (currentZoom >= 6) {
-                  console.log('🚫 줌 레벨 ' + currentZoom + ' - API 호출 스킵 (줌 레벨 6 미만 필요)');
-                  //return;
-                }
-
-                // 초기 로드 시 실제 지도 범위로 API 호출
-                if (isInitialLoad) {
-                  isInitialLoad = false;
-                  lastBounds = { swLat: sw.getLat(), swLng: sw.getLng(), neLat: ne.getLat(), neLng: ne.getLng() };
-                  console.log('📍 [초기 로드] 실제 지도 범위로 API 호출');
-
-                  // Flutter로 메시지 전송
-                  window.postMessage({
-                    type: 'bounds_changed',
-                    swLat: sw.getLat(),
-                    swLng: sw.getLng(),
-                    neLat: ne.getLat(),
-                    neLng: ne.getLng(),
-                    zoom: currentZoom
-                  }, '*');
-
-                  return;
-                }
-
-                // 이전 영역과 비교하여 큰 변화가 있을 때만 API 호출
-                if (lastBounds) {
-                  var latChange = Math.abs(sw.getLat() - lastBounds.swLat) + Math.abs(ne.getLat() - lastBounds.neLat);
-                  var lngChange = Math.abs(sw.getLng() - lastBounds.swLng) + Math.abs(ne.getLng() - lastBounds.neLng);
-
-                  // 위도/경도 변화가 0.002 미만이면 무시 (약 200m 미만)
-                  // 작은 변화는 스킵하지만, 적당한 지도 이동은 API 호출
-                  if (latChange < 0.002 && lngChange < 0.002) {
-                    console.log('영역 변화 미미 - API 호출 스킵 (변화: lat=' + latChange.toFixed(4) + ', lng=' + lngChange.toFixed(4) + ')');
-                    return;
-                  }
-                  console.log('✅ 영역 변화 감지 - API 호출 (변화: lat=' + latChange.toFixed(4) + ', lng=' + lngChange.toFixed(4) + ')');
-                }
-
-                // 현재 영역 저장
+              // 초기 로드: 최초 1회 무조건 전송
+              if (isInitialLoad) {
+                isInitialLoad = false;
                 lastBounds = { swLat: sw.getLat(), swLng: sw.getLng(), neLat: ne.getLat(), neLng: ne.getLng() };
-
-                // Flutter로 메시지 전송 (줌 레벨 포함)
+                console.log('📍 [초기 로드] 실제 지도 범위로 API 호출');
                 window.postMessage({
                   type: 'bounds_changed',
-                  swLat: sw.getLat(),
-                  swLng: sw.getLng(),
-                  neLat: ne.getLat(),
-                  neLng: ne.getLng(),
+                  swLat: sw.getLat(), swLng: sw.getLng(),
+                  neLat: ne.getLat(), neLng: ne.getLng(),
                   zoom: currentZoom
                 }, '*');
+                return;
+              }
 
-                console.log('지도 영역 변경 - API 호출:', {
-                  sw: { lat: sw.getLat(), lng: sw.getLng() },
-                  ne: { lat: ne.getLat(), lng: ne.getLng() }
-                });
-              }, 1000);
+              // 이전 영역과 비교 — 변화가 미미하면 스킵
+              if (lastBounds) {
+                var latChange = Math.abs(sw.getLat() - lastBounds.swLat) + Math.abs(ne.getLat() - lastBounds.neLat);
+                var lngChange = Math.abs(sw.getLng() - lastBounds.swLng) + Math.abs(ne.getLng() - lastBounds.neLng);
+                if (latChange < 0.002 && lngChange < 0.002) {
+                  console.log('영역 변화 미미 - API 호출 스킵 (lat=' + latChange.toFixed(4) + ', lng=' + lngChange.toFixed(4) + ')');
+                  return;
+                }
+              }
+
+              lastBounds = { swLat: sw.getLat(), swLng: sw.getLng(), neLat: ne.getLat(), neLng: ne.getLng() };
+              console.log('✅ bounds 전송 (dragend/zoom_changed)');
+              window.postMessage({
+                type: 'bounds_changed',
+                swLat: sw.getLat(), swLng: sw.getLng(),
+                neLat: ne.getLat(), neLng: ne.getLng(),
+                zoom: currentZoom
+              }, '*');
+            }
+
+            // 초기 로드: bounds_changed 첫 발생 시 1회만 처리
+            kakao.maps.event.addListener(map, 'bounds_changed', function() {
+              if (isInitialLoad) sendBoundsToFlutter();
             });
 
-            // 마커 배열 초기화
-            container._markers = [];
+            // 드래그 종료: 손 뗀 즉시 발생 (관성 이동 완료 후)
+            kakao.maps.event.addListener(map, 'dragend', function() {
+              sendBoundsToFlutter();
+            });
+
+            // 줌 변경 완료
+            kakao.maps.event.addListener(map, 'zoom_changed', function() {
+              sendBoundsToFlutter();
+            });
+
+            // 마커 맵 초기화 (diff 업데이트용 — key: clusterKey, value: {overlay, content, ...})
+            container._markerMap = {};
 
             // 선택된 마커 ID 초기화
             container._selectedMarkerId = null;
@@ -770,58 +748,51 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
             container._selectMarkerById = function(roomId) {
               console.log('🎯 [JS] 마커 선택 요청, 방 ID:', roomId);
 
-              // -1인 경우: 모든 마커 선택 해제
-              if (roomId === -1) {
-                console.log('🔄 [JS] 모든 마커 선택 해제');
-                var allMarkerElements = document.querySelectorAll('.price-marker');
-                allMarkerElements.forEach(function(el) {
-                  if (el.dataset.unavailable === 'true') {
-                    el.style.backgroundColor = '#E5E7EB';
-                    el.style.color = '#9CA3AF';
-                    el.style.border = '1px solid #D1D5DB';
-                  } else {
-                    el.style.backgroundColor = 'white';
-                    el.style.color = '#1F2937';
-                    el.style.border = '1px solid #E5E7EB';
+              // 헬퍼: _markerMap에서 firstRoomId로 항목 찾기
+              function findEntryByRoomId(id) {
+                var keys = Object.keys(container._markerMap);
+                for (var i = 0; i < keys.length; i++) {
+                  if (container._markerMap[keys[i]].firstRoomId === id) {
+                    return container._markerMap[keys[i]];
                   }
-                  el.style.zIndex = '10';
-                });
+                }
+                return null;
+              }
+
+              // 헬퍼: 스타일 적용
+              function applyStyle(content, isSelected, allUnavailable) {
+                var baseStyle = isSelected
+                  ? 'background:#3B82F6;color:white;border:none;'
+                  : allUnavailable
+                  ? 'background:#E5E7EB;color:#9CA3AF;border:1px solid #D1D5DB;'
+                  : 'background:white;color:#1F2937;border:1px solid #E5E7EB;';
+                content.style.cssText = baseStyle +
+                  'padding:8px 14px;border-radius:20px;font-size:14px;font-weight:600;' +
+                  'cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);white-space:nowrap;' +
+                  'transition:all 0.2s ease;z-index:' + (isSelected ? '20' : '10') + ';position:relative;';
+              }
+
+              // -1: 모든 마커 선택 해제
+              if (roomId === -1) {
+                if (container._selectedMarkerId !== null) {
+                  var prevEntry = findEntryByRoomId(container._selectedMarkerId);
+                  if (prevEntry) applyStyle(prevEntry.content, false, prevEntry.allUnavailable);
+                }
                 container._selectedMarkerId = null;
                 console.log('✅ [JS] 모든 마커 선택 해제 완료');
                 return;
               }
 
-              // 이전 선택 마커 찾아서 스타일 초기화
+              // 이전 선택 마커 스타일 초기화
               if (container._selectedMarkerId !== null && container._selectedMarkerId !== roomId) {
-                var oldMarkerElements = document.querySelectorAll('.price-marker');
-                oldMarkerElements.forEach(function(el) {
-                  if (parseInt(el.dataset.firstRoomId) === container._selectedMarkerId) {
-                    if (el.dataset.unavailable === 'true') {
-                      el.style.backgroundColor = '#E5E7EB';
-                      el.style.color = '#9CA3AF';
-                      el.style.border = '1px solid #D1D5DB';
-                    } else {
-                      el.style.backgroundColor = 'white';
-                      el.style.color = '#1F2937';
-                      el.style.border = '1px solid #E5E7EB';
-                    }
-                    el.style.zIndex = '10';
-                  }
-                });
+                var oldEntry = findEntryByRoomId(container._selectedMarkerId);
+                if (oldEntry) applyStyle(oldEntry.content, false, oldEntry.allUnavailable);
               }
 
-              // 새로운 마커 선택
+              // 새 마커 선택
               container._selectedMarkerId = roomId;
-
-              var markerElements = document.querySelectorAll('.price-marker');
-              markerElements.forEach(function(el) {
-                if (parseInt(el.dataset.firstRoomId) === roomId) {
-                  el.style.backgroundColor = '#3B82F6';
-                  el.style.color = 'white';
-                  el.style.border = 'none';
-                  el.style.zIndex = '20';
-                }
-              });
+              var newEntry = findEntryByRoomId(roomId);
+              if (newEntry) applyStyle(newEntry.content, true, false);
 
               console.log('✅ [JS] 마커 선택 완료');
             };

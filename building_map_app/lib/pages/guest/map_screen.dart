@@ -817,6 +817,14 @@ class _MapScreenState extends State<MapScreen> {
       _restoreMapStateIfNeeded();
     }
 
+    // 줌 레벨 6 이상이면 매물 초기화 후 즉시 종료
+    if (zoom >= 6) {
+      setState(() {
+        _roomsForMap = [];
+      });
+      return;
+    }
+
     // 모바일 환경에서 슬라이드 카드가 표시 중이면 숨김 (지도 드래그 시)
     if (_isMobile && _showMobileCardList) {
       setState(() {
