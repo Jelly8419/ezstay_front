@@ -277,9 +277,9 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
           _formData['earlyCheckinDiscountAmount'] =
               roomData['quickMoveInDiscount']?.toString() ?? '';
 
-          // Step 4: 이지스테이 관리 서비스 (API ezServices 객체에서 가져오기)
-          if (roomData['ezServices'] != null && roomData['ezServices'] is Map) {
-            final ezServices = roomData['ezServices'] as Map<String, dynamic>;
+          // Step 4: 이지스테이 관리 서비스 (API ezService 객체에서 가져오기)
+          if (roomData['ezService'] != null && roomData['ezService'] is Map) {
+            final ezServices = roomData['ezService'] as Map<String, dynamic>;
 
             // API 필드명 → Frontend 필드명 매핑
             _formData['cleaningService'] =
