@@ -193,7 +193,7 @@ class _FAQsPageState extends State<FAQsPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _userMode == 'host' ? '호스트 모드' : '게스트 모드',
+                        _userMode == 'host' ? '임대인 모드' : '임차인 모드',
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.gray600,

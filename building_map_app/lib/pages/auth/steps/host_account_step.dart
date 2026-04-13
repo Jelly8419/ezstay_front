@@ -711,10 +711,10 @@ class _HostAccountStepState extends State<HostAccountStep> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('게스트로 활동하시겠습니까?'),
+        title: const Text('임차인으로 활동하시겠습니까?'),
         content: const Text(
-          '계좌 정보를 나중에 입력하시면 게스트 모드로 활동하게 됩니다.\n'
-          '호스트 기능을 사용하시려면 계좌 정보를 등록해야 합니다.',
+          '계좌 정보를 나중에 입력하시면 임차인 모드로 활동하게 됩니다.\n'
+          '임대인 기능을 사용하시려면 계좌 정보를 등록해야 합니다.',
         ),
         actions: [
           TextButton(
@@ -728,7 +728,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
               context.go('/guest');
             },
             child: Text(
-              '게스트로 활동',
+              '임차인으로 활동',
               style: TextStyle(color: AppColors.primary600),
             ),
           ),
