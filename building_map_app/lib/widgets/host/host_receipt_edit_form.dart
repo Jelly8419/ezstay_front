@@ -75,14 +75,6 @@ class HostReceiptEditForm extends StatelessWidget {
           ),
           items: const [
             DropdownMenuItem(
-              value: 'personal',
-              child: Text('개인소득공제용 현금영수증'),
-            ),
-            DropdownMenuItem(
-              value: 'business',
-              child: Text('사업자증빙용 현금영수증'),
-            ),
-            DropdownMenuItem(
               value: 'tax_invoice',
               child: Text('전자세금계산서'),
             ),
@@ -110,92 +102,6 @@ class HostReceiptEditForm extends StatelessWidget {
             ),
           ),
         ),
-
-        // 개인소득공제용
-        if (receiptType == 'personal') ...[
-          SizedBox(height: AppSpacing.md),
-          Text(
-            '번호 종류',
-            style: AppTextStyles.bodySmall.copyWith(
-              fontWeight: FontWeight.w500,
-              color: AppColors.neutral700,
-            ),
-          ),
-          SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              _buildRadioOption(
-                label: '휴대폰 번호',
-                value: 'phone',
-                groupValue: receiptNumberInputType,
-                onChanged: onNumberInputTypeChanged,
-              ),
-              SizedBox(width: AppSpacing.md),
-              _buildRadioOption(
-                label: '현금영수증 카드 번호',
-                value: 'card',
-                groupValue: receiptNumberInputType,
-                onChanged: onNumberInputTypeChanged,
-              ),
-            ],
-          ),
-          SizedBox(height: AppSpacing.sm),
-          _buildReceiptInputField(
-            label: receiptNumberInputType == 'phone'
-                ? '휴대폰 번호'
-                : '현금영수증 카드 번호',
-            placeholder: receiptNumberInputType == 'phone'
-                ? "'-' 없이 숫자만 입력해주세요 (예: 01012345678)"
-                : "'-' 없이 숫자만 입력해주세요",
-            controller: receiptNumberController,
-            keyboardType: TextInputType.number,
-            errorText: receiptFieldErrors['number'],
-            onFieldChanged: onFieldChanged,
-          ),
-        ],
-
-        // 사업자증빙용
-        if (receiptType == 'business') ...[
-          SizedBox(height: AppSpacing.md),
-          Text(
-            '번호 종류',
-            style: AppTextStyles.bodySmall.copyWith(
-              fontWeight: FontWeight.w500,
-              color: AppColors.neutral700,
-            ),
-          ),
-          SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              _buildRadioOption(
-                label: '휴대폰 번호',
-                value: 'phone',
-                groupValue: receiptNumberInputType,
-                onChanged: onNumberInputTypeChanged,
-              ),
-              SizedBox(width: AppSpacing.md),
-              _buildRadioOption(
-                label: '사업자 등록번호',
-                value: 'bizno',
-                groupValue: receiptNumberInputType,
-                onChanged: onNumberInputTypeChanged,
-              ),
-            ],
-          ),
-          SizedBox(height: AppSpacing.sm),
-          _buildReceiptInputField(
-            label: receiptNumberInputType == 'phone'
-                ? '휴대폰 번호'
-                : '사업자 등록번호',
-            placeholder: receiptNumberInputType == 'phone'
-                ? "'-' 없이 숫자만 입력해주세요 (예: 01012345678)"
-                : "'-' 없이 숫자만 입력해주세요 (10자리)",
-            controller: receiptNumberController,
-            keyboardType: TextInputType.number,
-            errorText: receiptFieldErrors['number'],
-            onFieldChanged: onFieldChanged,
-          ),
-        ],
 
         // 전자세금계산서
         if (receiptType == 'tax_invoice') ...[
@@ -324,53 +230,6 @@ class HostReceiptEditForm extends StatelessWidget {
   }
 }
 
-Widget _buildRadioOption({
-  required String label,
-  required String value,
-  required String groupValue,
-  required void Function(String) onChanged,
-}) {
-  final isSelected = value == groupValue;
-
-  return GestureDetector(
-    onTap: () => onChanged(value),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: isSelected ? AppColors.primary600 : AppColors.gray300,
-              width: 2,
-            ),
-          ),
-          child: isSelected
-              ? Center(
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary600,
-                    ),
-                  ),
-                )
-              : null,
-        ),
-        SizedBox(width: AppSpacing.sm),
-        Text(
-          label,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.gray900,
-          ),
-        ),
-      ],
-    ),
-  );
-}
 
 Widget _buildReceiptInputField({
   required String label,
