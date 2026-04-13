@@ -43,6 +43,7 @@ class ApiConfig {
   static String get authKakaoUrl => '$baseUrl/auth/kakao';
   static String get authKakaoWebUrl => '$baseUrl/api/auth/kakao';
   static String get authProfileUrl => '$baseUrl/api/auth/profile';
+  static String get authModeUrl => '$baseUrl/api/auth/mode';
   static String get authRefreshUrl => '$baseUrl/api/auth/refresh';
   static String authDevBypassUrl(String userId, {String? key}) {
     final base = '$baseUrl/api/auth/dev-bypass/$userId';

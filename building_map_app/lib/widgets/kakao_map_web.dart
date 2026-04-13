@@ -687,6 +687,16 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
               sendBoundsToFlutter();
             });
 
+            // 뷰포트 크기 변경 시 지도 레이아웃 재계산 (개발자도구 열기/닫기, 창 크기 조정 대응)
+            var relayoutTimer;
+            window.addEventListener('resize', function() {
+              clearTimeout(relayoutTimer);
+              relayoutTimer = setTimeout(function() {
+                map.relayout();
+                console.log('🔄 [MAP] relayout 완료');
+              }, 100);
+            });
+
             // 마커 맵 초기화 (diff 업데이트용 — key: clusterKey, value: {overlay, content, ...})
             container._markerMap = {};
 
