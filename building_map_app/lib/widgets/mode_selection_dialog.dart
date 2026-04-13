@@ -3,6 +3,7 @@ import '../models/user.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart';
 import '../core/theme/app_text_styles.dart';
+import 'common/ezstay_logo.dart';
 
 /// 게스트/호스트 모드 선택 다이얼로그
 /// 회원가입 시 사용자 모드를 선택하는 팝업
@@ -35,18 +36,7 @@ class ModeSelectionDialog extends StatelessWidget {
             Row(
               children: [
                 // 로고
-                Container(
-                  padding: EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary100,
-                    borderRadius: AppRadius.radiusSm,
-                  ),
-                  child: Icon(
-                    Icons.home,
-                    color: AppColors.primary600,
-                    size: AppSizes.iconMd,
-                  ),
-                ),
+                EZStayLogo.iconOnly(size: 36),
                 SizedBox(width: AppSpacing.sm),
                 Text(
                   'EZStay',
@@ -88,7 +78,7 @@ class ModeSelectionDialog extends StatelessWidget {
                       child: _buildModeCard(
                         context: context,
                         mode: UserMode.guest,
-                        title: '집을 찾고 있어요',
+                        title: '임차인',
                         icon: Icons.search,
                         features: [
                           _Feature(
@@ -110,7 +100,7 @@ class ModeSelectionDialog extends StatelessWidget {
                       child: _buildModeCard(
                         context: context,
                         mode: UserMode.host,
-                        title: '집을 내놓고 싶어요',
+                        title: '임대인',
                         icon: Icons.home_work,
                         features: [
                           _Feature(
