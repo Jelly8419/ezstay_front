@@ -106,16 +106,15 @@ class _HostAccountStepState extends State<HostAccountStep> {
 
     try {
       final token = await TokenService.getAccessToken();
-      if (token == null) {
-        throw Exception('인증 토큰이 없습니다.');
+
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
       }
 
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/api/account/verify'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
         body: jsonEncode({
           'bank_code': _getBankCode(_selectedBank!),
           'account_num': _accountController.text,
@@ -724,8 +723,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // 게스트 모드로 홈 이동 (계좌 미등록 상태 유지)
-              context.go('/guest');
+              _registerAsGuest();
             },
             child: Text(
               '임차인으로 활동',
@@ -735,5 +733,86 @@ class _HostAccountStepState extends State<HostAccountStep> {
         ],
       ),
     );
+  }
+
+  /// 계좌 미등록 상태로 게스트(임차인) 회원가입
+  Future<void> _registerAsGuest() async {
+    if (widget.email == null ||
+        widget.password == null ||
+        widget.phoneNumber == null ||
+        widget.realName == null) {
+      _showErrorDialog('회원가입에 필요한 정보가 부족합니다.');
+      return;
+    }
+
+    setState(() {
+      _isRegistering = true;
+    });
+
+    try {
+      final registerBody = {
+        'email': widget.email,
+        'password': widget.password,
+        'user_mode': 'guest',
+        'name': widget.realName,
+        'phone_number': widget.phoneNumber,
+        if (widget.birth != null) 'birth': widget.birth,
+        if (widget.gender != null) 'gender': widget.gender,
+        if (widget.di != null) 'di': widget.di,
+        'terms': {
+          'service_terms': _agreeTerms,
+          'privacy_policy': _agreeTerms,
+          'marketing_consent': _agreeMarketing,
+          'age_confirmed': true,
+        },
+      };
+
+      final registerResponse = await http
+          .post(
+            Uri.parse(ApiConfig.authRegisterUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(registerBody),
+          )
+          .timeout(ApiConfig.timeout);
+
+      if (registerResponse.statusCode != 200 &&
+          registerResponse.statusCode != 201) {
+        final data = jsonDecode(registerResponse.body);
+        throw Exception(data['message'] ?? '회원가입에 실패했습니다');
+      }
+
+      final registerData = jsonDecode(registerResponse.body);
+      if (registerData['success'] != true) {
+        throw Exception(registerData['message'] ?? '회원가입에 실패했습니다');
+      }
+
+      // JWT 토큰 추출 및 저장
+      String? accessToken;
+      String? refreshToken;
+      if (registerData['data'] != null &&
+          registerData['data']['accessToken'] != null) {
+        accessToken = registerData['data']['accessToken'];
+        refreshToken = registerData['data']['refreshToken'];
+      } else if (registerData['accessToken'] != null) {
+        accessToken = registerData['accessToken'];
+        refreshToken = registerData['refreshToken'];
+      }
+
+      if (accessToken == null) {
+        throw Exception('JWT 토큰을 받지 못했습니다');
+      }
+
+      await TokenService.saveTokens(accessToken, refreshToken);
+
+      if (!mounted) return;
+      context.go('/guest');
+    } catch (e) {
+      AppLogger.e('❌ [REGISTER-GUEST] 에러: $e');
+      setState(() {
+        _isRegistering = false;
+      });
+      if (!mounted) return;
+      _showErrorDialog('회원가입에 실패했습니다.\n${e.toString()}');
+    }
   }
 }
