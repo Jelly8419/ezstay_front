@@ -59,6 +59,7 @@ import '../pages/host/host_settlement_deduction_page.dart'
     deferred as host_settlement_deduction;
 import '../pages/auth/account_suspended_page.dart' deferred as account_suspended;
 import '../pages/auth/reset_password_page.dart' deferred as reset_password;
+import '../pages/auth/find_id_page.dart' deferred as find_id;
 import '../pages/auth/kmc_callback_page.dart' deferred as kmc_callback;
 import '../pages/error_page.dart';
 
@@ -354,6 +355,14 @@ class AppRouter {
               builder: (context, state) => _deferredWidget(
                 reset_password.loadLibrary,
                 () => reset_password.ResetPasswordPage(),
+              ),
+            ),
+            GoRoute(
+              path: '/find-id',
+              name: 'find-id',
+              builder: (context, state) => _deferredWidget(
+                find_id.loadLibrary,
+                () => find_id.FindIdPage(),
               ),
             ),
             // KMC 본인인증 콜백 (KMC가 인증 완료 후 이 URL로 결과 POST)

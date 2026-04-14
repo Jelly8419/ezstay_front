@@ -102,11 +102,18 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
   Future<void> _requestVerification() async {
     setState(() => _isVerifying = true);
 
-    if (!ApiConfig.isProduction && ApiConfig.baseUrl.contains('localhost')) {
-      await _handleMockVerification();
-      return;
+    try {
+      if (!ApiConfig.isProduction && ApiConfig.baseUrl.contains('localhost')) {
+        await _handleMockVerification();
+        return;
+      }
+      await _handleKmcVerification();
+    } finally {
+      // 어떤 경로로 종료되든 _isVerifying이 false로 복구됨을 보장
+      if (mounted && _isVerifying) {
+        setState(() => _isVerifying = false);
+      }
     }
-    await _handleKmcVerification();
   }
 
   /// 로컬 Mock 본인인증
