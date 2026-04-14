@@ -173,8 +173,9 @@ class KmcWebViewHelper {
           if (state == 'closed') {
             timer.cancel();
             // 팝업이 닫힘 → BroadcastChannel 결과 잠시 대기 후 미수신 시 취소 처리
+            // kmc-callback.html이 300ms 후 window.close()하므로 여유 있게 대기
             // closedWaitTimer에 저장해야 정상 인증 완료 시 cleanup()으로 취소 가능
-            closedWaitTimer = Timer(const Duration(milliseconds: 500), () {
+            closedWaitTimer = Timer(const Duration(milliseconds: 800), () {
               if (!completer.isCompleted) {
                 cleanup();
                 completer.complete(null);
