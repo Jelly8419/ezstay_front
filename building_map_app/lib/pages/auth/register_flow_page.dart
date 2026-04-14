@@ -86,6 +86,9 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             'name': currentUser?.name,
           },
         );
+      } else if (result == LoginResult.unknownError) {
+        // 웹 환경: 카카오 OAuth 리다이렉트 중 — 페이지가 이동되므로 무시
+        return;
       } else {
         showDialog(
           context: context,

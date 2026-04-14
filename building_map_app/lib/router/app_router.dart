@@ -763,6 +763,8 @@ class AppRouter {
             // 백엔드에서 전달한 JWT 토큰 추출
             final token = state.uri.queryParameters['token'];
             final refreshToken = state.uri.queryParameters['refresh'];
+            // 회원가입 플로우에서 전달된 mode state (guest/host)
+            final oauthState = state.uri.queryParameters['state'];
 
             // 토큰이 없으면 로그인 페이지로 리다이렉트
             if (token == null || refreshToken == null) {
@@ -792,9 +794,18 @@ class AppRouter {
                 );
 
                 if (success && context.mounted) {
+                  // state 파라미터가 있으면 회원가입 플로우에서 온 것 → /register로 이동
+                  if (oauthState == 'host' || oauthState == 'guest') {
+                    final mode = oauthState == 'host' ? UserMode.host : UserMode.guest;
+                    context.go('/register', extra: {
+                      'mode': mode,
+                      'isSocialLogin': true,
+                    });
+                    return;
+                  }
+
                   final user = authService.currentUser;
                   if (user != null) {
-
                     // 사용자 모드에 따라 적절한 페이지로 리다이렉트
                     if (user.mode == UserMode.host) {
                       context.go('/host');
