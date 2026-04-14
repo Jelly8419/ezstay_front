@@ -286,9 +286,14 @@ class AppRouter {
           return '/guest';
         }
 
-        // 로그인은 되어 있지만 본인인증이 안 된 경우 회원가입 Step 2로 리다이렉트
+        // 로그인은 되어 있지만 본인인증이 안 된 경우 소셜 회원가입 플로우로 리다이렉트
+        // /register로 가는 중이면 통과 (mode 파라미터 유지)
         if (isLoggedIn && needsPhoneVerification && !isGoingToRegister) {
-          return '/register?verify=true';
+          // 현재 URL에 mode 파라미터가 있으면 그것을 우선 사용
+          // (없으면 currentUser.mode 사용, 단 백엔드 기본값이 guest일 수 있으므로 주의)
+          final existingMode = state.uri.queryParameters['mode'];
+          final modeStr = existingMode ?? (authService.currentUser?.mode == UserMode.host ? 'host' : 'guest');
+          return '/register?social=true&mode=$modeStr';
         }
 
         // 호스트인데 계좌 미등록 시, 호스트 전용 페이지 접근하면 계좌 등록 Step3로 강제 이동
@@ -763,6 +768,8 @@ class AppRouter {
             // 백엔드에서 전달한 JWT 토큰 추출
             final token = state.uri.queryParameters['token'];
             final refreshToken = state.uri.queryParameters['refresh'];
+            // 회원가입 플로우에서 전달된 mode state (guest/host)
+            final oauthState = state.uri.queryParameters['state'];
 
             // 토큰이 없으면 로그인 페이지로 리다이렉트
             if (token == null || refreshToken == null) {
@@ -792,9 +799,15 @@ class AppRouter {
                 );
 
                 if (success && context.mounted) {
+                  // state 파라미터가 있으면 회원가입 플로우에서 온 것 → /register로 이동
+                  // extra는 웹 OAuth 리다이렉트 후 소실되므로 쿼리 파라미터 사용
+                  if (oauthState == 'host' || oauthState == 'guest') {
+                    context.go('/register?social=true&mode=$oauthState');
+                    return;
+                  }
+
                   final user = authService.currentUser;
                   if (user != null) {
-
                     // 사용자 모드에 따라 적절한 페이지로 리다이렉트
                     if (user.mode == UserMode.host) {
                       context.go('/host');
@@ -849,7 +862,8 @@ class AppRouter {
                   // 이메일 회원가입 플로우 - 회원가입 페이지로 이동
                   await register_flow.loadLibrary();
                   if (context.mounted) {
-                    context.go('/register', extra: mode);
+                    final modeStr = mode == UserMode.host ? 'host' : 'guest';
+                    context.go('/register?mode=$modeStr');
                   }
                   return;
                 }
@@ -890,55 +904,45 @@ class AppRouter {
           path: '/register',
           name: 'register',
           builder: (context, state) {
-            // 쿼리 파라미터로 본인인증 플래그 확인
-            final isVerifyMode = state.uri.queryParameters['verify'] == 'true';
+            final queryParams = state.uri.queryParameters;
+            final authService = Provider.of<AuthService>(context, listen: false);
+            final currentUser = authService.currentUser;
 
-            // 본인인증 모드인 경우 현재 로그인된 사용자 정보 사용
-            if (isVerifyMode) {
-              final authService = Provider.of<AuthService>(
-                context,
-                listen: false,
-              );
-              final currentUser = authService.currentUser;
-
-              if (currentUser != null) {
-                return _deferredWidget(
-                  register_flow.loadLibrary,
-                  () => register_flow.RegisterFlowPage(
-                    mode: currentUser.mode,
-                    isSocialLogin: true,
-                    initialEmail: currentUser.email,
-                    initialName: currentUser.name,
-                    profileImageUrl: currentUser.profileImageUrl,
-                  ),
-                );
-              }
+            // mode 파라미터 파싱 (쿼리 파라미터 우선, extra 폴백)
+            UserMode parseMode() {
+              final modeStr = queryParams['mode'];
+              AppLogger.d('[REGISTER] uri=${state.uri}, mode=$modeStr, extra=${state.extra}');
+              if (modeStr == 'host') return UserMode.host;
+              if (modeStr == 'guest') return UserMode.guest;
+              if (state.extra is UserMode) return state.extra as UserMode;
+              return UserMode.guest;
             }
 
-            // extra가 Map이면 소셜 로그인, UserMode면 일반 회원가입
-            if (state.extra is Map<String, dynamic>) {
-              final params = state.extra as Map<String, dynamic>;
-              return _deferredWidget(
-                register_flow.loadLibrary,
-                () => register_flow.RegisterFlowPage(
-                  mode: params['mode'] as UserMode? ?? UserMode.guest,
-                  isSocialLogin: params['isSocialLogin'] as bool? ?? false,
-                  initialEmail: params['email'] as String?,
-                  initialName: params['name'] as String?,
-                  profileImageUrl: null, // Kakao profile image if available
-                ),
-              );
-            } else {
-              // 일반 회원가입 (이메일)
-              final mode = state.extra as UserMode? ?? UserMode.guest;
+            // 소셜 회원가입: ?social=true&mode=host|guest
+            // (웹 OAuth 리다이렉트 / needsPhoneVerification redirect 공통)
+            if (queryParams['social'] == 'true') {
+              final mode = parseMode();
               return _deferredWidget(
                 register_flow.loadLibrary,
                 () => register_flow.RegisterFlowPage(
                   mode: mode,
-                  isSocialLogin: false,
+                  isSocialLogin: true,
+                  initialEmail: currentUser?.email,
+                  initialName: currentUser?.name,
+                  profileImageUrl: currentUser?.profileImageUrl,
                 ),
               );
             }
+
+            // 이메일 일반 회원가입: ?mode=host|guest (또는 extra=UserMode)
+            final mode = parseMode();
+            return _deferredWidget(
+              register_flow.loadLibrary,
+              () => register_flow.RegisterFlowPage(
+                mode: mode,
+                isSocialLogin: false,
+              ),
+            );
           },
         ),
         // 게스트 마이페이지 (모바일: 커스텀 AppBar, 데스크톱: AppGNB)

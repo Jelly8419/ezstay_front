@@ -374,7 +374,9 @@ class AuthService extends ChangeNotifier {
     try {
       if (kIsWeb) {
         // 웹에서는 브라우저에서 직접 OAuth URL 열기
-        html.window.location.href = KakaoConfig.authUrl;
+        // state 파라미터로 mode를 전달 → 콜백에서 복원
+        final modeStr = mode?.name ?? 'guest';
+        html.window.location.href = '${KakaoConfig.authUrl}&state=$modeStr';
         // 웹에서는 리다이렉트로 처리되므로 여기서는 unknownError 반환 (페이지 이동됨)
         _setLoading(false);
         return LoginResult.unknownError;
