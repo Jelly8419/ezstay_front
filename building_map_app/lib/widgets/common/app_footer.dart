@@ -195,35 +195,13 @@ class AppFooter extends StatelessWidget {
         spacing: 16,
         runSpacing: 16,
         children: [
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => context.push('/terms'),
-              child: const Text(
-                '이용약관',
-                style: TextStyle(
-                  color: _textDark,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  height: 1.0,
-                ),
-              ),
-            ),
+          _FooterLinkButton(
+            label: '이용약관',
+            onTap: () => launchUrl(Uri.parse('/terms.html'), webOnlyWindowName: '_blank'),
           ),
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => context.push('/privacy'),
-              child: const Text(
-                '개인정보 처리방침',
-                style: TextStyle(
-                  color: _textDark,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  height: 1.0,
-                ),
-              ),
-            ),
+          _FooterLinkButton(
+            label: '개인정보 처리방침',
+            onTap: () => launchUrl(Uri.parse('/privacy.html'), webOnlyWindowName: '_blank'),
           ),
         ],
       ),
@@ -268,6 +246,44 @@ class AppFooter extends StatelessWidget {
             color: _textLight,
             fontSize: 12,
             height: 1.0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FooterLinkButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _FooterLinkButton({required this.label, required this.onTap});
+
+  @override
+  State<_FooterLinkButton> createState() => _FooterLinkButtonState();
+}
+
+class _FooterLinkButtonState extends State<_FooterLinkButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: RichText(
+          text: TextSpan(
+            text: widget.label,
+            style: TextStyle(
+              color: _hovered ? const Color(0xFF1565C0) : const Color(0xFF111827),
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              height: 1.0,
+              decoration: _hovered ? TextDecoration.underline : TextDecoration.none,
+              decorationColor: const Color(0xFF1565C0),
+            ),
           ),
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../config/api_config.dart';
@@ -58,8 +59,13 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
   String? _verifiedGender;
 
   // 약관 동의
-  bool _agreeTerms = false;
-  bool _agreeMarketing = false;
+  bool _agreeServiceTerms = false;    // [필수] 서비스 이용약관
+  bool _agreePrivacy = false;         // [필수] 개인정보 수집·이용
+  bool _agreeMarketing = false;       // [선택] 마케팅 수신
+  bool _agreeAgeConfirm = false;      // [필수] 만 19세 이상
+
+  // 하위 호환: agreeTerms = 필수 2개 모두 동의
+  bool get _agreeTerms => _agreeServiceTerms && _agreePrivacy && _agreeAgeConfirm;
 
   // 색상
   static const primaryBlack = Color(0xFF000000);
@@ -275,6 +281,34 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
     );
   }
 
+  Widget _buildTermsRow({
+    required String label,
+    required bool value,
+    required ValueChanged<bool?> onChanged,
+    required VoidCallback onViewTap,
+  }) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: value,
+            onChanged: onChanged,
+            activeColor: AppColors.primary600,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(label,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: primaryBlack)),
+        ),
+        _ViewButton(onTap: onViewTap),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Form(
@@ -439,9 +473,11 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
             InkWell(
               onTap: () {
                 setState(() {
-                  final allAgreed = _agreeTerms && _agreeMarketing;
-                  _agreeTerms = !allAgreed;
+                  final allAgreed = _agreeServiceTerms && _agreePrivacy && _agreeMarketing && _agreeAgeConfirm;
+                  _agreeServiceTerms = !allAgreed;
+                  _agreePrivacy = !allAgreed;
                   _agreeMarketing = !allAgreed;
+                  _agreeAgeConfirm = !allAgreed;
                 });
               },
               child: Row(
@@ -450,11 +486,13 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                     width: 24,
                     height: 24,
                     child: Checkbox(
-                      value: _agreeTerms && _agreeMarketing,
+                      value: _agreeServiceTerms && _agreePrivacy && _agreeMarketing && _agreeAgeConfirm,
                       onChanged: (value) {
                         setState(() {
-                          _agreeTerms = value ?? false;
+                          _agreeServiceTerms = value ?? false;
+                          _agreePrivacy = value ?? false;
                           _agreeMarketing = value ?? false;
+                          _agreeAgeConfirm = value ?? false;
                         });
                       },
                       activeColor: AppColors.primary600,
@@ -470,55 +508,55 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
             const Divider(color: borderGray, thickness: 1),
             const SizedBox(height: 12),
 
-            // 필수 약관
+            // [필수] 만 19세 이상
             InkWell(
-              onTap: () => setState(() => _agreeTerms = !_agreeTerms),
+              onTap: () => setState(() => _agreeAgeConfirm = !_agreeAgeConfirm),
               child: Row(
                 children: [
                   SizedBox(
                     width: 24,
                     height: 24,
                     child: Checkbox(
-                      value: _agreeTerms,
-                      onChanged: (value) => setState(() => _agreeTerms = value ?? false),
+                      value: _agreeAgeConfirm,
+                      onChanged: (v) => setState(() => _agreeAgeConfirm = v ?? false),
                       activeColor: AppColors.primary600,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     ),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
-                    child: Text('[필수] 이용약관 및 개인정보처리방침 동의',
+                    child: Text('[필수] 만 19세 이상입니다.',
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: primaryBlack)),
                   ),
-                  Icon(Icons.chevron_right, size: 20, color: secondaryGray),
                 ],
               ),
             ),
             const SizedBox(height: 12),
 
-            // 선택 약관
-            InkWell(
-              onTap: () => setState(() => _agreeMarketing = !_agreeMarketing),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: Checkbox(
-                      value: _agreeMarketing,
-                      onChanged: (value) => setState(() => _agreeMarketing = value ?? false),
-                      activeColor: AppColors.primary600,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text('[선택] 마케팅 정보 수신 동의',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: primaryBlack)),
-                  ),
-                  Icon(Icons.chevron_right, size: 20, color: secondaryGray),
-                ],
-              ),
+            // [필수] 서비스 이용약관
+            _buildTermsRow(
+              label: '[필수] 서비스 이용약관 동의',
+              value: _agreeServiceTerms,
+              onChanged: (v) => setState(() => _agreeServiceTerms = v ?? false),
+              onViewTap: () => launchUrl(Uri.parse('/terms.html'), webOnlyWindowName: '_blank'),
+            ),
+            const SizedBox(height: 12),
+
+            // [필수] 개인정보 수집·이용
+            _buildTermsRow(
+              label: '[필수] 개인정보 수집 및 이용 동의',
+              value: _agreePrivacy,
+              onChanged: (v) => setState(() => _agreePrivacy = v ?? false),
+              onViewTap: () => launchUrl(Uri.parse('/privacy-collection-consent.html'), webOnlyWindowName: '_blank'),
+            ),
+            const SizedBox(height: 12),
+
+            // [선택] 마케팅
+            _buildTermsRow(
+              label: '[선택] 마케팅 정보 수신 동의',
+              value: _agreeMarketing,
+              onChanged: (v) => setState(() => _agreeMarketing = v ?? false),
+              onViewTap: () => launchUrl(Uri.parse('/marketing-consent.html'), webOnlyWindowName: '_blank'),
             ),
             const SizedBox(height: 40),
           ],
@@ -571,6 +609,41 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _ViewButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _ViewButton({required this.onTap});
+
+  @override
+  State<_ViewButton> createState() => _ViewButtonState();
+}
+
+class _ViewButtonState extends State<_ViewButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: RichText(
+          text: TextSpan(
+            text: '보기',
+            style: TextStyle(
+              fontSize: 13,
+              color: _hovered ? const Color(0xFF1565C0) : const Color(0xFF808080),
+              decoration: TextDecoration.underline,
+              decorationColor: _hovered ? const Color(0xFF1565C0) : const Color(0xFF808080),
+            ),
+          ),
+        ),
       ),
     );
   }

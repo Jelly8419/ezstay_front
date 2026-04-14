@@ -58,8 +58,6 @@ import '../pages/host/host_settlement_detail_page.dart'
 import '../pages/host/host_settlement_deduction_page.dart'
     deferred as host_settlement_deduction;
 import '../pages/auth/account_suspended_page.dart' deferred as account_suspended;
-import '../pages/legal/terms_of_service_page.dart' deferred as terms_of_service;
-import '../pages/legal/privacy_policy_page.dart' deferred as privacy_policy;
 import '../pages/auth/reset_password_page.dart' deferred as reset_password;
 import '../pages/auth/kmc_callback_page.dart' deferred as kmc_callback;
 import '../pages/error_page.dart';
@@ -535,24 +533,6 @@ class AppRouter {
                   },
                 ),
               ],
-            ),
-            // 이용약관
-            GoRoute(
-              path: '/terms',
-              name: 'terms',
-              builder: (context, state) => _deferredShellWidget(
-                terms_of_service.loadLibrary,
-                () => terms_of_service.TermsOfServicePage(),
-              ),
-            ),
-            // 개인정보 처리방침
-            GoRoute(
-              path: '/privacy',
-              name: 'privacy',
-              builder: (context, state) => _deferredShellWidget(
-                privacy_policy.loadLibrary,
-                () => privacy_policy.PrivacyPolicyPage(),
-              ),
             ),
             // 알림 페이지 (GNB 포함)
             GoRoute(
