@@ -368,6 +368,12 @@ class AuthService extends ChangeNotifier {
   /// 카카오 로그인
   ///
   /// PRD v2.0 섹션 5.2.2에 따라 실패 케이스별 [LoginResult]를 반환합니다.
+  /// 웹 OAuth 콜백에서 localStorage에 저장된 pending register mode를 읽기만 함 (삭제 안 함)
+  String? peekPendingRegisterMode() {
+    if (!kIsWeb) return null;
+    return html.window.localStorage['pending_register_mode'];
+  }
+
   /// 웹 OAuth 콜백에서 localStorage에 저장된 pending register mode를 읽고 삭제
   /// 'host' 또는 'guest' 반환, 없으면 null
   String? popPendingRegisterMode() {

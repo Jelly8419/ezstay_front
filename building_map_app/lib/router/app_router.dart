@@ -289,10 +289,10 @@ class AppRouter {
         // 로그인은 되어 있지만 본인인증이 안 된 경우 소셜 회원가입 플로우로 리다이렉트
         // /register로 가는 중이면 통과 (mode 파라미터 유지)
         if (isLoggedIn && needsPhoneVerification && !isGoingToRegister) {
-          // 현재 URL에 mode 파라미터가 있으면 그것을 우선 사용
-          // (없으면 currentUser.mode 사용, 단 백엔드 기본값이 guest일 수 있으므로 주의)
+          // localStorage pending_register_mode 우선 사용 (웹 OAuth 후 가장 신뢰할 수 있는 값)
+          final pendingMode = authService.peekPendingRegisterMode();
           final existingMode = state.uri.queryParameters['mode'];
-          final modeStr = existingMode ?? (authService.currentUser?.mode == UserMode.host ? 'host' : 'guest');
+          final modeStr = pendingMode ?? existingMode ?? (authService.currentUser?.mode == UserMode.host ? 'host' : 'guest');
           return '/register?social=true&mode=$modeStr';
         }
 
