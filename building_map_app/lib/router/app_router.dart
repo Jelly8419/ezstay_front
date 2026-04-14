@@ -795,12 +795,9 @@ class AppRouter {
 
                 if (success && context.mounted) {
                   // state 파라미터가 있으면 회원가입 플로우에서 온 것 → /register로 이동
+                  // extra는 웹 OAuth 리다이렉트 후 소실되므로 쿼리 파라미터 사용
                   if (oauthState == 'host' || oauthState == 'guest') {
-                    final mode = oauthState == 'host' ? UserMode.host : UserMode.guest;
-                    context.go('/register', extra: {
-                      'mode': mode,
-                      'isSocialLogin': true,
-                    });
+                    context.go('/register?social=true&mode=$oauthState');
                     return;
                   }
 
@@ -901,17 +898,30 @@ class AppRouter {
           path: '/register',
           name: 'register',
           builder: (context, state) {
-            // 쿼리 파라미터로 본인인증 플래그 확인
-            final isVerifyMode = state.uri.queryParameters['verify'] == 'true';
+            final queryParams = state.uri.queryParameters;
+            final authService = Provider.of<AuthService>(context, listen: false);
 
-            // 본인인증 모드인 경우 현재 로그인된 사용자 정보 사용
-            if (isVerifyMode) {
-              final authService = Provider.of<AuthService>(
-                context,
-                listen: false,
-              );
+            // 1) 소셜 회원가입 콜백: /register?social=true&mode=host|guest
+            //    웹 OAuth 리다이렉트 후 extra가 소실되므로 쿼리 파라미터로 처리
+            if (queryParams['social'] == 'true') {
+              final modeStr = queryParams['mode'] ?? 'guest';
+              final mode = modeStr == 'host' ? UserMode.host : UserMode.guest;
               final currentUser = authService.currentUser;
+              return _deferredWidget(
+                register_flow.loadLibrary,
+                () => register_flow.RegisterFlowPage(
+                  mode: mode,
+                  isSocialLogin: true,
+                  initialEmail: currentUser?.email,
+                  initialName: currentUser?.name,
+                  profileImageUrl: currentUser?.profileImageUrl,
+                ),
+              );
+            }
 
+            // 2) 본인인증 미완료 상태로 재진입: /register?verify=true
+            if (queryParams['verify'] == 'true') {
+              final currentUser = authService.currentUser;
               if (currentUser != null) {
                 return _deferredWidget(
                   register_flow.loadLibrary,
@@ -926,7 +936,7 @@ class AppRouter {
               }
             }
 
-            // extra가 Map이면 소셜 로그인, UserMode면 일반 회원가입
+            // 3) extra가 Map이면 앱 내 소셜 로그인 전환 (모바일 등)
             if (state.extra is Map<String, dynamic>) {
               final params = state.extra as Map<String, dynamic>;
               return _deferredWidget(
@@ -936,20 +946,20 @@ class AppRouter {
                   isSocialLogin: params['isSocialLogin'] as bool? ?? false,
                   initialEmail: params['email'] as String?,
                   initialName: params['name'] as String?,
-                  profileImageUrl: null, // Kakao profile image if available
-                ),
-              );
-            } else {
-              // 일반 회원가입 (이메일)
-              final mode = state.extra as UserMode? ?? UserMode.guest;
-              return _deferredWidget(
-                register_flow.loadLibrary,
-                () => register_flow.RegisterFlowPage(
-                  mode: mode,
-                  isSocialLogin: false,
+                  profileImageUrl: null,
                 ),
               );
             }
+
+            // 4) 일반 이메일 회원가입: extra = UserMode
+            final mode = state.extra as UserMode? ?? UserMode.guest;
+            return _deferredWidget(
+              register_flow.loadLibrary,
+              () => register_flow.RegisterFlowPage(
+                mode: mode,
+                isSocialLogin: false,
+              ),
+            );
           },
         ),
         // 게스트 마이페이지 (모바일: 커스텀 AppBar, 데스크톱: AppGNB)
