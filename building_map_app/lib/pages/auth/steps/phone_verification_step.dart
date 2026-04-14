@@ -25,7 +25,7 @@ class PhoneVerificationStep extends StatefulWidget {
   final Function({
     required String realName,
     required String phoneNumber,
-    String? di,
+    String? ci,
     String? birth,
     String? gender,
     required bool agreeTerms,
@@ -54,7 +54,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
   bool _isVerified = false;
 
   // KMC 본인인증 결과
-  String? _verifiedDi;
+  String? _verifiedCi;
   String? _verifiedBirth;
   String? _verifiedGender;
 
@@ -137,7 +137,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         setState(() {
           _nameController.text = mockName;
           _phoneController.text = mockPhone;
-          _verifiedDi = 'mock_di_${DateTime.now().millisecondsSinceEpoch}';
+          _verifiedCi = 'mock_di_${DateTime.now().millisecondsSinceEpoch}';
           _verifiedBirth = '19900101';
           _verifiedGender = 'M';
           _isVerified = true;
@@ -192,7 +192,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       setState(() {
         _nameController.text = verifyResult.name;
         _phoneController.text = verifyResult.phoneNumber;
-        _verifiedDi = verifyResult.di;
+        _verifiedCi = verifyResult.ci;
         _verifiedBirth = verifyResult.birth;
         _verifiedGender = verifyResult.gender;
         _isVerified = true;
@@ -228,7 +228,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
     widget.onNext(
       realName: _nameController.text,
       phoneNumber: _phoneController.text,
-      di: _verifiedDi,
+      ci: _verifiedCi,
       birth: _verifiedBirth,
       gender: _verifiedGender,
       agreeTerms: _agreeTerms,

@@ -33,7 +33,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   bool _obscureConfirmPassword = true;
 
   // KMC 인증 완료 후 저장
-  String? _verifiedDi;
+  String? _verifiedCi;
 
   static const _primaryBlack = Color(0xFF000000);
   static const _textGray = Color(0xFF666666);
@@ -113,7 +113,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       if (!mounted) return;
 
       setState(() {
-        _verifiedDi = verifyResult.di;
+        _verifiedCi = verifyResult.ci;
         _step = 2;
       });
     } on KmcException catch (e) {
@@ -132,7 +132,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
   Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_verifiedDi == null) {
+    if (_verifiedCi == null) {
       _showErrorDialog('본인인증 정보가 없습니다. 다시 시도해주세요.');
       return;
     }
@@ -142,7 +142,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     try {
       await VerificationService.resetPasswordWithKmc(
         email: _emailController.text.trim(),
-        di: _verifiedDi!,
+        ci: _verifiedCi!,
         newPassword: _passwordController.text,
       );
       if (mounted) {
@@ -255,7 +255,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               setState(() {
                 _step--;
                 // Step 1로 돌아올 때 KMC DI 초기화
-                if (_step == 1) _verifiedDi = null;
+                if (_step == 1) _verifiedCi = null;
               });
             } else {
               context.pop();

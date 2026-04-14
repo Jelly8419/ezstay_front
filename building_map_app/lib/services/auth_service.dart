@@ -891,7 +891,7 @@ class AuthService extends ChangeNotifier {
     String? phoneNumber,
     String? birth,
     String? gender,
-    String? di,
+    String? ci,
   }) async {
     _setLoading(true);
 
@@ -907,7 +907,7 @@ class AuthService extends ChangeNotifier {
         if (phoneNumber != null) 'phoneNumber': phoneNumber,
         if (birth != null) 'birth': birth,
         if (gender != null) 'gender': gender,
-        if (di != null) 'di': di,
+        if (ci != null) 'ci': ci,
       };
       final requestBody = json.encode(bodyMap);
 
