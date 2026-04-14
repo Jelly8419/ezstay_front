@@ -185,7 +185,7 @@ class KmcVerifyResult {
   final String phoneNumber;
   final String birth;
   final String gender;
-  final String ci;
+  final String certNum;
 
   const KmcVerifyResult({
     required this.verified,
@@ -193,7 +193,7 @@ class KmcVerifyResult {
     required this.phoneNumber,
     required this.birth,
     required this.gender,
-    required this.ci,
+    required this.certNum,
   });
 
   factory KmcVerifyResult.fromJson(Map<String, dynamic> json) {
@@ -203,7 +203,7 @@ class KmcVerifyResult {
       phoneNumber: json['phoneNumber'] ?? '',
       birth: json['birth'] ?? '',
       gender: json['gender'] ?? '',
-      ci: json['ci'] ?? '',
+      certNum: json['certNum'] ?? '',
     );
   }
 

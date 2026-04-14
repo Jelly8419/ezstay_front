@@ -17,7 +17,7 @@ class RegisterState {
   bool phoneVerified;
   String? phoneNumber;
   String? realName; // 본인인증으로 받은 실명
-  String? ci; // KMC 본인인증 CI (중복가입 확인용)
+  String? certNum; // KMC 본인인증 certNum (중복가입 확인용)
   String? birth; // 생년월일 (YYYYMMDD)
   String? gender; // 성별 (M/F)
 
@@ -45,7 +45,7 @@ class RegisterState {
     this.phoneVerified = false,
     this.phoneNumber,
     this.realName,
-    this.ci,
+    this.certNum,
     this.birth,
     this.gender,
     this.bankCode,
@@ -169,13 +169,13 @@ class RegisterState {
   void markPhoneVerified(
     String phoneNumber,
     String realName, {
-    String? ci,
+    String? certNum,
     String? birth,
     String? gender,
   }) {
     this.phoneNumber = phoneNumber;
     this.realName = realName;
-    this.ci = ci;
+    this.certNum = certNum;
     this.birth = birth;
     this.gender = gender;
     phoneVerified = true;
@@ -207,7 +207,7 @@ class RegisterState {
     phoneVerified = false;
     phoneNumber = null;
     realName = null;
-    ci = null;
+    certNum = null;
     birth = null;
     gender = null;
     bankCode = null;
@@ -229,7 +229,7 @@ class RegisterState {
       'phoneVerified': phoneVerified,
       'phoneNumber': phoneNumber,
       'realName': realName,
-      'ci': ci,
+      'certNum': certNum,
       'birth': birth,
       'gender': gender,
       'currentStep': currentStep,

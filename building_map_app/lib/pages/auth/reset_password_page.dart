@@ -113,7 +113,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       if (!mounted) return;
 
       setState(() {
-        _verifiedCi = verifyResult.ci;
+        _verifiedCi = verifyResult.certNum;
         _step = 2;
       });
     } on KmcException catch (e) {
@@ -142,7 +142,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     try {
       await VerificationService.resetPasswordWithKmc(
         email: _emailController.text.trim(),
-        ci: _verifiedCi!,
+        certNum: _verifiedCi!,
         newPassword: _passwordController.text,
       );
       if (mounted) {

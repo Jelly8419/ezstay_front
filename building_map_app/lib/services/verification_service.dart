@@ -233,12 +233,12 @@ class VerificationService {
   /// [di] KMC 본인인증 후 수신한 DI 값
   /// Returns: 가입된 이메일 주소
   /// Throws: [VerificationException] 일치하는 계정 없음(code 4420) 또는 서버 오류
-  static Future<String> findId({required String ci}) async {
+  static Future<String> findId({required String certNum}) async {
     try {
       final response = await http.post(
         Uri.parse(ApiConfig.authFindIdUrl),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'ci': ci}),
+        body: json.encode({'certNum': certNum}),
       ).timeout(ApiConfig.timeout);
 
       final data = json.decode(response.body);
@@ -304,7 +304,7 @@ class VerificationService {
   /// Throws: [VerificationException] email+DI 불일치(code 4421) 또는 서버 오류
   static Future<void> resetPasswordWithKmc({
     required String email,
-    required String ci,
+    required String certNum,
     required String newPassword,
   }) async {
     try {
@@ -313,7 +313,7 @@ class VerificationService {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': email,
-          'ci': ci,
+          'certNum': certNum,
           'newPassword': newPassword,
         }),
       ).timeout(ApiConfig.timeout);

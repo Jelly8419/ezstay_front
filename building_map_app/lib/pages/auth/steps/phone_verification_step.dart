@@ -25,7 +25,7 @@ class PhoneVerificationStep extends StatefulWidget {
   final Function({
     required String realName,
     required String phoneNumber,
-    String? ci,
+    String? certNum,
     String? birth,
     String? gender,
     required bool agreeTerms,
@@ -192,7 +192,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       setState(() {
         _nameController.text = verifyResult.name;
         _phoneController.text = verifyResult.phoneNumber;
-        _verifiedCi = verifyResult.ci;
+        _verifiedCi = verifyResult.certNum;
         _verifiedBirth = verifyResult.birth;
         _verifiedGender = verifyResult.gender;
         _isVerified = true;
@@ -228,7 +228,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
     widget.onNext(
       realName: _nameController.text,
       phoneNumber: _phoneController.text,
-      ci: _verifiedCi,
+      certNum: _verifiedCi,
       birth: _verifiedBirth,
       gender: _verifiedGender,
       agreeTerms: _agreeTerms,

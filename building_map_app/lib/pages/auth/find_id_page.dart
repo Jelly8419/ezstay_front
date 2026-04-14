@@ -60,7 +60,7 @@ class _FindIdPageState extends State<FindIdPage> {
       if (!mounted) return;
 
       // 4. DI로 아이디(이메일) 조회
-      final email = await VerificationService.findId(ci: verifyResult.ci);
+      final email = await VerificationService.findId(certNum: verifyResult.certNum);
 
       if (!mounted) return;
 
