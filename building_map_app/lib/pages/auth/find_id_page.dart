@@ -47,7 +47,6 @@ class _FindIdPageState extends State<FindIdPage> {
 
       if (popupResult == null) {
         // 사용자가 팝업 취소
-        setState(() => _isLoading = false);
         return;
       }
 
@@ -67,23 +66,18 @@ class _FindIdPageState extends State<FindIdPage> {
       setState(() {
         _foundEmail = email;
         _step = 1;
-        _isLoading = false;
       });
     } on KmcException catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showErrorDialog(KmcService.getErrorMessage(e.code));
-      }
+      if (mounted) _showErrorDialog(KmcService.getErrorMessage(e.code));
     } on VerificationException catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showErrorDialog(e.message);
-      }
+      if (mounted) _showErrorDialog(e.message);
     } catch (e) {
-      if (mounted) {
+      AppLogger.e('❌ [FIND_ID] 오류: $e');
+      if (mounted) _showErrorDialog('아이디 찾기 중 오류가 발생했습니다.');
+    } finally {
+      // 어떤 경로로 종료되든 _isLoading 복구 보장
+      if (mounted && _isLoading) {
         setState(() => _isLoading = false);
-        AppLogger.e('❌ [FIND_ID] 오류: $e');
-        _showErrorDialog('아이디 찾기 중 오류가 발생했습니다.');
       }
     }
   }

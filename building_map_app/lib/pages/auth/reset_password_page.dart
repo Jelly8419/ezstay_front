@@ -102,10 +102,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
       if (!mounted) return;
 
-      if (popupResult == null) {
-        setState(() => _isLoading = false);
-        return;
-      }
+      if (popupResult == null) return;
 
       final verifyResult = await KmcService.verifyResult(
         apiToken: popupResult['apiToken']!,
@@ -117,18 +114,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       setState(() {
         _verifiedDi = verifyResult.di;
         _step = 2;
-        _isLoading = false;
       });
     } on KmcException catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showErrorDialog(KmcService.getErrorMessage(e.code));
-      }
+      if (mounted) _showErrorDialog(KmcService.getErrorMessage(e.code));
     } catch (e) {
-      if (mounted) {
+      AppLogger.e('❌ [RESET_PW] KMC 오류: $e');
+      if (mounted) _showErrorDialog('본인인증 중 오류가 발생했습니다');
+    } finally {
+      if (mounted && _isLoading) {
         setState(() => _isLoading = false);
-        AppLogger.e('❌ [RESET_PW] KMC 오류: $e');
-        _showErrorDialog('본인인증 중 오류가 발생했습니다');
       }
     }
   }
