@@ -110,7 +110,7 @@ class _AppGNBState extends State<AppGNB> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Image.asset(
-            'assets/logos/ezstay_logo_gnb.png',
+            'assets/logos/ezstay_logo_gnb_v2.png',
             width: 40,
             height: 40,
             filterQuality: FilterQuality.high,

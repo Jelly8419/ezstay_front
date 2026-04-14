@@ -36,7 +36,7 @@ class ModeSelectionDialog extends StatelessWidget {
               children: [
                 // 로고 (투명 배경 GNB 로고 사용)
                 Image.asset(
-                  'assets/logos/ezstay_logo_gnb.png',
+                  'assets/logos/ezstay_logo_gnb_v2.png',
                   width: 36,
                   height: 36,
                   filterQuality: FilterQuality.high,
