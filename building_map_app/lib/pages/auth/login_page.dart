@@ -646,11 +646,8 @@ class _LoginPageState extends State<LoginPage> {
               // 모드 선택 후 회원가입 페이지로 이동
               final selectedMode = await ModeSelectionDialog.show(context);
               if (selectedMode != null && mounted) {
-                context.push('/register', extra: {
-                  'mode': selectedMode,
-                  'email': _emailController.text,
-                  'isReregistration': true,
-                });
+                final modeStr = selectedMode == UserMode.host ? 'host' : 'guest';
+                context.push('/register?mode=$modeStr');
               }
             },
             child: Text(
@@ -672,7 +669,8 @@ class _LoginPageState extends State<LoginPage> {
     final selectedMode = await ModeSelectionDialog.show(context);
 
     if (selectedMode != null && mounted) {
-      context.go('/register', extra: selectedMode);
+      final modeStr = selectedMode == UserMode.host ? 'host' : 'guest';
+      context.go('/register?mode=$modeStr');
     }
   }
 
