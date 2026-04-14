@@ -54,6 +54,7 @@ class _FindIdPageState extends State<FindIdPage> {
       final verifyResult = await KmcService.verifyResult(
         apiToken: popupResult['apiToken']!,
         certNum: popupResult['certNum']!,
+        purpose: 'find_id',
       );
 
       if (!mounted) return;

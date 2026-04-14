@@ -1,7 +1,6 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import 'token_service.dart';
@@ -65,11 +64,13 @@ class KmcService {
   ///
   /// [apiToken] KMC 인증 완료 후 수신한 API 토큰
   /// [certNum] KMC 인증 완료 후 수신한 인증 번호
+  /// [purpose] 인증 목적: 'register'(기본), 'find_id', 'find_password'
   ///
   /// Returns: [KmcVerifyResult] 검증된 사용자 정보
   static Future<KmcVerifyResult> verifyResult({
     required String apiToken,
     required String certNum,
+    String? purpose,
   }) async {
 
     try {
@@ -83,13 +84,16 @@ class KmcService {
         headers['Authorization'] = 'Bearer $accessToken';
       }
 
+      final body = <String, String>{
+        'apiToken': apiToken,
+        'certNum': certNum,
+      };
+      if (purpose != null) body['purpose'] = purpose;
+
       final response = await http.post(
         Uri.parse(ApiConfig.kmcVerifyUrl),
         headers: headers,
-        body: json.encode({
-          'apiToken': apiToken,
-          'certNum': certNum,
-        }),
+        body: json.encode(body),
       ).timeout(const Duration(seconds: 20)); // KMC 서버 연동이므로 타임아웃 여유있게
 
 

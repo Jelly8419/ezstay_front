@@ -107,6 +107,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       final verifyResult = await KmcService.verifyResult(
         apiToken: popupResult['apiToken']!,
         certNum: popupResult['certNum']!,
+        purpose: 'find_password',
       );
 
       if (!mounted) return;
