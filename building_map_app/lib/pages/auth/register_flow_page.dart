@@ -636,9 +636,12 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('계속 진행')),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              context.go('/login');
+              // 소셜 로그인으로 토큰이 발급된 상태일 수 있으므로 로그아웃 처리
+              // (토큰이 남아있으면 redirect 로직이 다시 /register로 튕김)
+              await context.read<AuthService>().logout();
+              if (context.mounted) context.go('/login');
             },
             child: Text('나가기', style: TextStyle(color: AppColors.error500)),
           ),
