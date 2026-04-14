@@ -770,6 +770,7 @@ class AppRouter {
             final refreshToken = state.uri.queryParameters['refresh'];
             // 회원가입 플로우에서 전달된 mode state (guest/host)
             final oauthState = state.uri.queryParameters['state'];
+            AppLogger.d('[AUTH_CALLBACK] fullUri=${state.uri} | allParams=${state.uri.queryParameters} | oauthState=$oauthState');
 
             // 토큰이 없으면 로그인 페이지로 리다이렉트
             if (token == null || refreshToken == null) {
