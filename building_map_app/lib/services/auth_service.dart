@@ -368,15 +368,26 @@ class AuthService extends ChangeNotifier {
   /// 카카오 로그인
   ///
   /// PRD v2.0 섹션 5.2.2에 따라 실패 케이스별 [LoginResult]를 반환합니다.
+  /// 웹 OAuth 콜백에서 localStorage에 저장된 pending register mode를 읽고 삭제
+  /// 'host' 또는 'guest' 반환, 없으면 null
+  String? popPendingRegisterMode() {
+    if (!kIsWeb) return null;
+    final mode = html.window.localStorage['pending_register_mode'];
+    html.window.localStorage.remove('pending_register_mode');
+    return mode;
+  }
+
   Future<LoginResult> loginWithKakao(UserMode? mode) async {
     _setLoading(true);
 
     try {
       if (kIsWeb) {
         // 웹에서는 브라우저에서 직접 OAuth URL 열기
-        // state 파라미터로 mode를 전달 → 콜백에서 복원
+        // localStorage에 mode 저장 → OAuth 리다이렉트 후 콜백에서 복원
+        // (state 파라미터는 SPA 라우팅 문제로 신뢰할 수 없음)
         final modeStr = mode?.name ?? 'guest';
-        html.window.location.href = '${KakaoConfig.authUrl}&state=$modeStr';
+        html.window.localStorage['pending_register_mode'] = modeStr;
+        html.window.location.href = KakaoConfig.authUrl;
         // 웹에서는 리다이렉트로 처리되므로 여기서는 unknownError 반환 (페이지 이동됨)
         _setLoading(false);
         return LoginResult.unknownError;
