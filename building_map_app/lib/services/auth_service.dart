@@ -276,29 +276,25 @@ class AuthService extends ChangeNotifier {
         _setLoading(false);
         return LoginResult.success;
       } else if (response.statusCode == 401) {
-        // PRD 5.2.1: 이메일/비밀번호 에러 분리
         final data = json.decode(response.body);
         final errorCode = data['code'];
         AppLogger.e('로그인 실패: 에러코드=$errorCode');
         _setLoading(false);
 
-        if (errorCode == 4001) {
-          return LoginResult.emailNotFound;
-        } else if (errorCode == 4002) {
-          return LoginResult.wrongPassword;
+        if (errorCode == 1004) {
+          return LoginResult.accountLocked;
         }
-        // 에러코드 없으면 기존 호환성 유지 (통합 메시지)
-        return LoginResult.wrongPassword;
+        // 1005 또는 기타 401 → 통합 메시지
+        return LoginResult.loginFailed;
       } else if (response.statusCode == 403) {
-        // PRD 5.3: 계정 상태별 처리
         final data = json.decode(response.body);
         final errorCode = data['code'];
         AppLogger.e('로그인 차단: 에러코드=$errorCode');
         _setLoading(false);
 
-        if (errorCode == 4031) {
+        if (errorCode == 1006) {
           return LoginResult.accountSuspended;
-        } else if (errorCode == 4032) {
+        } else if (errorCode == 1007) {
           return LoginResult.accountWithdrawn;
         }
         return LoginResult.unknownError;
