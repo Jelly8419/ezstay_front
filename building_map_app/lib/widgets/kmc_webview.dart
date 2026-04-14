@@ -136,9 +136,12 @@ class KmcWebViewHelper {
           window._kmcBroadcastChannel.onmessage = function(event) {
             if (event.data && event.data.type === 'KMC_RESULT') {
               console.log('[KMC] BroadcastChannel로 인증 결과 수신');
-              window._kmcMessageHandler({data: event.data});
-              window._kmcBroadcastChannel.close();
+              var ch = window._kmcBroadcastChannel;
               window._kmcBroadcastChannel = null;
+              if (ch) { try { ch.close(); } catch(_) {} }
+              if (window._kmcMessageHandler) {
+                window._kmcMessageHandler({data: event.data});
+              }
             }
           };
         } catch(e) {
