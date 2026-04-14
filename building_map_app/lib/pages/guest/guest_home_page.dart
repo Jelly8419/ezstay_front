@@ -213,7 +213,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
             Text.rich(
               TextSpan(
                 children: [
-                  const TextSpan(text: '가장 안전하고 쉬운 단기임대는\n'),
+                  const TextSpan(text: '단기임대를 편리하고 안전하게\n'),
                   TextSpan(
                     text: '이지스테이',
                     style: TextStyle(color: AppColors.primary500),

@@ -82,11 +82,11 @@ class EZStayLogo extends StatelessWidget {
   String _getAssetPath() {
     switch (variant) {
       case EZStayLogoVariant.primary:
-        return 'assets/logos/ezstay_logo_primary.png';
+        return 'assets/logos/ezstay_logo_primary_v2.png';
       case EZStayLogoVariant.white:
-        return 'assets/logos/ezstay_logo_white.png';
+        return 'assets/logos/ezstay_logo_white_v2.png';
       case EZStayLogoVariant.iconOnly:
-        return 'assets/logos/ezstay_icon_only.png';
+        return 'assets/logos/ezstay_icon_only_v2.png';
     }
   }
 }

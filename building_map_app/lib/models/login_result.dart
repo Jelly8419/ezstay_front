@@ -5,16 +5,16 @@ enum LoginResult {
   /// 로그인 성공
   success,
 
-  /// 가입되지 않은 이메일 (백엔드 에러코드: 4001)
-  emailNotFound,
+  /// 이메일/비밀번호 불일치 (백엔드 에러코드: 1005)
+  loginFailed,
 
-  /// 비밀번호 불일치 (백엔드 에러코드: 4002)
-  wrongPassword,
+  /// 계정 잠금 - 5회 실패 (백엔드 에러코드: 1004)
+  accountLocked,
 
-  /// 계정 정지 상태 (백엔드 에러코드: 4031)
+  /// 계정 정지 상태 (백엔드 에러코드: 1006)
   accountSuspended,
 
-  /// 탈퇴한 계정 (백엔드 에러코드: 4032)
+  /// 탈퇴한 계정 (백엔드 에러코드: 1007)
   accountWithdrawn,
 
   /// 카카오 이메일이 기존 이메일 계정과 중복 (백엔드 에러코드: 4010)
@@ -37,10 +37,10 @@ enum LoginResult {
     switch (this) {
       case LoginResult.success:
         return '';
-      case LoginResult.emailNotFound:
-        return '가입되지 않은 이메일입니다.';
-      case LoginResult.wrongPassword:
-        return '비밀번호가 올바르지 않습니다.';
+      case LoginResult.loginFailed:
+        return '이메일 또는 비밀번호가 올바르지 않습니다.';
+      case LoginResult.accountLocked:
+        return '10분간 로그인할 수 없습니다.';
       case LoginResult.accountSuspended:
         return '회원님의 계정이 정지되었습니다.\n고객센터로 문의 부탁드립니다.';
       case LoginResult.accountWithdrawn:
