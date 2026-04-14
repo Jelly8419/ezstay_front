@@ -48,7 +48,13 @@ class HostAccountSetupStandalonePage extends StatelessWidget {
             ),
             child: HostAccountStep(
               isStandaloneMode: true, // Standalone 모드 활성화
-              onNext: () async {
+              onNext: ({
+                required String bankCode,
+                required String accountNum,
+                required String accountHolderName,
+                required bool agreeTerms,
+                required bool agreeMarketing,
+              }) async {
                 // 계좌 등록 완료 → 사용자 정보 새로고침 → 호스트 모드 전환 → 호스트 홈
                 final authService = context.read<AuthService>();
 

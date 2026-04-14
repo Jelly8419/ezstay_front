@@ -20,21 +20,23 @@ import '../../../services/token_service.dart';
 ///    - 이미 로그인된 사용자 → POST /api/account 직접 호출
 class HostAccountStep extends StatefulWidget {
   final String? realName; // 본인인증 실명 (예금주 초기값)
+  /// 회원가입 플로우 전용 콜백. isStandaloneMode: true이면 null 가능.
   final Function({
     required String bankCode,
     required String accountNum,
     required String accountHolderName,
     required bool agreeTerms,
     required bool agreeMarketing,
-  }) onNext;
+  })? onNext;
   final bool isStandaloneMode; // true: 게스트→임대인 전환
 
   const HostAccountStep({
     super.key,
     this.realName,
-    required this.onNext,
+    this.onNext,
     this.isStandaloneMode = false,
-  });
+  }) : assert(isStandaloneMode || onNext != null,
+            'onNext is required when isStandaloneMode is false');
 
   @override
   State<HostAccountStep> createState() => _HostAccountStepState();
@@ -153,7 +155,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
       await _upgradeToHost();
     } else {
       // 회원가입 플로우 — 데이터만 상위로 전달
-      widget.onNext(
+      widget.onNext!(
         bankCode: _getBankCode(_selectedBank!),
         accountNum: _accountController.text,
         accountHolderName: _accountHolderController.text,
@@ -196,7 +198,8 @@ class _HostAccountStepState extends State<HostAccountStep> {
         throw Exception(responseData['message'] ?? '계좌 등록에 실패했습니다');
       }
 
-      widget.onNext(
+      // onNext가 있으면 상위에 위임, 없으면 standalone 페이지에서 직접 처리
+      widget.onNext?.call(
         bankCode: _getBankCode(_selectedBank!),
         accountNum: _accountController.text,
         accountHolderName: _accountHolderController.text,
@@ -231,7 +234,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
             onPressed: () {
               Navigator.pop(context);
               // onNext에 빈 계좌 정보 + skipAccount 플래그로 상위에 위임
-              widget.onNext(
+              widget.onNext!(
                 bankCode: '',
                 accountNum: '',
                 accountHolderName: '',
