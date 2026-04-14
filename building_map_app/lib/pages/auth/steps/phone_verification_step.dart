@@ -25,7 +25,7 @@ class PhoneVerificationStep extends StatefulWidget {
   final Function({
     required String realName,
     required String phoneNumber,
-    String? di,
+    String? certNum,
     String? birth,
     String? gender,
     required bool agreeTerms,
@@ -54,7 +54,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
   bool _isVerified = false;
 
   // KMC 본인인증 결과
-  String? _verifiedDi;
+  String? _verifiedCi;
   String? _verifiedBirth;
   String? _verifiedGender;
 
@@ -102,11 +102,18 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
   Future<void> _requestVerification() async {
     setState(() => _isVerifying = true);
 
-    if (!ApiConfig.isProduction && ApiConfig.baseUrl.contains('localhost')) {
-      await _handleMockVerification();
-      return;
+    try {
+      if (!ApiConfig.isProduction && ApiConfig.baseUrl.contains('localhost')) {
+        await _handleMockVerification();
+        return;
+      }
+      await _handleKmcVerification();
+    } finally {
+      // 어떤 경로로 종료되든 _isVerifying이 false로 복구됨을 보장
+      if (mounted && _isVerifying) {
+        setState(() => _isVerifying = false);
+      }
     }
-    await _handleKmcVerification();
   }
 
   /// 로컬 Mock 본인인증
@@ -130,7 +137,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         setState(() {
           _nameController.text = mockName;
           _phoneController.text = mockPhone;
-          _verifiedDi = 'mock_di_${DateTime.now().millisecondsSinceEpoch}';
+          _verifiedCi = 'mock_di_${DateTime.now().millisecondsSinceEpoch}';
           _verifiedBirth = '19900101';
           _verifiedGender = 'M';
           _isVerified = true;
@@ -185,7 +192,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
       setState(() {
         _nameController.text = verifyResult.name;
         _phoneController.text = verifyResult.phoneNumber;
-        _verifiedDi = verifyResult.di;
+        _verifiedCi = verifyResult.certNum;
         _verifiedBirth = verifyResult.birth;
         _verifiedGender = verifyResult.gender;
         _isVerified = true;
@@ -221,7 +228,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
     widget.onNext(
       realName: _nameController.text,
       phoneNumber: _phoneController.text,
-      di: _verifiedDi,
+      certNum: _verifiedCi,
       birth: _verifiedBirth,
       gender: _verifiedGender,
       agreeTerms: _agreeTerms,

@@ -1,13 +1,19 @@
-import 'dart:async';
+import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/kmc_service.dart';
 import '../../services/verification_service.dart';
 import '../../utils/password_validator.dart';
+import '../../widgets/kmc_webview.dart';
 
-/// 비밀번호 재설정 페이지
+/// 비밀번호 찾기 페이지
 ///
-/// 플로우: 이메일 입력 → 인증 코드 발송 → 인증 확인 → 새 비밀번호 입력 → 재설정 완료
+/// 플로우:
+/// Step 0 — 이메일 입력 → POST /find-password/check-email (소셜 계정 차단)
+/// Step 1 — KMC 본인인증 → DI 수신
+/// Step 2 — 새 비밀번호 입력 → POST /find-password/reset (email + di + newPassword)
+/// 완료   — 변경 완료 메시지 → 로그인 이동
 class ResetPasswordPage extends StatefulWidget {
   const ResetPasswordPage({super.key});
 
@@ -17,61 +23,35 @@ class ResetPasswordPage extends StatefulWidget {
 
 class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final _emailController = TextEditingController();
-  final _codeController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // 단계: 0=이메일 입력, 1=인증 코드 입력, 2=새 비밀번호 입력
-  int _step = 0;
-
+  int _step = 0; // 0=이메일, 1=KMC, 2=비밀번호
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  // 인증 코드 타이머
-  int _resendCountdown = 300; // 5분
-  Timer? _timer;
+  // KMC 인증 완료 후 저장
+  String? _verifiedCi;
 
-  // 색상 정의
-  static const primaryBlack = Color(0xFF000000);
-  static const secondaryGray = Color(0xFF808080);
-  static const borderGray = Color(0xFFE0E0E0);
-  static const backgroundWhite = Color(0xFFFFFFFF);
-  static const hintGray = Color(0xFFCCCCCC);
-  static const textGray = Color(0xFF666666);
+  static const _primaryBlack = Color(0xFF000000);
+  static const _textGray = Color(0xFF666666);
+  static const _borderGray = Color(0xFFE0E0E0);
+  static const _backgroundWhite = Color(0xFFFFFFFF);
+  static const _hintGray = Color(0xFFCCCCCC);
 
   @override
   void dispose() {
     _emailController.dispose();
-    _codeController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _timer?.cancel();
     super.dispose();
   }
 
-  void _startCountdown() {
-    _timer?.cancel();
-    setState(() => _resendCountdown = 300);
+  // ===================== Step 0: 이메일 확인 =====================
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_resendCountdown > 0) {
-        setState(() => _resendCountdown--);
-      } else {
-        timer.cancel();
-      }
-    });
-  }
-
-  String _formatTime(int seconds) {
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-    return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
-  }
-
-  /// Step 0: 인증 코드 발송
-  Future<void> _sendVerificationCode() async {
+  Future<void> _checkEmail() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
       _showErrorDialog('이메일을 입력해주세요');
@@ -85,14 +65,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     setState(() => _isLoading = true);
 
     try {
-      await VerificationService.sendPasswordResetVerification(email);
+      await VerificationService.checkEmailForPasswordReset(email: email);
       if (mounted) {
         setState(() {
           _isLoading = false;
           _step = 1;
         });
-        _startCountdown();
-        _showSuccessDialog('$email로\n인증 코드를 발송했습니다');
       }
     } on VerificationException catch (e) {
       if (mounted) {
@@ -102,87 +80,70 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showErrorDialog('인증 코드 발송 중 오류가 발생했습니다');
+        _showErrorDialog('이메일 확인 중 오류가 발생했습니다');
       }
     }
   }
 
-  /// Step 0→1에서 재발송
-  Future<void> _resendVerificationCode() async {
-    if (_resendCountdown > 0) return;
+  // ===================== Step 1: KMC 본인인증 =====================
 
+  Future<void> _handleKmcVerification() async {
     setState(() => _isLoading = true);
 
     try {
-      await VerificationService.sendPasswordResetVerification(
-          _emailController.text.trim());
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _startCountdown();
-        _showSuccessDialog('인증 코드를 재발송했습니다');
-      }
-    } on VerificationException catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showErrorDialog(e.message);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showErrorDialog('인증 코드 재발송 중 오류가 발생했습니다');
-      }
-    }
-  }
+      final requestResult = await KmcService.requestVerification();
 
-  /// Step 1: 인증 코드 확인
-  Future<void> _verifyCode() async {
-    final code = _codeController.text.trim();
-    if (code.isEmpty) {
-      _showErrorDialog('인증 코드를 입력해주세요');
-      return;
-    }
-    if (code.length != 6) {
-      _showErrorDialog('6자리 코드를 입력해주세요');
-      return;
-    }
+      if (!mounted) return;
 
-    setState(() => _isLoading = true);
-
-    try {
-      final success = await VerificationService.verifyEmailCode(
-        _emailController.text.trim(),
-        code,
+      final popupResult = await KmcWebViewHelper.openKmcVerification(
+        context: context,
+        requestResult: requestResult,
       );
-      if (mounted && success) {
-        _timer?.cancel();
-        setState(() {
-          _isLoading = false;
-          _step = 2;
-        });
-      }
-    } on VerificationException catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showErrorDialog(e.message);
-      }
+
+      if (!mounted) return;
+
+      if (popupResult == null) return;
+
+      final verifyResult = await KmcService.verifyResult(
+        apiToken: popupResult['apiToken']!,
+        certNum: popupResult['certNum']!,
+        purpose: 'find_password',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _verifiedCi = verifyResult.certNum;
+        _step = 2;
+      });
+    } on KmcException catch (e) {
+      if (mounted) _showErrorDialog(KmcService.getErrorMessage(e.code));
     } catch (e) {
-      if (mounted) {
+      AppLogger.e('❌ [RESET_PW] KMC 오류: $e');
+      if (mounted) _showErrorDialog('본인인증 중 오류가 발생했습니다');
+    } finally {
+      if (mounted && _isLoading) {
         setState(() => _isLoading = false);
-        _showErrorDialog('인증 코드 확인 중 오류가 발생했습니다');
       }
     }
   }
 
-  /// Step 2: 비밀번호 재설정
+  // ===================== Step 2: 비밀번호 재설정 =====================
+
   Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_verifiedCi == null) {
+      _showErrorDialog('본인인증 정보가 없습니다. 다시 시도해주세요.');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      await VerificationService.resetPassword(
-        _emailController.text.trim(),
-        _passwordController.text,
+      await VerificationService.resetPasswordWithKmc(
+        email: _emailController.text.trim(),
+        certNum: _verifiedCi!,
+        newPassword: _passwordController.text,
       );
       if (mounted) {
         setState(() => _isLoading = false);
@@ -201,15 +162,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     }
   }
 
+  // ===================== 다이얼로그 =====================
+
   void _showCompletionDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: backgroundWhite,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _backgroundWhite,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           '비밀번호 변경 완료',
           style: TextStyle(
@@ -220,16 +181,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         ),
         content: const Text(
           '비밀번호가 성공적으로 변경되었습니다.\n새 비밀번호로 로그인해주세요.',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
+          style: TextStyle(fontSize: 14, color: _textGray),
         ),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(dialogContext);
+              Navigator.pop(ctx);
               context.go('/login');
             },
             child: Text(
@@ -249,30 +206,24 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: backgroundWhite,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _backgroundWhite,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text(
           '오류',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: primaryBlack,
+            color: _primaryBlack,
           ),
         ),
         content: Text(
           message,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
+          style: const TextStyle(fontSize: 14, color: _textGray),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: Text(
               '확인',
               style: TextStyle(
@@ -287,60 +238,25 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     );
   }
 
-  void _showSuccessDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: backgroundWhite,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        title: Text(
-          '성공',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.success600,
-          ),
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              '확인',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ===================== Build =====================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundWhite,
+      backgroundColor: _backgroundWhite,
       appBar: AppBar(
-        backgroundColor: backgroundWhite,
+        backgroundColor: _backgroundWhite,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: primaryBlack),
+          icon: const Icon(Icons.arrow_back, color: _primaryBlack),
           onPressed: () {
             if (_step > 0) {
-              setState(() => _step--);
+              setState(() {
+                _step--;
+                // Step 1로 돌아올 때 KMC DI 초기화
+                if (_step == 1) _verifiedCi = null;
+              });
             } else {
               context.pop();
             }
@@ -351,7 +267,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: primaryBlack,
+            color: _primaryBlack,
           ),
         ),
         centerTitle: true,
@@ -373,13 +289,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       case 0:
         return _buildEmailStep();
       case 1:
-        return _buildCodeStep();
+        return _buildKmcStep();
       case 2:
         return _buildPasswordStep();
       default:
         return const SizedBox.shrink();
     }
   }
+
+  // ===================== Step 위젯들 =====================
 
   /// Step 0: 이메일 입력
   Widget _buildEmailStep() {
@@ -391,23 +309,19 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w700,
-            color: primaryBlack,
+            color: _primaryBlack,
           ),
         ),
         const SizedBox(height: 8),
         const Text(
-          '이메일로 인증 코드를 보내드립니다',
-          style: TextStyle(fontSize: 16, color: textGray),
+          '소셜 계정(카카오)으로 가입한 경우 이용할 수 없습니다',
+          style: TextStyle(fontSize: 15, color: _textGray),
         ),
         const SizedBox(height: 40),
 
         const Text(
           '이메일 주소',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
+          style: TextStyle(fontSize: 14, color: _textGray),
         ),
         const SizedBox(height: 8),
 
@@ -417,110 +331,99 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             autofocus: true,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: primaryBlack,
-            ),
+            style: const TextStyle(fontSize: 16, color: _primaryBlack),
             decoration: _inputDecoration('email@example.com'),
           ),
         ),
         const SizedBox(height: 32),
 
         _buildPrimaryButton(
-          text: '인증 코드 발송',
-          onPressed: _isLoading ? null : _sendVerificationCode,
+          text: '다음',
+          onPressed: _isLoading ? null : _checkEmail,
         ),
       ],
     );
   }
 
-  /// Step 1: 인증 코드 입력
-  Widget _buildCodeStep() {
+  /// Step 1: KMC 본인인증
+  Widget _buildKmcStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
-          '인증 코드를\n입력해주세요',
+          '본인인증을\n진행해주세요',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w700,
-            color: primaryBlack,
+            color: _primaryBlack,
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          '${_emailController.text}로 발송된\n6자리 코드를 입력해주세요',
-          style: const TextStyle(fontSize: 16, color: textGray),
-        ),
-        const SizedBox(height: 40),
-
         const Text(
-          '인증 코드',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
+          '가입 시 등록한 휴대폰으로 본인인증을 완료해주세요',
+          style: TextStyle(fontSize: 15, color: _textGray),
+        ),
+        const SizedBox(height: 48),
+
+        // 입력한 이메일 표시
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9FA),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _borderGray),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.email_outlined, size: 18, color: Color(0xFF888888)),
+              const SizedBox(width: 8),
+              Text(
+                _emailController.text.trim(),
+                style: const TextStyle(fontSize: 15, color: _primaryBlack),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 32),
 
-        Row(
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 52,
-                child: TextFormField(
-                  controller: _codeController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  autofocus: true,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    color: primaryBlack,
+        // 본인인증 안내 박스
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9FA),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _borderGray),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Color(0xFF666666)),
+                  SizedBox(width: 6),
+                  Text(
+                    '본인인증 안내',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF444444),
+                    ),
                   ),
-                  decoration: _inputDecoration('6자리 인증 코드').copyWith(
-                    counterText: '',
-                  ),
-                ),
+                ],
               ),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _resendCountdown == 0 && !_isLoading
-                    ? _resendVerificationCode
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary600,
-                  foregroundColor: backgroundWhite,
-                  disabledBackgroundColor: borderGray,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  _resendCountdown > 0
-                      ? _formatTime(_resendCountdown)
-                      : '재발송',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+              SizedBox(height: 8),
+              Text(
+                '• 휴대폰 본인인증이 진행됩니다\n• 이메일과 본인인증 정보가 일치해야 합니다',
+                style: TextStyle(fontSize: 13, color: _textGray, height: 1.6),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 32),
 
         _buildPrimaryButton(
-          text: '인증 확인',
-          onPressed: _isLoading ? null : _verifyCode,
+          text: '본인인증 시작',
+          onPressed: _isLoading ? null : _handleKmcVerification,
         ),
       ],
     );
@@ -538,24 +441,19 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w700,
-              color: primaryBlack,
+              color: _primaryBlack,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             PasswordValidator.policyDescription,
-            style: const TextStyle(fontSize: 16, color: textGray),
+            style: const TextStyle(fontSize: 15, color: _textGray),
           ),
           const SizedBox(height: 40),
 
-          // 새 비밀번호
           const Text(
             '새 비밀번호',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: textGray,
-            ),
+            style: TextStyle(fontSize: 14, color: _textGray),
           ),
           const SizedBox(height: 8),
 
@@ -565,18 +463,14 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               controller: _passwordController,
               obscureText: _obscurePassword,
               autofocus: true,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: primaryBlack,
-              ),
+              style: const TextStyle(fontSize: 16, color: _primaryBlack),
               decoration: _inputDecoration(PasswordValidator.hintText).copyWith(
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword
                         ? Icons.visibility_off_outlined
                         : Icons.visibility_outlined,
-                    color: secondaryGray,
+                    color: const Color(0xFF808080),
                     size: 20,
                   ),
                   onPressed: () =>
@@ -588,14 +482,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           ),
           const SizedBox(height: 20),
 
-          // 비밀번호 확인
           const Text(
             '새 비밀번호 확인',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: textGray,
-            ),
+            style: TextStyle(fontSize: 14, color: _textGray),
           ),
           const SizedBox(height: 8),
 
@@ -604,11 +493,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             child: TextFormField(
               controller: _confirmPasswordController,
               obscureText: _obscureConfirmPassword,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: primaryBlack,
-              ),
+              style: const TextStyle(fontSize: 16, color: _primaryBlack),
               decoration:
                   _inputDecoration('비밀번호를 다시 입력해 주세요.').copyWith(
                 suffixIcon: IconButton(
@@ -616,7 +501,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     _obscureConfirmPassword
                         ? Icons.visibility_off_outlined
                         : Icons.visibility_outlined,
-                    color: secondaryGray,
+                    color: const Color(0xFF808080),
                     size: 20,
                   ),
                   onPressed: () => setState(
@@ -638,25 +523,23 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     );
   }
 
-  /// 공통 입력 필드 데코레이션
+  // ===================== 공통 위젯 =====================
+
   InputDecoration _inputDecoration(String hintText) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        color: hintGray,
-      ),
+      hintStyle: const TextStyle(fontSize: 16, color: _hintGray),
       filled: true,
-      fillColor: backgroundWhite,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      fillColor: _backgroundWhite,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: borderGray, width: 1),
+        borderSide: const BorderSide(color: _borderGray, width: 1),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: borderGray, width: 1),
+        borderSide: const BorderSide(color: _borderGray, width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -669,7 +552,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     );
   }
 
-  /// 공통 메인 버튼
   Widget _buildPrimaryButton({
     required String text,
     required VoidCallback? onPressed,
@@ -680,8 +562,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary600,
-          foregroundColor: backgroundWhite,
-          disabledBackgroundColor: borderGray,
+          foregroundColor: _backgroundWhite,
+          disabledBackgroundColor: _borderGray,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -694,7 +576,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
                   valueColor:
-                      AlwaysStoppedAnimation<Color>(backgroundWhite),
+                      AlwaysStoppedAnimation<Color>(_backgroundWhite),
                 ),
               )
             : Text(

@@ -1,6 +1,5 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/auto_message_template.dart';
@@ -198,10 +197,7 @@ class _AutoMessageManagementPageState extends State<AutoMessageManagementPage> {
     return AppBar(
       backgroundColor: AppColors.neutral0,
       elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppColors.neutral900),
-        onPressed: () => context.pop(),
-      ),
+      automaticallyImplyLeading: false,
       title: Text(
         '자동메시지 관리',
         style: AppTextStyles.headingSmall.copyWith(

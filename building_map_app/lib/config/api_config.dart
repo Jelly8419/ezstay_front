@@ -62,6 +62,13 @@ class ApiConfig {
   static String get authResetPasswordUrl =>
       '$baseUrl/api/auth/reset-password';
 
+  /// 아이디 찾기 / 비밀번호 찾기 API 엔드포인트
+  static String get authFindIdUrl => '$baseUrl/api/auth/find-id';
+  static String get authFindPasswordCheckEmailUrl =>
+      '$baseUrl/api/auth/find-password/check-email';
+  static String get authFindPasswordResetUrl =>
+      '$baseUrl/api/auth/find-password/reset';
+
   /// 소셜 로그인 사용자 본인인증 API 엔드포인트
   static String get guestVerificationUrl =>
       '$baseUrl/api/user/guest/verification';

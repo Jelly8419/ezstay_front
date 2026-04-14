@@ -124,7 +124,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
   Future<void> _registerEmailGuest({
     required String realName,
     required String phoneNumber,
-    String? di,
+    String? certNum,
     String? birth,
     String? gender,
     required bool agreeTerms,
@@ -141,7 +141,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
               'user_mode': 'guest',
               'name': realName,
               'phone_number': phoneNumber,
-              if (di != null) 'di': di,
+              if (certNum != null) 'certNum': certNum,
               if (birth != null) 'birth': birth,
               if (gender != null) 'gender': gender,
               'terms': {
@@ -175,7 +175,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
       await _registerEmailGuest(
         realName: _state.realName!,
         phoneNumber: _state.phoneNumber!,
-        di: _state.di,
+        certNum: _state.certNum,
         birth: _state.birth,
         gender: _state.gender,
         agreeTerms: agreeTerms,
@@ -195,7 +195,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
               'user_mode': 'host',
               'name': _state.realName,
               'phone_number': _state.phoneNumber,
-              if (_state.di != null) 'di': _state.di,
+              if (_state.certNum != null) 'certNum': _state.certNum,
               if (_state.birth != null) 'birth': _state.birth,
               if (_state.gender != null) 'gender': _state.gender,
               'bank_code': bankCode,
@@ -223,7 +223,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
   Future<void> _registerSocialGuest({
     required String realName,
     required String phoneNumber,
-    String? di,
+    String? certNum,
     String? birth,
     String? gender,
     required bool agreeTerms,
@@ -243,7 +243,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             body: jsonEncode({
               'name': realName,
               'phone_number': phoneNumber,
-              if (di != null) 'di': di,
+              if (certNum != null) 'certNum': certNum,
               if (birth != null) 'birth': birth,
               if (gender != null) 'gender': gender,
               'terms': {
@@ -277,7 +277,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
       await _registerSocialGuest(
         realName: _state.realName!,
         phoneNumber: _state.phoneNumber!,
-        di: _state.di,
+        certNum: _state.certNum,
         birth: _state.birth,
         gender: _state.gender,
         agreeTerms: agreeTerms,
@@ -300,7 +300,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             body: jsonEncode({
               'name': _state.realName,
               'phone_number': _state.phoneNumber,
-              if (_state.di != null) 'di': _state.di,
+              if (_state.certNum != null) 'certNum': _state.certNum,
               if (_state.birth != null) 'birth': _state.birth,
               if (_state.gender != null) 'gender': _state.gender,
               'bank_code': bankCode,
@@ -402,7 +402,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             onNext: ({
               required String realName,
               required String phoneNumber,
-              String? di,
+              String? certNum,
               String? birth,
               String? gender,
               required bool agreeTerms,
@@ -410,7 +410,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             }) {
               if (!mounted) return;
               setState(() {
-                _state.markPhoneVerified(phoneNumber, realName, di: di, birth: birth, gender: gender);
+                _state.markPhoneVerified(phoneNumber, realName, certNum: certNum, birth: birth, gender: gender);
                 _state.nextStep();
               });
             },
@@ -446,7 +446,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             onNext: ({
               required String realName,
               required String phoneNumber,
-              String? di,
+              String? certNum,
               String? birth,
               String? gender,
               required bool agreeTerms,
@@ -455,7 +455,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
               _registerSocialGuest(
                 realName: realName,
                 phoneNumber: phoneNumber,
-                di: di,
+                certNum: certNum,
                 birth: birth,
                 gender: gender,
                 agreeTerms: agreeTerms,
@@ -492,7 +492,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             onNext: ({
               required String realName,
               required String phoneNumber,
-              String? di,
+              String? certNum,
               String? birth,
               String? gender,
               required bool agreeTerms,
@@ -500,7 +500,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             }) {
               if (!mounted) return;
               setState(() {
-                _state.markPhoneVerified(phoneNumber, realName, di: di, birth: birth, gender: gender);
+                _state.markPhoneVerified(phoneNumber, realName, certNum: certNum, birth: birth, gender: gender);
                 _state.nextStep();
               });
             },
@@ -549,7 +549,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
             onNext: ({
               required String realName,
               required String phoneNumber,
-              String? di,
+              String? certNum,
               String? birth,
               String? gender,
               required bool agreeTerms,
@@ -558,7 +558,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
               _registerEmailGuest(
                 realName: realName,
                 phoneNumber: phoneNumber,
-                di: di,
+                certNum: certNum,
                 birth: birth,
                 gender: gender,
                 agreeTerms: agreeTerms,

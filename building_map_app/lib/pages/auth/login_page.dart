@@ -305,10 +305,7 @@ class _LoginPageState extends State<LoginPage> {
 
                       // 아이디 찾기
                       TextButton(
-                        onPressed: () {
-                          // TODO: 아이디 찾기 기능
-                          _showInfoDialog('아이디 찾기 기능은 준비 중입니다.');
-                        },
+                        onPressed: () => context.push('/find-id'),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 4,
@@ -715,36 +712,4 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _showInfoDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: backgroundWhite,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              '확인',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

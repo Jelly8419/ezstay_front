@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>본인인증 처리 중</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #ffffff;
+    }
+    .container {
+      text-align: center;
+      color: #444;
+    }
+    .spinner {
+      border: 3px solid #e0e0e0;
+      border-top: 3px solid #2196F3;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    p { margin: 0; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="spinner"></div>
+    <p>본인인증 결과를 처리하고 있습니다...</p>
+  </div>
+
+  <script>
+    (function () {
+      // URL 쿼리에서 파라미터 파싱
+      var params = new URLSearchParams(window.location.search);
+      var apiToken = params.get('apiToken') || '';
+      var certNum  = params.get('certNum')  || '';
+      var kmcError = params.get('kmc_error') || '';
+
+      var result = {
+        type:     'KMC_RESULT',
+        apiToken: apiToken,
+        certNum:  certNum,
+        error:    kmcError
+      };
+
+      console.log('[KMC Callback HTML] apiToken:', apiToken ? '있음' : '없음',
+                  '/ certNum:', certNum ? '있음' : '없음',
+                  '/ error:', kmcError || '없음');
+
+      // 1순위: window.opener (팝업 → 부모 창 직접 postMessage)
+      if (window.opener && !window.opener.closed) {
+        try {
+          window.opener.postMessage(result, '*');
+          console.log('[KMC Callback HTML] opener.postMessage 전송 성공');
+        } catch (e) {
+          console.warn('[KMC Callback HTML] opener.postMessage 실패:', e);
+        }
+      } else {
+        console.log('[KMC Callback HTML] opener 없음 — BroadcastChannel만 사용');
+      }
+
+      // 2순위: BroadcastChannel (opener가 cross-origin이거나 끊긴 경우 대비)
+      try {
+        var bc = new BroadcastChannel('kmc_auth');
+        bc.postMessage(result);
+        console.log('[KMC Callback HTML] BroadcastChannel 전송 성공');
+        setTimeout(function () { bc.close(); }, 1000);
+      } catch (e) {
+        console.warn('[KMC Callback HTML] BroadcastChannel 미지원 또는 실패:', e);
+      }
+
+      // 메시지 수신 여유 확보 후 팝업 닫기
+      setTimeout(function () {
+        window.close();
+      }, 300);
+    })();
+  </script>
+</body>
+</html>
