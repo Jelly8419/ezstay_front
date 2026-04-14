@@ -72,10 +72,12 @@ class KmcWebViewHelper {
       // postMessage 리스너 등록
       Timer? pollTimer;
       Timer? timeoutTimer;
+      Timer? closedWaitTimer; // 팝업 닫힘 감지 후 대기 타이머 (취소 가능해야 함)
 
       void cleanup() {
         pollTimer?.cancel();
         timeoutTimer?.cancel();
+        closedWaitTimer?.cancel(); // 정상 인증 완료 시 이 타이머도 반드시 취소
         // JS 콜백 정리
         try {
           js.context.deleteProperty('_kmcMessageHandler');
@@ -171,7 +173,8 @@ class KmcWebViewHelper {
           if (state == 'closed') {
             timer.cancel();
             // 팝업이 닫힘 → BroadcastChannel 결과 잠시 대기 후 미수신 시 취소 처리
-            Timer(const Duration(milliseconds: 500), () {
+            // closedWaitTimer에 저장해야 정상 인증 완료 시 cleanup()으로 취소 가능
+            closedWaitTimer = Timer(const Duration(milliseconds: 500), () {
               if (!completer.isCompleted) {
                 cleanup();
                 completer.complete(null);
