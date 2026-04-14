@@ -768,9 +768,10 @@ class AppRouter {
             // 백엔드에서 전달한 JWT 토큰 추출
             final token = state.uri.queryParameters['token'];
             final refreshToken = state.uri.queryParameters['refresh'];
-            // 회원가입 플로우에서 전달된 mode state (guest/host)
-            final oauthState = state.uri.queryParameters['state'];
-            AppLogger.d('[AUTH_CALLBACK] fullUri=${state.uri} | allParams=${state.uri.queryParameters} | oauthState=$oauthState');
+            // localStorage에서 pending register mode 읽기 (웹 OAuth 리다이렉트 후 복원)
+            final authServiceForMode = Provider.of<AuthService>(context, listen: false);
+            final pendingMode = authServiceForMode.popPendingRegisterMode();
+            AppLogger.d('[AUTH_CALLBACK] fullUri=${state.uri} | pendingMode=$pendingMode');
 
             // 토큰이 없으면 로그인 페이지로 리다이렉트
             if (token == null || refreshToken == null) {
@@ -800,10 +801,9 @@ class AppRouter {
                 );
 
                 if (success && context.mounted) {
-                  // state 파라미터가 있으면 회원가입 플로우에서 온 것 → /register로 이동
-                  // extra는 웹 OAuth 리다이렉트 후 소실되므로 쿼리 파라미터 사용
-                  if (oauthState == 'host' || oauthState == 'guest') {
-                    context.go('/register?social=true&mode=$oauthState');
+                  // localStorage에서 읽은 pending mode가 있으면 회원가입 플로우
+                  if (pendingMode == 'host' || pendingMode == 'guest') {
+                    context.go('/register?social=true&mode=$pendingMode');
                     return;
                   }
 
