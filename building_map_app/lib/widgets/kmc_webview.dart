@@ -149,29 +149,19 @@ class KmcWebViewHelper {
         }
       ''']);
 
-      // 팝업 닫힘 감지 — cross-origin에서 popup.closed가 true를 반환하는 문제 대응
-      // popup.closed를 사용하지 않고, location 접근 가능 여부로 판단
-      pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      // 팝업 닫힘 감지
+      // popup.closed를 1순위로 확인 — cross-origin 여부와 무관하게 신뢰할 수 있음.
+      // location.href 접근 방식은 cross-origin 닫힘과 cross-origin 인증중을 구별 불가
+      // (SecurityError가 양쪽 모두에서 발생하기 때문).
+      pollTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         try {
           js.context.callMethod('eval', ['''
             (function() {
               var popup = window._kmcPopupRef;
-              if (!popup) {
+              if (!popup || popup.closed) {
                 window._kmcPopupState = 'closed';
-                return;
-              }
-              try {
-                // cross-origin이면 location.href 접근 시 에러 → 아직 열려있음 (다른 도메인)
-                var href = popup.location.href;
-                // same-origin 접근 성공 → about:blank이거나 실제 닫힘 확인
-                if (popup.closed) {
-                  window._kmcPopupState = 'closed';
-                } else {
-                  window._kmcPopupState = 'open_same_origin';
-                }
-              } catch(e) {
-                // cross-origin 에러 → 다른 도메인에 있음 (KMC 인증 중)
-                window._kmcPopupState = 'open_cross_origin';
+              } else {
+                window._kmcPopupState = 'open';
               }
             })()
           ''']);
@@ -179,17 +169,17 @@ class KmcWebViewHelper {
           final state = js.context['_kmcPopupState']?.toString() ?? 'unknown';
 
           if (state == 'closed') {
-            // 팝업이 실제로 닫힘 → BroadcastChannel 결과 대기 (3초)
-            Timer(const Duration(seconds: 3), () {
+            timer.cancel();
+            // 팝업이 닫힘 → BroadcastChannel 결과 잠시 대기 후 미수신 시 취소 처리
+            Timer(const Duration(milliseconds: 500), () {
               if (!completer.isCompleted) {
                 cleanup();
                 completer.complete(null);
               }
             });
-            timer.cancel();
           }
         } catch (_) {
-          // 에러 시 무시 (팝업 아직 열려있는 것으로 간주)
+          // 에러 시 무시
         }
       });
 
