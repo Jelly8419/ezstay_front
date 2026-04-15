@@ -268,7 +268,7 @@ class RoomManagementCard extends StatelessWidget {
             text: ' / 1주',
             style: TextStyle(
               fontWeight: FontWeight.normal,
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
         ],
@@ -291,9 +291,8 @@ class RoomManagementCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '이미지 없음',
-            style: AppTextStyles.bodySmall.copyWith(
+            style: AppTextStyles.caption.copyWith(
               color: AppColors.neutral400,
-              fontSize: 11,
             ),
           ),
         ],

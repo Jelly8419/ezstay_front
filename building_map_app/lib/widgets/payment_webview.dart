@@ -131,7 +131,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
                     Text(
                       '결제창을 불러오는 중...',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                         fontSize: 14,
                       ),
                     ),

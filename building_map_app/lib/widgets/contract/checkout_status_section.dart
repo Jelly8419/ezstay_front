@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/contract.dart';
 
 /// 퇴실 상태 표시 섹션
@@ -129,25 +130,22 @@ class CheckoutStatusSection extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                    style: AppTextStyles.labelMedium.copyWith(
                       color: textColor,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     message,
-                    style: TextStyle(fontSize: 13, color: textColor),
+                    style: AppTextStyles.bodySmall.copyWith(color: textColor),
                   ),
                   if (deadlineText != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       deadlineText,
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: AppTextStyles.caption.copyWith(
                         color: textColor.withValues(alpha: 0.7),
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -173,8 +171,7 @@ class CheckoutStatusSection extends StatelessWidget {
                 ),
                 child: Text(
                   '확인하기',
-                  style: TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.bodySmall.copyWith(
                     fontWeight: FontWeight.bold,
                     color: textColor,
                   ),

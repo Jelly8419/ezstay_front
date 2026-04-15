@@ -244,8 +244,7 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
                           SizedBox(width: AppSpacing.sm),
                           Text(
                             _existingAccount != null ? '환급 계좌 수정' : '환급 계좌 등록',
-                            style: AppTextStyles.headingLarge.copyWith(
-                              fontSize: 24,
+                            style: AppTextStyles.displaySmall.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.gray900,
                             ),
@@ -259,7 +258,7 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
                     Text(
                       '임대인 귀책으로 계약 취소 시, 위약금을 환급받을 계좌를 등록해주세요.',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
 
@@ -278,8 +277,7 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
                         children: [
                           Text(
                             '계좌 정보',
-                            style: AppTextStyles.headingMedium.copyWith(
-                              fontSize: 18,
+                            style: AppTextStyles.headingSmall.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -398,10 +396,7 @@ class _GuestRefundAccountPageState extends State<GuestRefundAccountPage> {
                                     )
                                   : Text(
                                       _accountVerified ? '예금주 확인 완료 ✓' : '예금주 확인',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                      style: AppTextStyles.labelLarge,
                                     ),
                             ),
                           ),

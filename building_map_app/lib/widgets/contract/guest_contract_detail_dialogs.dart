@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 게스트 퇴실 확인 다이얼로그
 class GuestCheckoutConfirmDialog extends StatelessWidget {
@@ -12,9 +13,7 @@ class GuestCheckoutConfirmDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       title: const Text('퇴실 확인'),
-      titleTextStyle: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
+      titleTextStyle: AppTextStyles.headingSmall.copyWith(
         color: Colors.black,
       ),
       content: Column(
@@ -42,8 +41,7 @@ class GuestCheckoutConfirmDialog extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '방 도어락 비밀번호를 임의 변경 후 퇴실하셨을 경우, 퇴실 확인 전에 임대인에게 비밀번호를 안내하지 않으면 보증금 환급 절차에 불이익이 발생할 수 있습니다.',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.error700,
                       height: 1.5,
                     ),
@@ -57,7 +55,7 @@ class GuestCheckoutConfirmDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('취소', style: TextStyle(color: Colors.grey)),
+          child: Text('취소', style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey)),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),

@@ -70,12 +70,11 @@ class HostContractCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(color: const Color(0xFFFED7AA)), // orange-200
                   ),
-                  child: const Text(
+                  child: Text(
                     '보증금 반환 보류 신청중',
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: AppTextStyles.caption.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFEA580C), // orange-600
+                      color: const Color(0xFFEA580C),
                     ),
                   ),
                 ),
@@ -133,10 +132,8 @@ class HostContractCard extends StatelessWidget {
                     // 방 이름
                     Text(
                       contract.roomName,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827),
+                      style: AppTextStyles.headingMedium.copyWith(
+                        color: const Color(0xFF111827),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -217,12 +214,10 @@ class HostContractCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   '계약 취소',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFDC2626),
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: const Color(0xFFDC2626),
                   ),
                 ),
               ),
@@ -255,9 +250,7 @@ class HostContractCard extends StatelessWidget {
       ),
       child: Text(
         config.text,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
+        style: AppTextStyles.labelMedium.copyWith(
           color: config.textColor,
         ),
       ),
@@ -329,7 +322,7 @@ class HostContractCard extends StatelessWidget {
             '임차인',
             style: AppTextStyles.bodyLarge.copyWith(
               color: const Color(0xFF6B7280),
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -364,7 +357,7 @@ class HostContractCard extends StatelessWidget {
             label,
             style: AppTextStyles.bodyLarge.copyWith(
               color: const Color(0xFF6B7280),
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -483,9 +476,9 @@ class _HostInProgressActions extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 '퇴실 확인',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -532,7 +525,7 @@ class _CancellationButton extends StatelessWidget {
       ),
       child: Text(
         isCancellationRequested ? '취소 요청됨' : '취소 요청',
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+        style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold, color: color),
       ),
     );
   }

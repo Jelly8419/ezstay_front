@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/contract.dart';
 
 /// 호스트 권장 옵션 배너 (APPROVED 상태, recommendedItems 있을 때만 표시)
@@ -22,19 +23,18 @@ class HostRecommendationBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Icon(
+            children: [
+              const Icon(
                 Icons.chat_bubble_outline,
                 size: 15,
                 color: Color(0xFF0369A1),
               ),
-              SizedBox(width: 6),
+              const SizedBox(width: 6),
               Text(
                 '임대인이 입주 전 챙기면 좋을 상품을 안내해뒀어요',
-                style: TextStyle(
-                  fontSize: 13,
+                style: AppTextStyles.bodySmall.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF0369A1),
+                  color: const Color(0xFF0369A1),
                 ),
               ),
             ],
@@ -49,9 +49,8 @@ class HostRecommendationBanner extends StatelessWidget {
                   const Text('• ', style: TextStyle(color: Color(0xFF64748B))),
                   Text(
                     item.name,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF334155),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: const Color(0xFF334155),
                     ),
                   ),
                 ],
@@ -59,9 +58,9 @@ class HostRecommendationBanner extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             '필요한 옵션 상품을 추가할 수 있어요',
-            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            style: AppTextStyles.caption.copyWith(color: const Color(0xFF64748B)),
           ),
         ],
       ),

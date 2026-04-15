@@ -74,7 +74,7 @@ class ChatListItem extends StatelessWidget {
                             propertyTitle,
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: AppColors.gray900, // text-gray-900
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -180,8 +180,7 @@ class ChatListItem extends StatelessWidget {
                   child: Text(
                     '${chatRoom.unreadCount}',
                     style: AppTextStyles.caption.copyWith(
-                      color: AppColors.neutral0, // text-white
-                      fontSize: 10, // text-xs
+                      color: AppColors.neutral0,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

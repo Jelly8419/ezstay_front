@@ -281,7 +281,7 @@ class _PropertyCardState extends State<PropertyCard> {
                     ),
                     child: Text(
                       '${_currentPhotoIndex + 1} / ${widget.room.photos.length}',
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      style: theme.AppTextStyles.caption.copyWith(color: Colors.white),
                     ),
                   ),
                 ),

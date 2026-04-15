@@ -51,7 +51,7 @@ void showPhoneChangedDialog(BuildContext context, String newPhoneNumber) {
           Text(
             '휴대폰번호가 변경되었습니다.',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -184,7 +184,7 @@ Future<bool> showWithdrawalConfirmDialog(BuildContext context) async {
           child: Text(
             '취소',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
         ),

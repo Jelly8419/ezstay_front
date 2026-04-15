@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/contract.dart';
 import '../../models/contract_detail.dart';
 import '../../utils/contract_utils.dart';
@@ -37,9 +38,9 @@ class HostContractActionButtons extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: onReject,
             icon: const Icon(Icons.close, size: 16),
-            label: const Text(
+            label: Text(
               '승인 철회',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold),
             ),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -78,9 +79,9 @@ class HostContractActionButtons extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     '퇴실 확인',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -97,8 +98,7 @@ class HostContractActionButtons extends StatelessWidget {
                   ),
                   child: Text(
                     '취소 요청',
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: AppTextStyles.labelMedium.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.error600,
                     ),
@@ -126,8 +126,7 @@ class HostContractActionButtons extends StatelessWidget {
             ),
             child: Text(
               '취소 요청',
-              style: TextStyle(
-                fontSize: 14,
+              style: AppTextStyles.labelMedium.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.error600,
               ),

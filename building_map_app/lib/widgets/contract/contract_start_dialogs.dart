@@ -26,7 +26,7 @@ class ContractStartDialogs {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: AppColors.textPrimary,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -35,7 +35,7 @@ class ContractStartDialogs {
                   Text(
                     '최종 결제 금액',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.grey[600],
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -53,7 +53,7 @@ class ContractStartDialogs {
               '임대인이 승인하면 결제가 진행됩니다.',
               style: AppTextStyles.bodySmall.copyWith(
                 fontSize: 13,
-                color: Colors.grey[600],
+                color: AppColors.textPrimary,
               ),
             ),
           ],
@@ -61,7 +61,7 @@ class ContractStartDialogs {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('취소', style: TextStyle(color: Colors.grey[600])),
+            child: Text('취소', style: TextStyle(color: AppColors.textPrimary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -207,7 +207,7 @@ class ContractStartDialogs {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text('취소', style: TextStyle(color: Colors.grey[600])),
+            child: Text('취소', style: TextStyle(color: AppColors.textPrimary)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),

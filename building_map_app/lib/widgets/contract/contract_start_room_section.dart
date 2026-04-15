@@ -1,3 +1,4 @@
+import '../../core/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -98,18 +99,18 @@ class ContractStartRoomSection extends StatelessWidget {
               imageUrl: thumbnailUrl,
               fit: BoxFit.cover,
               placeholder: (context, url) => Container(
-                color: Colors.grey[200],
+                color: AppColors.textPrimary,
                 child: const Center(
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
               errorWidget: (context, url, error) => Container(
-                color: Colors.grey[200],
+                color: AppColors.textPrimary,
                 child: const Icon(Icons.home, color: Colors.grey),
               ),
             )
           : Container(
-              color: Colors.grey[200],
+              color: AppColors.textPrimary,
               child: const Icon(Icons.home, color: Colors.grey),
             ),
     );
@@ -137,7 +138,7 @@ class ContractStartRoomSection extends StatelessWidget {
               child: Text(
                 '주소',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: Colors.grey[600],
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -162,7 +163,7 @@ class ContractStartRoomSection extends StatelessWidget {
               child: Text(
                 '계약 기간',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: Colors.grey[600],
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -190,7 +191,7 @@ class ContractStartRoomSection extends StatelessWidget {
                   : Text(
                       '날짜가 선택되지 않았습니다',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: Colors.grey[500],
+                        color: AppColors.textPrimary,
                       ),
                     ),
             ),

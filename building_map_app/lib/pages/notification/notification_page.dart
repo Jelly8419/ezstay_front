@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/notification_item.dart';
 import '../../models/user.dart';
 import '../../providers/gnb_provider.dart';
@@ -318,10 +319,9 @@ class _NotificationPageState extends State<NotificationPage> {
                 constraints: const BoxConstraints(maxWidth: 1200),
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: const Text(
+                child: Text(
                   '알림',
-                  style: TextStyle(
-                    fontSize: 20,
+                  style: AppTextStyles.headingMedium.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.gray900,
                   ),
@@ -344,12 +344,10 @@ class _NotificationPageState extends State<NotificationPage> {
                       onPressed: () => context.pop(),
                     ),
                     // 중앙 타이틀
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         '알림',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                        style: AppTextStyles.headingSmall.copyWith(
                           color: AppColors.gray900,
                         ),
                         textAlign: TextAlign.center,
@@ -405,20 +403,18 @@ class _NotificationPageState extends State<NotificationPage> {
                       // React: mb-4 = 16px
                       const SizedBox(height: 16),
                       // React: text-gray-500 text-lg
-                      const Text(
+                      Text(
                         '아직 도착한 알림이 없습니다',
-                        style: TextStyle(
-                          fontSize: 18,
+                        style: AppTextStyles.headingSmall.copyWith(
                           color: AppColors.neutral500,
                         ),
                       ),
                       // React: mb-2 = 8px
                       const SizedBox(height: 8),
                       // React: text-gray-400 text-sm
-                      const Text(
+                      Text(
                         '계약 요청, 메시지, 결제 등의 알림이 여기에 표시됩니다',
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.neutral400,
                         ),
                         textAlign: TextAlign.center,
@@ -516,9 +512,7 @@ class _NotificationPageState extends State<NotificationPage> {
                         Expanded(
                           child: Text(
                             notification.title,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                            style: AppTextStyles.labelMedium.copyWith(
                               color: AppColors.gray900,
                             ),
                           ),
@@ -528,8 +522,7 @@ class _NotificationPageState extends State<NotificationPage> {
                         // React: text-xs text-gray-500 whitespace-nowrap
                         Text(
                           _getRelativeTime(notification.createdAt),
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: AppTextStyles.caption.copyWith(
                             color: AppColors.neutral500,
                           ),
                         ),
@@ -540,8 +533,7 @@ class _NotificationPageState extends State<NotificationPage> {
                     // React: text-sm text-gray-600 line-clamp-2
                     Text(
                       notification.message,
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.gray600,
                       ),
                       maxLines: 2,

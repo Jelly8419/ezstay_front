@@ -333,7 +333,7 @@ class _AppGNBState extends State<AppGNB> {
             child: Text(
               '취소',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textPrimary,
               ),
             ),
           ),

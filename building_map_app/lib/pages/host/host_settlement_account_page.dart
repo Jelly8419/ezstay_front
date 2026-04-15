@@ -236,8 +236,6 @@ class _HostSettlementAccountPageState
                         Text(
                           _existingAccount != null ? '정산 계좌 수정' : '정산 계좌 등록',
                           style: AppTextStyles.headingLarge.copyWith(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
                             color: AppColors.gray900,
                           ),
                         ),
@@ -249,7 +247,7 @@ class _HostSettlementAccountPageState
                   Text(
                     '숙박 대금을 정산받을 계좌를 등록해주세요.',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.textPrimary,
                     ),
                   ),
 
@@ -267,8 +265,7 @@ class _HostSettlementAccountPageState
                       children: [
                         Text(
                           '계좌 정보',
-                          style: AppTextStyles.headingMedium.copyWith(
-                            fontSize: 18,
+                          style: AppTextStyles.headingSmall.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -394,10 +391,7 @@ class _HostSettlementAccountPageState
                                   )
                                 : Text(
                                     _accountVerified ? '예금주 확인 완료 ✓' : '예금주 확인',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: AppTextStyles.labelLarge,
                                   ),
                           ),
                         ),

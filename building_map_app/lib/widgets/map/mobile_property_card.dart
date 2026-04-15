@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../utils/contract_utils.dart';
 import '../../utils/format_utils.dart';
 
@@ -144,9 +145,8 @@ class MobilePropertyCard extends StatelessWidget {
                   // 방 이름 (font-bold, text-gray-900, mb-1)
                   Text(
                     roomName,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                    style: AppTextStyles.labelLarge.copyWith(
+                      fontWeight: FontWeight.w700,
                       color: isAvailable
                           ? const Color(0xFF111827)
                           : AppColors.neutral400,
@@ -169,8 +169,7 @@ class MobilePropertyCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           address,
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: AppTextStyles.bodySmall.copyWith(
                             color: isAvailable
                                 ? const Color(0xFF4B5563)
                                 : AppColors.neutral400,
@@ -195,8 +194,7 @@ class MobilePropertyCard extends StatelessWidget {
                       ),
                       child: Text(
                         '예약 불가',
-                        style: TextStyle(
-                          fontSize: 11,
+                        style: AppTextStyles.caption.copyWith(
                           color: AppColors.neutral500,
                           fontWeight: FontWeight.w600,
                         ),
@@ -207,9 +205,8 @@ class MobilePropertyCard extends StatelessWidget {
                   // 가격 (font-bold, 비가용 시 회색)
                   RichText(
                     text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                      style: AppTextStyles.labelLarge.copyWith(
+                        fontWeight: FontWeight.w700,
                         color: isAvailable ? Colors.black : AppColors.neutral400,
                         height: 1.2,
                       ),
@@ -219,10 +216,7 @@ class MobilePropertyCard extends StatelessWidget {
                         ),
                         const TextSpan(
                           text: ' / 주',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -235,11 +229,9 @@ class MobilePropertyCard extends StatelessWidget {
                   if (hasQuickMoveIn) ...[
                     Text(
                       '• $qDays일 이내 ${FormatUtils.formatManWon(qDiscount)} 할인',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF2563EB), // text-blue-600
-                        fontWeight: FontWeight.w600,
-                        height: 1.3, // line height 줄임
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: const Color(0xFF2563EB),
+                        height: 1.3,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -249,11 +241,9 @@ class MobilePropertyCard extends StatelessWidget {
                   if (hasLongTerm) ...[
                     Text(
                       '• $ltWeeks주 이상 $ltDiscount% 할인',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF2563EB), // text-blue-600
-                        fontWeight: FontWeight.w600,
-                        height: 1.3, // line height 줄임
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: const Color(0xFF2563EB),
+                        height: 1.3,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

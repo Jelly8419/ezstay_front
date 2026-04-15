@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 
 /// 방 등록 진행 상태 표시 컴포넌트
 ///
@@ -74,8 +75,7 @@ class RegistrationFlowIndicator extends StatelessWidget {
                       child: Center(
                         child: Text(
                           '$stepNumber',
-                          style: TextStyle(
-                            fontSize: 14,
+                          style: AppTextStyles.labelMedium.copyWith(
                             fontWeight: FontWeight.w700,
                             color: isActive ? Colors.white : AppColors.textSecondary,
                           ),
@@ -89,8 +89,7 @@ class RegistrationFlowIndicator extends StatelessWidget {
                     Text(
                       title,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
+                      style: AppTextStyles.bodySmall.copyWith(
                         fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
                         color: isCurrent ? AppColors.primary600 : AppColors.textSecondary,
                       ),

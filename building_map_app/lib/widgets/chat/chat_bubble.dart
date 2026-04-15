@@ -107,9 +107,8 @@ class ChatBubble extends StatelessWidget {
   Widget _buildTime() {
     return Text(
       FormatUtils.formatChatTime(message.timestamp),
-      style: AppTextStyles.bodySmall.copyWith(
-        color: AppColors.textSecondary,
-        fontSize: 11,
+      style: AppTextStyles.caption.copyWith(
+        color: AppColors.textPrimary,
       ),
     );
   }

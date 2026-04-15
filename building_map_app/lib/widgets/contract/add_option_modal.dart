@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../utils/format_utils.dart';
 import '../../utils/price_calculator.dart';
 import '../../services/rental_order_service.dart';
@@ -73,12 +74,10 @@ class _AddOptionModalState extends State<AddOptionModal> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     '옵션 추가 구매',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF111827),
+                    style: AppTextStyles.headingMedium.copyWith(
+                      color: const Color(0xFF111827),
                     ),
                   ),
                   InkWell(
@@ -105,9 +104,11 @@ class _AddOptionModalState extends State<AddOptionModal> {
                   border: Border.all(color: const Color(0xFFBFDBFE)),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
+                child: Text(
                   '• 계약 시작일의 5일 전 까지만 구매할 수 있어요.',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF1E40AF)),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: const Color(0xFF1E40AF),
+                  ),
                 ),
               ),
             ),
@@ -146,19 +147,15 @@ class _AddOptionModalState extends State<AddOptionModal> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             '총 결제 금액',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF111827),
+                            style: AppTextStyles.labelMedium.copyWith(
+                              color: const Color(0xFF111827),
                             ),
                           ),
                           Text(
                             '${FormatUtils.formatCurrency(_totalAmount)}원',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                            style: AppTextStyles.headingMedium.copyWith(
                               color: AppColors.primary600,
                             ),
                           ),
@@ -175,9 +172,8 @@ class _AddOptionModalState extends State<AddOptionModal> {
                           PriceCalculator.rentalAmountErrorMessage(
                             currentAmount: _totalAmount,
                           ),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFFDC2626),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: const Color(0xFFDC2626),
                           ),
                         ),
                       ),
@@ -199,12 +195,10 @@ class _AddOptionModalState extends State<AddOptionModal> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               '취소',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF374151),
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: const Color(0xFF374151),
                               ),
                             ),
                           ),
@@ -228,10 +222,9 @@ class _AddOptionModalState extends State<AddOptionModal> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               '결제하기',
-                              style: TextStyle(
-                                fontSize: 14,
+                              style: AppTextStyles.labelMedium.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -264,10 +257,8 @@ class _AddOptionModalState extends State<AddOptionModal> {
           // 상품명
           Text(
             option.name,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF111827),
+            style: AppTextStyles.labelMedium.copyWith(
+              color: const Color(0xFF111827),
             ),
           ),
           // 설명
@@ -275,16 +266,16 @@ class _AddOptionModalState extends State<AddOptionModal> {
             const SizedBox(height: 4),
             Text(
               option.description!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: const Color(0xFF6B7280),
+              ),
             ),
           ],
           // 가격
           const SizedBox(height: 4),
           Text(
             '개당 ${FormatUtils.formatCurrency(option.price)}원',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+            style: AppTextStyles.labelMedium.copyWith(
               color: AppColors.primary600,
             ),
           ),
@@ -332,10 +323,8 @@ class _AddOptionModalState extends State<AddOptionModal> {
                     child: Text(
                       '$qty',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827),
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: const Color(0xFF111827),
                       ),
                     ),
                   ),
@@ -381,10 +370,8 @@ class _AddOptionModalState extends State<AddOptionModal> {
               if (qty > 0)
                 Text(
                   '${FormatUtils.formatCurrency(option.price * qty)}원',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111827),
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: const Color(0xFF111827),
                   ),
                 ),
             ],

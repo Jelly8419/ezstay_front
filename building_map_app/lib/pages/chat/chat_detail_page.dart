@@ -255,7 +255,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             Text(
               _error!,
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textPrimary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -327,13 +327,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 Icon(
                   Icons.chat_bubble_outline,
                   size: 80,
-                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                  color: AppColors.textPrimary.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   '첫 메시지를 보내보세요!',
                   style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -387,7 +387,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             child: Text(
               _formatDate(date),
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textPrimary,
               ),
             ),
           ),

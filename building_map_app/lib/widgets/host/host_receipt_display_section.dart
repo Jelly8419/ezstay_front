@@ -114,7 +114,7 @@ class HostReceiptDisplaySection extends StatelessWidget {
                       ? '신청 - $receiptTypeName (${savedReceipt!['receiptNumber']})'
                       : '신청 안함',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.gray900,
                   ),
                 ),

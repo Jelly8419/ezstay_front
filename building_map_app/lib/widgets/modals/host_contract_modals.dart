@@ -87,7 +87,7 @@ class _RejectContractModalState extends State<RejectContractModal> {
                 ),
                 IconButton(
                   onPressed: widget.onClose,
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  icon: const Icon(Icons.close, color: AppColors.textPrimary),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
@@ -120,7 +120,6 @@ class _RejectContractModalState extends State<RejectContractModal> {
                     '• 최소 10자 이상 입력해주세요.',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: Colors.red.shade800,
-                      fontSize: 12,
                       height: 1.5,
                     ),
                   ),
@@ -144,7 +143,7 @@ class _RejectContractModalState extends State<RejectContractModal> {
               decoration: InputDecoration(
                 hintText: '예: 해당 기간에 이미 다른 임차인의 계약이 예정되어 있어 승인이 어렵습니다.\n'
                     '다른 날짜로 다시 요청해주시면 감사하겠습니다.',
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                hintStyle: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.grey.shade400),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   borderSide: BorderSide(color: AppColors.border),
@@ -175,7 +174,7 @@ class _RejectContractModalState extends State<RejectContractModal> {
                     child: Text(
                       '취소',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -304,7 +303,7 @@ class _RequestCancellationModalState extends State<RequestCancellationModal> {
                 ),
                 IconButton(
                   onPressed: widget.onClose,
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  icon: const Icon(Icons.close, color: AppColors.textPrimary),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
@@ -330,7 +329,6 @@ class _RequestCancellationModalState extends State<RequestCancellationModal> {
                     '• 귀책 사유 제공자는 서비스 이용에 불이익을 받을 수 있습니다.',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: Colors.orange.shade800,
-                      fontSize: 12,
                       height: 1.5,
                     ),
                   ),
@@ -355,7 +353,7 @@ class _RequestCancellationModalState extends State<RequestCancellationModal> {
                 hintText:
                     '예: 긴급한 개인 사정으로 인해 해당 기간 동안 방을 임대할 수 없게 되었습니다.\n'
                     '불편을 끼쳐드려 죄송합니다.',
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                hintStyle: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.grey.shade400),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   borderSide: BorderSide(color: AppColors.border),
@@ -386,7 +384,7 @@ class _RequestCancellationModalState extends State<RequestCancellationModal> {
                     child: Text(
                       '닫기',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -482,7 +480,7 @@ class GuestPreparationModal extends StatelessWidget {
                   IconButton(
                     onPressed: onClose,
                     icon:
-                        const Icon(Icons.close, color: AppColors.textSecondary),
+                        const Icon(Icons.close, color: AppColors.textPrimary),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -567,7 +565,7 @@ class GuestPreparationModal extends StatelessWidget {
                       '방 주소',
                       style: AppTextStyles.bodySmall.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     SizedBox(height: AppSpacing.xs),
@@ -846,7 +844,7 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                   ),
                   IconButton(
                     onPressed: widget.onClose,
-                    icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                    icon: const Icon(Icons.close, color: AppColors.textPrimary),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -909,7 +907,6 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                         color: _isDeadlinePassed
                             ? Colors.red.shade600
                             : const Color(0xFF9A3412),
-                        fontSize: 12,
                         height: 1.5,
                       ),
                     ),
@@ -932,7 +929,7 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                     Text(
                       '보증금 총액',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     Text(
@@ -964,8 +961,7 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                       onChanged: _validateAmount,
                       decoration: InputDecoration(
                         hintText: '차감할 금액을 입력하세요',
-                        hintStyle:
-                            TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                        hintStyle: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.grey.shade400),
                         suffixText: '원',
                         errorText: _amountError,
                         border: OutlineInputBorder(
@@ -1022,7 +1018,7 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                       child: Text(
                         '차감 없음',
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1048,8 +1044,7 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                   hintText:
                       '임차인과 합의한 내용을 상세히 작성해주세요.\n'
                       '예: 벽지 파손으로 인한 복구 비용 50,000원 차감에 합의하였습니다.',
-                  hintStyle:
-                      TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                  hintStyle: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: Colors.grey.shade400),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: BorderSide(color: AppColors.border),
@@ -1081,7 +1076,7 @@ class _DepositAgreementModalState extends State<DepositAgreementModal> {
                       child: Text(
                         '취소',
                         style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

@@ -142,7 +142,7 @@ class GNBMenuDropdown extends StatelessWidget {
             child: Text(
               '취소',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textPrimary,
               ),
             ),
           ),

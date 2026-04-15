@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/notice.dart';
 import '../../models/faq.dart';
 import '../../models/inquiry.dart';
 import '../../services/auth_service.dart';
 import '../../services/support_service.dart';
 import '../../widgets/common/app_footer.dart';
+import '../../core/utils/seo_helper.dart';
 
 class CustomerCenterPage extends StatefulWidget {
   /// 초기 탭: 'notices', 'faqs', 'inquiries'
@@ -59,6 +61,13 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
       _activeTab = widget.initialTab!;
     }
     // initState에서는 context 사용 불가, didChangeDependencies에서 데이터 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SeoHelper.updatePage(
+        title: '고객센터 | EZStay',
+        description: '공지사항, 자주 묻는 질문, 1:1 문의 등 EZStay 고객센터를 이용해보세요.',
+        canonicalPath: '/support',
+      );
+    });
   }
 
   @override
@@ -234,14 +243,12 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 타이틀
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24), // py-6
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24), // py-6
                   child: Text(
                     '고객센터',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.gray900, // text-gray-900
+                    style: AppTextStyles.headingLarge.copyWith(
+                      color: AppColors.gray900,
                     ),
                   ),
                 ),
@@ -418,21 +425,18 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
                                   borderRadius:
                                       BorderRadius.circular(4), // rounded
                                 ),
-                                child: const Text(
+                                child: Text(
                                   '공지',
-                                  style: TextStyle(
-                                    fontSize: 12, // text-xs
-                                    fontWeight: FontWeight.w700, // font-bold
-                                    color: Color(
-                                        0xFF1D4ED8), // text-blue-700 (#1D4ED8)
+                                  style: AppTextStyles.caption.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF1D4ED8),
                                   ),
                                 ),
                               ),
                             Text(
                               notice.formattedDate,
-                              style: const TextStyle(
-                                fontSize: 14, // text-sm
-                                color: AppColors.neutral500, // text-gray-500
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.neutral500,
                               ),
                             ),
                           ],
@@ -598,10 +602,9 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
                           ),
                           child: Text(
                             faq.categoryName,
-                            style: const TextStyle(
-                              fontSize: 12, // text-xs
-                              fontWeight: FontWeight.w700, // font-bold
-                              color: AppColors.gray600, // text-gray-700
+                            style: AppTextStyles.caption.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.gray600,
                             ),
                           ),
                         ),
@@ -802,9 +805,8 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
                             const SizedBox(width: 8), // gap-2
                             Text(
                               inquiry.categoryType.label,
-                              style: const TextStyle(
-                                fontSize: 12, // text-xs
-                                color: AppColors.neutral500, // text-gray-500
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.neutral500,
                               ),
                             ),
                           ],
@@ -824,18 +826,16 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
                           children: [
                             Text(
                               '등록일: ${inquiry.formattedDate}',
-                              style: const TextStyle(
-                                fontSize: 14, // text-sm
-                                color: AppColors.neutral500, // text-gray-500
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.neutral500,
                               ),
                             ),
                             if (inquiry.answeredAt != null) ...[
                               const SizedBox(width: 16), // gap-4
                               Text(
                                 '답변일: ${inquiry.formattedAnsweredDate}',
-                                style: const TextStyle(
-                                  fontSize: 14, // text-sm
-                                  color: AppColors.neutral500, // text-gray-500
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.neutral500,
                                 ),
                               ),
                             ],
@@ -1027,9 +1027,8 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
       ),
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 12, // text-xs
-          fontWeight: FontWeight.w700, // font-bold
+        style: AppTextStyles.caption.copyWith(
+          fontWeight: FontWeight.w700,
           color: textColor,
         ),
       ),

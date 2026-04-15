@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/inquiry.dart';
 import '../../services/auth_service.dart';
 import '../../services/support_service.dart';
@@ -267,9 +268,7 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
                   const SizedBox(width: 16),
                   Text(
                     _isEditMode ? '문의 수정' : '문의사항 등록',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.headingSmall.copyWith(
                       color: AppColors.gray900,
                     ),
                   ),
@@ -356,13 +355,12 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         RichText(
-          text: const TextSpan(
+          text: TextSpan(
             text: '문의 유형 ',
-            style: TextStyle(
+            style: AppTextStyles.labelLarge.copyWith(
               color: AppColors.gray900,
-              fontSize: 16,
             ),
-            children: [
+            children: const [
               TextSpan(
                 text: '*',
                 style: TextStyle(
@@ -413,8 +411,7 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
           const SizedBox(height: 8),
           Text(
             _errors['category']!,
-            style: const TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.bodyMedium.copyWith(
               color: Colors.red,
             ),
           ),
@@ -428,13 +425,12 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         RichText(
-          text: const TextSpan(
+          text: TextSpan(
             text: '제목 ',
-            style: TextStyle(
+            style: AppTextStyles.labelLarge.copyWith(
               color: AppColors.gray900,
-              fontSize: 16,
             ),
-            children: [
+            children: const [
               TextSpan(
                 text: '*',
                 style: TextStyle(
@@ -475,8 +471,7 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
           const SizedBox(height: 8),
           Text(
             _errors['title']!,
-            style: const TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.bodyMedium.copyWith(
               color: Colors.red,
             ),
           ),
@@ -490,13 +485,12 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         RichText(
-          text: const TextSpan(
+          text: TextSpan(
             text: '문의 내용 ',
-            style: TextStyle(
+            style: AppTextStyles.labelLarge.copyWith(
               color: AppColors.gray900,
-              fontSize: 16,
             ),
-            children: [
+            children: const [
               TextSpan(
                 text: '*',
                 style: TextStyle(
@@ -542,8 +536,7 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
             if (_errors.containsKey('content'))
               Text(
                 _errors['content']!,
-                style: const TextStyle(
-                  fontSize: 14,
+                style: AppTextStyles.bodyMedium.copyWith(
                   color: Colors.red,
                 ),
               )
@@ -551,8 +544,7 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
               const SizedBox(),
             Text(
               '${_content.length} / 1,000자',
-              style: const TextStyle(
-                fontSize: 14,
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.neutral500,
               ),
             ),
@@ -580,33 +572,30 @@ class _InquiryFormPageState extends State<InquiryFormPage> {
             '안내사항',
             style: TextStyle(
               color: AppColors.gray900,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
                 '• 문의 내용을 상세히 작성해주시면 더 정확한 답변을 받으실 수 있습니다',
-                style: TextStyle(
-                  fontSize: 14,
+                style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.neutral700,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 '• 답변은 영업일 기준 1~2일 소요됩니다',
-                style: TextStyle(
-                  fontSize: 14,
+                style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.neutral700,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 '• 답변 완료 후에는 수정 및 삭제가 불가능합니다',
-                style: TextStyle(
-                  fontSize: 14,
+                style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.neutral700,
                 ),
               ),

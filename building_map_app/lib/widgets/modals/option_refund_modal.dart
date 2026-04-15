@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../utils/format_utils.dart';
 
 /// 옵션 결제 취소 완료 모달
@@ -47,21 +48,18 @@ class OptionRefundModal extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // 제목
-                      const Text(
+                      Text(
                         '옵션 환불 안내',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF111827), // gray-900
+                        style: AppTextStyles.headingSmall.copyWith(
+                          color: const Color(0xFF111827),
                         ),
                       ),
                       const SizedBox(height: 8),
                       // 메시지
                       RichText(
                         text: TextSpan(
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF4B5563), // gray-600
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: const Color(0xFF4B5563),
                           ),
                           children: [
                             TextSpan(
@@ -124,19 +122,17 @@ class OptionRefundModal extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '• ',
-          style: TextStyle(
-            fontSize: 12,
-            color: Color(0xFF374151), // gray-700
+          style: AppTextStyles.caption.copyWith(
+            color: const Color(0xFF374151),
           ),
         ),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF374151), // gray-700
+            style: AppTextStyles.caption.copyWith(
+              color: const Color(0xFF374151),
             ),
           ),
         ),

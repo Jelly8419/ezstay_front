@@ -65,8 +65,6 @@ class GuestContractPartyInfoSection extends StatelessWidget {
           Text(
             '임대인',
             style: AppTextStyles.headingMedium.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
               color: AppColors.gray900,
             ),
           ),
@@ -206,9 +204,7 @@ class GuestContractPartyInfoSection extends StatelessWidget {
                     contract.guestName.isNotEmpty
                         ? contract.guestName.substring(0, 1)
                         : '?',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    style: AppTextStyles.headingSmall.copyWith(
                       color: AppColors.neutral600,
                     ),
                   ),
@@ -220,17 +216,14 @@ class GuestContractPartyInfoSection extends StatelessWidget {
                 children: [
                   Text(
                     _formatName(contract.guestName, contract.guestNickname),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                    style: AppTextStyles.labelLarge.copyWith(
                       color: AppColors.gray900,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     contract.guestPhone,
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.neutral600,
                     ),
                   ),

@@ -1,7 +1,11 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import '../../config/api_config.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../services/kmc_service.dart';
 import '../../services/verification_service.dart';
 import '../../widgets/kmc_webview.dart';
@@ -27,7 +31,7 @@ class _FindIdPageState extends State<FindIdPage> {
   static const _borderGray = Color(0xFFE0E0E0);
   static const _backgroundWhite = Color(0xFFFFFFFF);
 
-  /// KMC 본인인증 실행 → DI 수신 → /find-id API 호출
+  /// KMC 본인인증 실행 → certNum 수신 → /find-id API 호출
   Future<void> _handleKmcVerification() async {
     setState(() => _isLoading = true);
 
@@ -50,7 +54,7 @@ class _FindIdPageState extends State<FindIdPage> {
         return;
       }
 
-      // 3. KMC 결과 검증 → DI 수신
+      // 3. KMC 결과 검증 → certNum 수신
       final verifyResult = await KmcService.verifyResult(
         apiToken: popupResult['apiToken']!,
         certNum: popupResult['certNum']!,
@@ -59,7 +63,7 @@ class _FindIdPageState extends State<FindIdPage> {
 
       if (!mounted) return;
 
-      // 4. DI로 아이디(이메일) 조회
+      // 4. certNum으로 아이디(이메일) 조회
       final email = await VerificationService.findId(certNum: verifyResult.certNum);
 
       if (!mounted) return;
@@ -83,6 +87,50 @@ class _FindIdPageState extends State<FindIdPage> {
     }
   }
 
+  /// 로컬 dev-verify (개발 환경 전용)
+  Future<void> _handleDevVerification() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.kmcDevVerifyUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'name': '이재욱',
+          'phoneNumber': '01065218419',
+          'birth': '19930408',
+          'gender': '0',
+        }),
+      ).timeout(ApiConfig.timeout);
+
+      final data = json.decode(response.body);
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          data['success'] == true) {
+        final result = data['data'] ?? data;
+        final certNum = result['certNum']?.toString() ?? '';
+        final email = await VerificationService.findId(certNum: certNum);
+        if (mounted) {
+          setState(() {
+            _foundEmail = email;
+            _step = 1;
+          });
+        }
+      } else {
+        final message = data['message']?.toString() ?? 'dev-verify 호출 실패';
+        if (mounted) _showErrorDialog(message);
+      }
+    } on VerificationException catch (e) {
+      if (mounted) _showErrorDialog(e.message);
+    } catch (e) {
+      AppLogger.e('❌ [FIND_ID] dev-verify 에러: $e');
+      if (mounted) _showErrorDialog('테스트 인증 중 오류가 발생했습니다');
+    } finally {
+      if (mounted && _isLoading) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -91,26 +139,18 @@ class _FindIdPageState extends State<FindIdPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text(
           '오류',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         content: Text(
           message,
-          style: const TextStyle(fontSize: 14, color: _textGray),
+          style: AppTextStyles.bodyMedium.copyWith(color: _textGray),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               '확인',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
             ),
           ),
         ],
@@ -132,11 +172,7 @@ class _FindIdPageState extends State<FindIdPage> {
         ),
         title: const Text(
           '아이디 찾기',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         centerTitle: true,
       ),
@@ -159,16 +195,12 @@ class _FindIdPageState extends State<FindIdPage> {
       children: [
         const Text(
           '본인인증으로\n아이디를 찾아드립니다',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.displaySmall,
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           '가입 시 등록한 휴대폰으로 본인인증을 진행해주세요',
-          style: TextStyle(fontSize: 16, color: _textGray),
+          style: AppTextStyles.labelLarge.copyWith(color: _textGray),
         ),
         const SizedBox(height: 48),
 
@@ -180,27 +212,26 @@ class _FindIdPageState extends State<FindIdPage> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: _borderGray),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: Color(0xFF666666)),
-                  SizedBox(width: 6),
+                  const Icon(Icons.info_outline, size: 16, color: Color(0xFF666666)),
+                  const SizedBox(width: 6),
                   Text(
                     '본인인증 안내',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF444444),
+                      color: const Color(0xFF444444),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 '• 휴대폰 본인인증이 진행됩니다\n• 가입 시 등록한 번호와 동일해야 합니다',
-                style: TextStyle(fontSize: 13, color: _textGray, height: 1.6),
+                style: AppTextStyles.bodySmall.copyWith(color: _textGray, height: 1.6),
               ),
             ],
           ),
@@ -232,10 +263,25 @@ class _FindIdPageState extends State<FindIdPage> {
                   )
                 : const Text(
                     '본인인증 시작',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: AppTextStyles.labelLarge,
                   ),
           ),
         ),
+        if (!ApiConfig.isProduction) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 48,
+            child: OutlinedButton(
+              onPressed: _isLoading ? null : _handleDevVerification,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF888888),
+                side: const BorderSide(color: Color(0xFFCCCCCC)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('[Dev] 테스트 인증', style: AppTextStyles.bodyMedium),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -247,16 +293,12 @@ class _FindIdPageState extends State<FindIdPage> {
       children: [
         const Text(
           '아이디 찾기 완료',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.displaySmall,
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           '본인인증으로 확인된 계정 정보입니다',
-          style: TextStyle(fontSize: 16, color: _textGray),
+          style: AppTextStyles.labelLarge.copyWith(color: _textGray),
         ),
         const SizedBox(height: 40),
 
@@ -272,18 +314,14 @@ class _FindIdPageState extends State<FindIdPage> {
             children: [
               Icon(Icons.check_circle, size: 40, color: AppColors.primary600),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 '가입된 이메일 주소',
-                style: TextStyle(fontSize: 13, color: _textGray),
+                style: AppTextStyles.bodySmall.copyWith(color: _textGray),
               ),
               const SizedBox(height: 6),
               Text(
                 _foundEmail ?? '',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: _primaryBlack,
-                ),
+                style: AppTextStyles.headingMedium,
                 textAlign: TextAlign.center,
               ),
             ],
@@ -306,7 +344,7 @@ class _FindIdPageState extends State<FindIdPage> {
             ),
             child: const Text(
               '로그인하기',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: AppTextStyles.labelLarge,
             ),
           ),
         ),
@@ -326,7 +364,7 @@ class _FindIdPageState extends State<FindIdPage> {
             ),
             child: const Text(
               '비밀번호 찾기',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: AppTextStyles.labelLarge,
             ),
           ),
         ),

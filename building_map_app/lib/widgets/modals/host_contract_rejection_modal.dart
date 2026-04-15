@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 호스트 계약 거절 모달
 ///
@@ -45,10 +46,8 @@ class HostContractRejectionModal extends StatelessWidget {
                 // 제목
                 Text(
                   isWithdrawal ? '승인 철회' : '계약 거절',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111827),
+                  style: AppTextStyles.headingSmall.copyWith(
+                    color: const Color(0xFF111827),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -58,9 +57,8 @@ class HostContractRejectionModal extends StatelessWidget {
                   isWithdrawal
                       ? '해당 승인 계약을 철회하시겠습니까?'
                       : '해당 계약 승인 요청을 거절하시겠습니까?',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF6B7280),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: const Color(0xFF6B7280),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -105,8 +103,7 @@ class HostContractRejectionModal extends StatelessWidget {
                         ),
                         child: Text(
                           isWithdrawal ? '철회하기' : '거절하기',
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                          style: AppTextStyles.labelLarge,
                         ),
                       ),
                     ),

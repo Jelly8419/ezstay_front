@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../auth/steps/host_account_step.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../services/auth_service.dart';
 import '../../models/user.dart';
 
@@ -26,11 +27,9 @@ class HostAccountSetupStandalonePage extends StatelessWidget {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
+        title: Text(
           '임대인 전환',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+          style: AppTextStyles.headingSmall.copyWith(
             color: primaryBlack,
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 취소 요청 모달
 ///
@@ -105,12 +106,10 @@ class _CancelRequestModalState extends State<CancelRequestModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // 제목
-                      const Text(
+                      Text(
                         '취소 요청',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF111827), // gray-900
+                        style: AppTextStyles.headingSmall.copyWith(
+                          color: const Color(0xFF111827),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -136,12 +135,10 @@ class _CancelRequestModalState extends State<CancelRequestModal> {
                       ),
                       const SizedBox(height: 16),
                       // 취소 사유 입력
-                      const Text(
+                      Text(
                         '취소 요청 사유',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF374151), // gray-700
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: const Color(0xFF374151),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -150,9 +147,8 @@ class _CancelRequestModalState extends State<CancelRequestModal> {
                         maxLines: 4,
                         decoration: InputDecoration(
                           hintText: '취소 사유를 입력해주세요',
-                          hintStyle: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF9CA3AF), // gray-400
+                          hintStyle: AppTextStyles.bodyMedium.copyWith(
+                            color: const Color(0xFF9CA3AF),
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -175,9 +171,8 @@ class _CancelRequestModalState extends State<CancelRequestModal> {
                           ),
                           contentPadding: const EdgeInsets.all(12),
                         ),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF111827), // gray-900
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: const Color(0xFF111827),
                         ),
                       ),
                     ],
@@ -247,19 +242,17 @@ class _CancelRequestModalState extends State<CancelRequestModal> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '• ',
-          style: TextStyle(
-            fontSize: 12,
-            color: Color(0xFF374151), // gray-700
+          style: AppTextStyles.caption.copyWith(
+            color: const Color(0xFF374151),
           ),
         ),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF374151), // gray-700
+            style: AppTextStyles.caption.copyWith(
+              color: const Color(0xFF374151),
             ),
           ),
         ),

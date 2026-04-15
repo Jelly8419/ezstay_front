@@ -174,11 +174,9 @@ class _RentalPaymentCallbackPageState extends State<RentalPaymentCallbackPage> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text(
+            child: Text(
               '계약 목록으로 이동',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+              style: AppTextStyles.labelLarge.copyWith(
                 color: Colors.white,
               ),
             ),
@@ -228,11 +226,9 @@ class _RentalPaymentCallbackPageState extends State<RentalPaymentCallbackPage> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text(
+            child: Text(
               '계약 목록으로 돌아가기',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+              style: AppTextStyles.labelLarge.copyWith(
                 color: Colors.white,
               ),
             ),

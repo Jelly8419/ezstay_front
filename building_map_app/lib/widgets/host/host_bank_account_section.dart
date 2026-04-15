@@ -55,7 +55,7 @@ class HostBankAccountSection extends StatelessWidget {
                     child: Text(
                       '${bankAccount!.bankName} ${bankAccount!.accountNumber} (${bankAccount!.accountHolder})',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.gray900,
                       ),
                     ),
@@ -109,7 +109,7 @@ class HostBankAccountSection extends StatelessWidget {
                   Text(
                     '등록된 계좌가 없습니다',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.gray900,
                     ),
                   ),

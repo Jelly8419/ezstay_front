@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/contract.dart';
 import '../../services/rental_order_service.dart';
 import 'cancel_tab_content.dart';
@@ -112,9 +113,8 @@ class _CancelOptionModalState extends State<CancelOptionModal>
               padding: const EdgeInsets.fromLTRB(20, 16, 8, 0),
               child: Row(
                 children: [
-                  const Text('옵션 상품 취소/반품',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600)),
+                  Text('옵션 상품 취소/반품',
+                      style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w600)),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),

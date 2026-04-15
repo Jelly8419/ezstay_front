@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 공용 푸터 위젯
 class AppFooter extends StatelessWidget {
@@ -67,14 +68,12 @@ class AppFooter extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(bottom: 12),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
             child: Text(
               '고객센터',
-              style: TextStyle(
+              style: AppTextStyles.headingSmall.copyWith(
                 color: _textDark,
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
                 height: 1.0,
               ),
             ),
@@ -83,12 +82,10 @@ class AppFooter extends StatelessWidget {
             cursor: SystemMouseCursors.click,
             child: GestureDetector(
               onTap: () => context.push('/support/inquiries/new'),
-              child: const Text(
+              child: Text(
                 '문의하기 →',
-                style: TextStyle(
+                style: AppTextStyles.labelLarge.copyWith(
                   color: _blue600,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 16,
                   height: 1.0,
                 ),
               ),
@@ -106,14 +103,13 @@ class AppFooter extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(bottom: 12),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
             child: Text(
               '사업자 정보',
-              style: TextStyle(
+              style: AppTextStyles.labelLarge.copyWith(
                 color: _textDark,
                 fontWeight: FontWeight.w700,
-                fontSize: 16,
                 height: 1.0,
               ),
             ),
@@ -123,9 +119,8 @@ class AppFooter extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text.rich(
               TextSpan(
-                style: const TextStyle(
+                style: AppTextStyles.bodyMedium.copyWith(
                   color: _textColor,
-                  fontSize: 14,
                   height: 1.625,
                 ),
                 children: const [
@@ -147,9 +142,8 @@ class AppFooter extends StatelessWidget {
           // 2행: 주소 | 이메일
           Text.rich(
             TextSpan(
-              style: const TextStyle(
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: _textColor,
-                fontSize: 14,
                 height: 1.625,
               ),
               children: [
@@ -168,11 +162,10 @@ class AppFooter extends StatelessWidget {
                           await launchUrl(uri);
                         }
                       },
-                      child: const Text(
+                      child: Text(
                         'ezstay.kr@gmail.com',
-                        style: TextStyle(
+                        style: AppTextStyles.bodyMedium.copyWith(
                           color: _blue600,
-                          fontSize: 14,
                           height: 1.625,
                         ),
                       ),
@@ -217,12 +210,11 @@ class AppFooter extends StatelessWidget {
           top: BorderSide(color: _borderMedium, width: 1),
         ),
       ),
-      child: const Text(
+      child: Text(
         '이지스테이는 일부 상품의 통신판매 중개자로서 통신판매의 당사자가 아닙니다. '
         '해당 상품, 상품정보, 거래에 관한 의무와 책임은 계약 당사자에게 있습니다.',
-        style: TextStyle(
+        style: AppTextStyles.bodySmall.copyWith(
           color: _textLight,
-          fontSize: 12,
           height: 1.625,
         ),
       ),
@@ -239,12 +231,11 @@ class AppFooter extends StatelessWidget {
           top: BorderSide(color: _borderMedium, width: 1),
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Text(
           '© 2025 EZstay. All rights reserved.',
-          style: TextStyle(
+          style: AppTextStyles.bodySmall.copyWith(
             color: _textLight,
-            fontSize: 12,
             height: 1.0,
           ),
         ),
@@ -273,17 +264,13 @@ class _FooterLinkButtonState extends State<_FooterLinkButton> {
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
-        child: RichText(
-          text: TextSpan(
-            text: widget.label,
-            style: TextStyle(
-              color: _hovered ? const Color(0xFF1565C0) : const Color(0xFF111827),
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              height: 1.0,
-              decoration: _hovered ? TextDecoration.underline : TextDecoration.none,
-              decorationColor: const Color(0xFF1565C0),
-            ),
+        child: Text(
+          widget.label,
+          style: AppTextStyles.labelMedium.copyWith(
+            color: _hovered ? const Color(0xFF1565C0) : const Color(0xFF111827),
+            height: 1.0,
+            decoration: _hovered ? TextDecoration.underline : TextDecoration.none,
+            decorationColor: const Color(0xFF1565C0),
           ),
         ),
       ),

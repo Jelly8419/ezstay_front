@@ -59,7 +59,7 @@ class HostReceiptEditForm extends StatelessWidget {
         Text(
           '영수증 종류',
           style: AppTextStyles.bodySmall.copyWith(
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             color: AppColors.neutral700,
           ),
         ),
@@ -70,7 +70,7 @@ class HostReceiptEditForm extends StatelessWidget {
           hint: Text(
             '선택하세요',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
           items: const [
@@ -247,7 +247,7 @@ Widget _buildReceiptInputField({
       Text(
         label,
         style: AppTextStyles.bodySmall.copyWith(
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           color: AppColors.neutral700,
         ),
       ),
@@ -259,7 +259,7 @@ Widget _buildReceiptInputField({
         decoration: InputDecoration(
           hintText: placeholder,
           hintStyle: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
+            color: AppColors.textPrimary,
           ),
           errorText: hasError ? errorText : null,
           errorStyle: AppTextStyles.bodySmall.copyWith(

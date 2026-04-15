@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// Sonner 스타일의 오버레이 토스트
 /// 화면 하단 중앙에 카드 형태로 표시됩니다.
@@ -189,9 +190,7 @@ class _SonnerToastWidgetState extends State<_SonnerToastWidget>
                     Expanded(
                       child: Text(
                         widget.message,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                        style: AppTextStyles.labelMedium.copyWith(
                           color: _textColor,
                           height: 1.4,
                         ),

@@ -192,9 +192,8 @@ class _RoomActionDropdownState extends State<RoomActionDropdown> {
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: AppTextStyles.labelLarge.copyWith(
             fontSize: 15, // React: text-[15px]
-            fontWeight: FontWeight.w500, // font-medium
             color: isDestructive ? AppColors.error500 : AppColors.textPrimary,
           ),
         ),
@@ -223,9 +222,8 @@ class _RoomActionDropdownState extends State<RoomActionDropdown> {
             children: [
               Text(
                 '관리 및 설정',
-                style: TextStyle(
+                style: AppTextStyles.labelLarge.copyWith(
                   fontSize: 15, // React: text-[15px]
-                  fontWeight: FontWeight.w500, // font-medium
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -236,7 +234,7 @@ class _RoomActionDropdownState extends State<RoomActionDropdown> {
                 child: Icon(
                   Icons.keyboard_arrow_down,
                   size: 14, // React: w-3.5 h-3.5
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],

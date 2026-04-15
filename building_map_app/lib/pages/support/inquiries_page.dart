@@ -2,6 +2,7 @@ import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/inquiry.dart';
 import '../../services/support_service.dart';
 import '../../widgets/common/app_footer.dart';
@@ -191,12 +192,10 @@ class _InquiriesPageState extends State<InquiriesPage> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       '문의하기',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                      style: AppTextStyles.headingSmall.copyWith(
                         color: AppColors.gray900,
                       ),
                     ),
@@ -441,8 +440,7 @@ class _InquiriesPageState extends State<InquiriesPage> {
                               ),
                               child: Text(
                                 inquiry.categoryType.label,
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: AppTextStyles.bodyMedium.copyWith(
                                   color: AppColors.neutral700,
                                 ),
                               ),
@@ -460,8 +458,7 @@ class _InquiriesPageState extends State<InquiriesPage> {
                               ),
                               child: Text(
                                 inquiry.status.label,
-                                style: TextStyle(
-                                  fontSize: 14,
+                                style: AppTextStyles.bodyMedium.copyWith(
                                   color: _getStatusTextColor(inquiry.status),
                                 ),
                               ),
@@ -487,8 +484,7 @@ class _InquiriesPageState extends State<InquiriesPage> {
                           inquiry.content,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.gray600,
                           ),
                         ),
@@ -497,8 +493,7 @@ class _InquiriesPageState extends State<InquiriesPage> {
                         // Date
                         Text(
                           _formatDateTime(inquiry.createdAt),
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.neutral500,
                           ),
                         ),
@@ -546,10 +541,9 @@ class _InquiriesPageState extends State<InquiriesPage> {
                             color: const Color(0xFF3B82F6),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             '문의 내용',
-                            style: TextStyle(
-                              fontSize: 14,
+                            style: AppTextStyles.bodyMedium.copyWith(
                               color: AppColors.neutral0,
                             ),
                           ),
@@ -590,11 +584,10 @@ class _InquiriesPageState extends State<InquiriesPage> {
                               color: const Color(0xFFDCFCE7),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
+                            child: Text(
                               '답변',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF166534),
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: const Color(0xFF166534),
                               ),
                             ),
                           ),
@@ -610,8 +603,7 @@ class _InquiriesPageState extends State<InquiriesPage> {
                             const SizedBox(height: 16),
                             Text(
                               '답변일: ${inquiry.formattedAnsweredDate}',
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: AppTextStyles.bodyMedium.copyWith(
                                 color: AppColors.neutral500,
                               ),
                             ),

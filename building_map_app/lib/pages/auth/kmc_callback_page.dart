@@ -3,6 +3,7 @@ import 'dart:js' as js;
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// KMC 본인인증 결과 수신 페이지
 ///
@@ -112,18 +113,12 @@ class _KmcCallbackPageState extends State<KmcCallbackPage> {
             const SizedBox(height: 24),
             const Text(
               '본인인증 결과를 처리하고 있습니다...',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: AppTextStyles.labelLarge,
             ),
             const SizedBox(height: 8),
             Text(
               '잠시만 기다려주세요.',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
             ),
           ],
         ),

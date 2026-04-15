@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../models/contract_detail.dart';
 import '../../utils/contract_utils.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
 import '../contract/contract_common_widgets.dart';
 
@@ -58,8 +59,7 @@ class HostContractPartyInfoSection extends StatelessWidget {
         children: [
           Text(
             '임대인 정보',
-            style: TextStyle(
-              fontSize: 16,
+            style: AppTextStyles.labelLarge.copyWith(
               fontWeight: FontWeight.w700,
               color: AppColors.gray900,
             ),
@@ -95,12 +95,11 @@ class HostContractPartyInfoSection extends StatelessWidget {
                       children: [
                         Text(
                           '이름',
-                          style: TextStyle(fontSize: 14, color: AppColors.neutral600),
+                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral600),
                         ),
                         Text(
                           _formatName(c.hostName, c.hostNickname),
-                          style: TextStyle(
-                            fontSize: 14,
+                          style: AppTextStyles.labelMedium.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppColors.gray900,
                           ),
@@ -118,13 +117,12 @@ class HostContractPartyInfoSection extends StatelessWidget {
                   children: [
                     Text(
                       '연락처',
-                      style: TextStyle(fontSize: 14, color: AppColors.neutral600),
+                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral600),
                     ),
                     if (c.hostPhoneNumber != null)
                       Text(
                         c.hostPhoneNumber!,
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: AppTextStyles.labelMedium.copyWith(
                           fontWeight: FontWeight.w700,
                           color: AppColors.gray900,
                         ),
@@ -153,8 +151,7 @@ class HostContractPartyInfoSection extends StatelessWidget {
         children: [
           Text(
             '임차인 정보',
-            style: TextStyle(
-              fontSize: 16,
+            style: AppTextStyles.labelLarge.copyWith(
               fontWeight: FontWeight.w700,
               color: AppColors.gray900,
             ),
@@ -181,12 +178,11 @@ class HostContractPartyInfoSection extends StatelessWidget {
                       children: [
                         Text(
                           '이름',
-                          style: TextStyle(fontSize: 14, color: AppColors.neutral600),
+                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral600),
                         ),
                         Text(
                           _formatName(c.guestName, c.guestNickname),
-                          style: TextStyle(
-                            fontSize: 14,
+                          style: AppTextStyles.labelMedium.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppColors.gray900,
                           ),
@@ -204,14 +200,13 @@ class HostContractPartyInfoSection extends StatelessWidget {
                   children: [
                     Text(
                       '연락처',
-                      style: TextStyle(fontSize: 14, color: AppColors.neutral600),
+                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral600),
                     ),
                     Text(
                       ContractUtils.shouldShowPhoneNumber(c.status)
                           ? c.guestPhone
                           : '결제 완료 후 확인 가능',
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: AppTextStyles.labelMedium.copyWith(
                         fontWeight: FontWeight.w700,
                         color: AppColors.gray900,
                       ),
@@ -239,8 +234,7 @@ class HostContractPartyInfoSection extends StatelessWidget {
                           children: [
                             Text(
                               '임차인 메시지',
-                              style: TextStyle(
-                                fontSize: 12,
+                              style: AppTextStyles.caption.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.neutral700,
                               ),
@@ -248,8 +242,7 @@ class HostContractPartyInfoSection extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               c.guestMessage!,
-                              style: TextStyle(
-                                fontSize: 14,
+                              style: AppTextStyles.bodyMedium.copyWith(
                                 color: AppColors.gray900,
                               ),
                             ),

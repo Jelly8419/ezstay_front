@@ -20,4 +20,25 @@
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
+
+  <!-- 고객센터 -->
+  <url>
+    <loc>https://ezstay.io/support</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- 공지사항 -->
+  <url>
+    <loc>https://ezstay.io/support/notices</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- 자주 묻는 질문 -->
+  <url>
+    <loc>https://ezstay.io/support/faqs</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
 </urlset>

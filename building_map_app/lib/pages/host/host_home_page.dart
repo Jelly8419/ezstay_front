@@ -300,7 +300,7 @@ class _HostHomePageState extends State<HostHomePage> {
                                   Text(
                                     '이미지 없음',
                                     style: AppTextStyles.bodySmall.copyWith(
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.textPrimary,
                                       fontSize: 10,
                                     ),
                                   ),
@@ -337,7 +337,7 @@ class _HostHomePageState extends State<HostHomePage> {
                     Text(
                       address,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ],
@@ -431,9 +431,7 @@ class _HostHomePageState extends State<HostHomePage> {
                   // 메인 카피
                   Text(
                     '이지스테이에서만 경험할 수 있는 자동 운영 시스템',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                    style: AppTextStyles.headingLarge.copyWith(
                       color: Colors.white,
                       height: 1.3,
                     ),
@@ -473,10 +471,7 @@ class _HostHomePageState extends State<HostHomePage> {
                           SizedBox(width: AppSpacing.sm),
                           Text(
                             '방 등록하기',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: AppTextStyles.headingSmall,
                           ),
                         ],
                       ),

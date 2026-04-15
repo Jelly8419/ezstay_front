@@ -160,8 +160,7 @@ class _GuestContractDetailPageState extends State<GuestContractDetailPage> {
                 children: [
                   Text(
                     '계약 상세 정보',
-                    style: AppTextStyles.headingLarge.copyWith(
-                      fontSize: 20,
+                    style: AppTextStyles.headingMedium.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.gray900,
                     ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 
 /// 옵션 토글 버튼 (리액트 OptionToggle 복제)
 class OptionToggle extends StatelessWidget {
@@ -31,9 +32,7 @@ class OptionToggle extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+          style: AppTextStyles.labelMedium.copyWith(
             color: selected ? AppColors.primary900 : AppColors.textSecondary,
           ),
         ),

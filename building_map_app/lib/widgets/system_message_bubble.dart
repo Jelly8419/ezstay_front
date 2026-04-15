@@ -63,7 +63,7 @@ class SystemMessageBubble extends StatelessWidget {
                 Text(
                   FormatUtils.formatDateTimeDot(message.timestamp),
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],

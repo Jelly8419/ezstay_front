@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'firebase_options.dart';
 import 'config/kakao_config.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/app_text_styles.dart';
 import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
 import 'services/map_interaction_coordinator.dart';
@@ -91,12 +92,10 @@ class _AppErrorWidget extends StatelessWidget {
                 child: const Icon(Icons.home_rounded, color: Colors.white, size: 32),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'EZstay',
-                style: TextStyle(
-                  color: Color(0xFF1565C0),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+                style: AppTextStyles.headingSmall.copyWith(
+                  color: const Color(0xFF1565C0),
                 ),
               ),
               const SizedBox(height: 32),
@@ -125,9 +124,9 @@ class _AppErrorWidget extends StatelessWidget {
                         color: const Color(0xFFEF5350),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
+                      child: Text(
                         'ERROR',
-                        style: TextStyle(
+                        style: AppTextStyles.caption.copyWith(
                           color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -139,15 +138,18 @@ class _AppErrorWidget extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 '일시적인 오류가 발생했습니다',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                style: AppTextStyles.headingSmall,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 '잠시 후 다시 시도해주세요.\n문제가 지속되면 고객센터로 문의해주세요.',
-                style: TextStyle(color: Color(0xFF6B7280), height: 1.6),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: const Color(0xFF6B7280),
+                  height: 1.6,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
@@ -172,16 +174,18 @@ class _AppErrorWidget extends StatelessWidget {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
+                  child: Text(
                     '홈으로 이동',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: AppTextStyles.labelLarge,
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 '문의: support@ezstay.io',
-                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: const Color(0xFF9CA3AF),
+                ),
               ),
             ],
           ),

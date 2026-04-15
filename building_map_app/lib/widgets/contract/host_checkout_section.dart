@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/contract.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 호스트 퇴실 관련 섹션 (checkoutStatus별 UI)
 class HostCheckoutSection extends StatelessWidget {
@@ -38,16 +39,15 @@ class HostCheckoutSection extends StatelessWidget {
                   border: Border.all(color: const Color(0xFFFDE68A)), // yellow-200
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.info_outline, size: 16, color: Color(0xFF92400E)),
-                    SizedBox(width: 8),
+                    const Icon(Icons.info_outline, size: 16, color: Color(0xFF92400E)),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         '임차인이 퇴실을 완료했습니다. 확인해주세요.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF92400E), // yellow-800
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: const Color(0xFF92400E),
                         ),
                       ),
                     ),
@@ -68,9 +68,9 @@ class HostCheckoutSection extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         '퇴실 확인',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -80,17 +80,15 @@ class HostCheckoutSection extends StatelessWidget {
                       onPressed: () => onCheckoutPendingTap(contract.id),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: const BorderSide(color: Color(0xFFF97316)), // orange-500
+                        side: const BorderSide(color: Color(0xFFF97316)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         '퇴실 확인 보류',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFF97316), // orange-500
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: const Color(0xFFF97316),
                         ),
                       ),
                     ),
@@ -113,23 +111,20 @@ class HostCheckoutSection extends StatelessWidget {
               border: Border.all(color: const Color(0xFFFED7AA)), // orange-200
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '보증금 반환 보류를 신청했습니다.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF9A3412), // orange-800
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: const Color(0xFF9A3412),
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   '관리자 승인을 기다리고 있습니다.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF9A3412),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: const Color(0xFF9A3412),
                   ),
                 ),
               ],
@@ -157,30 +152,26 @@ class HostCheckoutSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       '❌ 보류 신청이 반려되었습니다.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF991B1B), // red-800
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: const Color(0xFF991B1B),
                       ),
                     ),
                     if (rejectedReason != null && rejectedReason.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
                         '반려 사유: $rejectedReason',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF991B1B),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: const Color(0xFF991B1B),
                         ),
                       ),
                     ],
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       '사유를 보완하여 다시 신청할 수 있습니다.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF991B1B),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: const Color(0xFF991B1B),
                       ),
                     ),
                   ],
@@ -200,9 +191,9 @@ class HostCheckoutSection extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         '퇴실 확인',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -212,17 +203,15 @@ class HostCheckoutSection extends StatelessWidget {
                       onPressed: () => onCheckoutPendingTap(contract.id),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: const BorderSide(color: Color(0xFFF97316)), // orange-500
+                        side: const BorderSide(color: Color(0xFFF97316)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         '보류 재신청',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFF97316),
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: const Color(0xFFF97316),
                         ),
                       ),
                     ),
@@ -245,23 +234,20 @@ class HostCheckoutSection extends StatelessWidget {
               border: Border.all(color: const Color(0xFFBBF7D0)), // green-200
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '퇴실 확인이 완료되었습니다.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF166534), // green-800
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: const Color(0xFF166534),
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   '보증금 환급 절차가 진행 중입니다.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF166534),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: const Color(0xFF166534),
                   ),
                 ),
               ],
@@ -297,29 +283,25 @@ class HostCheckoutSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       '⚠️ 퇴실 확인이 보류되었습니다.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF9A3412), // orange-800
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: const Color(0xFF9A3412),
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       '관리자가 확인 중입니다. 임차인과 합의가 되었다면 합의 내용을 제출해주세요.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF9A3412),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: const Color(0xFF9A3412),
                       ),
                     ),
                     if (deadlineFormatted != null) ...[
                       const SizedBox(height: 6),
                       Text(
                         '합의 마감일시 : $deadlineFormatted',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF9A3412),
+                        style: AppTextStyles.caption.copyWith(
+                          color: const Color(0xFF9A3412),
                         ),
                       ),
                     ],
@@ -343,7 +325,7 @@ class HostCheckoutSection extends StatelessWidget {
                     ),
                     child: Text(
                       contract.depositAgreementStatus == 'SUBMITTED' ? '합의 내용 수정' : '합의 내용 제출',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -364,23 +346,20 @@ class HostCheckoutSection extends StatelessWidget {
               border: Border.all(color: const Color(0xFFBFDBFE)), // blue-200
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '합의 내용이 제출되었습니다.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E40AF), // blue-800
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: const Color(0xFF1E40AF),
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   '임차인 확인을 기다리고 있습니다.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF1E40AF),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: const Color(0xFF1E40AF),
                   ),
                 ),
               ],
@@ -400,23 +379,20 @@ class HostCheckoutSection extends StatelessWidget {
               border: Border.all(color: const Color(0xFFBBF7D0)), // green-200
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '보증금 전액 반환 완료',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF166534), // green-800
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: const Color(0xFF166534),
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   '합의 기한이 경과하여 보증금이 임차인에게 전액 반환되었습니다.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF166534),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: const Color(0xFF166534),
                   ),
                 ),
               ],
@@ -438,12 +414,10 @@ class HostCheckoutSection extends StatelessWidget {
             border: Border.all(color: const Color(0xFFBBF7D0)),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Text(
+          child: Text(
             '✅ 퇴실 확인 완료',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF166534),
+            style: AppTextStyles.labelMedium.copyWith(
+              color: const Color(0xFF166534),
             ),
           ),
         ),

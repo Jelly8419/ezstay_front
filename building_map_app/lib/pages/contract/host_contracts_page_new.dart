@@ -323,10 +323,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
           children: [
             Text(
               _getStatusText(_selectedStatus),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF374151),
+              style: AppTextStyles.labelMedium.copyWith(
+                color: const Color(0xFF374151),
               ),
             ),
             const SizedBox(width: 8),
@@ -356,9 +354,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
             value: status,
             child: Text(
               _getStatusText(status),
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF374151),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: const Color(0xFF374151),
               ),
             ),
           );
@@ -705,9 +702,8 @@ class _HostContractsPageNewState extends State<HostContractsPageNew> {
                           ),
                         ],
                       ),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF9A3412),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: const Color(0xFF9A3412),
                         height: 1.5,
                       ),
                     ),

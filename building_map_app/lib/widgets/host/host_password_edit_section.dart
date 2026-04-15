@@ -57,7 +57,7 @@ class HostPasswordEditSection extends StatelessWidget {
               Text(
                 '비밀번호',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -116,8 +116,7 @@ class HostPasswordEditSection extends StatelessWidget {
           child: Text(
             PasswordValidator.policyDescription,
             style: AppTextStyles.bodySmall.copyWith(
-              fontSize: 12,
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
         ),

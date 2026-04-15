@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 
 /// 유효성 검증 에러 박스 (리액트 에러 UI 복제)
 class ValidationErrorBox extends StatelessWidget {
@@ -37,10 +38,9 @@ class ValidationErrorBox extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '다음 항목을 확인해주세요:',
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: AppTextStyles.labelMedium.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.error700,
                   ),
@@ -51,8 +51,7 @@ class ValidationErrorBox extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
                       '• $error',
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.error700,
                       ),
                     ),

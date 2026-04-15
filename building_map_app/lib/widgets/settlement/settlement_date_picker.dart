@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 정산 날짜 선택 위젯
 /// React SettlementDatePicker.tsx와 동일한 UI
@@ -175,9 +176,7 @@ class _SettlementDatePickerState extends State<SettlementDatePicker> {
               ),
               Text(
                 '${_currentMonth.year}년 ${_currentMonth.month}월',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                style: AppTextStyles.labelMedium.copyWith(
                   color: AppColors.gray900,
                 ),
               ),
@@ -222,8 +221,7 @@ class _SettlementDatePickerState extends State<SettlementDatePicker> {
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Text(
                       day,
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: AppTextStyles.bodyMedium.copyWith(
                         color: textColor,
                       ),
                     ),
@@ -290,10 +288,10 @@ class _SettlementDatePickerState extends State<SettlementDatePicker> {
                   child: Center(
                     child: Text(
                       '$day',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight:
-                            isSelected || isToday ? FontWeight.w600 : null,
+                      style: (isSelected || isToday
+                              ? AppTextStyles.labelMedium
+                              : AppTextStyles.bodyMedium)
+                          .copyWith(
                         color: isSelected
                             ? Colors.white
                             : isDisabled
@@ -317,10 +315,7 @@ class _SettlementDatePickerState extends State<SettlementDatePicker> {
             ),
             child: Text(
               '최근 1년 이내 정산 내역만 조회 가능합니다',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.neutral500,
-              ),
+              style: AppTextStyles.caption.copyWith(color: AppColors.neutral500),
               textAlign: TextAlign.center,
             ),
           ),
@@ -358,10 +353,7 @@ class _SettlementDatePickerState extends State<SettlementDatePicker> {
               SizedBox(width: 8),
               Text(
                 _formatDate(widget.selectedDate),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTextStyles.labelMedium,
               ),
             ],
           ),

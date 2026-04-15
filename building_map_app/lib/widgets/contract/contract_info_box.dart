@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 계약 목록 상단 안내사항 박스 (파란색)
 class ContractInfoBox extends StatelessWidget {
@@ -29,9 +30,7 @@ class ContractInfoBox extends StatelessWidget {
               children: [
                 Text(
                   '안내사항',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                  style: AppTextStyles.labelMedium.copyWith(
                     color: const Color(0xFF1E3A8A),
                   ),
                 ),
@@ -41,8 +40,7 @@ class ContractInfoBox extends StatelessWidget {
                   '• 결제 완료 후에는 입주일 5일 전까지만 옵션 추가 및 변경이 가능합니다.\n'
                   '• 계약은 결제 선착순으로 확정되며, 결제 완료 전까지는 계약이 보장되지 않습니다.\n'
                   '• 입주일 이후 계약 취소 시 임대인과 합의 후 관리자 승인이 필요합니다.',
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: AppTextStyles.bodyMedium.copyWith(
                     color: const Color(0xFF1E40AF),
                     height: 1.5,
                   ),

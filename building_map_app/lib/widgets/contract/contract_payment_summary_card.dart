@@ -1,3 +1,4 @@
+import '../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/calculated_pricing.dart';
@@ -119,7 +120,7 @@ class ContractPaymentSummaryCard extends StatelessWidget {
           const Divider(height: 32),
           Text(
             '* 보증금은 3자 예치기관에 보관되며, 퇴실 완료 후 2일 내 자동 환급\n됩니다.',
-            style: AppTextStyles.caption.copyWith(color: Colors.grey[600]),
+            style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary),
           ),
           const SizedBox(height: 10),
           _buildPriceRow(
@@ -147,7 +148,7 @@ class ContractPaymentSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: AppColors.textPrimary),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -214,7 +215,7 @@ class ContractPaymentSummaryCard extends StatelessWidget {
                 const Divider(height: 32),
                 Text(
                   '* 보증금은 3자 예치기관에 보관되며, 퇴실 완료 후 2일 내 자동 환급됩니다.',
-                  style: AppTextStyles.caption.copyWith(color: Colors.grey[600]),
+                  style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 10),
                 _buildPriceRow(
@@ -285,7 +286,7 @@ class ContractPaymentSummaryCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, size: 20, color: Colors.grey[600]),
+          Icon(Icons.info_outline, size: 20, color: AppColors.textPrimary),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -325,7 +326,7 @@ class ContractPaymentSummaryCard extends StatelessWidget {
               width: 3,
               height: 3,
               decoration: BoxDecoration(
-                color: Colors.grey[500],
+                color: AppColors.textPrimary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -335,7 +336,7 @@ class ContractPaymentSummaryCard extends StatelessWidget {
             child: Text(
               text,
               style: AppTextStyles.bodySmall.copyWith(
-                color: Colors.grey[600],
+                color: AppColors.textPrimary,
                 height: 1.4,
               ),
             ),
@@ -370,7 +371,7 @@ class ContractPaymentSummaryCard extends StatelessWidget {
           '${isDiscount ? '-' : ''}${FormatUtils.formatCurrency(price.abs())}원',
           style: AppTextStyles.bodyMedium.copyWith(
             fontSize: fontSize,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
             color:
                 valueColor ??
                 (isDiscount

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 
 /// 드래그 가능한 이미지 그리드 (기존 방식 적용)
 class DraggableImageGrid extends StatelessWidget {
@@ -160,10 +161,9 @@ class DraggableImageGrid extends StatelessWidget {
                         color: AppColors.primary600,
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Text(
+                      child: Text(
                         '대표',
-                        style: TextStyle(
-                          fontSize: 12,
+                        style: AppTextStyles.caption.copyWith(
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),

@@ -1,3 +1,4 @@
+import '../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 /// 안내사항 컨테이너 (Yellow 스타일)
@@ -71,7 +72,7 @@ class BulletText extends StatelessWidget {
               width: 4,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[500],
+                color: AppColors.textPrimary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -82,7 +83,7 @@ class BulletText extends StatelessWidget {
               text,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[700],
+                color: AppColors.textPrimary,
                 height: 1.5,
               ),
             ),

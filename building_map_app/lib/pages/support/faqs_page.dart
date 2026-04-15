@@ -2,9 +2,11 @@ import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/faq.dart';
 import '../../services/support_service.dart';
 import '../../widgets/common/app_footer.dart';
+import '../../core/utils/seo_helper.dart';
 
 class FAQsPage extends StatefulWidget {
   const FAQsPage({super.key});
@@ -35,6 +37,18 @@ class _FAQsPageState extends State<FAQsPage> {
   void initState() {
     super.initState();
     _fetchInitialData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SeoHelper.updatePage(
+        title: '자주 묻는 질문 | EZStay',
+        description: 'EZStay 이용 중 궁금한 점을 FAQ에서 빠르게 해결하세요.',
+        canonicalPath: '/support/faqs',
+      );
+      SeoHelper.injectBreadcrumb([
+        {'name': '홈', 'path': '/'},
+        {'name': '고객센터', 'path': '/support'},
+        {'name': '자주 묻는 질문', 'path': '/support/faqs'},
+      ]);
+    });
   }
 
   Future<void> _fetchInitialData() async {
@@ -45,6 +59,7 @@ class _FAQsPageState extends State<FAQsPage> {
   @override
   void dispose() {
     _searchController.dispose();
+    SeoHelper.removeJsonLd('faq-jsonld');
     super.dispose();
   }
 
@@ -95,6 +110,7 @@ class _FAQsPageState extends State<FAQsPage> {
             AppLogger.d('[FAQs] countMap=$countMap');
           }
         });
+        _injectFaqJsonLd(faqs);
       } else {
         setState(() {
           _errorMessage = 'FAQ를 불러오는데 실패했습니다';
@@ -110,6 +126,27 @@ class _FAQsPageState extends State<FAQsPage> {
         _loading = false;
       });
     }
+  }
+
+  void _injectFaqJsonLd(List<FAQ> faqs) {
+    if (faqs.isEmpty) return;
+    SeoHelper.injectJsonLd(
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        'mainEntity': faqs
+            .map((faq) => {
+                  '@type': 'Question',
+                  'name': faq.question,
+                  'acceptedAnswer': {
+                    '@type': 'Answer',
+                    'text': faq.answer,
+                  },
+                })
+            .toList(),
+      },
+      scriptId: 'faq-jsonld',
+    );
   }
 
   void _toggleFaq(int faqId) {
@@ -183,19 +220,16 @@ class _FAQsPageState extends State<FAQsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Text(
                         '자주 묻는 질문',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                        style: AppTextStyles.headingSmall.copyWith(
                           color: AppColors.gray900,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _userMode == 'host' ? '임대인 모드' : '임차인 모드',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.gray600,
                         ),
                       ),
@@ -438,13 +472,11 @@ class _FAQsPageState extends State<FAQsPage> {
                       color: Color(0xFF3B82F6),
                       shape: BoxShape.circle,
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'Q',
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: AppTextStyles.labelMedium.copyWith(
                           color: AppColors.neutral0,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -482,8 +514,7 @@ class _FAQsPageState extends State<FAQsPage> {
                               ),
                               child: Text(
                                 faq.categoryName,
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: AppTextStyles.bodyMedium.copyWith(
                                   color: AppColors.neutral700,
                                 ),
                               ),
@@ -531,13 +562,11 @@ class _FAQsPageState extends State<FAQsPage> {
                         color: AppColors.gray300,
                         shape: BoxShape.circle,
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'A',
-                          style: TextStyle(
-                            fontSize: 14,
+                          style: AppTextStyles.labelMedium.copyWith(
                             color: AppColors.neutral0,
-                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),

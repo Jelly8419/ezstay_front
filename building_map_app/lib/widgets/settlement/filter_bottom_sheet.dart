@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/settlement.dart';
 
 /// 데스크탑 환경에서 버튼 아래에 표시되는 드롭다운 팝업 (방 선택)
@@ -68,10 +69,7 @@ class _SettlementRoomDropdownState extends State<SettlementRoomDropdown> {
                 children: [
                   Text(
                     '방 선택',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.labelLarge.copyWith(fontSize: 15),
                   ),
                   InkWell(
                     onTap: () => Navigator.pop(context),
@@ -119,7 +117,7 @@ class _SettlementRoomDropdownState extends State<SettlementRoomDropdown> {
                   ),
                   child: Text(
                     '적용하기',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: AppTextStyles.labelMedium,
                   ),
                 ),
               ),
@@ -153,9 +151,7 @@ class _SettlementRoomDropdownState extends State<SettlementRoomDropdown> {
             Expanded(
               child: Text(
                 name,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                style: AppTextStyles.labelMedium.copyWith(
                   color: isSelected ? AppColors.blue600 : AppColors.textPrimary,
                 ),
               ),
@@ -232,10 +228,7 @@ class _SettlementFilterBottomSheetState
               children: [
                 Text(
                   '방 선택',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.headingSmall,
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
@@ -293,10 +286,7 @@ class _SettlementFilterBottomSheetState
                 ),
                 child: Text(
                   '적용하기',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.labelLarge,
                 ),
               ),
             ),
@@ -331,10 +321,7 @@ class _SettlementFilterBottomSheetState
             Expanded(
               child: Text(
                 name,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTextStyles.labelMedium,
                 textAlign: TextAlign.left,
               ),
             ),

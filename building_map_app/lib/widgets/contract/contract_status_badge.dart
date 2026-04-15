@@ -56,7 +56,7 @@ class ContractStatusBadge extends StatelessWidget {
           config.text,
           style: AppTextStyles.caption.copyWith(
             color: config.textColor,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
       );

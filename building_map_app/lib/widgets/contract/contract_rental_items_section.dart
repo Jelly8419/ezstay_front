@@ -56,7 +56,7 @@ class ContractRentalItemsSection extends StatelessWidget {
               Text(
                 '(${selectedRentalItems.length}개 선택)',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: Colors.grey[500],
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -120,14 +120,14 @@ class ContractRentalItemsSection extends StatelessWidget {
                   Text(
                     '선택한 옵션 상품이 없습니다.',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '방 상세페이지에서 옵션 상품을 선택해주세요.',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.grey[400],
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -145,7 +145,7 @@ class ContractRentalItemsSection extends StatelessWidget {
                         decoration: BoxDecoration(
                           border: Border(
                             bottom: BorderSide(
-                              color: Colors.grey[100]!,
+                              color: AppColors.textPrimary,
                               width: 1,
                             ),
                           ),
@@ -172,7 +172,7 @@ class ContractRentalItemsSection extends StatelessWidget {
                                         item.description!,
                                         style: AppTextStyles.bodySmall.copyWith(
                                           fontSize: 13,
-                                          color: Colors.grey[500],
+                                          color: AppColors.textPrimary,
                                         ),
                                       ),
                                     ),
