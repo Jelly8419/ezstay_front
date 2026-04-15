@@ -10,6 +10,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../widgets/common/app_buttons.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
+import '../../core/utils/seo_helper.dart';
 
 /// 게스트 홈 페이지 - 심플하고 모던한 랜딩 페이지
 class GuestHomePage extends StatefulWidget {
@@ -35,6 +36,11 @@ class _GuestHomePageState extends State<GuestHomePage> {
     // 🔥 게스트 홈 화면 진입 이벤트 기록
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _analytics.logHomeViewGuest();
+      SeoHelper.updatePage(
+        title: 'EZStay — 단기임대 No.1, 편리하고 안전한 단기 숙소 찾기',
+        description: '출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 찾아보세요.',
+        canonicalPath: '/',
+      );
     });
   }
 

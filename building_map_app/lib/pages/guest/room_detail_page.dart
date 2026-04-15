@@ -24,6 +24,7 @@ import '../../utils/contract_utils.dart';
 import '../../widgets/kakao_roadview_web.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../widgets/common/refund_policy_section.dart';
+import '../../core/utils/seo_helper.dart';
 
 /// 방 상세 정보 페이지
 ///
@@ -115,6 +116,21 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         // 📊 Analytics: 스냅샷 모드에서는 Analytics 미호출
         if (!widget.isSnapshot) {
           await _analyticsService.logViewRoomDetail(roomId: widget.roomId);
+        }
+
+        // SEO: 스냅샷 모드에서는 미적용
+        if (!widget.isSnapshot) {
+          final monthlyPrice = (room.monthlyRent / 10000).round();
+          SeoHelper.updatePage(
+            title: '${room.roomName} | EZStay',
+            description: '${room.address} · ${room.buildingType} · 월 $monthlyPrice만원~. EZStay에서 단기임대로 계약하세요.',
+            canonicalPath: '/guest/room/detail/${room.id}',
+          );
+          SeoHelper.injectBreadcrumb([
+            {'name': '홈', 'path': '/'},
+            {'name': '숙소 찾기', 'path': '/guest'},
+            {'name': room.roomName, 'path': '/guest/room/detail/${room.id}'},
+          ]);
         }
       } else {
         setState(() {

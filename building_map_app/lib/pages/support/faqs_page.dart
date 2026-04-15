@@ -6,6 +6,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../models/faq.dart';
 import '../../services/support_service.dart';
 import '../../widgets/common/app_footer.dart';
+import '../../core/utils/seo_helper.dart';
 
 class FAQsPage extends StatefulWidget {
   const FAQsPage({super.key});
@@ -36,6 +37,18 @@ class _FAQsPageState extends State<FAQsPage> {
   void initState() {
     super.initState();
     _fetchInitialData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SeoHelper.updatePage(
+        title: '자주 묻는 질문 | EZStay',
+        description: 'EZStay 이용 중 궁금한 점을 FAQ에서 빠르게 해결하세요.',
+        canonicalPath: '/support/faqs',
+      );
+      SeoHelper.injectBreadcrumb([
+        {'name': '홈', 'path': '/'},
+        {'name': '고객센터', 'path': '/support'},
+        {'name': '자주 묻는 질문', 'path': '/support/faqs'},
+      ]);
+    });
   }
 
   Future<void> _fetchInitialData() async {
@@ -46,6 +59,7 @@ class _FAQsPageState extends State<FAQsPage> {
   @override
   void dispose() {
     _searchController.dispose();
+    SeoHelper.removeJsonLd('faq-jsonld');
     super.dispose();
   }
 
@@ -96,6 +110,7 @@ class _FAQsPageState extends State<FAQsPage> {
             AppLogger.d('[FAQs] countMap=$countMap');
           }
         });
+        _injectFaqJsonLd(faqs);
       } else {
         setState(() {
           _errorMessage = 'FAQ를 불러오는데 실패했습니다';
@@ -111,6 +126,27 @@ class _FAQsPageState extends State<FAQsPage> {
         _loading = false;
       });
     }
+  }
+
+  void _injectFaqJsonLd(List<FAQ> faqs) {
+    if (faqs.isEmpty) return;
+    SeoHelper.injectJsonLd(
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        'mainEntity': faqs
+            .map((faq) => {
+                  '@type': 'Question',
+                  'name': faq.question,
+                  'acceptedAnswer': {
+                    '@type': 'Answer',
+                    'text': faq.answer,
+                  },
+                })
+            .toList(),
+      },
+      scriptId: 'faq-jsonld',
+    );
   }
 
   void _toggleFaq(int faqId) {

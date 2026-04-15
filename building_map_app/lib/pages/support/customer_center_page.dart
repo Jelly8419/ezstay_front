@@ -10,6 +10,7 @@ import '../../models/inquiry.dart';
 import '../../services/auth_service.dart';
 import '../../services/support_service.dart';
 import '../../widgets/common/app_footer.dart';
+import '../../core/utils/seo_helper.dart';
 
 class CustomerCenterPage extends StatefulWidget {
   /// 초기 탭: 'notices', 'faqs', 'inquiries'
@@ -60,6 +61,13 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
       _activeTab = widget.initialTab!;
     }
     // initState에서는 context 사용 불가, didChangeDependencies에서 데이터 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SeoHelper.updatePage(
+        title: '고객센터 | EZStay',
+        description: '공지사항, 자주 묻는 질문, 1:1 문의 등 EZStay 고객센터를 이용해보세요.',
+        canonicalPath: '/support',
+      );
+    });
   }
 
   @override
