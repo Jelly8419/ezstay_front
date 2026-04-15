@@ -285,23 +285,23 @@ https://ezstay.io/support/faqs
 ## 전체 진행 순서 체크리스트
 
 ```
-[ ] 1. 외부 IP 차단 해제
-[ ] 2. flutter build web 후 master push → Cloudflare Pages 자동배포
-[ ] 3. https://ezstay.io 브라우저 접속 정상 확인
+[x] 1. 외부 IP 차단 해제
+[x] 2. flutter build web 후 master push → Cloudflare Pages 자동배포
+[x] 3. https://ezstay.io 브라우저 접속 정상 확인
 
-[ ] 4. Google Search Console 속성 추가
-[ ] 5. Cloudflare DNS에 TXT 레코드 추가 (google-site-verification)
-[ ] 6. Google 소유권 인증 완료
-[ ] 7. sitemap.xml 제출
-[ ] 8. 주요 페이지 색인 요청 (6개 URL)
+[x] 4. Google Search Console 속성 추가
+[x] 5. Cloudflare DNS 연동으로 원클릭 소유권 인증 완료
+[x] 6. sitemap.xml 제출 (https://ezstay.io/sitemap.xml)
+[x] 7. 주요 페이지 색인 요청 (6개 URL)
 
-[ ] 9. 네이버 웹마스터도구 사이트 추가
-[ ] 10. web/index.html에 naver-site-verification 메타태그 추가
-[ ] 11. master push → Cloudflare Pages 자동배포 확인
-[ ] 12. 네이버 소유확인 클릭
-[ ] 13. sitemap.xml 제출
-[ ] 14. 웹페이지 수집 요청
+[x] 8. 네이버 웹마스터도구 사이트 추가
+[x] 9. web/index.html에 naver-site-verification 메타태그 추가
+[x] 10. master push → Cloudflare Pages 자동배포 확인
+[x] 11. 네이버 소유확인 클릭
+[x] 12. sitemap.xml 제출 (https://ezstay.io/sitemap.xml)
 ```
+
+> 완료일: 2026-04-16
 
 ---
 
