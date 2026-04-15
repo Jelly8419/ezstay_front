@@ -1,6 +1,8 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
@@ -116,40 +118,51 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
     }
   }
 
-  /// 로컬 Mock 본인인증
+  /// 로컬 dev-verify 본인인증 (로컬 환경 전용)
+  ///
+  /// POST /api/auth/kmc/dev-verify → certNum 수신 → 회원가입 body에 전달
   Future<void> _handleMockVerification() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 500));
+      final response = await http.post(
+        Uri.parse(ApiConfig.kmcDevVerifyUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'name': '이재욱',
+          'phoneNumber': '01065218419',
+          'birth': '19930408',
+          'gender': '0',
+        }),
+      ).timeout(ApiConfig.timeout);
 
-      const mockName = '홍길동';
-      const mockPhone = '01012345678';
+      final data = json.decode(response.body);
 
-      final birthDate = DateTime(1990, 1, 1);
-      if (_calculateAge(birthDate) < 19) {
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          data['success'] == true) {
+        final result = data['data'] ?? data;
+        final name = result['name']?.toString() ?? '이재욱';
+        final phoneNumber = result['phoneNumber']?.toString() ?? '01065218419';
+        final certNum = result['certNum']?.toString() ?? '';
+        final birth = result['birth']?.toString() ?? '19930408';
+        final gender = result['gender']?.toString() ?? '0';
+
         if (mounted) {
-          setState(() => _isVerifying = false);
-          _showAgeRestrictionDialog();
+          setState(() {
+            _nameController.text = name;
+            _phoneController.text = phoneNumber;
+            _verifiedCi = certNum;
+            _verifiedBirth = birth;
+            _verifiedGender = gender;
+            _isVerified = true;
+          });
         }
-        return;
-      }
-
-      if (mounted) {
-        setState(() {
-          _nameController.text = mockName;
-          _phoneController.text = mockPhone;
-          _verifiedCi = 'mock_di_${DateTime.now().millisecondsSinceEpoch}';
-          _verifiedBirth = '19900101';
-          _verifiedGender = 'M';
-          _isVerified = true;
-          _isVerifying = false;
-        });
+      } else {
+        final message = data['message']?.toString() ?? 'dev-verify 호출 실패';
+        AppLogger.e('❌ [KMC DevVerify] $message');
+        if (mounted) _showErrorDialog(message);
       }
     } catch (e) {
-      AppLogger.e('❌ [KMC Mock] 에러: $e');
-      if (mounted) {
-        setState(() => _isVerifying = false);
-        _showErrorDialog('본인인증 처리 중 오류가 발생했습니다');
-      }
+      AppLogger.e('❌ [KMC DevVerify] 에러: $e');
+      if (mounted) _showErrorDialog('본인인증 처리 중 오류가 발생했습니다');
     }
   }
 
