@@ -213,7 +213,7 @@ google-site-verification=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ### Step 3. sitemap 제출
 
 1. 좌측 메뉴 **Sitemaps** 클릭
-2. URL 입력란에 `sitemap.xml` 입력 후 **제출**
+2. URL 입력란에 `https://ezstay.io/sitemap.xml` 입력 후 **제출** (풀 URL로 입력해야 정상 처리됨)
 3. 상태가 **성공**으로 표시되면 완료
 
 ### Step 4. 주요 페이지 색인 요청
