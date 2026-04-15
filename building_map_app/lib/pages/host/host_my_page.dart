@@ -16,6 +16,7 @@ import '../../models/user.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../widgets/common/app_footer.dart';
+import '../../providers/gnb_provider.dart';
 import '../../widgets/common/my_page_dialogs.dart';
 import '../../services/host_receipt_service.dart';
 import '../../services/host_account_service.dart';
@@ -451,18 +452,92 @@ class _HostMyPageState extends State<HostMyPage> {
                   SizedBox(height: AppSpacing.xl),
 
                   // 정산 정보 카드 (계좌 + 영수증)
-                  // React: <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
                   _buildSettlementCard(),
 
                   SizedBox(height: AppSpacing.xl),
 
-                  // 회원 탈퇴 버튼
-                  _buildWithdrawalButton(),
+                  // 정산 / 고객센터 링크 항목 (모바일만)
+                  if (ResponsiveUtil.isMobile(context)) ...[
+                    _buildMenuLinkItem(
+                      label: '정산',
+                      onTap: () => context.go('/host/settlement'),
+                    ),
+                    _buildMenuLinkItem(
+                      label: '고객 센터',
+                      onTap: () => context.go('/support'),
+                    ),
+                  ],
+
+                  if (ResponsiveUtil.isMobile(context)) ...[
+                    // 모바일: 회원 탈퇴(우측) + 모드 전환(전체 너비)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _handleWithdrawal,
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          foregroundColor: AppColors.textSecondary,
+                        ),
+                        child: Text(
+                          '회원 탈퇴',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.sm),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => _switchMode(
+                          context,
+                          Provider.of<AuthService>(context, listen: false),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary500,
+                          side: const BorderSide(color: AppColors.primary500),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                        ),
+                        child: Text(
+                          '임차인 모드로 전환',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.primary500,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    // 웹/태블릿: 기존 우측 정렬 회원 탈퇴 텍스트 버튼만
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _handleWithdrawal,
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          foregroundColor: AppColors.textSecondary,
+                        ),
+                        child: Text(
+                          '회원 탈퇴',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textPrimary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  SizedBox(height: AppSpacing.xl),
                 ],
               ),
             ),
           ),
-          const AppFooter(),
+          if (!ResponsiveUtil.isMobile(context)) const AppFooter(),
         ],
       ),
     );
@@ -491,13 +566,31 @@ class _HostMyPageState extends State<HostMyPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 섹션 제목
-          // React: <h3 className="font-bold text-lg mb-4">프로필 정보</h3>
-          Text(
-            '프로필 정보',
-            style: AppTextStyles.headingSmall.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+          // 섹션 제목 + [임대인] 배지
+          Row(
+            children: [
+              Text(
+                '프로필 정보',
+                style: AppTextStyles.headingSmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(width: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primary500,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Text(
+                  '임대인',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.neutral0,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
 
           SizedBox(height: AppSpacing.lg), // mb-4
@@ -659,24 +752,88 @@ class _HostMyPageState extends State<HostMyPage> {
     );
   }
 
-  /// 회원 탈퇴 버튼
-  /// React: <div className="text-right"><button className="text-sm text-gray-500 hover:text-gray-700 underline">회원 탈퇴</button></div>
-  Widget _buildWithdrawalButton() {
-    return Align(
-      alignment: Alignment.centerRight, // text-right
-      child: TextButton(
-        onPressed: _handleWithdrawal,
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.textSecondary, // text-gray-500
-          padding: EdgeInsets.zero,
+  /// 정산/고객센터 링크 항목 (> 화살표 스타일)
+  Widget _buildMenuLinkItem({
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: AppTextStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+          ],
         ),
-        child: Text(
-          '회원 탈퇴',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textPrimary,
-            decoration: TextDecoration.underline, // underline
+      ),
+    );
+  }
+
+  /// 모드 전환 다이얼로그 (호스트→게스트)
+  void _switchMode(BuildContext context, AuthService authService) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('임차인 모드로 전환', style: AppTextStyles.headingSmall),
+        content: Text(
+          '임차인 모드로 전환하시겠습니까?\n방 검색 및 예약 기능을 사용할 수 있습니다.',
+          style: AppTextStyles.bodyMedium,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              '취소',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
           ),
-        ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              final ok = await authService.switchUserMode(UserMode.guest);
+              if (!ok || !mounted) return;
+              final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
+              if (uid != 0) {
+                // ignore: use_build_context_synchronously
+                context.read<GNBProvider>().startChatUnreadWatch(
+                  uid,
+                  userMode: 'guest',
+                );
+              }
+              // ignore: use_build_context_synchronously
+              context.go('/guest');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary500,
+              foregroundColor: AppColors.neutral0,
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadius.radiusSm,
+              ),
+            ),
+            child: Text(
+              '전환하기',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.neutral0,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

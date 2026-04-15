@@ -309,15 +309,19 @@ class AppRouter {
           return '/register?hostAccount=true';
         }
 
-        // 루트 경로(/) 접근 시 무조건 게스트 홈으로 리다이렉트
-        // (호스트 모드는 GNB에서 명시적으로 전환할 때만 /host로 이동)
+        // 루트 경로(/) 접근 시 로그인 모드에 따라 홈으로 리다이렉트
         if (isGoingToRoot) {
+          if (isLoggedIn && authService.currentUser?.mode == UserMode.host) {
+            return '/host';
+          }
           return '/guest';
         }
 
-        // 로그인된 상태에서 로그인 페이지 접근 시 게스트 홈으로 리다이렉트
-        // (호스트 모드는 GNB에서 명시적으로 전환할 때만 /host로 이동)
+        // 로그인된 상태에서 로그인 페이지 접근 시 모드에 따라 홈으로 리다이렉트
         if (isLoggedIn && isGoingToLogin) {
+          if (authService.currentUser?.mode == UserMode.host) {
+            return '/host';
+          }
           return '/guest';
         }
 
