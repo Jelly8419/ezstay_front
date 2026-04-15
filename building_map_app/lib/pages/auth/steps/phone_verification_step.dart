@@ -100,28 +100,19 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
     return age;
   }
 
-  /// KMC 본인인증 요청
-  Future<void> _requestVerification() async {
+  /// dev-verify 본인인증 (개발 환경 전용)
+  ///
+  /// POST /api/auth/kmc/dev-verify → certNum 수신 → 회원가입 body에 전달
+  Future<void> _handleDevVerification() async {
     setState(() => _isVerifying = true);
-
     try {
-      if (!ApiConfig.isProduction && ApiConfig.baseUrl.contains('localhost')) {
-        await _handleMockVerification();
-        return;
-      }
-      await _handleKmcVerification();
+      await _runDevVerify();
     } finally {
-      // 어떤 경로로 종료되든 _isVerifying이 false로 복구됨을 보장
-      if (mounted && _isVerifying) {
-        setState(() => _isVerifying = false);
-      }
+      if (mounted && _isVerifying) setState(() => _isVerifying = false);
     }
   }
 
-  /// 로컬 dev-verify 본인인증 (로컬 환경 전용)
-  ///
-  /// POST /api/auth/kmc/dev-verify → certNum 수신 → 회원가입 body에 전달
-  Future<void> _handleMockVerification() async {
+  Future<void> _runDevVerify() async {
     try {
       final response = await http.post(
         Uri.parse(ApiConfig.kmcDevVerifyUrl),
@@ -168,6 +159,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
 
   /// 실서버 KMC 본인인증
   Future<void> _handleKmcVerification() async {
+    setState(() => _isVerifying = true);
     try {
       final requestResult = await KmcService.requestVerification();
       if (!mounted) return;
@@ -209,20 +201,15 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         _verifiedBirth = verifyResult.birth;
         _verifiedGender = verifyResult.gender;
         _isVerified = true;
-        _isVerifying = false;
       });
     } on KmcException catch (e) {
       AppLogger.e('❌ [KMC] [${e.code}] ${e.message}');
-      if (mounted) {
-        setState(() => _isVerifying = false);
-        _showErrorDialog(KmcService.getErrorMessage(e.code));
-      }
+      if (mounted) _showErrorDialog(KmcService.getErrorMessage(e.code));
     } catch (e) {
       AppLogger.e('❌ [KMC] 예기치 않은 에러: $e');
-      if (mounted) {
-        setState(() => _isVerifying = false);
-        _showErrorDialog('본인인증 중 오류가 발생했습니다. 다시 시도해주세요.');
-      }
+      if (mounted) _showErrorDialog('본인인증 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      if (mounted && _isVerifying) setState(() => _isVerifying = false);
     }
   }
 
@@ -354,7 +341,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
               height: 56,
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _isVerifying ? null : _requestVerification,
+                onPressed: _isVerifying ? null : _handleKmcVerification,
                 icon: _isVerifying
                     ? const SizedBox(
                         width: 20,
@@ -378,6 +365,22 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                 ),
               ),
             ),
+            if (!ApiConfig.isProduction) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 48,
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _isVerifying ? null : _handleDevVerification,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF888888),
+                    side: const BorderSide(color: Color(0xFFCCCCCC)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('[Dev] 테스트 인증', style: TextStyle(fontSize: 14)),
+                ),
+              ),
+            ],
           ] else ...[
             // 인증 완료 후 실명 표시
             const Text('실명', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: textGray)),

@@ -1,6 +1,9 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import '../../config/api_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/kmc_service.dart';
 import '../../services/verification_service.dart';
@@ -27,7 +30,7 @@ class _FindIdPageState extends State<FindIdPage> {
   static const _borderGray = Color(0xFFE0E0E0);
   static const _backgroundWhite = Color(0xFFFFFFFF);
 
-  /// KMC 본인인증 실행 → DI 수신 → /find-id API 호출
+  /// KMC 본인인증 실행 → certNum 수신 → /find-id API 호출
   Future<void> _handleKmcVerification() async {
     setState(() => _isLoading = true);
 
@@ -50,7 +53,7 @@ class _FindIdPageState extends State<FindIdPage> {
         return;
       }
 
-      // 3. KMC 결과 검증 → DI 수신
+      // 3. KMC 결과 검증 → certNum 수신
       final verifyResult = await KmcService.verifyResult(
         apiToken: popupResult['apiToken']!,
         certNum: popupResult['certNum']!,
@@ -59,7 +62,7 @@ class _FindIdPageState extends State<FindIdPage> {
 
       if (!mounted) return;
 
-      // 4. DI로 아이디(이메일) 조회
+      // 4. certNum으로 아이디(이메일) 조회
       final email = await VerificationService.findId(certNum: verifyResult.certNum);
 
       if (!mounted) return;
@@ -77,6 +80,50 @@ class _FindIdPageState extends State<FindIdPage> {
       if (mounted) _showErrorDialog('아이디 찾기 중 오류가 발생했습니다.');
     } finally {
       // 어떤 경로로 종료되든 _isLoading 복구 보장
+      if (mounted && _isLoading) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// 로컬 dev-verify (개발 환경 전용)
+  Future<void> _handleDevVerification() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.kmcDevVerifyUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'name': '이재욱',
+          'phoneNumber': '01065218419',
+          'birth': '19930408',
+          'gender': '0',
+        }),
+      ).timeout(ApiConfig.timeout);
+
+      final data = json.decode(response.body);
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          data['success'] == true) {
+        final result = data['data'] ?? data;
+        final certNum = result['certNum']?.toString() ?? '';
+        final email = await VerificationService.findId(certNum: certNum);
+        if (mounted) {
+          setState(() {
+            _foundEmail = email;
+            _step = 1;
+          });
+        }
+      } else {
+        final message = data['message']?.toString() ?? 'dev-verify 호출 실패';
+        if (mounted) _showErrorDialog(message);
+      }
+    } on VerificationException catch (e) {
+      if (mounted) _showErrorDialog(e.message);
+    } catch (e) {
+      AppLogger.e('❌ [FIND_ID] dev-verify 에러: $e');
+      if (mounted) _showErrorDialog('테스트 인증 중 오류가 발생했습니다');
+    } finally {
       if (mounted && _isLoading) {
         setState(() => _isLoading = false);
       }
@@ -236,6 +283,21 @@ class _FindIdPageState extends State<FindIdPage> {
                   ),
           ),
         ),
+        if (!ApiConfig.isProduction) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 48,
+            child: OutlinedButton(
+              onPressed: _isLoading ? null : _handleDevVerification,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF888888),
+                side: const BorderSide(color: Color(0xFFCCCCCC)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('[Dev] 테스트 인증', style: TextStyle(fontSize: 14)),
+            ),
+          ),
+        ],
       ],
     );
   }

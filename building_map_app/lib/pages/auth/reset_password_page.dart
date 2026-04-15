@@ -1,6 +1,9 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import '../../config/api_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/kmc_service.dart';
 import '../../services/verification_service.dart';
@@ -121,6 +124,47 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     } catch (e) {
       AppLogger.e('❌ [RESET_PW] KMC 오류: $e');
       if (mounted) _showErrorDialog('본인인증 중 오류가 발생했습니다');
+    } finally {
+      if (mounted && _isLoading) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// 로컬 dev-verify (개발 환경 전용)
+  Future<void> _handleDevVerification() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.kmcDevVerifyUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'name': '이재욱',
+          'phoneNumber': '01065218419',
+          'birth': '19930408',
+          'gender': '0',
+        }),
+      ).timeout(ApiConfig.timeout);
+
+      final data = json.decode(response.body);
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          data['success'] == true) {
+        final result = data['data'] ?? data;
+        final certNum = result['certNum']?.toString() ?? '';
+        if (mounted) {
+          setState(() {
+            _verifiedCi = certNum;
+            _step = 2;
+          });
+        }
+      } else {
+        final message = data['message']?.toString() ?? 'dev-verify 호출 실패';
+        if (mounted) _showErrorDialog(message);
+      }
+    } catch (e) {
+      AppLogger.e('❌ [RESET_PW] dev-verify 에러: $e');
+      if (mounted) _showErrorDialog('테스트 인증 중 오류가 발생했습니다');
     } finally {
       if (mounted && _isLoading) {
         setState(() => _isLoading = false);
@@ -425,6 +469,21 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           text: '본인인증 시작',
           onPressed: _isLoading ? null : _handleKmcVerification,
         ),
+        if (!ApiConfig.isProduction) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 48,
+            child: OutlinedButton(
+              onPressed: _isLoading ? null : _handleDevVerification,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF888888),
+                side: const BorderSide(color: Color(0xFFCCCCCC)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('[Dev] 테스트 인증', style: TextStyle(fontSize: 14)),
+            ),
+          ),
+        ],
       ],
     );
   }
