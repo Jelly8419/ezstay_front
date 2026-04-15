@@ -22,6 +22,15 @@
 /index.html
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
+# sitemap.xml — 순수 XML 보장 (Cloudflare 스크립트 주입 방지)
+/sitemap.xml
+  Content-Type: application/xml; charset=utf-8
+  X-Robots-Tag: noindex
+
+# robots.txt
+/robots.txt
+  Content-Type: text/plain; charset=utf-8
+
 # 이미지, 폰트 등 정적 자원은 캐시 허용
 /assets/*
   Cache-Control: public, max-age=86400
