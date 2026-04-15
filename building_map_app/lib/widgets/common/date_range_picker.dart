@@ -122,7 +122,7 @@ class _DateRangePickerState extends State<DateRangePicker> {
           Text(
             _getHelperText(),
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
         ],
@@ -228,7 +228,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ],
             ),
@@ -357,7 +357,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                   Text(
                     '임대 기간',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -407,7 +407,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
               Text(
                 '• 최소 ${widget.minContractDays}일부터 선택 가능합니다',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),

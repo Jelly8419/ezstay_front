@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/settlement.dart';
 import '../../services/settlement_service.dart';
 import '../../utils/format_utils.dart';
@@ -107,10 +108,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
                       Expanded(
                         child: Text(
                           '상세 내역',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AppTextStyles.headingSmall,
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -141,8 +139,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
           children: [
             Text(
               _error ?? '정산 내역을 찾을 수 없습니다.',
-              style: TextStyle(
-                fontSize: 14,
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.neutral500,
               ),
             ),
@@ -218,10 +215,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
             padding: EdgeInsets.only(bottom: 8),
             child: Text(
               '정산 정보',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTextStyles.headingSmall,
             ),
           ),
           SizedBox(height: 12),
@@ -267,10 +261,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
             padding: EdgeInsets.only(bottom: 12),
             child: Text(
               '정산 금액',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTextStyles.headingSmall,
             ),
           ),
           SizedBox(height: 12),
@@ -288,8 +279,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
                   children: [
                     Text(
                       '청소비',
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.gray600,
                       ),
                     ),
@@ -304,9 +294,8 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
                         ),
                         child: Text(
                           'EZ청소',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
+                          style: AppTextStyles.caption.copyWith(
+                            fontWeight: FontWeight.w600,
                             color: AppColors.blue600,
                           ),
                         ),
@@ -316,10 +305,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
                 ),
                 Text(
                   FormatUtils.formatKRW(breakdown.cleaningFee),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: AppTextStyles.labelMedium,
                 ),
               ],
             ),
@@ -360,9 +346,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
               padding: EdgeInsets.only(bottom: 8),
               child: Text(
                 '이용 금액',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.labelMedium.copyWith(
                   color: AppColors.neutral700,
                 ),
               ),
@@ -403,9 +387,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
                 ),
                 child: Text(
                   '환불 금액',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                  style: AppTextStyles.labelMedium.copyWith(
                     color: AppColors.neutral700,
                   ),
                 ),
@@ -461,17 +443,13 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
               children: [
                 Text(
                   '총 정산 금액',
-                  style: TextStyle(
-                    fontSize: 18,
+                  style: AppTextStyles.headingSmall.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
                   FormatUtils.formatKRW(settlementInfo.finalAmount),
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AppTextStyles.headingLarge,
                 ),
               ],
             ),
@@ -505,10 +483,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
             padding: EdgeInsets.only(bottom: 12),
             child: Text(
               '입금 계좌',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTextStyles.headingSmall,
             ),
           ),
           SizedBox(height: 12),
@@ -539,17 +514,14 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
           children: [
             Text(
               '정산 예정',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+              style: AppTextStyles.labelMedium.copyWith(
                 color: AppColors.info700,
               ),
             ),
             SizedBox(height: 4),
             Text(
               '퇴실 후 7일 이내에 등록하신 계좌로 정산 금액이 입금됩니다.',
-              style: TextStyle(
-                fontSize: 14,
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.info700,
               ),
             ),
@@ -569,17 +541,14 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
           children: [
             Text(
               '정산 완료',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+              style: AppTextStyles.labelMedium.copyWith(
                 color: AppColors.success700,
               ),
             ),
             SizedBox(height: 4),
             Text(
               '정산이 완료되었습니다. 입금 계좌를 확인해주세요.',
-              style: TextStyle(
-                fontSize: 14,
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.success700,
               ),
             ),
@@ -599,17 +568,14 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
           children: [
             Text(
               '취소 환불 정산 완료',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+              style: AppTextStyles.labelMedium.copyWith(
                 color: AppColors.info700,
               ),
             ),
             SizedBox(height: 4),
             Text(
               '임차인 취소로 인한 수수료가 정산되었습니다.',
-              style: TextStyle(
-                fontSize: 14,
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.info700,
               ),
             ),
@@ -636,13 +602,11 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
             children: [
               Text(
                 '보증금 차감 지급',
-                style: TextStyle(fontSize: 14, color: AppColors.gray600),
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.gray600),
               ),
               Text(
                 '+ ${FormatUtils.formatKRW(deduction.amount)}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                style: AppTextStyles.labelMedium.copyWith(
                   color: AppColors.success700,
                 ),
               ),
@@ -653,7 +617,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
             children: [
               Text(
                 '지급 예정일: ${deduction.payableAfter}',
-                style: TextStyle(fontSize: 12, color: AppColors.neutral500),
+                style: AppTextStyles.caption.copyWith(color: AppColors.neutral500),
               ),
               SizedBox(width: 8),
               buildDepositDeductionBadge(deduction.status),
@@ -663,7 +627,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
             SizedBox(height: 4),
             Text(
               '처리일: ${deduction.processedAt}',
-              style: TextStyle(fontSize: 12, color: AppColors.neutral500),
+              style: AppTextStyles.caption.copyWith(color: AppColors.neutral500),
             ),
           ],
           SizedBox(height: 8),
@@ -674,10 +638,9 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
                   '/host/settlement/deduction/${widget.contractId}'),
               child: Text(
                 '차감 상세 보기 →',
-                style: TextStyle(
-                  fontSize: 13,
+                style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.blue600,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -698,8 +661,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
+          style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.gray600,
           ),
         ),
@@ -707,10 +669,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
         Expanded(
           child: Text(
             value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+            style: AppTextStyles.labelMedium,
             textAlign: valueAlign,
           ),
         ),
@@ -733,8 +692,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
+          style: AppTextStyles.bodyMedium.copyWith(
             color: isNegative
                 ? AppColors.error600
                 : labelColor ?? AppColors.gray600,
@@ -742,9 +700,7 @@ class _HostSettlementDetailPageState extends State<HostSettlementDetailPage> {
         ),
         Text(
           '$prefix${FormatUtils.formatCurrency(displayAmount)}원',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: isBold ? FontWeight.w600 : FontWeight.w500,
+          style: AppTextStyles.labelMedium.copyWith(
             color: isNegative ? AppColors.error600 : null,
           ),
         ),

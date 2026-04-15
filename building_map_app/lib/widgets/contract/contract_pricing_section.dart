@@ -47,10 +47,9 @@ class _ContractPricingSectionState extends State<ContractPricingSection> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   '정산 예정금액',
-                  style: TextStyle(
-                    fontSize: 15,
+                  style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary600,
                   ),
@@ -111,8 +110,8 @@ class _ContractPricingSectionState extends State<ContractPricingSection> {
                 amount: subtotal,
                 topBorderWidth: 1,
                 topBorderColor: const Color(0xFFE5E7EB),
-                labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
-                valueStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
+                labelStyle: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF111827)),
+                valueStyle: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF111827)),
               ),
 
               // 차감 항목
@@ -135,7 +134,7 @@ class _ContractPricingSectionState extends State<ContractPricingSection> {
                 amount: settlement.hostEarnings,
                 topBorderWidth: 2,
                 topBorderColor: const Color(0xFFD1D5DB),
-                labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary600),
+                labelStyle: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary600),
                 valueStyle: AppTextStyles.headingSmall.copyWith(color: AppColors.primary600),
               ),
 
@@ -151,12 +150,12 @@ class _ContractPricingSectionState extends State<ContractPricingSection> {
                   ),
                   child: Row(
                     children: [
-                      const Text('💡', style: TextStyle(fontSize: 14)),
+                      Text('💡', style: AppTextStyles.bodyMedium),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           '보증금 ₩${FormatUtils.formatCurrency(widget.contract.deposit ?? 0)}은 임차인 퇴실 후 별도로 환급됩니다.',
-                          style: const TextStyle(fontSize: 13, color: Color(0xFF1D4ED8), height: 1.4),
+                          style: AppTextStyles.bodySmall.copyWith(color: const Color(0xFF1D4ED8), height: 1.4),
                         ),
                       ),
                     ],
@@ -216,7 +215,7 @@ class _ContractPricingSectionState extends State<ContractPricingSection> {
               const SizedBox(width: 6),
               Text(
                 '(정산 제외)',
-                style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[600]),
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
               ),
             ],
           ],

@@ -1,6 +1,7 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../core/theme/app_text_styles.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
@@ -111,7 +112,7 @@ class AppRouter {
           const SizedBox(height: 16),
           Text(
             isCacheMismatch ? '새 버전이 있습니다' : '페이지를 불러올 수 없습니다',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: AppTextStyles.headingSmall,
           ),
           const SizedBox(height: 8),
           Text(

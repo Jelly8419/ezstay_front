@@ -6,6 +6,7 @@ import '../../services/auth_service.dart';
 import '../../models/user.dart';
 import '../../models/login_result.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../widgets/mode_selection_dialog.dart';
 import '../../widgets/common/ezstay_logo.dart';
 
@@ -75,11 +76,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 32),
 
-                  const Text(
+                  Text(
                     '로그인하기',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
+                    style: AppTextStyles.displayLarge.copyWith(
                       color: primaryBlack,
                     ),
                     textAlign: TextAlign.center,
@@ -89,11 +88,7 @@ class _LoginPageState extends State<LoginPage> {
                   // 이메일 라벨
                   const Text(
                     '이메일 주소',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: textGray,
-                    ),
+                    style: AppTextStyles.labelMedium,
                   ),
                   const SizedBox(height: 8),
 
@@ -103,16 +98,12 @@ class _LoginPageState extends State<LoginPage> {
                     child: TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
+                      style: AppTextStyles.labelLarge.copyWith(
                         color: primaryBlack,
                       ),
                       decoration: InputDecoration(
                         hintText: '이메일 주소를 입력해 주세요.',
-                        hintStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
+                        hintStyle: AppTextStyles.labelLarge.copyWith(
                           color: hintGray,
                         ),
                         filled: true,
@@ -167,11 +158,7 @@ class _LoginPageState extends State<LoginPage> {
                   // 비밀번호 라벨
                   const Text(
                     '비밀번호',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: textGray,
-                    ),
+                    style: AppTextStyles.labelMedium,
                   ),
                   const SizedBox(height: 8),
 
@@ -181,16 +168,12 @@ class _LoginPageState extends State<LoginPage> {
                     child: TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
+                      style: AppTextStyles.labelLarge.copyWith(
                         color: primaryBlack,
                       ),
                       decoration: InputDecoration(
                         hintText: '비밀번호를 입력해 주세요.',
-                        hintStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
+                        hintStyle: AppTextStyles.labelLarge.copyWith(
                           color: hintGray,
                         ),
                         filled: true,
@@ -291,11 +274,7 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(width: 8),
                             const Text(
                               '자동 로그인',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                                color: textGray,
-                              ),
+                              style: AppTextStyles.labelMedium,
                             ),
                           ],
                         ),
@@ -314,20 +293,17 @@ class _LoginPageState extends State<LoginPage> {
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
+                        child: Text(
                           '아이디 찾기',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
+                          style: AppTextStyles.labelMedium.copyWith(
                             color: secondaryGray,
                           ),
                         ),
                       ),
 
-                      const Text(
+                      Text(
                         ' | ',
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: AppTextStyles.bodyMedium.copyWith(
                           color: borderGray,
                         ),
                       ),
@@ -345,11 +321,9 @@ class _LoginPageState extends State<LoginPage> {
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
+                        child: Text(
                           '비밀번호 찾기',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
+                          style: AppTextStyles.labelMedium.copyWith(
                             color: secondaryGray,
                           ),
                         ),
@@ -384,10 +358,7 @@ class _LoginPageState extends State<LoginPage> {
                             )
                           : const Text(
                               '로그인',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: AppTextStyles.labelLarge,
                             ),
                     ),
                   ),
@@ -410,10 +381,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       child: const Text(
                         '회원가입',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: AppTextStyles.labelLarge,
                       ),
                     ),
                   ),
@@ -432,11 +400,7 @@ class _LoginPageState extends State<LoginPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
                           '또는',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: secondaryGray,
-                          ),
+                          style: AppTextStyles.labelMedium.copyWith(color: secondaryGray),
                         ),
                       ),
                       const Expanded(
@@ -472,10 +436,7 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(width: 8),
                           const Text(
                             '카카오로 계속하기',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: AppTextStyles.labelLarge,
                           ),
                         ],
                       ),
@@ -611,30 +572,18 @@ class _LoginPageState extends State<LoginPage> {
         ),
         title: const Text(
           '탈퇴한 계정',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         content: const Text(
           '탈퇴한 계정입니다.\n재가입 하시겠습니까?',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
+          style: AppTextStyles.labelMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text(
+            child: Text(
               '취소',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: secondaryGray,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: secondaryGray),
             ),
           ),
           TextButton(
@@ -649,11 +598,7 @@ class _LoginPageState extends State<LoginPage> {
             },
             child: Text(
               '재가입하기',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary600,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
             ),
           ),
         ],
@@ -681,30 +626,18 @@ class _LoginPageState extends State<LoginPage> {
         ),
         title: const Text(
           '로그인 실패',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         content: Text(
           message,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
+          style: AppTextStyles.labelMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               '확인',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
             ),
           ),
         ],

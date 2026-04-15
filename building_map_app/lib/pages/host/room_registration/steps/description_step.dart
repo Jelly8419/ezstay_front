@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../components/form_section.dart';
 
 /// Step 5: 방 소개 및 안내 (리액트 DescriptionStep 복제)
@@ -126,9 +127,8 @@ class _DescriptionStepState extends State<DescriptionStep> {
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     hintText: '예: 2',
-                    hintStyle: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     filled: true,
                     fillColor: _hasError('maxGuests')
@@ -166,20 +166,18 @@ class _DescriptionStepState extends State<DescriptionStep> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '* 이 방에서 머물 수 있는 최대 인원을 입력해주세요',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 if (_hasError('maxGuests'))
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       '최대 인원을 입력해주세요',
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: AppTextStyles.caption.copyWith(
                         color: AppColors.error600,
                       ),
                     ),
@@ -200,11 +198,9 @@ class _DescriptionStepState extends State<DescriptionStep> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         '입주 시간',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                        style: AppTextStyles.labelMedium.copyWith(
                           color: Colors.black,
                         ),
                       ),
@@ -257,11 +253,9 @@ class _DescriptionStepState extends State<DescriptionStep> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         '퇴실 시간',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                        style: AppTextStyles.labelMedium.copyWith(
                           color: Colors.black,
                         ),
                       ),
@@ -328,9 +322,8 @@ class _DescriptionStepState extends State<DescriptionStep> {
                   decoration: InputDecoration(
                     hintText:
                         '방에 대한 자세한 설명을 입력해주세요. 교통편, 주변 편의시설, 방의 특징 등을 자유롭게 작성해주세요.(최소 10글자 이상)',
-                    hintStyle: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     filled: true,
                     fillColor: _hasError('propertyDescription')
@@ -365,33 +358,30 @@ class _DescriptionStepState extends State<DescriptionStep> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '* 임차인이 방을 선택하는 데 도움이 되는 정보를 상세히 작성해주세요',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 if (_hasError('propertyDescription') &&
                     widget.validationErrors!.contains('방 소개를 입력해주세요'))
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       '방 소개를 입력해주세요',
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: AppTextStyles.caption.copyWith(
                         color: AppColors.error600,
                       ),
                     ),
                   ),
                 if (_hasError('propertyDescription') &&
                     widget.validationErrors!.contains('방 소개를 최소 10글자 이상 입력해주세요'))
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       '방 소개를 최소 10글자 이상 입력해주세요',
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: AppTextStyles.caption.copyWith(
                         color: AppColors.error600,
                       ),
                     ),
@@ -412,10 +402,9 @@ class _DescriptionStepState extends State<DescriptionStep> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '📋 등록 전 확인사항',
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: AppTextStyles.labelLarge.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.primary900,
                   ),
@@ -440,10 +429,9 @@ class _DescriptionStepState extends State<DescriptionStep> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '•',
-          style: TextStyle(
-            fontSize: 14,
+          style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.primary800,
             height: 1.5,
           ),
@@ -452,8 +440,7 @@ class _DescriptionStepState extends State<DescriptionStep> {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 12,
+            style: AppTextStyles.caption.copyWith(
               color: AppColors.primary800,
               height: 1.5,
             ),

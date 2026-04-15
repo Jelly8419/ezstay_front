@@ -273,7 +273,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
               children: [
                 Text(
                   '날짜를 선택해주세요',
-                  style: AppTextStyles.labelMedium.copyWith(
+                  style: AppTextStyles.labelLarge.copyWith(
                     fontSize: 15,
                     color: const Color(0xFF8B6914),
                   ),
@@ -282,8 +282,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 Text(
                   '입주/퇴실 날짜를 선택해야 계약을 요청할 수 있습니다.',
                   style: AppTextStyles.bodySmall.copyWith(
-                    fontSize: 13,
-                    color: Colors.grey[700],
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -336,16 +335,16 @@ class _ContractStartPageState extends State<ContractStartPage> {
                   hintText:
                       '예) 오후 3시쯤 입주 예정입니다. 짐이 많아 차량으로 이동할 예정입니다.\n예) 출장 목적으로 1개월간 머물 예정입니다.\n예) 가족 2명이 함께 이용할 예정입니다.',
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.grey[400],
+                    color: AppColors.textPrimary,
                     height: 1.5,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(color: AppColors.textPrimary),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(color: AppColors.textPrimary),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -366,7 +365,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
                 child: Text(
                   '${_messageController.text.length}/500',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.grey[400],
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -376,7 +375,7 @@ class _ContractStartPageState extends State<ContractStartPage> {
           // React: helper text with asterisk
           Text(
             '임대 목적을 임대인에게 미리 전달해주세요.',
-            style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[500]),
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
           ),
         ],
       ),

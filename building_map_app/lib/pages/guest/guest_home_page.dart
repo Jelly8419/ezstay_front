@@ -201,7 +201,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                           ? AppTextStyles.bodyLarge
                           : AppTextStyles.headingLarge)
                       .copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
               textAlign: TextAlign.center,
@@ -365,7 +365,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                 ),
               ),
             ),
-            Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+            Icon(Icons.arrow_drop_down, color: AppColors.textPrimary),
           ],
         ),
       ),
@@ -450,7 +450,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
           // 호스트 3-Step 가이드
           Container(
-            padding: EdgeInsets.all(isMobile ? AppSpacing.md : AppSpacing.xl * 2),
+            padding: EdgeInsets.all(
+              isMobile ? AppSpacing.md : AppSpacing.xl * 2,
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: AppRadius.radiusLg,
@@ -509,9 +511,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
         SizedBox(height: AppSpacing.sm),
         Text(
           subtitle,
-          style: AppTextStyles.bodyLarge.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
           textAlign: TextAlign.center,
         ),
         SizedBox(height: AppSpacing.xl * 2),
@@ -562,7 +562,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
     final gradientColors = isGreenTheme
         ? [AppColors.green500, AppColors.green600]
         : [AppColors.primary500, AppColors.primary600];
-    final shadowColor = isGreenTheme ? AppColors.green500 : AppColors.primary500;
+    final shadowColor = isGreenTheme
+        ? AppColors.green500
+        : AppColors.primary500;
     final badgeColor = isGreenTheme ? AppColors.green100 : AppColors.primary100;
     final badgeTextColor = isGreenTheme
         ? AppColors.green600
@@ -591,7 +593,12 @@ class _GuestHomePageState extends State<GuestHomePage> {
             ],
           ),
           child: Center(
-            child: Text(emoji, style: AppTextStyles.displayLarge.copyWith(fontSize: isMobile ? 28 : 40)),
+            child: Text(
+              emoji,
+              style: AppTextStyles.displayLarge.copyWith(
+                fontSize: isMobile ? 28 : 40,
+              ),
+            ),
           ),
         ),
         SizedBox(height: AppSpacing.md),
@@ -1050,7 +1057,7 @@ class _GuestDateRangePickerDialogState
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ],
             ),
@@ -1111,8 +1118,7 @@ class _GuestDateRangePickerDialogState
             // 요일 헤더
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children:
-                  ['일', '월', '화', '수', '목', '금', '토'].asMap().entries.map(
+              children: ['일', '월', '화', '수', '목', '금', '토'].asMap().entries.map(
                 (entry) {
                   final index = entry.key;
                   final day = entry.value;
@@ -1125,8 +1131,8 @@ class _GuestDateRangePickerDialogState
                         color: index == 0
                             ? AppColors.error500
                             : index == 6
-                                ? AppColors.primary600
-                                : AppColors.textSecondary,
+                            ? AppColors.primary600
+                            : AppColors.textSecondary,
                       ),
                     ),
                   );
@@ -1176,7 +1182,7 @@ class _GuestDateRangePickerDialogState
                   Text(
                     '임대 기간',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1226,7 +1232,7 @@ class _GuestDateRangePickerDialogState
               Text(
                 '• 최소 $_minContractDays일부터 선택 가능합니다',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),

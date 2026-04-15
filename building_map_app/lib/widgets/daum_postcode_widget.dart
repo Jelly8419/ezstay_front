@@ -195,12 +195,9 @@ class _DaumPostcodeWidgetState extends State<DaumPostcodeWidget> {
               color: Colors.grey,
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               '웹에서는 주소 직접 입력',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTextStyles.headingLarge,
             ),
             const SizedBox(height: 16),
             Text(

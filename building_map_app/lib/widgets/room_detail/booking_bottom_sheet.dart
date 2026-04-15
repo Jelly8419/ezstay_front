@@ -126,7 +126,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                         Text(
                           ' /주',
                           style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ],
@@ -149,7 +149,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                               child: Text(
                                 '${widget.room.longTermWeeks}주 이상 계약 시 ${widget.room.longTermDiscount}% 할인',
                                 style: AppTextStyles.bodySmall.copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                             ),
@@ -182,7 +182,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                               child: Text(
                                 '${widget.room.quickMoveIn}일 이내 입주 시 ${PriceCalculator.formatKRW(widget.room.quickMoveInDiscount!)} 할인',
                                 style: AppTextStyles.bodySmall.copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                             ),
@@ -329,7 +329,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
             child: Text(
               '기본 5만원 + 10평 초과시 10평당 2만원',
               style: AppTextStyles.caption.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textPrimary,
                 fontSize: 11,
               ),
             ),
@@ -416,7 +416,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
           '옵션 상품은 계약 승인 후에도 구매할 수 있어요.',
           style: AppTextStyles.bodySmall.copyWith(
             fontSize: 14,
-            color: AppColors.textSecondary,
+            color: AppColors.textPrimary,
           ),
         ),
         SizedBox(height: AppSpacing.md),
@@ -516,7 +516,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                     TextSpan(
                       text: ' (${item.description})',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                 ],

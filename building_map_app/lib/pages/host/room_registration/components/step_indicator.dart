@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 
 /// 등록 진행 단계를 표시하는 인디케이터 (리액트 StepIndicator 복제)
 class StepIndicator extends StatelessWidget {
@@ -53,8 +54,7 @@ class StepIndicator extends StatelessWidget {
               // Title
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 20,
+                style: AppTextStyles.headingMedium.copyWith(
                   fontWeight: FontWeight.w800,
                   color: Colors.black,
                 ),

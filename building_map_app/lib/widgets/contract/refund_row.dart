@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 환불 내역 행 위젯
 ///
@@ -34,8 +35,7 @@ class RefundRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 13,
+                style: AppTextStyles.bodySmall.copyWith(
                   fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
                   color: isWarning
                       ? const Color(0xFFDC2626)
@@ -45,17 +45,15 @@ class RefundRow extends StatelessWidget {
               if (subLabel != null)
                 Text(
                   subLabel!,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF9CA3AF),
+                  style: AppTextStyles.caption.copyWith(
+                    color: const Color(0xFF9CA3AF),
                   ),
                 ),
             ],
           ),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 13,
+            style: AppTextStyles.bodySmall.copyWith(
               fontWeight: isBold ? FontWeight.w700 : FontWeight.normal,
               color: isHighlight
                   ? const Color(0xFF2563EB)

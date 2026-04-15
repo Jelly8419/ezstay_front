@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../services/verification_service.dart';
 
 /// Step 2: 이메일 인증 단계
@@ -207,30 +208,18 @@ class _EmailVerificationStepState extends State<EmailVerificationStep> {
         ),
         title: const Text(
           '인증 실패',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         content: Text(
           message,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
+          style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               '확인',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
             ),
           ),
         ],
@@ -254,30 +243,19 @@ class _EmailVerificationStepState extends State<EmailVerificationStep> {
           // 제목
           const Text(
             '이메일 인증',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: primaryBlack,
-            ),
+            style: AppTextStyles.displaySmall,
           ),
           const SizedBox(height: 8),
           Text(
             '${widget.email}로 발송된\n인증 코드를 입력해주세요',
-            style: const TextStyle(
-              fontSize: 16,
-              color: textGray,
-            ),
+            style: AppTextStyles.labelLarge,
           ),
           const SizedBox(height: 40),
 
           // 이메일 표시 (읽기 전용)
           const Text(
             '이메일 주소',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: textGray,
-            ),
+            style: AppTextStyles.labelMedium,
           ),
           const SizedBox(height: 8),
           SizedBox(
@@ -285,11 +263,7 @@ class _EmailVerificationStepState extends State<EmailVerificationStep> {
             child: TextFormField(
               controller: TextEditingController(text: widget.email),
               enabled: false,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: primaryBlack,
-              ),
+              style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFF5F5F5),
@@ -319,11 +293,7 @@ class _EmailVerificationStepState extends State<EmailVerificationStep> {
           // 인증 코드 입력
           const Text(
             '인증 코드',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: textGray,
-            ),
+            style: AppTextStyles.labelMedium,
           ),
           const SizedBox(height: 8),
           Row(
@@ -335,18 +305,10 @@ class _EmailVerificationStepState extends State<EmailVerificationStep> {
                     controller: _codeController,
                     keyboardType: TextInputType.number,
                     maxLength: 6,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: primaryBlack,
-                    ),
+                    style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                     decoration: InputDecoration(
                       hintText: '6자리 인증 코드',
-                      hintStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: hintGray,
-                      ),
+                      hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                       filled: true,
                       fillColor: backgroundWhite,
                       contentPadding: const EdgeInsets.symmetric(
@@ -426,10 +388,7 @@ class _EmailVerificationStepState extends State<EmailVerificationStep> {
                           _resendCountdown > 0
                               ? _formatTime(_resendCountdown)
                               : '재발송',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: AppTextStyles.labelMedium,
                         ),
                 ),
               ),
@@ -456,10 +415,7 @@ class _EmailVerificationStepState extends State<EmailVerificationStep> {
                     ),
                     child: const Text(
                       '이전',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: AppTextStyles.labelLarge,
                     ),
                   ),
                 ),
@@ -494,10 +450,7 @@ class _EmailVerificationStepState extends State<EmailVerificationStep> {
                           )
                         : const Text(
                             '인증하기',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: AppTextStyles.labelLarge,
                           ),
                   ),
                 ),

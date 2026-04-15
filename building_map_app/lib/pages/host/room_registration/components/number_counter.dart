@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 
 /// 숫자 증감 컴포넌트 (리액트 NumberCounter 복제)
 class NumberCounter extends StatelessWidget {
@@ -26,11 +27,7 @@ class NumberCounter extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
+            style: AppTextStyles.labelMedium.copyWith(color: Colors.black),
           ),
         ),
         // Counter controls
@@ -61,8 +58,7 @@ class NumberCounter extends StatelessWidget {
                 ),
                 child: Text(
                   value.toString(),
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: AppTextStyles.labelLarge.copyWith(
                     fontWeight: FontWeight.w600,
                     color: Colors.black,
                   ),

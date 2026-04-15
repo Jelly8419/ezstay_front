@@ -387,7 +387,6 @@ class _HostMyPageState extends State<HostMyPage> {
           },
         ),
         titleTextStyle: AppTextStyles.headingMedium.copyWith(
-          fontSize: 20,
           fontWeight: FontWeight.w800,
           color: AppColors.textPrimary,
         ),
@@ -474,8 +473,6 @@ class _HostMyPageState extends State<HostMyPage> {
     return Text(
       '내 정보',
       style: AppTextStyles.headingLarge.copyWith(
-        fontSize: 24, // text-2xl
-        fontWeight: FontWeight.bold,
         color: AppColors.gray900,
       ),
     );
@@ -498,8 +495,7 @@ class _HostMyPageState extends State<HostMyPage> {
           // React: <h3 className="font-bold text-lg mb-4">프로필 정보</h3>
           Text(
             '프로필 정보',
-            style: AppTextStyles.headingMedium.copyWith(
-              fontSize: 18, // text-lg
+            style: AppTextStyles.headingSmall.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -577,8 +573,7 @@ class _HostMyPageState extends State<HostMyPage> {
           // React: <h3 className="font-bold text-lg mb-6">정산 정보</h3>
           Text(
             '정산 정보',
-            style: AppTextStyles.headingMedium.copyWith(
-              fontSize: 18, // text-lg
+            style: AppTextStyles.headingSmall.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -678,7 +673,7 @@ class _HostMyPageState extends State<HostMyPage> {
         child: Text(
           '회원 탈퇴',
           style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
+            color: AppColors.textPrimary,
             decoration: TextDecoration.underline, // underline
           ),
         ),

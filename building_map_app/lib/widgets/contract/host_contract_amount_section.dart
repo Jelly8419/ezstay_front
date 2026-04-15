@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/contract.dart';
 import '../../models/contract_detail.dart';
 import '../../utils/format_utils.dart';
@@ -29,9 +30,7 @@ class HostContractAmountSection extends StatelessWidget {
         children: [
           Text(
             '계약 금액',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+            style: AppTextStyles.headingSmall.copyWith(
               color: AppColors.gray900,
             ),
           ),
@@ -88,8 +87,8 @@ class HostContractAmountSection extends StatelessWidget {
           amount: subtotal,
           topBorderWidth: 1,
           topBorderColor: AppColors.gray200,
-          labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
-          valueStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
+          labelStyle: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w700, color: AppColors.gray900),
+          valueStyle: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w700, color: AppColors.gray900),
         ),
 
         const SizedBox(height: 12),
@@ -106,8 +105,8 @@ class HostContractAmountSection extends StatelessWidget {
           amount: s.hostEarnings,
           topBorderWidth: 2,
           topBorderColor: AppColors.gray300,
-          labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.blue600),
-          valueStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.blue600),
+          labelStyle: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w700, color: AppColors.blue600),
+          valueStyle: AppTextStyles.headingSmall.copyWith(fontWeight: FontWeight.w700, color: AppColors.blue600),
         ),
 
         if (contract.deposit > 0) ...[
@@ -121,12 +120,12 @@ class HostContractAmountSection extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Text('💡', style: TextStyle(fontSize: 14)),
+                Text('💡', style: AppTextStyles.bodyMedium),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     '보증금 ₩${FormatUtils.formatCurrency(contract.deposit)}은 임차인 퇴실 후 별도로 환급됩니다.',
-                    style: TextStyle(fontSize: 13, color: AppColors.blue900, height: 1.4),
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.blue900, height: 1.4),
                   ),
                 ),
               ],
@@ -167,16 +166,16 @@ class HostContractAmountSection extends StatelessWidget {
           amount: contract.deposit,
           topBorderWidth: 1,
           topBorderColor: AppColors.gray200,
-          labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
-          valueStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
+          labelStyle: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w700, color: AppColors.gray900),
+          valueStyle: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w700, color: AppColors.gray900),
         ),
         _dividerRow(
           label: '총 계약 금액',
           amount: totalContractAmount,
           topBorderWidth: 2,
           topBorderColor: AppColors.gray300,
-          labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
-          valueStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.gray900),
+          labelStyle: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w700, color: AppColors.gray900),
+          valueStyle: AppTextStyles.headingSmall.copyWith(fontWeight: FontWeight.w700, color: AppColors.gray900),
         ),
       ],
     );
@@ -185,7 +184,7 @@ class HostContractAmountSection extends StatelessWidget {
   Widget _sectionLabel(String text) {
     return Text(
       text,
-      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.gray900),
+      style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w700, color: AppColors.gray900),
     );
   }
 
@@ -199,17 +198,16 @@ class HostContractAmountSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(label, style: TextStyle(fontSize: 14, color: AppColors.neutral700)),
+            Text(label, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral700)),
             if (subLabel != null) ...[
               const SizedBox(width: 4),
-              Text(subLabel, style: TextStyle(fontSize: 12, color: AppColors.neutral500)),
+              Text(subLabel, style: AppTextStyles.caption.copyWith(color: AppColors.neutral500)),
             ],
           ],
         ),
         Text(
           '$prefix₩${FormatUtils.formatCurrency(displayAmount)}',
-          style: TextStyle(
-            fontSize: 14,
+          style: AppTextStyles.labelMedium.copyWith(
             fontWeight: FontWeight.w700,
             color: valueColor ?? AppColors.gray900,
           ),
@@ -224,7 +222,7 @@ class HostContractAmountSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('청소비', style: TextStyle(fontSize: 14, color: AppColors.neutral700)),
+            Text('청소비', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral700)),
             if (isEzCleaning) ...[
               const SizedBox(width: 6),
               Container(
@@ -233,15 +231,15 @@ class HostContractAmountSection extends StatelessWidget {
                   color: AppColors.blue600,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text(
+                child: Text(
                   'EZ서비스',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                  style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w700, color: Colors.white),
                 ),
               ),
               const SizedBox(width: 6),
               Text(
                 '(정산 제외)',
-                style: TextStyle(fontSize: 12, color: AppColors.neutral500),
+                style: AppTextStyles.caption.copyWith(color: AppColors.neutral500),
               ),
             ],
           ],
@@ -250,8 +248,7 @@ class HostContractAmountSection extends StatelessWidget {
           isEzCleaning
               ? '(₩${FormatUtils.formatCurrency(displayAmount)})'
               : '₩${FormatUtils.formatCurrency(displayAmount)}',
-          style: TextStyle(
-            fontSize: 14,
+          style: AppTextStyles.labelMedium.copyWith(
             fontWeight: FontWeight.w700,
             color: isEzCleaning ? AppColors.neutral500 : AppColors.gray900,
           ),

@@ -2,6 +2,7 @@ import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/notice.dart';
 import '../../services/support_service.dart';
 import '../../widgets/common/app_footer.dart';
@@ -114,11 +115,9 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Text(
+                  Text(
                     '공지사항',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.headingSmall.copyWith(
                       color: AppColors.gray900,
                     ),
                   ),
@@ -190,10 +189,9 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
                         color: const Color(0xFF3B82F6),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Text(
+                      child: Text(
                         '중요',
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.neutral0,
                         ),
                       ),
@@ -203,9 +201,7 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
                   // Title
                   Text(
                     _notice!.title,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.headingMedium.copyWith(
                       color: AppColors.gray900,
                     ),
                   ),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import '../../config/api_config.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../services/kmc_service.dart';
 import '../../services/verification_service.dart';
 import '../../utils/password_validator.dart';
@@ -217,15 +218,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           '비밀번호 변경 완료',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.success600,
-          ),
+          style: AppTextStyles.headingSmall.copyWith(color: AppColors.success600),
         ),
-        content: const Text(
+        content: Text(
           '비밀번호가 성공적으로 변경되었습니다.\n새 비밀번호로 로그인해주세요.',
-          style: TextStyle(fontSize: 14, color: _textGray),
+          style: AppTextStyles.bodyMedium.copyWith(color: _textGray),
         ),
         actions: [
           TextButton(
@@ -235,11 +232,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             },
             child: Text(
               '로그인하기',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
             ),
           ),
         ],
@@ -255,26 +248,18 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text(
           '오류',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         content: Text(
           message,
-          style: const TextStyle(fontSize: 14, color: _textGray),
+          style: AppTextStyles.bodyMedium.copyWith(color: _textGray),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               '확인',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
             ),
           ),
         ],
@@ -308,11 +293,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         ),
         title: const Text(
           '비밀번호 찾기',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         centerTitle: true,
       ),
@@ -350,22 +331,18 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       children: [
         const Text(
           '가입한 이메일을\n입력해주세요',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.displaySmall,
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           '소셜 계정(카카오)으로 가입한 경우 이용할 수 없습니다',
-          style: TextStyle(fontSize: 15, color: _textGray),
+          style: AppTextStyles.bodyLarge.copyWith(color: _textGray),
         ),
         const SizedBox(height: 40),
 
-        const Text(
+        Text(
           '이메일 주소',
-          style: TextStyle(fontSize: 14, color: _textGray),
+          style: AppTextStyles.bodyMedium.copyWith(color: _textGray),
         ),
         const SizedBox(height: 8),
 
@@ -375,7 +352,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             autofocus: true,
-            style: const TextStyle(fontSize: 16, color: _primaryBlack),
+            style: AppTextStyles.labelLarge.copyWith(color: _primaryBlack),
             decoration: _inputDecoration('email@example.com'),
           ),
         ),
@@ -396,16 +373,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       children: [
         const Text(
           '본인인증을\n진행해주세요',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.displaySmall,
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           '가입 시 등록한 휴대폰으로 본인인증을 완료해주세요',
-          style: TextStyle(fontSize: 15, color: _textGray),
+          style: AppTextStyles.bodyLarge.copyWith(color: _textGray),
         ),
         const SizedBox(height: 48),
 
@@ -423,7 +396,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               const SizedBox(width: 8),
               Text(
                 _emailController.text.trim(),
-                style: const TextStyle(fontSize: 15, color: _primaryBlack),
+                style: AppTextStyles.bodyLarge.copyWith(color: _primaryBlack),
               ),
             ],
           ),
@@ -438,27 +411,26 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: _borderGray),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: Color(0xFF666666)),
-                  SizedBox(width: 6),
+                  const Icon(Icons.info_outline, size: 16, color: Color(0xFF666666)),
+                  const SizedBox(width: 6),
                   Text(
                     '본인인증 안내',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF444444),
+                      color: const Color(0xFF444444),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 '• 휴대폰 본인인증이 진행됩니다\n• 이메일과 본인인증 정보가 일치해야 합니다',
-                style: TextStyle(fontSize: 13, color: _textGray, height: 1.6),
+                style: AppTextStyles.bodySmall.copyWith(color: _textGray, height: 1.6),
               ),
             ],
           ),
@@ -480,7 +452,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 side: const BorderSide(color: Color(0xFFCCCCCC)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('[Dev] 테스트 인증', style: TextStyle(fontSize: 14)),
+              child: const Text('[Dev] 테스트 인증', style: AppTextStyles.bodyMedium),
             ),
           ),
         ],
@@ -497,22 +469,18 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         children: [
           const Text(
             '새 비밀번호를\n입력해주세요',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: _primaryBlack,
-            ),
+            style: AppTextStyles.displaySmall,
           ),
           const SizedBox(height: 8),
           Text(
             PasswordValidator.policyDescription,
-            style: const TextStyle(fontSize: 15, color: _textGray),
+            style: AppTextStyles.bodyLarge.copyWith(color: _textGray),
           ),
           const SizedBox(height: 40),
 
-          const Text(
+          Text(
             '새 비밀번호',
-            style: TextStyle(fontSize: 14, color: _textGray),
+            style: AppTextStyles.bodyMedium.copyWith(color: _textGray),
           ),
           const SizedBox(height: 8),
 
@@ -522,7 +490,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               controller: _passwordController,
               obscureText: _obscurePassword,
               autofocus: true,
-              style: const TextStyle(fontSize: 16, color: _primaryBlack),
+              style: AppTextStyles.labelLarge.copyWith(color: _primaryBlack),
               decoration: _inputDecoration(PasswordValidator.hintText).copyWith(
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -541,9 +509,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           ),
           const SizedBox(height: 20),
 
-          const Text(
+          Text(
             '새 비밀번호 확인',
-            style: TextStyle(fontSize: 14, color: _textGray),
+            style: AppTextStyles.bodyMedium.copyWith(color: _textGray),
           ),
           const SizedBox(height: 8),
 
@@ -552,7 +520,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             child: TextFormField(
               controller: _confirmPasswordController,
               obscureText: _obscureConfirmPassword,
-              style: const TextStyle(fontSize: 16, color: _primaryBlack),
+              style: AppTextStyles.labelLarge.copyWith(color: _primaryBlack),
               decoration:
                   _inputDecoration('비밀번호를 다시 입력해 주세요.').copyWith(
                 suffixIcon: IconButton(
@@ -587,7 +555,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   InputDecoration _inputDecoration(String hintText) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(fontSize: 16, color: _hintGray),
+      hintStyle: AppTextStyles.labelLarge.copyWith(color: _hintGray),
       filled: true,
       fillColor: _backgroundWhite,
       contentPadding:
@@ -640,10 +608,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               )
             : Text(
                 text,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTextStyles.labelLarge,
               ),
       ),
     );

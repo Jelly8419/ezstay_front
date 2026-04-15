@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 토스트 메시지 타입
 enum ToastType {
@@ -191,10 +192,8 @@ class _ToastWidgetState extends State<_ToastWidget>
                     Flexible(
                       child: Text(
                         widget.message,
-                        style: const TextStyle(
+                        style: AppTextStyles.labelLarge.copyWith(
                           color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
                           height: 1.4,
                         ),
                       ),

@@ -1,3 +1,4 @@
+import '../../core/theme/app_colors.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../kakao_map_web.dart';
@@ -65,7 +66,7 @@ class KakaoMapSection extends StatelessWidget {
       return Center(
         child: Text(
           '모바일 지도는 준비 중입니다.',
-          style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[600]),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
         ),
       );
     }

@@ -2,6 +2,7 @@ import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/notice.dart';
 import '../../services/support_service.dart';
 import '../../widgets/common/app_footer.dart';
@@ -115,11 +116,9 @@ class _NoticesPageState extends State<NoticesPage> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Text(
+                  Text(
                     '공지사항',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.headingSmall.copyWith(
                       color: AppColors.gray900,
                     ),
                   ),
@@ -249,21 +248,18 @@ class _NoticesPageState extends State<NoticesPage> {
                                           borderRadius:
                                               BorderRadius.circular(4), // rounded
                                         ),
-                                        child: const Text(
+                                        child: Text(
                                           '공지',
-                                          style: TextStyle(
-                                            fontSize: 12, // text-xs
-                                            fontWeight: FontWeight.w700, // font-bold
-                                            color: Color(
-                                                0xFF1D4ED8), // text-blue-700 (#1D4ED8)
+                                          style: AppTextStyles.caption.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF1D4ED8),
                                           ),
                                         ),
                                       ),
                                     Text(
                                       notice.formattedDate,
-                                      style: const TextStyle(
-                                        fontSize: 14, // text-sm
-                                        color: AppColors.neutral500, // text-gray-500
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.neutral500,
                                       ),
                                     ),
                                   ],

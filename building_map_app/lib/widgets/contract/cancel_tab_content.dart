@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../constants/notice_texts.dart';
 import '../../core/exceptions.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../services/rental_order_service.dart';
 import '../../utils/format_utils.dart';
 import '../../utils/price_calculator.dart';
@@ -131,7 +132,7 @@ class _CancelTabContentState extends State<CancelTabContent> {
                 ),
                 child: Text(
                   NoticeTexts.optionRefundBeforeDelivery,
-                  style: TextStyle(fontSize: 12, color: AppColors.blue700),
+                  style: AppTextStyles.caption.copyWith(color: AppColors.blue700),
                 ),
               ),
             ],
@@ -211,7 +212,7 @@ class _CancelTabContentState extends State<CancelTabContent> {
               ),
               child: Text(
                 PriceCalculator.rentalCancelRemainingErrorMessage(),
-                style: TextStyle(fontSize: 12, color: AppColors.error700),
+                style: AppTextStyles.caption.copyWith(color: AppColors.error700),
               ),
             ),
           ],
@@ -224,14 +225,12 @@ class _CancelTabContentState extends State<CancelTabContent> {
                   children: [
                     Text(
                       '$selectedCount개 품목 선택됨',
-                      style: TextStyle(
-                          fontSize: 13, color: AppColors.neutral600),
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.neutral600),
                     ),
                     if (_hasAnySelected)
                       Text(
                         '환불 예정: ${FormatUtils.formatCurrency(totalAmount)}원',
-                        style: const TextStyle(
-                            fontSize: 13,
+                        style: AppTextStyles.bodySmall.copyWith(
                             fontWeight: FontWeight.w600,
                             color: AppColors.blue600),
                       ),
@@ -344,7 +343,7 @@ class _CancelTabContentState extends State<CancelTabContent> {
             Text(
               msg,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppColors.neutral500),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral500),
             ),
           ],
         ),

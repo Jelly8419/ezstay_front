@@ -10,6 +10,7 @@ import '../../services/auth_service.dart';
 import '../../services/token_service.dart';
 import '../../config/api_config.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import 'steps/email_password_step.dart';
 import 'steps/phone_verification_step.dart';
 import 'steps/host_account_step.dart';
@@ -603,7 +604,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
           ),
           title: Text(
             widget.mode == UserMode.guest ? '임차인 가입' : '임대인 가입',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: primaryBlack),
+            style: AppTextStyles.headingSmall.copyWith(color: primaryBlack),
           ),
           centerTitle: true,
         ),
@@ -675,7 +676,7 @@ class _RegisterFlowPageState extends State<RegisterFlowPage> {
         const SizedBox(height: 12),
         Text(
           'Step ${currentStep + 1} / $totalSteps',
-          style: TextStyle(fontSize: 14, color: AppColors.primary600, fontWeight: FontWeight.w500),
+          style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
         ),
       ],
     );

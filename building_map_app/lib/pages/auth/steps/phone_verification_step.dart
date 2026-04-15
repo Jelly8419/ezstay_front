@@ -244,16 +244,16 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text(
           '오류',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: primaryBlack),
+          style: AppTextStyles.headingSmall,
         ),
         content: Text(
           message,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: textGray),
+          style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('확인', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.primary600)),
+            child: Text('확인', style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600)),
           ),
         ],
       ),
@@ -269,11 +269,11 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text(
           '가입 불가',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: primaryBlack),
+          style: AppTextStyles.headingSmall,
         ),
         content: const Text(
           '만 19세 미만은 가입할 수 없습니다.',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: textGray),
+          style: AppTextStyles.labelMedium,
         ),
         actions: [
           TextButton(
@@ -281,7 +281,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
               Navigator.pop(context);
               context.go('/login');
             },
-            child: Text('확인', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.primary600)),
+            child: Text('확인', style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600)),
           ),
         ],
       ),
@@ -308,8 +308,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: primaryBlack)),
+          child: Text(label, style: AppTextStyles.labelMedium.copyWith(color: primaryBlack)),
         ),
         _ViewButton(onTap: onViewTap),
       ],
@@ -326,12 +325,12 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
           // 제목
           const Text(
             '본인인증',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: primaryBlack),
+            style: AppTextStyles.displaySmall,
           ),
           const SizedBox(height: 8),
           Text(
             '안전한 서비스 이용을 위해 본인인증이 필요합니다',
-            style: AppTextStyles.bodyLarge.copyWith(color: textGray),
+            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
           ),
           const SizedBox(height: 40),
 
@@ -354,7 +353,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                     : const Icon(Icons.verified_user_outlined, size: 20),
                 label: Text(
                   _isVerifying ? '인증 진행 중...' : '본인인증하기',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: AppTextStyles.labelLarge,
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary600,
@@ -377,13 +376,13 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                     side: const BorderSide(color: Color(0xFFCCCCCC)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text('[Dev] 테스트 인증', style: TextStyle(fontSize: 14)),
+                  child: const Text('[Dev] 테스트 인증', style: AppTextStyles.bodyMedium),
                 ),
               ),
             ],
           ] else ...[
             // 인증 완료 후 실명 표시
-            const Text('실명', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: textGray)),
+            const Text('실명', style: AppTextStyles.labelMedium),
             const SizedBox(height: 8),
             Container(
               height: 52,
@@ -398,7 +397,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                   Expanded(
                     child: Text(
                       _nameController.text,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: primaryBlack),
+                      style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                     ),
                   ),
                   Icon(Icons.check_circle, color: AppColors.success500, size: 20),
@@ -408,7 +407,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
             const SizedBox(height: 16),
 
             // 휴대폰 번호 표시
-            const Text('휴대폰 번호', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: textGray)),
+            const Text('휴대폰 번호', style: AppTextStyles.labelMedium),
             const SizedBox(height: 8),
             Container(
               height: 52,
@@ -423,7 +422,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                   Expanded(
                     child: Text(
                       _phoneController.text,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: primaryBlack),
+                      style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                     ),
                   ),
                   Icon(Icons.check_circle, color: AppColors.success500, size: 20),
@@ -446,7 +445,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                   const SizedBox(width: 6),
                   Text(
                     '본인인증 완료',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.success600),
+                    style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600, color: AppColors.success600),
                   ),
                 ],
               ),
@@ -469,7 +468,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                   children: [
                     Icon(Icons.info_outline, size: 16, color: AppColors.primary600),
                     const SizedBox(width: 8),
-                    Text('본인인증 안내', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.primary600)),
+                    Text('본인인증 안내', style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -477,7 +476,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                   '• 본인인증을 통해 실명이 자동으로 입력됩니다\n'
                   '• 입력하신 정보는 안전하게 보호됩니다\n'
                   '• 만 19세 이상만 가입 가능합니다',
-                  style: AppTextStyles.bodySmall.copyWith(color: textGray, height: 1.5),
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary, height: 1.5),
                 ),
               ],
             ),
@@ -488,7 +487,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
           if (widget.showTerms) ...[
             const Text(
               '약관 동의',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: primaryBlack),
+              style: AppTextStyles.headingSmall,
             ),
             const SizedBox(height: 16),
 
@@ -523,7 +522,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Text('전체 동의', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: primaryBlack)),
+                  Text('전체 동의', style: AppTextStyles.labelLarge.copyWith(color: primaryBlack)),
                 ],
               ),
             ),
@@ -547,9 +546,9 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text('[필수] 만 19세 이상입니다.',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: primaryBlack)),
+                        style: AppTextStyles.labelMedium.copyWith(color: primaryBlack)),
                   ),
                 ],
               ),
@@ -599,7 +598,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
               ),
               child: Text(
                 widget.nextButtonLabel,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: AppTextStyles.labelLarge,
               ),
             ),
           ),
@@ -626,7 +625,7 @@ class _PhoneVerificationStepState extends State<PhoneVerificationStep> {
                 ),
                 child: Text(
                   '비회원으로 이용하기',
-                  style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w500),
+                  style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -659,8 +658,7 @@ class _ViewButtonState extends State<_ViewButton> {
         child: RichText(
           text: TextSpan(
             text: '보기',
-            style: TextStyle(
-              fontSize: 13,
+            style: AppTextStyles.bodySmall.copyWith(
               color: _hovered ? const Color(0xFF1565C0) : const Color(0xFF808080),
               decoration: TextDecoration.underline,
               decorationColor: _hovered ? const Color(0xFF1565C0) : const Color(0xFF808080),

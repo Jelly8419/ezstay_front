@@ -741,7 +741,7 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
                               SizedBox(height: 2.0),
                               Text(
                                 propertyAddress,
-                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
                               ),
                             ],
                           ),
@@ -880,7 +880,7 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
                                       child: Text(
                                         day,
                                         style: AppTextStyles.bodySmall.copyWith(
-                                          color: AppColors.textSecondary,
+                                          color: AppColors.textPrimary,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 14, // ✅ 14px (React text-sm)
                                         ),
@@ -1132,11 +1132,11 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: hasBorder ? Border.all(color: Colors.grey[300]!, width: 2) : null,
+            border: hasBorder ? Border.all(color: AppColors.textPrimary, width: 2) : null,
           ),
         ),
         SizedBox(width: AppSpacing.xs),
-        Text(label, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+        Text(label, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary)),
       ],
     );
   }
@@ -1156,7 +1156,7 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
           Text('계약된 기간', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
           SizedBox(height: AppSpacing.md),
           if (contracts.isEmpty)
-            Text('계약된 기간이 없습니다', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary))
+            Text('계약된 기간이 없습니다', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary))
           else
             ...contracts.map((contract) {
               return Container(
@@ -1215,15 +1215,15 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
           Text('계약 불가 기간', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
           SizedBox(height: AppSpacing.md),
           if (blockedPeriods.isEmpty)
-            Text('계약 불가 기간이 없습니다', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary))
+            Text('계약 불가 기간이 없습니다', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary))
           else
             ...blockedPeriods.map((blocked) {
               return Container(
                 margin: EdgeInsets.only(bottom: AppSpacing.sm),
                 padding: EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  border: Border.all(color: Colors.grey[300]!),
+                  color: AppColors.textPrimary,
+                  border: Border.all(color: AppColors.textPrimary),
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
@@ -1232,7 +1232,7 @@ class _RoomSchedulePageState extends State<RoomSchedulePage> {
                     Expanded(
                       child: Text(
                         '${_formatDate(blocked.startDate)} ~ ${_formatDate(blocked.endDate)}',
-                        style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[700]),
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
                       ),
                     ),
                     TextButton(

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../constants/notice_texts.dart';
 import '../../core/exceptions.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../services/rental_order_service.dart';
 import 'guest_contract_dialogs.dart';
 import 'order_item_rows.dart';
@@ -112,17 +113,15 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
             children: [
               ...orders.map((order) => _buildReturnOrderCard(order)),
               const SizedBox(height: 8),
-              const Text('반품 사유',
-                  style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600)),
+              Text('반품 사유',
+                  style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               TextField(
                 controller: _reasonCtrl,
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: '반품 사유를 입력해 주세요.',
-                  hintStyle:
-                      TextStyle(fontSize: 13, color: AppColors.neutral400),
+                  hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.neutral400),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: AppColors.neutral300),
@@ -144,26 +143,22 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
                   children: [
                     Text(
                       '• ${NoticeTexts.optionRefundWithin7Days}',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.warning700),
+                      style: AppTextStyles.caption.copyWith(color: AppColors.warning700),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '• ${NoticeTexts.optionRefundRestrictions}',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.warning700),
+                      style: AppTextStyles.caption.copyWith(color: AppColors.warning700),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '• ${NoticeTexts.optionReturnShippingFeeNotice}',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.warning700),
+                      style: AppTextStyles.caption.copyWith(color: AppColors.warning700),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '• ${NoticeTexts.optionReturnRequestAdminConfirm}',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.warning700),
+                      style: AppTextStyles.caption.copyWith(color: AppColors.warning700),
                     ),
                   ],
                 ),
@@ -235,7 +230,7 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
         children: [
           Text(
             '$selectedCount개 품목 선택됨',
-            style: TextStyle(fontSize: 13, color: AppColors.neutral600),
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.neutral600),
           ),
           const Spacer(),
           OutlinedButton(
@@ -244,7 +239,7 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
               side: BorderSide(color: AppColors.neutral300),
             ),
             child: Text('닫기',
-                style: TextStyle(color: AppColors.neutral600)),
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral600)),
           ),
           const SizedBox(width: 8),
           ElevatedButton(
@@ -262,8 +257,8 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white),
                   )
-                : const Text('반품 신청',
-                    style: TextStyle(color: Colors.white)),
+                : Text('반품 신청',
+                    style: AppTextStyles.bodyMedium.copyWith(color: Colors.white)),
           ),
         ],
       ),
@@ -286,8 +281,8 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
               onPressed: () => Navigator.pop(ctx),
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.warning600),
-              child: const Text('확인',
-                  style: TextStyle(color: Colors.white)),
+              child: Text('확인',
+                  style: AppTextStyles.bodyMedium.copyWith(color: Colors.white)),
             ),
           ],
         ),
@@ -312,15 +307,15 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
                 side: BorderSide(color: AppColors.neutral300),
               ),
               child: Text('취소',
-                  style: TextStyle(color: AppColors.neutral600)),
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral600)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.warning600,
               ),
-              child: const Text('반품 신청',
-                  style: TextStyle(color: Colors.white)),
+              child: Text('반품 신청',
+                  style: AppTextStyles.bodyMedium.copyWith(color: Colors.white)),
             ),
           ],
         ),
@@ -354,8 +349,8 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
               onPressed: () => Navigator.pop(ctx),
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.warning600),
-              child: const Text('확인',
-                  style: TextStyle(color: Colors.white)),
+              child: Text('확인',
+                  style: AppTextStyles.bodyMedium.copyWith(color: Colors.white)),
             ),
           ],
         ),
@@ -381,7 +376,7 @@ class _ReturnTabContentState extends State<ReturnTabContent> {
             Text(
               msg,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppColors.neutral500),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral500),
             ),
           ],
         ),

@@ -1,3 +1,4 @@
+import '../../core/theme/app_colors.dart';
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui_web' as ui_web;
@@ -228,7 +229,7 @@ class _KakaoRoadviewWebState extends State<KakaoRoadviewWeb> {
   Widget build(BuildContext context) {
     if (!_isRoadviewAvailable) {
       return Container(
-        color: Colors.grey[200],
+        color: AppColors.textPrimary,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

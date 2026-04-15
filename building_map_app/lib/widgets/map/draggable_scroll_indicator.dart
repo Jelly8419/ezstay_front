@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 모바일 카드 슬라이드 인디케이터 (드래그/탭으로 페이지 이동)
 class DraggableScrollIndicator extends StatelessWidget {
@@ -91,10 +92,8 @@ class DraggableScrollIndicator extends StatelessWidget {
                       child: Center(
                         child: Text(
                           '${currentIndex + 1}/$totalItems',
-                          style: const TextStyle(
+                          style: AppTextStyles.labelSmall.copyWith(
                             color: AppColors.neutral0,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),

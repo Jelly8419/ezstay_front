@@ -1,3 +1,5 @@
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -169,12 +171,9 @@ class ErrorHandlerService {
                 size: 28,
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 '오류',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AppTextStyles.headingMedium,
               ),
             ],
           ),
@@ -184,18 +183,14 @@ class ErrorHandlerService {
             children: [
               Text(
                 message,
-                style: const TextStyle(
-                  fontSize: 16,
-                  height: 1.5,
-                ),
+                style: AppTextStyles.bodyLarge.copyWith(height: 1.5),
               ),
               if (statusCode != null) ...[
                 const SizedBox(height: 12),
                 Text(
                   '오류 코드: $statusCode',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -210,12 +205,9 @@ class ErrorHandlerService {
                   _context!.go('/login');
                 }
               },
-              child: const Text(
+              child: Text(
                 '확인',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppTextStyles.labelLarge,
               ),
             ),
           ],

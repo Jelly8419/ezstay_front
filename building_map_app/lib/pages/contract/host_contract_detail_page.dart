@@ -396,8 +396,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
             padding: const EdgeInsets.only(bottom: 16),
             child: Text(
               '계약 상세 정보',
-              style: AppTextStyles.headingLarge.copyWith(
-                fontSize: 20,
+              style: AppTextStyles.headingMedium.copyWith(
                 fontWeight: FontWeight.w700,
                 color: AppColors.gray900,
               ),
@@ -449,9 +448,7 @@ class _HostContractDetailPageState extends State<HostContractDetailPage> {
               children: [
                 Text(
                   '계약 안내사항',
-                  style: AppTextStyles.headingMedium.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                  style: AppTextStyles.headingSmall.copyWith(
                     color: AppColors.gray900,
                   ),
                 ),

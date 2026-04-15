@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../providers/gnb_provider.dart';
 import '../../services/auth_service.dart';
 import '../../models/user.dart';
@@ -142,9 +143,8 @@ class MobileBottomNav extends StatelessWidget {
             const SizedBox(height: 2), // gap-0.5 = 2px
             Text(
               label,
-              style: TextStyle(
-                fontSize: 12, // text-xs = 12px
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              style: AppTextStyles.bodySmall.copyWith(
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                 color: color,
               ),
             ),
@@ -185,9 +185,8 @@ class MobileBottomNav extends StatelessWidget {
                 const SizedBox(height: 2), // gap-0.5 = 2px
                 Text(
                   '채팅',
-                  style: TextStyle(
-                    fontSize: 12, // text-xs = 12px
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                     color: color,
                   ),
                 ),
@@ -206,12 +205,10 @@ class MobileBottomNav extends StatelessWidget {
                     shape: BoxShape.circle, // rounded-full
                   ),
                   alignment: Alignment.center,
-                  child: const Text(
+                  child: Text(
                     'N',
-                    style: TextStyle(
-                      color: Colors.white, // text-white
-                      fontSize: 12, // text-xs = 12px
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: Colors.white,
                     ),
                   ),
                 ),

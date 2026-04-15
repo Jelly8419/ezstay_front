@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../utils/format_utils.dart';
 
 /// 호스트 퇴실 확인 다이얼로그 (도어락 경고 포함)
@@ -24,9 +25,7 @@ class HostCheckoutConfirmDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       title: const Text('퇴실 확인'),
-      titleTextStyle: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
+      titleTextStyle: AppTextStyles.headingSmall.copyWith(
         color: Colors.black,
       ),
       content: Column(
@@ -74,8 +73,7 @@ class HostCheckoutConfirmDialog extends StatelessWidget {
                           ),
                       ],
                     ),
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.warning700,
                       height: 1.5,
                     ),
@@ -89,7 +87,7 @@ class HostCheckoutConfirmDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('취소', style: TextStyle(color: Colors.grey)),
+          child: Text('취소', style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey)),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),

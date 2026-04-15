@@ -283,19 +283,16 @@ class _PhotosStepState extends State<PhotosStep> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       '방 사진',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: AppTextStyles.labelLarge.copyWith(
                         fontWeight: FontWeight.w700,
                         color: Colors.black,
                       ),
                     ),
                     Text(
                       '${_uploadedImages.length} / 20${_uploadedImages.length < 5 ? ' (최소 5장)' : ''}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                      style: AppTextStyles.labelMedium.copyWith(
                         color: _uploadedImages.length >= 5
                             ? AppColors.success600
                             : AppColors.error600,
@@ -320,21 +317,20 @@ class _PhotosStepState extends State<PhotosStep> {
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.upload,
                               size: 32,
-                              color: AppColors.textSecondary,
+                              color: AppColors.textPrimary,
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
                               '사진을 업로드하세요 (최소 5장, 최대 20장)',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textSecondary,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ],
@@ -376,11 +372,10 @@ class _PhotosStepState extends State<PhotosStep> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '방에 제공되는 기본 옵션을 선택해주세요',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -408,11 +403,9 @@ class _PhotosStepState extends State<PhotosStep> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '침대 크기 선택',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.labelMedium.copyWith(
                       color: Colors.black,
                     ),
                   ),
@@ -458,9 +451,7 @@ class _PhotosStepState extends State<PhotosStep> {
                           children: [
                             Text(
                               bed.size,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                              style: AppTextStyles.labelMedium.copyWith(
                                 color: Colors.black,
                               ),
                             ),
@@ -490,8 +481,7 @@ class _PhotosStepState extends State<PhotosStep> {
                                   child: Text(
                                     '${bed.count}',
                                     textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontSize: 16,
+                                    style: AppTextStyles.labelLarge.copyWith(
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -556,9 +546,8 @@ class _PhotosStepState extends State<PhotosStep> {
                         _updateFormData('wifiPassword', value),
                     decoration: InputDecoration(
                       hintText: 'Wi-Fi 비밀번호를 입력해주세요',
-                      hintStyle: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                      hintStyle: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
                       ),
                       filled: true,
                       fillColor: Colors.white,
@@ -584,11 +573,10 @@ class _PhotosStepState extends State<PhotosStep> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     '* 지금 입력하지 않아도 괜찮아요.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -603,11 +591,10 @@ class _PhotosStepState extends State<PhotosStep> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '추가로 제공되는 편의옵션을 선택해주세요',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 12),

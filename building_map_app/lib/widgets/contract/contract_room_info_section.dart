@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/contract.dart';
 import '../../utils/contract_utils.dart';
 import '../../utils/format_utils.dart';
@@ -99,10 +100,8 @@ class _ContractInfoColumn extends StatelessWidget {
       children: [
         Text(
           contract.roomName,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827),
+          style: AppTextStyles.headingMedium.copyWith(
+            color: const Color(0xFF111827),
           ),
         ),
         SizedBox(height: isMobile ? 12 : 8),
@@ -119,10 +118,8 @@ class _ContractInfoColumn extends StatelessWidget {
           label: '결제 금액',
           value: '₩${FormatUtils.formatCurrency(contract.finalTotalAmount)}',
           isMobile: isMobile,
-          valueStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827),
+          valueStyle: AppTextStyles.labelLarge.copyWith(
+            color: const Color(0xFF111827),
           ),
         ),
         SizedBox(height: isMobile ? 12 : 4),
@@ -152,10 +149,9 @@ class _HostRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final labelWidget = Text(
       '임대인',
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: Color(0xFF6B7280),
+      style: AppTextStyles.labelLarge.copyWith(
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF6B7280),
       ),
     );
 
@@ -164,7 +160,7 @@ class _HostRow extends StatelessWidget {
       children: [
         Text(
           contract.partnerDisplayName,
-          style: const TextStyle(fontSize: 16, color: Color(0xFF111827)),
+          style: AppTextStyles.labelLarge.copyWith(color: const Color(0xFF111827)),
         ),
         if (showChatButton) ...[
           const SizedBox(width: 6),
@@ -217,22 +213,15 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final labelWidget = Text(
       label,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: Color(0xFF6B7280),
+      style: AppTextStyles.labelLarge.copyWith(
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF6B7280),
       ),
     );
 
     final valueWidget = Text(
       value,
-      style:
-          valueStyle ??
-          const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF000000),
-          ),
+      style: valueStyle ?? AppTextStyles.labelLarge.copyWith(color: const Color(0xFF000000)),
     );
 
     if (isMobile) {

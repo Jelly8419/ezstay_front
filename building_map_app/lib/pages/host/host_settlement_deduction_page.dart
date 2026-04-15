@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/settlement.dart';
 import '../../services/settlement_service.dart';
 import '../../utils/format_utils.dart';
@@ -100,10 +101,7 @@ class _HostSettlementDeductionPageState
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
                     '보증금 차감 상세',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: AppTextStyles.headingMedium,
                   ),
                 ),
                 // 계약 개요 카드
@@ -186,7 +184,7 @@ class _HostSettlementDeductionPageState
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 '합의 이력이 없습니다.',
-                style: TextStyle(fontSize: 14, color: AppColors.neutral400),
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral400),
               ),
             )
           : Column(
@@ -222,9 +220,8 @@ class _HostSettlementDeductionPageState
                 ),
                 child: Text(
                   item.statusLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                  style: AppTextStyles.caption.copyWith(
+                    fontWeight: FontWeight.w600,
                     color: color,
                   ),
                 ),
@@ -232,7 +229,7 @@ class _HostSettlementDeductionPageState
               if (item.requestedAt != null)
                 Text(
                   item.requestedAt!,
-                  style: TextStyle(fontSize: 12, color: AppColors.neutral400),
+                  style: AppTextStyles.caption.copyWith(color: AppColors.neutral400),
                 ),
             ],
           ),
@@ -240,16 +237,15 @@ class _HostSettlementDeductionPageState
             SizedBox(height: 6),
             Text(
               '사유: ${item.holdReason}',
-              style: TextStyle(fontSize: 13, color: AppColors.neutral600),
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.neutral600),
             ),
           ],
           if (item.deductAmount != null) ...[
             SizedBox(height: 4),
             Text(
               '차감액: ${FormatUtils.formatKRW(item.deductAmount!)}',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+              style: AppTextStyles.bodySmall.copyWith(
+                fontWeight: FontWeight.w600,
                 color: AppColors.warning700,
               ),
             ),
@@ -258,7 +254,7 @@ class _HostSettlementDeductionPageState
             SizedBox(height: 4),
             Text(
               item.agreementText!,
-              style: TextStyle(fontSize: 13, color: AppColors.neutral600),
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.neutral600),
             ),
           ],
           if (item.rejectedReason != null &&
@@ -266,7 +262,7 @@ class _HostSettlementDeductionPageState
             SizedBox(height: 4),
             Text(
               '거절 사유: ${item.rejectedReason!}',
-              style: TextStyle(fontSize: 13, color: AppColors.error500),
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error500),
             ),
           ],
           // 처리 날짜 타임라인
@@ -295,8 +291,7 @@ class _HostSettlementDeductionPageState
         children: dates
             .map((d) => Text(
                   d,
-                  style: TextStyle(
-                    fontSize: 11,
+                  style: AppTextStyles.caption.copyWith(
                     color: AppColors.neutral400,
                   ),
                 ))
@@ -337,10 +332,7 @@ class _HostSettlementDeductionPageState
         children: [
           Text(
             title,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTextStyles.labelLarge,
           ),
           SizedBox(height: 12),
           child,
@@ -363,15 +355,14 @@ class _HostSettlementDeductionPageState
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 14, color: AppColors.gray600),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.gray600),
         ),
         SizedBox(width: 16),
         Flexible(
           child: Text(
             value,
             textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.bodyMedium.copyWith(
               color: valueColor,
               fontWeight: valueFontWeight,
             ),
@@ -387,7 +378,7 @@ class _HostSettlementDeductionPageState
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 14, color: AppColors.gray600),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.gray600),
         ),
         widget,
       ],

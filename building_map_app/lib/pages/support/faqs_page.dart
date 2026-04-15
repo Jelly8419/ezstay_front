@@ -2,6 +2,7 @@ import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/faq.dart';
 import '../../services/support_service.dart';
 import '../../widgets/common/app_footer.dart';
@@ -183,19 +184,16 @@ class _FAQsPageState extends State<FAQsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Text(
                         '자주 묻는 질문',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                        style: AppTextStyles.headingSmall.copyWith(
                           color: AppColors.gray900,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _userMode == 'host' ? '임대인 모드' : '임차인 모드',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.gray600,
                         ),
                       ),
@@ -438,13 +436,11 @@ class _FAQsPageState extends State<FAQsPage> {
                       color: Color(0xFF3B82F6),
                       shape: BoxShape.circle,
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'Q',
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: AppTextStyles.labelMedium.copyWith(
                           color: AppColors.neutral0,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -482,8 +478,7 @@ class _FAQsPageState extends State<FAQsPage> {
                               ),
                               child: Text(
                                 faq.categoryName,
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: AppTextStyles.bodyMedium.copyWith(
                                   color: AppColors.neutral700,
                                 ),
                               ),
@@ -531,13 +526,11 @@ class _FAQsPageState extends State<FAQsPage> {
                         color: AppColors.gray300,
                         shape: BoxShape.circle,
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'A',
-                          style: TextStyle(
-                            fontSize: 14,
+                          style: AppTextStyles.labelMedium.copyWith(
                             color: AppColors.neutral0,
-                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),

@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/contract.dart';
 import '../../models/contract_detail.dart';
 import '../../utils/contract_utils.dart';
@@ -42,9 +43,7 @@ class HostContractBasicInfoSection extends StatelessWidget {
                 children: [
                   Text(
                     '기본 정보',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                    style: AppTextStyles.headingSmall.copyWith(
                       color: AppColors.gray900,
                     ),
                   ),
@@ -54,15 +53,13 @@ class HostContractBasicInfoSection extends StatelessWidget {
                       children: [
                         Text(
                           '계약번호: ',
-                          style: TextStyle(
-                            fontSize: 14,
+                          style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.neutral600,
                           ),
                         ),
                         Text(
                           contract.orderId!,
-                          style: TextStyle(
-                            fontSize: 14,
+                          style: AppTextStyles.labelMedium.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppColors.blue600,
                           ),
@@ -160,9 +157,7 @@ class HostContractBasicInfoSection extends StatelessWidget {
           children: [
             Text(
               c.roomName,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+              style: AppTextStyles.headingSmall.copyWith(
                 color: AppColors.gray900,
               ),
             ),
@@ -178,12 +173,12 @@ class HostContractBasicInfoSection extends StatelessWidget {
               children: [
                 Text(
                   '주소 : ',
-                  style: TextStyle(fontSize: 14, color: AppColors.neutral700),
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral700),
                 ),
                 Expanded(
                   child: RichText(
                     text: TextSpan(
-                      style: TextStyle(fontSize: 14, color: AppColors.gray900),
+                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.gray900),
                       children: [
                         TextSpan(text: c.address),
                         const TextSpan(text: ' '),
@@ -197,7 +192,7 @@ class HostContractBasicInfoSection extends StatelessWidget {
             const SizedBox(height: 8),
             RichText(
               text: TextSpan(
-                style: TextStyle(fontSize: 14, color: AppColors.neutral700),
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral700),
                 children: [
                   const TextSpan(text: '계약 기간: '),
                   TextSpan(
@@ -214,14 +209,13 @@ class HostContractBasicInfoSection extends StatelessWidget {
               const SizedBox(height: 8),
               RichText(
                 text: TextSpan(
-                  style: TextStyle(fontSize: 14, color: AppColors.neutral700),
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral700),
                   children: [
                     const TextSpan(text: '계약 확정: '),
                     TextSpan(
                       text: ContractUtils.formatDateString(c.paidAt!),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.neutral700,
                       ),
                     ),
                   ],
@@ -263,10 +257,9 @@ class _HostRoomInfoButton extends StatelessWidget {
           ),
           child: Text(
             '방 정보',
-            style: TextStyle(
-              fontSize: 12,
+            style: AppTextStyles.caption.copyWith(
               color: AppColors.gray600,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),

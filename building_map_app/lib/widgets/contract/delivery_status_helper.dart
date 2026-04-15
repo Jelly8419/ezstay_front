@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 배송 상태 표시 유틸리티 (순수 static 메서드)
 class DeliveryStatusHelper {
@@ -67,10 +68,9 @@ class DeliveryStatusHelper {
       ),
       child: Text(
         label(status),
-        style: TextStyle(
-          fontSize: 11,
+        style: AppTextStyles.caption.copyWith(
           color: textColor(status),
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

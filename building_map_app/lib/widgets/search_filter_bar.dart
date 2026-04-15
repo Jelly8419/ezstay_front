@@ -1,3 +1,4 @@
+import '../../core/theme/app_colors.dart';
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -125,7 +126,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+        border: Border(bottom: BorderSide(color: AppColors.textPrimary)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -219,14 +220,13 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                             Icon(
                               Icons.refresh,
                               size: 16,
-                              color: Colors.grey[600],
+                              color: AppColors.textPrimary,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '전체 초기화',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ],
@@ -257,7 +257,11 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: Icon(Icons.refresh, size: 20, color: Colors.grey[700]),
+                child: Icon(
+                  Icons.refresh,
+                  size: 20,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
           ],
@@ -309,12 +313,16 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               Text(
                 value,
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: Colors.grey[600],
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
             const SizedBox(width: 8),
-            Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.grey[600]),
+            Icon(
+              Icons.keyboard_arrow_down,
+              size: 16,
+              color: AppColors.textPrimary,
+            ),
           ],
         ),
       ),
@@ -356,9 +364,8 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
             ],
             Text(
               label,
-              style: TextStyle(
+              style: (isActive ? AppTextStyles.labelSmall : AppTextStyles.bodySmall).copyWith(
                 fontSize: 13,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                 color: isActive ? const Color(0xFF3B82F6) : Colors.black87,
               ),
             ),
@@ -479,7 +486,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.grey[200]!),
+                            border: Border.all(color: AppColors.textPrimary),
                           ),
                           child: _buildCalendarDropdown(setOverlayState),
                         ),
@@ -563,7 +570,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[200]!),
+                            border: Border.all(color: AppColors.textPrimary),
                           ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -572,10 +579,8 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                               // 헤더
                               Text(
                                 '건물 유형',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey[700],
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -592,7 +597,10 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                                       setState(() {
                                         _selectedBuildingTypes.clear();
                                         _currentFilters = _currentFilters
-                                            .copyWith(buildingTypes: _selectedBuildingTypes);
+                                            .copyWith(
+                                              buildingTypes:
+                                                  _selectedBuildingTypes,
+                                            );
                                       });
                                       widget.onFiltersChanged(_currentFilters);
                                       _removeOverlay();
@@ -645,11 +653,10 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                                         Expanded(
                                           child: Text(
                                             type,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w600
-                                                  : FontWeight.normal,
+                                            style: (isSelected
+                                                    ? AppTextStyles.labelMedium
+                                                    : AppTextStyles.bodyMedium)
+                                                .copyWith(
                                               color: isSelected
                                                   ? const Color(0xFF3B82F6)
                                                   : Colors.black87,
@@ -688,12 +695,9 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     '적용',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: AppTextStyles.labelSmall.copyWith(fontSize: 13),
                                   ),
                                 ),
                               ),
@@ -782,7 +786,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[200]!),
+                            border: Border.all(color: AppColors.textPrimary),
                           ),
                           child: _buildRentRangeDropdown(setOverlayState),
                         ),
@@ -837,9 +841,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
             ),
             Text(
               '${_focusedMonth.year}년 ${_focusedMonth.month}월',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+              style: AppTextStyles.labelMedium.copyWith(
                 color: Colors.black87,
               ),
             ),
@@ -879,7 +881,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               child: Text(
                 day,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: AppTextStyles.bodySmall.copyWith(
                   fontSize: 13,
                   color: index == 0
                       ? Colors.red[600]
@@ -934,7 +936,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               Text(
                 '임대 기간',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: Colors.grey[600],
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -953,7 +955,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
           const Divider(height: 32),
           Text(
             '• 최소 7일부터 선택 가능합니다\n• 최대 3개월(90일)까지 선택 가능합니다',
-            style: AppTextStyles.caption.copyWith(color: Colors.grey[600]),
+            style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -982,7 +984,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                   horizontal: 24,
                   vertical: 10,
                 ),
-                side: BorderSide(color: Colors.grey[300]!),
+                side: BorderSide(color: AppColors.textPrimary),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1124,7 +1126,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
         ),
         child: Text(
           '${date.day}',
-          style: TextStyle(
+          style: AppTextStyles.bodySmall.copyWith(
             fontSize: 13,
             fontWeight: fontWeight,
             color: textColor,
@@ -1255,7 +1257,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                   '최소',
                   style: AppTextStyles.bodySmall.copyWith(
                     fontSize: 13,
-                    color: Colors.grey[600],
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1273,7 +1275,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                   '최대',
                   style: AppTextStyles.bodySmall.copyWith(
                     fontSize: 13,
-                    color: Colors.grey[600],
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1324,7 +1326,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                 },
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 10),
-                  side: BorderSide(color: Colors.grey[300]!),
+                  side: BorderSide(color: AppColors.textPrimary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

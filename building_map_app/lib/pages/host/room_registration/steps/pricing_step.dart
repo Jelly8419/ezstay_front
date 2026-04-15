@@ -367,13 +367,13 @@ class _PricingStepState extends State<PricingStep> {
         ),
         content: const Text('청소 서비스 선택 시, 임대인님은 청소비를 설정 및 정산받을 수 없습니다.'),
         contentTextStyle: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.textSecondary,
+          color: AppColors.textPrimary,
           height: 1.5,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('취소', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text('취소', style: TextStyle(color: AppColors.textPrimary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -415,8 +415,7 @@ class _PricingStepState extends State<PricingStep> {
             ),
             child: Text(
               password.isEmpty ? '비밀번호를 입력하세요' : password,
-              style: TextStyle(
-                fontSize: 14,
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: password.isEmpty ? Colors.grey[400] : Colors.black,
               ),
             ),
@@ -477,13 +476,7 @@ class _PricingStepState extends State<PricingStep> {
                       side: const BorderSide(color: AppColors.error500),
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text(
-                      '전체 삭제',
-                      style: TextStyle(
-                        color: AppColors.error600,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: const Text('전체 삭제'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -501,13 +494,7 @@ class _PricingStepState extends State<PricingStep> {
                       side: const BorderSide(color: AppColors.gray300),
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text(
-                      '삭제',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: const Text('삭제'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -522,13 +509,7 @@ class _PricingStepState extends State<PricingStep> {
                       backgroundColor: AppColors.primary600,
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text(
-                      '완료',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: const Text('완료'),
                   ),
                 ),
               ],
@@ -558,7 +539,7 @@ class _PricingStepState extends State<PricingStep> {
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: AppTextStyles.labelLarge.copyWith(
             fontSize: fontSize,
             fontWeight: FontWeight.w600,
             color: Colors.black,
@@ -651,10 +632,9 @@ class _PricingStepState extends State<PricingStep> {
         const SizedBox(height: 6),
         _bulletText('계약 취소 후 위약금은 임대인에게 자동 지급됩니다.'),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           '주의사항',
-          style: TextStyle(
-            fontSize: 13,
+          style: AppTextStyles.bodySmall.copyWith(
             fontWeight: FontWeight.w700,
             color: Colors.black,
           ),
@@ -672,9 +652,8 @@ class _PricingStepState extends State<PricingStep> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: isHeader ? FontWeight.w600 : FontWeight.w400,
+        style: AppTextStyles.caption.copyWith(
+          fontWeight: FontWeight.w600,
           color: Colors.black,
         ),
         textAlign: center
@@ -688,11 +667,11 @@ class _PricingStepState extends State<PricingStep> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('• ', style: TextStyle(fontSize: 12, color: Colors.black87)),
+        Text('• ', style: AppTextStyles.caption.copyWith(color: Colors.black87)),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(fontSize: 12, color: Colors.black87),
+            style: AppTextStyles.caption.copyWith(color: Colors.black87),
           ),
         ),
       ],
@@ -721,9 +700,9 @@ class _PricingStepState extends State<PricingStep> {
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               const SizedBox(width: 4),
-              const Text(
+              Text(
                 '환불 규정 및 주의사항을 확인하였습니다.',
-                style: TextStyle(fontSize: 14, color: Colors.black87),
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.black87),
               ),
             ],
           ),
@@ -767,13 +746,9 @@ class _PricingStepState extends State<PricingStep> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '1일 임대료',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
+                  style: AppTextStyles.labelMedium.copyWith(color: Colors.black),
                 ),
                 const SizedBox(height: 8),
                 TextField(
@@ -783,9 +758,8 @@ class _PricingStepState extends State<PricingStep> {
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     hintText: '예: 40,000',
-                    hintStyle: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     suffixText:
                         _dailyRent.isNotEmpty &&
@@ -793,9 +767,8 @@ class _PricingStepState extends State<PricingStep> {
                             int.parse(_dailyRent) > 0
                         ? '원/일'
                         : null,
-                    suffixStyle: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    suffixStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     filled: true,
                     fillColor: _hasError('dailyRent')
@@ -839,19 +812,16 @@ class _PricingStepState extends State<PricingStep> {
                   const SizedBox(height: 8),
                   Text(
                     '1주 임대료: ${_formatNumberWithCommas(_weeklyRent)}원',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.labelMedium.copyWith(
                       color: AppColors.primary600,
                     ),
                   ),
                 ],
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   '* 최소 천원 단위로 입력할 수 있습니다',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 if (_hasError('dailyRent'))
@@ -873,13 +843,9 @@ class _PricingStepState extends State<PricingStep> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1일 관리비
-                const Text(
+                Text(
                   '1일 관리비 (선택)',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
+                  style: AppTextStyles.labelMedium.copyWith(color: Colors.black),
                 ),
                 const SizedBox(height: 8),
                 TextField(
@@ -889,9 +855,8 @@ class _PricingStepState extends State<PricingStep> {
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     hintText: '예: 7,000',
-                    hintStyle: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     suffixText:
                         _dailyMaintenanceFee.isNotEmpty &&
@@ -899,9 +864,8 @@ class _PricingStepState extends State<PricingStep> {
                             int.parse(_dailyMaintenanceFee) > 0
                         ? '원/일'
                         : null,
-                    suffixStyle: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    suffixStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     filled: true,
                     fillColor: _hasError('dailyMaintenanceFee')
@@ -945,19 +909,16 @@ class _PricingStepState extends State<PricingStep> {
                   const SizedBox(height: 8),
                   Text(
                     '1주 관리비: ${_formatNumberWithCommas(_weeklyMaintenanceFee)}원',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.labelMedium.copyWith(
                       color: AppColors.primary600,
                     ),
                   ),
                 ],
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   '* 최소 천원 단위로 입력할 수 있습니다',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 if (_hasError('dailyMaintenanceFee'))
@@ -970,13 +931,9 @@ class _PricingStepState extends State<PricingStep> {
                 const SizedBox(height: 16),
 
                 // 관리비 포함 항목
-                const Text(
+                Text(
                   '관리비 포함 항목(해당되는 항목 선택)',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
+                  style: AppTextStyles.labelMedium.copyWith(color: Colors.black),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -993,13 +950,9 @@ class _PricingStepState extends State<PricingStep> {
                 const SizedBox(height: 16),
 
                 // 관리비 설명
-                const Text(
+                Text(
                   '관리비 설명 (선택)',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
+                  style: AppTextStyles.labelMedium.copyWith(color: Colors.black),
                 ),
                 const SizedBox(height: 8),
                 TextField(
@@ -1009,9 +962,8 @@ class _PricingStepState extends State<PricingStep> {
                   maxLines: 3,
                   decoration: InputDecoration(
                     hintText: '관리비에 대한 추가 설명을 입력해주세요',
-                    hintStyle: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     filled: true,
                     fillColor: Colors.white,
@@ -1052,14 +1004,12 @@ class _PricingStepState extends State<PricingStep> {
                   enabled: !_cleaningService,
                   decoration: InputDecoration(
                     hintText: '예: 50,000',
-                    hintStyle: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     suffixText: '원',
-                    suffixStyle: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    suffixStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     filled: true,
                     fillColor: _cleaningService
@@ -1104,11 +1054,10 @@ class _PricingStepState extends State<PricingStep> {
                   onEditingComplete: _handleCleaningFeeBlur,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '* 최소 천원 단위로 입력할 수 있습니다',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1154,10 +1103,9 @@ class _PricingStepState extends State<PricingStep> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               '이지스테이 청소 서비스 사용',
-                              style: TextStyle(
-                                fontSize: 14,
+                              style: AppTextStyles.labelMedium.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: Colors.black,
                               ),
@@ -1167,9 +1115,8 @@ class _PricingStepState extends State<PricingStep> {
                               _cleaningService
                                   ? '* 이지스테이에서 임차인 퇴실 이후 부터 다음날 오전까지(부득이한 사정으로 인해 지연 시 사전 안내 예정) 청소를 진행합니다.\n  기본요금은 5만원이며, 10평마다 2만원이 추가되어 임차인에게 청구됩니다. (예 : 7평 5만원, 15평 7만원, 기존에 설정한 청소비는 임차인에게 이중 부과되지 않습니다.)'
                                   : '* 이지스테이에서 임차인 퇴실 이후 부터 다음날 오전까지(부득이한 사정으로 인해 지연 시 사전 안내 예정) 청소를 진행합니다.\n  기본요금은 5만원, 등록된 방 평수 기준으로 10평마다 2만원이 추가되어 임차인에게 청구되며 해당 요금은 정산받을 수 없습니다. (예 : 7평 5만원, 15평 7만원)',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textPrimary,
                                 height: 1.5,
                               ),
                             ),
@@ -1183,10 +1130,9 @@ class _PricingStepState extends State<PricingStep> {
                 // 청소 서비스 선택 시 방 비밀번호(도어락) 입력
                 if (_cleaningService) ...[
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     '방 비밀번호(도어락)',
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: AppTextStyles.labelMedium.copyWith(
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
@@ -1197,7 +1143,7 @@ class _PricingStepState extends State<PricingStep> {
                   Text(
                     '* 청소 서비스 진행을 위해 도어락 비밀번호를 입력해주세요. 비밀번호가 불일치할 경우 청소 일정에 불이익이 발생할 수 있습니다.',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -1245,18 +1191,15 @@ class _PricingStepState extends State<PricingStep> {
                           children: [
                             Text(
                               '${_formatNumberWithCommas(_deposit)}원',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
+                              style: AppTextStyles.headingMedium.copyWith(
                                 color: Colors.black,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               '보증금은 ${_formatNumberWithCommas(_deposit)}원으로 고정되어 있습니다',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ],
@@ -1266,11 +1209,10 @@ class _PricingStepState extends State<PricingStep> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '* 보증금은 퇴실 후 시설 훼손 완료 시 영업일 기준 7일 이내에 자동 환불됩니다',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -1289,20 +1231,16 @@ class _PricingStepState extends State<PricingStep> {
               },
               decoration: InputDecoration(
                 hintText: '7 ~ 90',
-                hintStyle: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
+                hintStyle: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textPrimary,
                 ),
                 suffixText: '일',
-                suffixStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                suffixStyle: AppTextStyles.labelMedium.copyWith(
                   color: AppColors.textPrimary,
                 ),
                 helperText: '최소 7일, 최대 90일까지 설정 가능합니다',
-                helperStyle: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
+                helperStyle: AppTextStyles.caption.copyWith(
+                  color: AppColors.textPrimary,
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -1363,8 +1301,7 @@ class _PricingStepState extends State<PricingStep> {
                         Expanded(
                           child: Text(
                             _policyLoadError!,
-                            style: const TextStyle(
-                              fontSize: 13,
+                            style: AppTextStyles.bodySmall.copyWith(
                               color: AppColors.error600,
                             ),
                           ),
@@ -1566,11 +1503,10 @@ class _PricingStepState extends State<PricingStep> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '* 장기 계약 시 임대료 할인을 제공할 수 있습니다',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -1701,11 +1637,10 @@ class _PricingStepState extends State<PricingStep> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '* 빠른 입주 시 고정 금액 할인을 제공할 수 있습니다 (만원 단위로 자동 조정됩니다)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],

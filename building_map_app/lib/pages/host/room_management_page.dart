@@ -185,8 +185,6 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
                 Text(
                   '방 관리',
                   style: AppTextStyles.headingLarge.copyWith(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,  // text-gray-900
                   ),
                 ),
@@ -384,9 +382,7 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
           children: [
             Text(
               label,
-              style: TextStyle(
-                fontSize: 14, // React: text-sm
-                fontWeight: FontWeight.w500, // font-medium
+              style: AppTextStyles.labelMedium.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),
@@ -402,10 +398,9 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
               ),
               child: Text(
                 count.toString(),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -478,19 +473,16 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
             children: [
               Text(
                 selectedLabel,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600, // font-semibold
+                style: AppTextStyles.labelLarge.copyWith(
                   color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(width: 4),
               Text(
                 '($selectedCount)',
-                style: TextStyle(
-                  fontSize: 15,
+                style: AppTextStyles.labelLarge.copyWith(
                   fontWeight: FontWeight.normal,
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(width: 8),
@@ -500,7 +492,7 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
                 child: Icon(
                   Icons.keyboard_arrow_down,
                   size: 20, // React: w-5 h-5
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -636,7 +628,7 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
                       ? '검색 결과가 없습니다'
                       : '등록된 방이 없습니다',
                   style: AppTextStyles.headingMedium.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -645,7 +637,7 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
                       ? '다른 검색어나 필터를 시도해보세요'
                       : '새로운 방을 등록하고 임차인을 맞이해보세요',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textPrimary,
                   ),
                   textAlign: TextAlign.center,
                 ),

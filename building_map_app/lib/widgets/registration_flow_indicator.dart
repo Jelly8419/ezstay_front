@@ -1,3 +1,5 @@
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 
 /// 방 등록 플로우 표시 위젯
@@ -21,7 +23,7 @@ class RegistrationFlowIndicator extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      color: Colors.grey[50],
+      color: AppColors.textPrimary,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1200),
@@ -39,9 +41,8 @@ class RegistrationFlowIndicator extends StatelessWidget {
                   children: [
                     Text(
                       steps[stepIndex],
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                      style: AppTextStyles.labelMedium.copyWith(
+                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                         color: isActive
                             ? const Color(0xFF4A90E2)
                             : isCompleted

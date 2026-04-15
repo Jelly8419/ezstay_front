@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../services/rental_order_service.dart';
 import '../../utils/format_utils.dart';
 import 'delivery_status_helper.dart';
@@ -25,8 +26,7 @@ class OrderItemRows {
         Expanded(
           child: Text(
             '주문 #${order.orderId}',
-            style: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600),
+            style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         DeliveryStatusHelper.badge(order.deliveryStatus),
@@ -54,16 +54,14 @@ class OrderItemRows {
           Expanded(
             child: Text(
               item.name,
-              style: TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.bodySmall.copyWith(
                 color: enabled ? null : AppColors.neutral400,
               ),
             ),
           ),
           Text(
             '${FormatUtils.formatCurrency(item.price * item.quantity)}원',
-            style: TextStyle(
-              fontSize: 13,
+            style: AppTextStyles.bodySmall.copyWith(
               color: enabled ? AppColors.neutral700 : AppColors.neutral400,
             ),
           ),
@@ -100,8 +98,7 @@ class OrderItemRows {
           Expanded(
             child: Text(
               item.name,
-              style: TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.bodySmall.copyWith(
                 color: selected ? null : AppColors.neutral400,
               ),
             ),
@@ -120,15 +117,14 @@ class OrderItemRows {
             else
               Text(
                 '${item.quantity}개',
-                style: TextStyle(fontSize: 12, color: AppColors.neutral400),
+                style: AppTextStyles.caption.copyWith(color: AppColors.neutral400),
               ),
             const SizedBox(width: 8),
           ],
           // 금액 (선택 시 cancelQuantity × price, 미선택 시 전체 금액)
           Text(
             '${FormatUtils.formatCurrency(item.price * (selected ? cancelQuantity : item.quantity))}원',
-            style: TextStyle(
-              fontSize: 13,
+            style: AppTextStyles.bodySmall.copyWith(
               color: selected ? AppColors.neutral700 : AppColors.neutral400,
             ),
           ),
@@ -164,8 +160,7 @@ class OrderItemRows {
           Expanded(
             child: Text(
               item.name,
-              style: TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.neutral400,
                 decoration: TextDecoration.lineThrough,
               ),
@@ -180,7 +175,10 @@ class OrderItemRows {
             ),
             child: Text(
               label,
-              style: TextStyle(fontSize: 10, color: textColor),
+              style: AppTextStyles.caption.copyWith(
+                fontSize: 10,
+                color: textColor,
+              ),
             ),
           ),
         ],
@@ -222,7 +220,7 @@ class _QuantitySpinner extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             '$value / $max',
-            style: TextStyle(fontSize: 12, color: AppColors.neutral700),
+            style: AppTextStyles.caption.copyWith(color: AppColors.neutral700),
           ),
         ),
         _spinnerButton(

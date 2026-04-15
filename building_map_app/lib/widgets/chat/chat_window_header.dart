@@ -80,7 +80,7 @@ class ChatWindowHeader extends StatelessWidget {
                           propertyTitle,
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.gray900,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

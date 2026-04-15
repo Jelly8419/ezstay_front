@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import '../../config/api_config.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../services/kmc_service.dart';
 import '../../services/verification_service.dart';
 import '../../widgets/kmc_webview.dart';
@@ -138,26 +139,18 @@ class _FindIdPageState extends State<FindIdPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text(
           '오류',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         content: Text(
           message,
-          style: const TextStyle(fontSize: 14, color: _textGray),
+          style: AppTextStyles.bodyMedium.copyWith(color: _textGray),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               '확인',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
             ),
           ),
         ],
@@ -179,11 +172,7 @@ class _FindIdPageState extends State<FindIdPage> {
         ),
         title: const Text(
           '아이디 찾기',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         centerTitle: true,
       ),
@@ -206,16 +195,12 @@ class _FindIdPageState extends State<FindIdPage> {
       children: [
         const Text(
           '본인인증으로\n아이디를 찾아드립니다',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.displaySmall,
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           '가입 시 등록한 휴대폰으로 본인인증을 진행해주세요',
-          style: TextStyle(fontSize: 16, color: _textGray),
+          style: AppTextStyles.labelLarge.copyWith(color: _textGray),
         ),
         const SizedBox(height: 48),
 
@@ -227,27 +212,26 @@ class _FindIdPageState extends State<FindIdPage> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: _borderGray),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: Color(0xFF666666)),
-                  SizedBox(width: 6),
+                  const Icon(Icons.info_outline, size: 16, color: Color(0xFF666666)),
+                  const SizedBox(width: 6),
                   Text(
                     '본인인증 안내',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF444444),
+                      color: const Color(0xFF444444),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 '• 휴대폰 본인인증이 진행됩니다\n• 가입 시 등록한 번호와 동일해야 합니다',
-                style: TextStyle(fontSize: 13, color: _textGray, height: 1.6),
+                style: AppTextStyles.bodySmall.copyWith(color: _textGray, height: 1.6),
               ),
             ],
           ),
@@ -279,7 +263,7 @@ class _FindIdPageState extends State<FindIdPage> {
                   )
                 : const Text(
                     '본인인증 시작',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: AppTextStyles.labelLarge,
                   ),
           ),
         ),
@@ -294,7 +278,7 @@ class _FindIdPageState extends State<FindIdPage> {
                 side: const BorderSide(color: Color(0xFFCCCCCC)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('[Dev] 테스트 인증', style: TextStyle(fontSize: 14)),
+              child: const Text('[Dev] 테스트 인증', style: AppTextStyles.bodyMedium),
             ),
           ),
         ],
@@ -309,16 +293,12 @@ class _FindIdPageState extends State<FindIdPage> {
       children: [
         const Text(
           '아이디 찾기 완료',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: _primaryBlack,
-          ),
+          style: AppTextStyles.displaySmall,
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           '본인인증으로 확인된 계정 정보입니다',
-          style: TextStyle(fontSize: 16, color: _textGray),
+          style: AppTextStyles.labelLarge.copyWith(color: _textGray),
         ),
         const SizedBox(height: 40),
 
@@ -334,18 +314,14 @@ class _FindIdPageState extends State<FindIdPage> {
             children: [
               Icon(Icons.check_circle, size: 40, color: AppColors.primary600),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 '가입된 이메일 주소',
-                style: TextStyle(fontSize: 13, color: _textGray),
+                style: AppTextStyles.bodySmall.copyWith(color: _textGray),
               ),
               const SizedBox(height: 6),
               Text(
                 _foundEmail ?? '',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: _primaryBlack,
-                ),
+                style: AppTextStyles.headingMedium,
                 textAlign: TextAlign.center,
               ),
             ],
@@ -368,7 +344,7 @@ class _FindIdPageState extends State<FindIdPage> {
             ),
             child: const Text(
               '로그인하기',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: AppTextStyles.labelLarge,
             ),
           ),
         ),
@@ -388,7 +364,7 @@ class _FindIdPageState extends State<FindIdPage> {
             ),
             child: const Text(
               '비밀번호 찾기',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: AppTextStyles.labelLarge,
             ),
           ),
         ),

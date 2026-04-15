@@ -275,7 +275,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
           // 제목
           Text(
             '정산 계좌 정보 입력',
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryBlack),
+            style: AppTextStyles.headingLarge.copyWith(color: primaryBlack),
           ),
           const SizedBox(height: 8),
           Text(
@@ -287,7 +287,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
           const SizedBox(height: 32),
 
           // 은행 선택
-          const Text('은행', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: primaryBlack)),
+          const Text('은행', style: AppTextStyles.labelMedium),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             initialValue: _selectedBank,
@@ -309,7 +309,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
           const SizedBox(height: 16),
 
           // 계좌번호
-          const Text('계좌번호', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: primaryBlack)),
+          const Text('계좌번호', style: AppTextStyles.labelMedium),
           const SizedBox(height: 8),
           TextFormField(
             controller: _accountController,
@@ -345,7 +345,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
                     )
                   : Text(
                       _accountVerified ? '계좌 인증 완료 ✓' : '계좌 인증',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: AppTextStyles.labelLarge,
                     ),
             ),
           ),
@@ -353,7 +353,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
           // 예금주명 (인증 완료 후)
           if (_accountVerified && _accountHolderController.text.isNotEmpty) ...[
             const SizedBox(height: 16),
-            const Text('예금주명', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: primaryBlack)),
+            const Text('예금주명', style: AppTextStyles.labelMedium),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
@@ -363,14 +363,14 @@ class _HostAccountStepState extends State<HostAccountStep> {
                 border: Border.all(color: borderGray),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(_accountHolderController.text, style: const TextStyle(fontSize: 14, color: primaryBlack)),
+              child: Text(_accountHolderController.text, style: AppTextStyles.bodyMedium.copyWith(color: primaryBlack)),
             ),
           ],
           const SizedBox(height: 32),
 
           // 약관 동의 (회원가입 플로우에서만)
           if (!widget.isStandaloneMode) ...[
-            const Text('약관 동의', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryBlack)),
+            const Text('약관 동의', style: AppTextStyles.headingSmall),
             const SizedBox(height: 16),
             CheckboxListTile(
               value: _agreeTerms,
@@ -414,7 +414,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
                     )
                   : Text(
                       widget.isStandaloneMode ? '임대인 전환 완료' : '회원가입 완료',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: AppTextStyles.labelLarge,
                     ),
             ),
           ),
@@ -431,7 +431,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
                   side: const BorderSide(color: borderGray),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text('나중에 입력 (임차인으로 활동)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                child: const Text('나중에 입력 (임차인으로 활동)', style: AppTextStyles.labelMedium),
               ),
             ),
           ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/fee_constants.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/contract_detail.dart';
 import '../../utils/format_utils.dart' show FormatUtils;
 
@@ -55,26 +56,23 @@ class DepositAgreementReviewModal extends StatelessWidget {
               children: [
                 Container(
                   margin: const EdgeInsets.only(top: 2, right: 12),
-                  child: const Text('🤝', style: TextStyle(fontSize: 24)),
+                  child: Text('🤝', style: AppTextStyles.headingLarge),
                 ),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         '보증금 합의 내용',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF111827),
+                        style: AppTextStyles.headingSmall.copyWith(
+                          color: const Color(0xFF111827),
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         '임대인이 제출한 합의 내용을 확인해주세요.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF4B5563),
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: const Color(0xFF4B5563),
                         ),
                       ),
                     ],
@@ -127,12 +125,10 @@ class DepositAgreementReviewModal extends StatelessWidget {
             const SizedBox(height: 16),
 
             // 합의 내용
-            const Text(
+            Text(
               '합의 내용',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF374151),
+              style: AppTextStyles.labelMedium.copyWith(
+                color: const Color(0xFF374151),
               ),
             ),
             const SizedBox(height: 8),
@@ -148,9 +144,8 @@ class DepositAgreementReviewModal extends StatelessWidget {
                 agreement.agreementText.isNotEmpty
                     ? agreement.agreementText
                     : '합의 내용이 없습니다.',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF374151),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: const Color(0xFF374151),
                   height: 1.5,
                 ),
               ),
@@ -224,17 +219,13 @@ class DepositAgreementReviewModal extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          style: (isBold ? AppTextStyles.labelMedium : AppTextStyles.bodyMedium).copyWith(
             color: const Color(0xFF4B5563),
           ),
         ),
         Text(
           amount,
-          style: TextStyle(
-            fontSize: isBold ? 16 : 14,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+          style: (isBold ? AppTextStyles.labelLarge : AppTextStyles.labelMedium).copyWith(
             color: amountColor,
           ),
         ),

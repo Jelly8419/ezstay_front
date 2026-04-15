@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../services/verification_service.dart';
 import '../../../models/user.dart';
 import '../../../utils/password_validator.dart';
@@ -250,30 +251,18 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
         ),
         title: const Text(
           '오류',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         content: Text(
           message,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
+          style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               '확인',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
             ),
           ),
         ],
@@ -291,30 +280,18 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
         ),
         title: Text(
           '성공',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.success600,
-          ),
+          style: AppTextStyles.headingSmall.copyWith(color: AppColors.success600),
         ),
         content: Text(
           message,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
+          style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               '확인',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
             ),
           ),
         ],
@@ -346,30 +323,19 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
           // 제목
           const Text(
             '이메일로 가입하기',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: primaryBlack,
-            ),
+            style: AppTextStyles.displaySmall,
           ),
           const SizedBox(height: 8),
           const Text(
             '이메일 인증 후 비밀번호를 설정해주세요',
-            style: TextStyle(
-              fontSize: 16,
-              color: textGray,
-            ),
+            style: AppTextStyles.labelLarge,
           ),
           const SizedBox(height: 40),
 
           // 이메일 라벨
           const Text(
             '이메일 주소',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: textGray,
-            ),
+            style: AppTextStyles.labelMedium,
           ),
           const SizedBox(height: 8),
 
@@ -384,18 +350,10 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
                     keyboardType: TextInputType.emailAddress,
                     autofocus: true,
                     enabled: !_isEmailVerified, // 인증 완료 후 비활성화
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: primaryBlack,
-                    ),
+                    style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                     decoration: InputDecoration(
                       hintText: 'email@example.com',
-                      hintStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: hintGray,
-                      ),
+                      hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                       filled: true,
                       fillColor: _isEmailVerified
                           ? const Color(0xFFF5F5F5)
@@ -486,10 +444,7 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
                         )
                       : Text(
                           _isEmailVerified ? '인증완료' : '인증하기',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: AppTextStyles.labelMedium,
                         ),
                 ),
               ),
@@ -503,11 +458,7 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
             // 인증 코드 라벨
             const Text(
               '인증 코드',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: textGray,
-              ),
+              style: AppTextStyles.labelMedium,
             ),
             const SizedBox(height: 8),
 
@@ -521,18 +472,10 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
                       controller: _verificationCodeController,
                       keyboardType: TextInputType.number,
                       maxLength: 6,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: primaryBlack,
-                      ),
+                      style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                       decoration: InputDecoration(
                         hintText: '6자리 인증 코드',
-                        hintStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: hintGray,
-                        ),
+                        hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                         filled: true,
                         fillColor: backgroundWhite,
                         contentPadding: const EdgeInsets.symmetric(
@@ -606,10 +549,7 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
                             _resendCountdown > 0
                                 ? _formatTime(_resendCountdown)
                                 : '재발송',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
                           ),
                   ),
                 ),
@@ -643,10 +583,7 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
                           )
                         : const Text(
                             '인증',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: AppTextStyles.labelMedium,
                           ),
                   ),
                 ),
@@ -659,11 +596,7 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
           // 비밀번호 라벨
           const Text(
             '비밀번호',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: textGray,
-            ),
+            style: AppTextStyles.labelMedium,
           ),
           const SizedBox(height: 8),
 
@@ -673,18 +606,10 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
             child: TextFormField(
               controller: _passwordController,
               obscureText: _obscurePassword,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: primaryBlack,
-              ),
+              style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
               decoration: InputDecoration(
                 hintText: PasswordValidator.hintText,
-                hintStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: hintGray,
-                ),
+                hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                 filled: true,
                 fillColor: backgroundWhite,
                 contentPadding: const EdgeInsets.symmetric(
@@ -742,11 +667,7 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
           // 비밀번호 확인 라벨
           const Text(
             '비밀번호 확인',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: textGray,
-            ),
+            style: AppTextStyles.labelMedium,
           ),
           const SizedBox(height: 8),
 
@@ -756,18 +677,10 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
             child: TextFormField(
               controller: _confirmPasswordController,
               obscureText: _obscureConfirmPassword,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: primaryBlack,
-              ),
+              style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
               decoration: InputDecoration(
                 hintText: '비밀번호를 다시 입력해 주세요.',
-                hintStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: hintGray,
-                ),
+                hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                 filled: true,
                 fillColor: backgroundWhite,
                 contentPadding: const EdgeInsets.symmetric(
@@ -838,10 +751,7 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
               ),
               child: const Text(
                 '다음',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTextStyles.labelLarge,
               ),
             ),
           ),
@@ -863,11 +773,7 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     '또는',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: secondaryGray,
-                    ),
+                    style: AppTextStyles.labelMedium.copyWith(color: secondaryGray),
                   ),
                 ),
                 const Expanded(
@@ -903,10 +809,7 @@ class _EmailPasswordStepState extends State<EmailPasswordStep> {
                     SizedBox(width: 8),
                     Text(
                       '카카오로 시작하기',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: AppTextStyles.labelLarge,
                     ),
                   ],
                 ),

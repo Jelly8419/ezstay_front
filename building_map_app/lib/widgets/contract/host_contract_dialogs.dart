@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 퇴실 확인 보류 사유 입력 다이얼로그
 class CheckoutPendingDialog extends StatefulWidget {
@@ -32,20 +33,17 @@ class _CheckoutPendingDialogState extends State<CheckoutPendingDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 '퇴실 확인 보류',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF111827),
+                style: AppTextStyles.headingSmall.copyWith(
+                  color: const Color(0xFF111827),
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 '보류 사유를 입력해주세요. 관리자가 확인 후 처리합니다.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF6B7280),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: const Color(0xFF6B7280),
                 ),
               ),
               const SizedBox(height: 16),
@@ -76,11 +74,10 @@ class _CheckoutPendingDialogState extends State<CheckoutPendingDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text(
+                    child: Text(
                       '취소',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF6B7280),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: const Color(0xFF6B7280),
                       ),
                     ),
                   ),
@@ -99,9 +96,11 @@ class _CheckoutPendingDialogState extends State<CheckoutPendingDialog> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       '보류하기',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      style: AppTextStyles.labelMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],

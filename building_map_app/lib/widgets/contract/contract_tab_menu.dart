@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 계약 목록 탭 메뉴 (진행중 / 지난 계약 / 취소)
 class ContractTabMenu extends StatelessWidget {
@@ -58,8 +59,7 @@ class ContractTabMenu extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.bold,
                     color: isSelected
                         ? Colors.white
@@ -69,8 +69,7 @@ class ContractTabMenu extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '($count)',
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: AppTextStyles.labelLarge.copyWith(
                     fontWeight: FontWeight.normal,
                     color: isSelected ? Colors.white : const Color(0xFF6B7280),
                   ),

@@ -271,9 +271,8 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
                 const SizedBox(width: 12),
                 Text(
                   '간편결제',
-                  style: TextStyle(
+                  style: AppTextStyles.labelLarge.copyWith(
                     fontSize: 15,
-                    fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -312,9 +311,8 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
                 const SizedBox(width: 12),
                 Text(
                   '신용/체크 카드',
-                  style: TextStyle(
+                  style: AppTextStyles.labelLarge.copyWith(
                     fontSize: 15,
-                    fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -349,8 +347,8 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
             label,
             style: TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(width: 8),
@@ -362,7 +360,7 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
             ),
             child: Text(
               '준비중',
-              style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+              style: AppTextStyles.caption.copyWith(fontSize: 10, color: AppColors.textPrimary),
             ),
           ),
         ],
@@ -432,8 +430,7 @@ class _PaymentMethodModalState extends State<PaymentMethodModal>
               _canProceed
                   ? '${FormatUtils.formatCurrency(widget.totalAmount)}원 결제하기'
                   : '결제 수단을 선택해주세요',
-              style: TextStyle(
-                fontSize: 18,
+              style: AppTextStyles.headingSmall.copyWith(
                 fontWeight: FontWeight.w700,
                 color: _canProceed ? Colors.white : Colors.grey.shade600,
               ),
@@ -503,11 +500,7 @@ class _PositionedDropdownState<T> extends State<_PositionedDropdown<T>> {
               height: 44,
               child: Text(
                 widget.labelOf(item),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: widget.value == item
-                      ? FontWeight.w600
-                      : FontWeight.w400,
+                style: AppTextStyles.labelMedium.copyWith(
                   color: widget.value == item
                       ? AppColors.primary500
                       : AppColors.textPrimary,
@@ -543,8 +536,7 @@ class _PositionedDropdownState<T> extends State<_PositionedDropdown<T>> {
             Expanded(
               child: Text(
                 hasValue ? widget.labelOf(widget.value as T) : widget.hint,
-                style: TextStyle(
-                  fontSize: 14,
+                style: AppTextStyles.bodyMedium.copyWith(
                   color: hasValue
                       ? AppColors.textPrimary
                       : AppColors.textSecondary,

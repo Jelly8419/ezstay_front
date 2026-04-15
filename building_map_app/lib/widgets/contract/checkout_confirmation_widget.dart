@@ -202,9 +202,9 @@ class _CheckoutConfirmationWidgetState
               child: OutlinedButton.icon(
                 onPressed: widget.onHostHold,
                 icon: const Icon(Icons.pause_circle_outline, size: 18),
-                label: const Text(
+                label: Text(
                   '퇴실 확인 보류 신청',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
                 ),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 10),

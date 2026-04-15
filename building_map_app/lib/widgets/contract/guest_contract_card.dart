@@ -122,9 +122,7 @@ class GuestContractCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             statusBadge.text,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                            style: AppTextStyles.labelMedium.copyWith(
                               color: statusColor,
                             ),
                           ),
@@ -201,12 +199,10 @@ class GuestContractCard extends StatelessWidget {
                     width: 2,
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   '요청 취소',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF374151),
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: const Color(0xFF374151),
                   ),
                 ),
               ),
@@ -252,12 +248,11 @@ class GuestContractCard extends StatelessWidget {
                     ),
                     side: const BorderSide(color: Color(0xFFD1D5DB), width: 2),
                   ),
-                  child: const Text(
+                  child: Text(
                     '계약 취소',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF374151),
+                      color: const Color(0xFF374151),
                     ),
                   ),
                 ),
@@ -296,12 +291,11 @@ class GuestContractCard extends StatelessWidget {
                     ),
                     side: const BorderSide(color: Color(0xFFD1D5DB), width: 2),
                   ),
-                  child: const Text(
+                  child: Text(
                     '취소 요청',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF374151),
+                      color: const Color(0xFF374151),
                     ),
                   ),
                 ),
@@ -353,11 +347,9 @@ class GuestContractCard extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              child: const Text(
+              child: Text(
                 '퇴실 완료',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                style: AppTextStyles.labelMedium.copyWith(
                   color: Colors.white,
                 ),
               ),

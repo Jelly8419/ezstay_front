@@ -290,7 +290,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
             child: Text(
               '취소',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -436,7 +436,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
           },
         ),
         titleTextStyle: AppTextStyles.headingMedium.copyWith(
-          fontSize: 20,
           fontWeight: FontWeight.w800,
           color: AppColors.textPrimary,
         ),
@@ -518,8 +517,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
   Widget _buildPageTitle() {
     return Text(
       '내 정보',
-      style: AppTextStyles.headingLarge.copyWith(
-        fontSize: 24,
+      style: AppTextStyles.displaySmall.copyWith(
         fontWeight: FontWeight.bold,
         color: AppColors.gray900,
       ),
@@ -540,8 +538,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
         children: [
           Text(
             '프로필 정보',
-            style: AppTextStyles.headingMedium.copyWith(
-              fontSize: 18,
+            style: AppTextStyles.headingSmall.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -592,8 +589,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
         children: [
           Text(
             '계좌 정보',
-            style: AppTextStyles.headingMedium.copyWith(
-              fontSize: 18,
+            style: AppTextStyles.headingSmall.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -667,8 +663,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
         children: [
           Text(
             '계좌 정보',
-            style: AppTextStyles.headingMedium.copyWith(
-              fontSize: 18,
+            style: AppTextStyles.headingSmall.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -687,7 +682,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
                 Text(
                   '등록된 환급 계좌가 없습니다',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 SizedBox(height: AppSpacing.lg),
@@ -744,7 +739,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
                 Text(
                   label,
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -789,7 +784,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
               Text(
                 '닉네임',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -838,7 +833,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
         Text(
           '닉네임',
           style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -858,7 +853,6 @@ class _GuestMyPageState extends State<GuestMyPage> {
           child: Text(
             _nicknameError ?? '2~20자, 한글/영어만 입력 가능',
             style: AppTextStyles.bodySmall.copyWith(
-              fontSize: 12,
               color: _nicknameError != null ? AppColors.error500 : AppColors.textSecondary,
             ),
           ),
@@ -971,7 +965,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
               Text(
                 '비밀번호',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -1037,8 +1031,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
           child: Text(
             PasswordValidator.policyDescription,
             style: AppTextStyles.bodySmall.copyWith(
-              fontSize: 12,
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
         ),
@@ -1125,7 +1118,7 @@ class _GuestMyPageState extends State<GuestMyPage> {
         child: Text(
           '회원 탈퇴',
           style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
+            color: AppColors.textPrimary,
             decoration: TextDecoration.underline,
           ),
         ),

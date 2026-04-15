@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// 호스트 계약 관리 페이지 안내 메시지 박스
 class HostInfoMessage extends StatelessWidget {
@@ -23,12 +24,10 @@ class HostInfoMessage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '안내사항',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E3A8A), // text-blue-900
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: const Color(0xFF1E3A8A),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -49,9 +48,8 @@ class HostInfoMessage extends StatelessWidget {
       padding: const EdgeInsets.only(top: 4),
       child: Text(
         '• $text',
-        style: const TextStyle(
-          fontSize: 14,
-          color: Color(0xFF1E40AF), // text-blue-800
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: const Color(0xFF1E40AF),
         ),
       ),
     );

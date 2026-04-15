@@ -251,7 +251,7 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
           ),
           IconButton(
             onPressed: _isSubmitting ? null : widget.onClose,
-            icon: const Icon(Icons.close, color: AppColors.textSecondary),
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -351,17 +351,17 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
           if (p.policyDisplayName.isNotEmpty)
             Text(
               '환불 정책: ${p.policyDisplayName}',
-              style: const TextStyle(
+              style: AppTextStyles.bodySmall.copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF374151),
+                color: const Color(0xFF374151),
               ),
             ),
           if (p.applicableRuleDescription.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
               p.applicableRuleDescription,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+              style: AppTextStyles.caption.copyWith(color: const Color(0xFF6B7280)),
             ),
           ],
         ],
@@ -380,7 +380,7 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
       ),
       child: Text(
         message,
-        style: const TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+        style: AppTextStyles.caption.copyWith(color: const Color(0xFF92400E)),
       ),
     );
   }
@@ -399,9 +399,7 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
         children: [
           Text(
             '임대인 부담금',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+            style: AppTextStyles.labelMedium.copyWith(
               color: hasBurden ? AppColors.error700 : AppColors.success700,
             ),
           ),
@@ -409,8 +407,7 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
             hasBurden
                 ? '${FormatUtils.formatCurrency(p.hostBurdenAmount)}원'
                 : '없음',
-            style: TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.labelMedium.copyWith(
               fontWeight: FontWeight.w700,
               color: hasBurden ? AppColors.error700 : AppColors.success700,
             ),
@@ -431,7 +428,7 @@ class _HostCancelPreviewModalState extends State<HostCancelPreviewModal> {
           child: Text(
             '돌아가기',
             style: AppTextStyles.labelMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
         ),

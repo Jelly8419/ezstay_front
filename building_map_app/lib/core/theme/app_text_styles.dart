@@ -21,6 +21,12 @@ class AppTextStyles {
     'sans-serif',
   ];
 
+  // ============= Font Weights =============
+  // 등록된 웨이트: w400(Regular), w600(SemiBold), w700(Bold), w800(ExtraBold), w900(Black)
+  static const FontWeight weightRegular = FontWeight.w400;
+  static const FontWeight weightSemiBold = FontWeight.w600;
+  static const FontWeight weightBold = FontWeight.w700;
+
   // ============= Display (화면 제목) =============
   /// 가장 큰 제목 (32px)
   /// 용도: 랜딩 페이지, 큰 헤더
@@ -176,9 +182,9 @@ class AppTextStyles {
 
   // Secondary colored text
   static TextStyle get bodyMediumSecondary =>
-      bodyMedium.copyWith(color: AppColors.textSecondary);
+      bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600);
   static TextStyle get bodySmallSecondary =>
-      bodySmall.copyWith(color: AppColors.textSecondary);
+      bodySmall.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600);
 
   // White text (for dark backgrounds)
   static TextStyle get headingLargeWhite =>

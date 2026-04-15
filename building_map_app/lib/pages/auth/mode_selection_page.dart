@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/user.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common/responsive_page_layout.dart';
@@ -8,10 +10,7 @@ import '../../widgets/common/responsive_page_layout.dart';
 class ModeSelectionPage extends StatelessWidget {
   final Function(UserMode) onModeSelected;
 
-  const ModeSelectionPage({
-    super.key,
-    required this.onModeSelected,
-  });
+  const ModeSelectionPage({super.key, required this.onModeSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -101,13 +100,9 @@ class ModeSelectionPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'EZStay',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                        style: AppTextStyles.headingMedium.copyWith(color: Colors.black87),
                       ),
                     ],
                   ),
@@ -118,13 +113,9 @@ class ModeSelectionPage extends StatelessWidget {
             const SizedBox(height: 40),
 
             // 안내 텍스트
-            const Text(
+            Text(
               '사용자 선택',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
-              ),
+              style: AppTextStyles.headingMedium.copyWith(color: const Color(0xFF2C3E50)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
@@ -182,11 +173,7 @@ class ModeSelectionPage extends StatelessWidget {
                 ),
                 child: const Text(
                   '가격으로 올리고 + 가격 책정 포맷쇼',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.labelLarge,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -202,10 +189,7 @@ class ModeSelectionPage extends StatelessWidget {
               },
               child: Text(
                 '나중에 선택할게요',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 16,
-                ),
+                style: AppTextStyles.labelLarge.copyWith(color: AppColors.textPrimary),
               ),
             ),
           ],
@@ -230,7 +214,7 @@ class ModeSelectionPage extends StatelessWidget {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey[200]!, width: 1),
+        side: BorderSide(color: AppColors.textPrimary, width: 1),
       ),
       child: InkWell(
         onTap: onTap,
@@ -248,31 +232,22 @@ class ModeSelectionPage extends StatelessWidget {
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  Icons.home,
-                  size: 24,
-                  color: color,
-                ),
+                child: Icon(Icons.home, size: 24, color: color),
               ),
               const SizedBox(height: 16),
 
               // 제목
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2C3E50),
-                ),
+                style: AppTextStyles.headingSmall.copyWith(color: const Color(0xFF2C3E50)),
               ),
               const SizedBox(height: 16),
 
               // 설명 1
               Text(
                 description1,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[700],
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textPrimary,
                   height: 1.4,
                 ),
               ),
@@ -281,9 +256,8 @@ class ModeSelectionPage extends StatelessWidget {
               // 설명 1 상세
               Text(
                 description1Detail,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey[500],
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textPrimary,
                   height: 1.3,
                 ),
               ),
@@ -292,9 +266,8 @@ class ModeSelectionPage extends StatelessWidget {
               // 설명 2
               Text(
                 description2,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[700],
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textPrimary,
                   height: 1.4,
                 ),
               ),
@@ -303,9 +276,8 @@ class ModeSelectionPage extends StatelessWidget {
               // 설명 2 상세
               Text(
                 description2Detail,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey[500],
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textPrimary,
                   height: 1.3,
                 ),
               ),
@@ -325,11 +297,7 @@ class ModeSelectionPage extends StatelessWidget {
                   child: Center(
                     child: Text(
                       buttonText,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTextStyles.labelMedium.copyWith(color: Colors.white),
                     ),
                   ),
                 ),

@@ -167,7 +167,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
               onChanged: (value) => _updateFormData('roomName', value),
               decoration: InputDecoration(
                 hintText: '예: 강남역 도보 5분 깨끗한 원룸',
-                hintStyle: TextStyle(color: Colors.grey[400]),
+                hintStyle: TextStyle(color: AppColors.textPrimary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(
@@ -219,7 +219,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                         readOnly: true,
                         decoration: InputDecoration(
                           hintText: '주소 찾기를 통해 입력해주세요',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          hintStyle: TextStyle(color: AppColors.textPrimary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
@@ -260,13 +260,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text(
-                        '주소 찾기',
-                        style: TextStyle(
-                          color: Colors.grey[800],
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      child: const Text('주소 찾기'),
                     ),
                   ],
                 ),
@@ -277,7 +271,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                   maxLines: 2,
                   decoration: InputDecoration(
                     hintText: '상세주소를 입력해주세요. (예: 3층, 2호, 2동 3호 등)',
-                    hintStyle: TextStyle(color: Colors.grey[400]),
+                    hintStyle: TextStyle(color: AppColors.textPrimary),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(
@@ -321,7 +315,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                   decoration: InputDecoration(
                     labelText: '층 수',
                     hintText: '예: 3',
-                    hintStyle: TextStyle(color: Colors.grey[400]),
+                    hintStyle: TextStyle(color: AppColors.textPrimary),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(
@@ -423,9 +417,9 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                       onChanged: (value) =>
                           _updateFormData('isDuplex', value ?? false),
                     ),
-                    const Text(
+                    Text(
                       '복층 구조',
-                      style: TextStyle(
+                      style: AppTextStyles.labelLarge.copyWith(
                         fontSize: 15,
                         color: AppColors.textPrimary,
                       ),
@@ -433,13 +427,12 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     '*방이 2개 층으로 나뉘어져 있는 경우 체크해주세요',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -521,11 +514,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
+          style: AppTextStyles.labelMedium.copyWith(color: Colors.black),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
@@ -580,13 +569,9 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '전용 면적 (평)',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
+          style: AppTextStyles.labelMedium.copyWith(color: Colors.black),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -598,7 +583,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
             hintText: '예: 10',
-            hintStyle: TextStyle(color: Colors.grey[400]),
+            hintStyle: TextStyle(color: AppColors.textPrimary),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
@@ -642,13 +627,9 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '공동현관 비밀번호 유무',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
+          style: AppTextStyles.labelMedium.copyWith(color: Colors.black),
         ),
         const SizedBox(height: 12),
         Row(
@@ -707,9 +688,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
         child: Text(
           label,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+          style: AppTextStyles.labelMedium.copyWith(
             color: selected ? AppColors.primary900 : AppColors.textSecondary,
           ),
         ),
@@ -740,8 +719,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
             ),
             child: Text(
               password.isEmpty ? '비밀번호를 입력하세요' : password,
-              style: TextStyle(
-                fontSize: 14,
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: password.isEmpty
                     ? (_hasError('공동현관 비밀번호')
                           ? AppColors.error500
@@ -846,13 +824,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                       side: const BorderSide(color: AppColors.error500),
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text(
-                      '전체 삭제',
-                      style: TextStyle(
-                        color: AppColors.error600,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: const Text('전체 삭제'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -870,13 +842,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                       side: const BorderSide(color: AppColors.gray300),
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text(
-                      '삭제',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: const Text('삭제'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -891,13 +857,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                       backgroundColor: AppColors.primary600,
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text(
-                      '완료',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: const Text('완료'),
                   ),
                 ),
               ],
@@ -927,7 +887,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: AppTextStyles.labelLarge.copyWith(
             fontSize: fontSize,
             fontWeight: FontWeight.w600,
             color: Colors.black,

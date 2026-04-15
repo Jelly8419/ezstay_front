@@ -51,7 +51,7 @@ class HostNicknameEditSection extends StatelessWidget {
               Text(
                 '닉네임',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -94,7 +94,7 @@ class HostNicknameEditSection extends StatelessWidget {
         Text(
           '닉네임',
           style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -108,7 +108,6 @@ class HostNicknameEditSection extends StatelessWidget {
           child: Text(
             nicknameError ?? '2~20자, 한글/영어만 입력 가능',
             style: AppTextStyles.bodySmall.copyWith(
-              fontSize: 12,
               color: nicknameError != null ? AppColors.error500 : AppColors.textSecondary,
             ),
           ),

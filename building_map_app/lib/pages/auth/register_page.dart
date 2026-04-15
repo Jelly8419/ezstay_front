@@ -138,13 +138,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 제목
-                  const Text(
+                  Text(
                     '회원가입',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
-                      color: primaryBlack,
-                    ),
+                    style: AppTextStyles.displayLarge.copyWith(color: primaryBlack),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
@@ -152,20 +148,16 @@ class _RegisterPageState extends State<RegisterPage> {
                   // 부제목 (선택한 모드 표시)
                   Text(
                     widget.mode == UserMode.guest ? '임차인으로 가입하기' : '임대인으로 가입하기',
-                    style: AppTextStyles.bodyMedium.copyWith(color: textGray),
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
 
                   // 소셜 로그인 시 이메일 표시 (읽기 전용)
                   if (widget.isSocialLogin) ...[
-                    const Text(
+                    Text(
                       '이메일 주소',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: textGray,
-                      ),
+                      style: AppTextStyles.labelMedium,
                     ),
                     const SizedBox(height: 8),
                     SizedBox(
@@ -173,11 +165,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: TextFormField(
                         controller: _emailController,
                         enabled: false, // 읽기 전용
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: primaryBlack,
-                        ),
+                        style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: Color(0xFFF5F5F5), // 비활성 배경색
@@ -208,13 +196,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   // 이메일/비밀번호 필드 (일반 회원가입일 때만)
                   if (!widget.isSocialLogin) ...[
                     // 이메일 라벨
-                    const Text(
+                    Text(
                       '이메일 주소',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: textGray,
-                      ),
+                      style: AppTextStyles.labelMedium,
                     ),
                     const SizedBox(height: 8),
 
@@ -224,18 +208,10 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: primaryBlack,
-                        ),
+                        style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                         decoration: InputDecoration(
                           hintText: 'email@example.com',
-                          hintStyle: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: hintGray,
-                          ),
+                          hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                           filled: true,
                           fillColor: backgroundWhite,
                           contentPadding: const EdgeInsets.symmetric(
@@ -287,13 +263,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 20),
 
                     // 비밀번호 라벨
-                    const Text(
+                    Text(
                       '비밀번호',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: textGray,
-                      ),
+                      style: AppTextStyles.labelMedium,
                     ),
                     const SizedBox(height: 8),
 
@@ -303,18 +275,10 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: TextFormField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: primaryBlack,
-                        ),
+                        style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                         decoration: InputDecoration(
                           hintText: '8자 이상, 영문과 숫자 포함',
-                          hintStyle: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: hintGray,
-                          ),
+                          hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                           filled: true,
                           fillColor: backgroundWhite,
                           contentPadding: const EdgeInsets.symmetric(
@@ -383,13 +347,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 20),
 
                     // 비밀번호 확인 라벨
-                    const Text(
+                    Text(
                       '비밀번호 확인',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: textGray,
-                      ),
+                      style: AppTextStyles.labelMedium,
                     ),
                     const SizedBox(height: 8),
 
@@ -399,18 +359,10 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: _obscureConfirmPassword,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: primaryBlack,
-                        ),
+                        style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                         decoration: InputDecoration(
                           hintText: '비밀번호를 다시 입력해 주세요.',
-                          hintStyle: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: hintGray,
-                          ),
+                          hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                           filled: true,
                           fillColor: backgroundWhite,
                           contentPadding: const EdgeInsets.symmetric(
@@ -476,13 +428,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   ],
 
                   // 이름 라벨 (소셜 로그인 시 읽기 전용)
-                  const Text(
+                  Text(
                     '이름',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: textGray,
-                    ),
+                    style: AppTextStyles.labelMedium,
                   ),
                   const SizedBox(height: 8),
 
@@ -492,18 +440,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: TextFormField(
                       controller: _nameController,
                       enabled: !widget.isSocialLogin, // 소셜 로그인 시 읽기 전용
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: primaryBlack,
-                      ),
+                      style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                       decoration: InputDecoration(
                         hintText: '실명을 입력해 주세요.',
-                        hintStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: hintGray,
-                        ),
+                        hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                         filled: true,
                         fillColor: widget.isSocialLogin
                             ? Color(0xFFF5F5F5) // 소셜 로그인 시 회색 배경
@@ -562,13 +502,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   const SizedBox(height: 20),
 
                   // 전화번호 라벨
-                  const Text(
+                  Text(
                     '전화번호',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: textGray,
-                    ),
+                    style: AppTextStyles.labelMedium,
                   ),
                   const SizedBox(height: 8),
 
@@ -578,18 +514,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: TextFormField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: primaryBlack,
-                      ),
+                      style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                       decoration: InputDecoration(
                         hintText: '010-0000-0000',
-                        hintStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: hintGray,
-                        ),
+                        hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                         filled: true,
                         fillColor: backgroundWhite,
                         contentPadding: const EdgeInsets.symmetric(
@@ -644,29 +572,21 @@ class _RegisterPageState extends State<RegisterPage> {
                   // 호스트용 계좌 정보 (호스트 모드일 때만)
                   if (widget.mode == UserMode.host) ...[
                     // 정산 정보 섹션 제목
-                    const Text(
+                    Text(
                       '정산 정보',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: primaryBlack,
-                      ),
+                      style: AppTextStyles.headingSmall.copyWith(color: primaryBlack),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '수익 정산을 위한 계좌 정보를 입력해주세요',
-                      style: AppTextStyles.bodySmall.copyWith(color: textGray),
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
                     ),
                     const SizedBox(height: 20),
 
                     // 은행 선택 라벨
-                    const Text(
+                    Text(
                       '은행',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: textGray,
-                      ),
+                      style: AppTextStyles.labelMedium,
                     ),
                     const SizedBox(height: 8),
 
@@ -676,11 +596,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: DropdownButtonFormField<String>(
                         decoration: InputDecoration(
                           hintText: '은행을 선택해주세요',
-                          hintStyle: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: hintGray,
-                          ),
+                          hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                           filled: true,
                           fillColor: backgroundWhite,
                           contentPadding: const EdgeInsets.symmetric(
@@ -725,13 +641,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 20),
 
                     // 계좌번호 라벨
-                    const Text(
+                    Text(
                       '계좌번호',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: textGray,
-                      ),
+                      style: AppTextStyles.labelMedium,
                     ),
                     const SizedBox(height: 8),
 
@@ -744,18 +656,10 @@ class _RegisterPageState extends State<RegisterPage> {
                             child: TextFormField(
                               controller: _accountController,
                               keyboardType: TextInputType.number,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w400,
-                                color: primaryBlack,
-                              ),
+                              style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                               decoration: InputDecoration(
                                 hintText: '계좌번호를 입력해주세요',
-                                hintStyle: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w400,
-                                  color: hintGray,
-                                ),
+                                hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                                 filled: true,
                                 fillColor: backgroundWhite,
                                 contentPadding: const EdgeInsets.symmetric(
@@ -807,10 +711,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                             child: Text(
                               _accountVerified ? '확인완료' : '확인하기',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: AppTextStyles.labelMedium,
                             ),
                           ),
                         ),
@@ -819,13 +720,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 20),
 
                     // 예금주 라벨
-                    const Text(
+                    Text(
                       '예금주',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: textGray,
-                      ),
+                      style: AppTextStyles.labelMedium,
                     ),
                     const SizedBox(height: 8),
 
@@ -834,18 +731,10 @@ class _RegisterPageState extends State<RegisterPage> {
                       height: 52,
                       child: TextFormField(
                         controller: _accountHolderController,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: primaryBlack,
-                        ),
+                        style: AppTextStyles.labelLarge.copyWith(color: primaryBlack),
                         decoration: InputDecoration(
                           hintText: '예금주명을 입력해주세요',
-                          hintStyle: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: hintGray,
-                          ),
+                          hintStyle: AppTextStyles.labelLarge.copyWith(color: hintGray),
                           filled: true,
                           fillColor: backgroundWhite,
                           contentPadding: const EdgeInsets.symmetric(
@@ -913,13 +802,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           '이용약관 및 개인정보처리방침 동의 (필수)',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: textGray,
-                          ),
+                          style: AppTextStyles.labelMedium,
                         ),
                       ],
                     ),
@@ -960,13 +845,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           '마케팅 정보 수신 동의 (선택)',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: textGray,
-                          ),
+                          style: AppTextStyles.labelMedium,
                         ),
                       ],
                     ),
@@ -1000,10 +881,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             )
                           : const Text(
                               '가입하기',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: AppTextStyles.labelLarge,
                             ),
                     ),
                   ),
@@ -1022,11 +900,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             '또는',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                              color: secondaryGray,
-                            ),
+                            style: AppTextStyles.labelMedium.copyWith(color: secondaryGray),
                           ),
                         ),
                         const Expanded(
@@ -1056,10 +930,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             const SizedBox(width: 8),
                             const Text(
                               '카카오로 간편가입',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: AppTextStyles.labelLarge,
                             ),
                           ],
                         ),
@@ -1307,30 +1178,18 @@ class _RegisterPageState extends State<RegisterPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text(
           '회원가입 실패',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         content: Text(
           message,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
+          style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               '확인',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
             ),
           ),
         ],
@@ -1350,19 +1209,11 @@ class _RegisterPageState extends State<RegisterPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: primaryBlack,
-          ),
+          style: AppTextStyles.headingSmall,
         ),
         content: Text(
           message,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textGray,
-          ),
+          style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary),
         ),
         actions: [
           TextButton(
@@ -1374,11 +1225,7 @@ class _RegisterPageState extends State<RegisterPage> {
             },
             child: Text(
               '확인',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary600,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary600),
             ),
           ),
         ],

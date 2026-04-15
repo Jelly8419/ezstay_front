@@ -85,12 +85,12 @@ class ErrorPage extends StatelessWidget {
                           color: AppColors.error500,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
+                        child: Text(
                           'ERROR',
-                          style: TextStyle(
-                            color: Colors.white,
+                          style: AppTextStyles.caption.copyWith(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
+                            color: Colors.white,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -135,12 +135,9 @@ class ErrorPage extends StatelessWidget {
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
+                    child: Text(
                       '홈으로 이동',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTextStyles.labelLarge,
                     ),
                   ),
                 ),

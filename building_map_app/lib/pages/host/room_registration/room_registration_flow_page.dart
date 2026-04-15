@@ -919,10 +919,9 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               const SizedBox(height: 20),
 
               // 제목
-              const Text(
+              Text(
                 '등록 완료',
-                style: TextStyle(
-                  fontSize: 22,
+                style: AppTextStyles.headingMedium.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
@@ -936,10 +935,10 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                     ? '방 등록이 완료되었습니다!\n\n관리자 심사가 진행됩니다. (보통 1-2일 소요)\n심사 승인 후 매물이 공개됩니다.'
                     : '방 정보가 저장되었습니다!',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: AppTextStyles.labelLarge.copyWith(
                   fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
                   height: 1.5,
                 ),
               ),
@@ -1090,10 +1089,9 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   '이전',
-                                  style: TextStyle(
-                                    fontSize: 16,
+                                  style: AppTextStyles.labelLarge.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -1131,8 +1129,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
                                     )
                                   : Text(
                                       _currentStep == 4 ? '등록 완료' : '다음',
-                                      style: const TextStyle(
-                                        fontSize: 16,
+                                      style: AppTextStyles.labelLarge.copyWith(
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),

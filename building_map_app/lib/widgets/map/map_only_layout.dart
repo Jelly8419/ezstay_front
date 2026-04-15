@@ -132,10 +132,9 @@ class MapOnlyLayout extends StatelessWidget {
                     children: [
                       Text(
                         '매물 ${filteredRooms.length}개',
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1F2937),
+                          color: const Color(0xFF1F2937),
                         ),
                       ),
                       if (ResponsiveUtil.isMobile(context)) ...[

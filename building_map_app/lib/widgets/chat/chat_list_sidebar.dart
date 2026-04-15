@@ -133,10 +133,8 @@ class _ChatMobileHeader extends StatelessWidget {
         children: [
           Text(
             '채팅',
-            style: AppTextStyles.bodyLarge.copyWith(
+            style: AppTextStyles.headingSmall.copyWith(
               color: AppColors.neutral900,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
             ),
           ),
         ],

@@ -278,7 +278,7 @@ class _RoomInfoButton extends StatelessWidget {
             style: AppTextStyles.bodySmall.copyWith(
               fontSize: 12,
               color: AppColors.gray600,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),

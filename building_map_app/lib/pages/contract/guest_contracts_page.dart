@@ -443,10 +443,7 @@ class _GuestContractsPageState extends State<GuestContractsPage> {
                         padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
                         child: Text(
                           '계약 관리',
-                          style: AppTextStyles.headingLarge.copyWith(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTextStyles.headingLarge,
                         ),
                       ),
                       ContractTabMenu(

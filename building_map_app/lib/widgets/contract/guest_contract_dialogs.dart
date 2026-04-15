@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../services/rental_order_service.dart';
 import '../../utils/format_utils.dart';
 import '../../widgets/contract/refund_row.dart';
@@ -102,16 +103,15 @@ Future<bool?> showGuestCheckoutConfirmDialog(BuildContext context) {
               border: Border.all(color: const Color(0xFFFECACA)),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Row(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     '방 도어락 비밀번호를 임의 변경 후 퇴실하셨을 경우, \n퇴실 확인 전에 임대인에게 비밀번호를 안내하지 않으면 보증금 환급 절차에 불이익이 발생할 수 있습니다.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF991B1B),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: const Color(0xFF991B1B),
                       height: 1.5,
                     ),
                   ),
@@ -226,30 +226,27 @@ void showRefundInfoDialog(
                     if (policyName.isNotEmpty)
                       Text(
                         '환불 정책: $policyName',
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: AppTextStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF374151),
+                          color: const Color(0xFF374151),
                         ),
                       ),
                     if (ruleDesc.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         ruleDesc,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6B7280),
+                        style: AppTextStyles.caption.copyWith(
+                          color: const Color(0xFF6B7280),
                         ),
                       ),
                     ],
                     if (isSameDay) ...[
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         '결제 당일 취소 — 전액 환불',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF10B981),
-                          fontWeight: FontWeight.w500,
+                        style: AppTextStyles.caption.copyWith(
+                          color: const Color(0xFF10B981),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -259,12 +256,11 @@ void showRefundInfoDialog(
               const SizedBox(height: 16),
 
               // 항목별 환불 내역
-              const Text(
+              Text(
                 '환불 내역',
-                style: TextStyle(
-                  fontSize: 13,
+                style: AppTextStyles.bodySmall.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF374151),
+                  color: const Color(0xFF374151),
                 ),
               ),
               const SizedBox(height: 8),
@@ -348,9 +344,8 @@ void showRefundInfoDialog(
                   ),
                   child: Text(
                     serverMessage,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF92400E),
+                    style: AppTextStyles.caption.copyWith(
+                      color: const Color(0xFF92400E),
                     ),
                   ),
                 ),
@@ -369,21 +364,20 @@ void showRefundInfoDialog(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.warning_amber_rounded,
                             size: 16,
                             color: Color(0xFFB45309),
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               '취소 전 옵션 주문을 먼저 환불해주세요',
-                              style: TextStyle(
-                                fontSize: 13,
+                              style: AppTextStyles.bodySmall.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF92400E),
+                                color: const Color(0xFF92400E),
                               ),
                             ),
                           ),
@@ -402,25 +396,22 @@ void showRefundInfoDialog(
                               Expanded(
                                 child: Text(
                                   '주문번호: $orderId',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF78350F),
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: const Color(0xFF78350F),
                                   ),
                                 ),
                               ),
                               Text(
                                 '$status  ',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFFB45309),
+                                style: AppTextStyles.caption.copyWith(
+                                  color: const Color(0xFFB45309),
                                 ),
                               ),
                               Text(
                                 '${FormatUtils.formatCurrency(amount)}원',
-                                style: const TextStyle(
-                                  fontSize: 12,
+                                style: AppTextStyles.caption.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF78350F),
+                                  color: const Color(0xFF78350F),
                                 ),
                               ),
                             ],
@@ -478,11 +469,11 @@ Widget buildReturnPreviewConfirmContent(ReturnPreviewResponse? preview) {
         children: [
           Text(
             '상품 금액',
-            style: TextStyle(fontSize: 13, color: AppColors.neutral600),
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.neutral600),
           ),
           Text(
             '${FormatUtils.formatCurrency(summary.totalItemAmount)}원',
-            style: const TextStyle(fontSize: 13),
+            style: AppTextStyles.bodySmall,
           ),
         ],
       ),
@@ -493,11 +484,11 @@ Widget buildReturnPreviewConfirmContent(ReturnPreviewResponse? preview) {
           children: [
             Text(
               '수거비 차감',
-              style: TextStyle(fontSize: 13, color: AppColors.error600),
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error600),
             ),
             Text(
               '-${FormatUtils.formatCurrency(summary.totalShippingDeduction)}원',
-              style: TextStyle(fontSize: 13, color: AppColors.error600),
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error600),
             ),
           ],
         ),
@@ -509,7 +500,7 @@ Widget buildReturnPreviewConfirmContent(ReturnPreviewResponse? preview) {
               padding: const EdgeInsets.only(top: 2),
               child: Text(
                 '※ ${op.shippingDeductionReason}',
-                style: TextStyle(fontSize: 11, color: AppColors.neutral500),
+                style: AppTextStyles.caption.copyWith(color: AppColors.neutral500),
               ),
             ),
           ),
@@ -517,14 +508,13 @@ Widget buildReturnPreviewConfirmContent(ReturnPreviewResponse? preview) {
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             '예상 환불 합계',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w600),
           ),
           Text(
             '${FormatUtils.formatCurrency(summary.totalRefundAmount < 0 ? 0 : summary.totalRefundAmount)}원',
-            style: const TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.labelMedium.copyWith(
               fontWeight: FontWeight.w600,
               color: AppColors.blue600,
             ),
@@ -534,7 +524,7 @@ Widget buildReturnPreviewConfirmContent(ReturnPreviewResponse? preview) {
       const SizedBox(height: 8),
       Text(
         '* 실제 환불 금액은 관리자 처리 후 최종 확정됩니다.',
-        style: TextStyle(fontSize: 11, color: AppColors.neutral500),
+        style: AppTextStyles.caption.copyWith(color: AppColors.neutral500),
       ),
     ],
   );

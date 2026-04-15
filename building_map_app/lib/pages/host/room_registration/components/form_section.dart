@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
 
 /// 폼 섹션 컴포넌트 (카드 스타일의 섹션)
 class FormSection extends StatelessWidget {
@@ -40,9 +41,7 @@ class FormSection extends StatelessWidget {
               ],
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+                style: AppTextStyles.headingSmall.copyWith(
                   color: Colors.black,
                 ),
               ),

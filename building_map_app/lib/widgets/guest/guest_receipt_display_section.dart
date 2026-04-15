@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
-import 'host_receipt_edit_form.dart';
+import '../host/host_receipt_edit_form.dart';
 
-/// 수수료 영수증 발급 서브섹션
+/// 부가서비스 영수증 서브섹션 (게스트용)
 ///
 /// 표시 모드(현재 설정 + 변경 버튼)와 편집 모드(HostReceiptEditForm)를
 /// 외부 상태로 제어합니다.
-class HostReceiptDisplaySection extends StatelessWidget {
-  const HostReceiptDisplaySection({
+class GuestReceiptDisplaySection extends StatelessWidget {
+  const GuestReceiptDisplaySection({
     super.key,
     required this.isEditing,
     required this.savedReceipt,
@@ -57,9 +57,9 @@ class HostReceiptDisplaySection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '수수료에 대한 영수증 발급',
+          '부가서비스 영수증',
           style: AppTextStyles.bodyLarge.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w800,
             color: AppColors.gray900,
           ),
         ),
@@ -114,7 +114,7 @@ class HostReceiptDisplaySection extends StatelessWidget {
                       ? '신청 - $receiptTypeName (${savedReceipt!['receiptNumber']})'
                       : '신청 안함',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w800,
                     color: AppColors.gray900,
                   ),
                 ),

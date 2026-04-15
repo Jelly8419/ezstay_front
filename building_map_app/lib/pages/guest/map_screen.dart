@@ -594,7 +594,7 @@ class _MapScreenState extends State<MapScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border(
-                    right: BorderSide(color: Colors.grey[300]!),
+                    right: BorderSide(color: AppColors.textPrimary),
                   ),
                 ),
                 child: _buildPropertyList(),

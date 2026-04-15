@@ -530,7 +530,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               child: Text(
                 '${_room!.address} · ${_room!.floor}층',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -625,10 +625,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             '방 소개',
-            style: TextStyle(
-              fontSize: 18,
+            style: AppTextStyles.headingSmall.copyWith(
               fontWeight: FontWeight.w700,
               color: Colors.black,
             ),
@@ -653,7 +652,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               Text(
                 label,
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -676,7 +675,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       return Text(
         '제공되는 편의시설이 없습니다.',
         style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.textSecondary,
+          color: AppColors.textPrimary,
         ),
       );
     }
@@ -739,7 +738,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       return Text(
         '제공되는 편의시설이 없습니다.',
         style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.textSecondary,
+          color: AppColors.textPrimary,
         ),
       );
     }
@@ -948,7 +947,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                 Text(
                   includedItemsText,
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -989,7 +988,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                       child: Text(
                         '이 방은 퇴실 후 EZ스테이에서 청소하는 방입니다.',
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -1007,7 +1006,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                       child: Icon(
                         Icons.info_outline,
                         size: 16,
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ],
@@ -1046,7 +1045,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               Text(
                 '제3자 예치기관에 보관되며, 퇴실 완료 후 자동 환급됩니다.',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -1156,7 +1155,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           Text(
             description,
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
         ],
@@ -1250,7 +1249,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                   Text(
                     roleLabel,
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -1639,7 +1638,6 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               Text(
                 PriceCalculator.formatKRW(_room!.weeklyRent),
                 style: AppTextStyles.headingLarge.copyWith(
-                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
@@ -1647,7 +1645,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               Text(
                 ' /주',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -1670,7 +1668,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                     child: Text(
                       '${_room!.longTermWeeks}주 이상 계약 시 ${_room!.longTermDiscount}% 할인',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -1703,7 +1701,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                     child: Text(
                       '${_room!.quickMoveIn}일 이내 입주 시 ${PriceCalculator.formatKRW(_room!.quickMoveInDiscount!)} 할인',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -1717,8 +1715,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           // 날짜 선택
           Text(
             '임대 기간',
-            style: AppTextStyles.bodyMedium.copyWith(
-              fontSize: 16,
+            style: AppTextStyles.labelLarge.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
@@ -1784,8 +1781,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                 ),
                 Text(
                   PriceCalculator.formatKRW(priceBreakdown.total),
-                  style: AppTextStyles.headingMedium.copyWith(
-                    fontSize: 22,
+                  style: AppTextStyles.headingLarge.copyWith(
                     color: AppColors.primary600,
                   ),
                 ),
@@ -1824,8 +1820,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                 child: Text(
                   '기본 5만원 + 10평 초과시 10평당 2만원',
                   style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -2000,8 +1995,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         // 헤더
         Text(
           '옵션 상품(EZstay에서 제공해드려요)',
-          style: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 16,
+          style: AppTextStyles.labelLarge.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
           ),
@@ -2009,9 +2003,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         SizedBox(height: AppSpacing.xs),
         Text(
           '옵션 상품은 계약 승인 후에도 구매할 수 있어요.',
-          style: AppTextStyles.bodySmall.copyWith(
-            fontSize: 14,
-            color: AppColors.textSecondary,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textPrimary,
           ),
         ),
         SizedBox(height: AppSpacing.md),
@@ -2110,7 +2103,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                     TextSpan(
                       text: ' (${item.description})',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                 ],

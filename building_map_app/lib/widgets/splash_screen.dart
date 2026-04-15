@@ -43,7 +43,7 @@ class SplashScreen extends StatelessWidget {
             Text(
               '앱을 시작하는 중...',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textPrimary,
               ),
             ),
           ],

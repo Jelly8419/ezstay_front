@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../models/contract.dart';
 import '../../models/contract_detail.dart';
 import '../../utils/format_utils.dart';
@@ -56,8 +57,7 @@ class HostDepositAgreementSection extends StatelessWidget {
             children: [
               Text(
                 '보증금 합의',
-                style: TextStyle(
-                  fontSize: 18,
+                style: AppTextStyles.headingSmall.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.gray900,
                 ),
@@ -74,8 +74,7 @@ class HostDepositAgreementSection extends StatelessWidget {
                   children: [
                     Text(
                       '⚠️ 퇴실 확인이 보류되었습니다.',
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: AppTextStyles.labelMedium.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.warning700,
                       ),
@@ -83,7 +82,7 @@ class HostDepositAgreementSection extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '임차인과 합의가 되었다면 합의 내용을 제출해주세요.',
-                      style: TextStyle(fontSize: 13, color: AppColors.warning700),
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning700),
                     ),
                     if (daysRemaining != null) ...[
                       const SizedBox(height: 8),
@@ -91,8 +90,7 @@ class HostDepositAgreementSection extends StatelessWidget {
                         isExpired
                             ? '⏰ 제출 기한이 만료되었습니다. 보증금이 임차인에게 전액 반환됩니다.'
                             : '⏰ 제출 기한: $daysRemaining일 남음',
-                        style: TextStyle(
-                          fontSize: 13,
+                        style: AppTextStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.bold,
                           color: isExpired ? AppColors.error600 : AppColors.warning500,
                         ),
@@ -118,7 +116,7 @@ class HostDepositAgreementSection extends StatelessWidget {
                     ),
                     child: Text(
                       agreement?.status == 'SUBMITTED' ? '합의 내용 수정' : '합의 내용 제출',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -154,8 +152,7 @@ class HostDepositAgreementSection extends StatelessWidget {
             children: [
               Text(
                 '보증금 합의',
-                style: TextStyle(
-                  fontSize: 18,
+                style: AppTextStyles.headingSmall.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.gray900,
                 ),
@@ -172,8 +169,7 @@ class HostDepositAgreementSection extends StatelessWidget {
                   children: [
                     Text(
                       '합의 내용이 제출되었습니다.',
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: AppTextStyles.labelMedium.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.blue900,
                       ),
@@ -181,7 +177,7 @@ class HostDepositAgreementSection extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '임차인 확인을 기다리고 있습니다.',
-                      style: TextStyle(fontSize: 13, color: AppColors.blue900),
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.blue900),
                     ),
                   ],
                 ),
@@ -200,8 +196,7 @@ class HostDepositAgreementSection extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   '합의 내용',
-                  style: TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.bodySmall.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.neutral500,
                   ),
@@ -217,7 +212,7 @@ class HostDepositAgreementSection extends StatelessWidget {
                   ),
                   child: Text(
                     agreement.agreementText,
-                    style: TextStyle(fontSize: 14, color: AppColors.neutral700),
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.neutral700),
                   ),
                 ),
                 if (agreement.submittedAt != null) ...[
@@ -245,16 +240,14 @@ class HostDepositAgreementSection extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 13,
+          style: AppTextStyles.bodySmall.copyWith(
             fontWeight: FontWeight.w600,
             color: AppColors.neutral500,
           ),
         ),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 14,
+          style: AppTextStyles.labelMedium.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.gray900,
           ),
