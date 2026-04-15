@@ -1,3 +1,0 @@
-# Cloudflare Pages redirects
-# www가 아닌 접근은 앱으로 (필요시 활성화)
-# /app/*  https://ezstay.io/:splat  301

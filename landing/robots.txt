@@ -1,6 +1,0 @@
-# robots.txt for EZStay Landing Page
-User-agent: *
-Allow: /
-
-Sitemap: https://www.ezstay.io/sitemap.xml
-Sitemap: https://ezstay.io/sitemap.xml
