@@ -159,7 +159,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
                       _buildDeliverySection(isMobile: false),
 
                       // 안전한 이유 섹션
-                      _buildSafetySection(isMobile: false),
+                      WebContainer(
+                        child: _buildSafetySection(isMobile: false),
+                      ),
 
                       // CTA 섹션
                       _buildCTASection(isMobile: false),
@@ -653,7 +655,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? AppSpacing.lg : AppSpacing.xl * 2,
+        horizontal: isMobile ? AppSpacing.lg : 0,
         vertical: AppSpacing.xl * 2,
       ),
       color: AppColors.background,
@@ -717,7 +719,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                       child: _buildSafetyCard(
                         icon: Icons.check_circle_outline,
                         title: '매물 검증',
-                        description: '모든 매물은 검증 절차를 거쳐 등록되며, 허위 매물을 방지합니다.',
+                        description: '모든 방은 검증 절차를 거쳐 등록되며, 허위 매물을 방지합니다.',
                         color: AppColors.success600,
                       ),
                     ),
@@ -742,7 +744,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? AppSpacing.lg : AppSpacing.xl * 2,
+        horizontal: isMobile ? AppSpacing.lg : 0,
         vertical: AppSpacing.xl * 2,
       ),
       decoration: BoxDecoration(
