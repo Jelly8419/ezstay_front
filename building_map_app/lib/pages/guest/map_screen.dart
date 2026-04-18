@@ -634,7 +634,7 @@ class _MapScreenState extends State<MapScreen> {
                   _roomsForMap.isNotEmpty)
                 Positioned.fill(
                   child: Center(
-                    child: _buildEmptyMessage('일치하는 조건의 매물이 없습니다'),
+                    child: _buildEmptyMessage('일치하는 조건의 방이 없습니다'),
                   ),
                 ),
             ],

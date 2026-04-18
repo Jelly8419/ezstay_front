@@ -4,19 +4,92 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart';
 import '../core/theme/app_text_styles.dart';
 
-/// 게스트/호스트 모드 선택 다이얼로그
-/// 회원가입 시 사용자 모드를 선택하는 팝업
-class ModeSelectionDialog extends StatelessWidget {
-  const ModeSelectionDialog({super.key});
+/// 게스트/호스트 모드 선택
+/// - 모바일(width < 600): 바텀시트
+/// - 웹/태블릿: 기존 다이얼로그
+class ModeSelectionBottomSheet extends StatelessWidget {
+  const ModeSelectionBottomSheet({super.key});
 
-  /// 다이얼로그 표시
+  /// 환경에 따라 바텀시트(모바일) 또는 다이얼로그(웹/태블릿) 표시
   static Future<UserMode?> show(BuildContext context) {
-    return showDialog<UserMode>(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => const ModeSelectionDialog(),
+    if (AppBreakpoints.isMobile(context)) {
+      return showModalBottomSheet<UserMode>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        barrierColor: Colors.black54,
+        builder: (context) => const ModeSelectionBottomSheet(),
+      );
+    } else {
+      return showDialog<UserMode>(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => const _ModeSelectionDialog(),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 드래그 핸들
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.neutral300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // 제목
+              Text(
+                '어떤 목적으로\n서비스를 이용하시나요?',
+                style: AppTextStyles.headingLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+
+              // 임차인 버튼
+              _ModeButton(
+                label: '집을 빌리고 싶어요',
+                mode: UserMode.guest,
+              ),
+              const SizedBox(height: 16),
+
+              // 임대인 버튼
+              _ModeButton(
+                label: '집을 내놓고 싶어요',
+                mode: UserMode.host,
+              ),
+              const SizedBox(height: 28),
+            ],
+          ),
+        ),
+      ),
     );
   }
+}
+
+/// 웹/태블릿용 기존 다이얼로그 (변경 없음)
+class _ModeSelectionDialog extends StatelessWidget {
+  const _ModeSelectionDialog();
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +107,6 @@ class ModeSelectionDialog extends StatelessWidget {
             // 헤더
             Row(
               children: [
-                // 로고 (투명 배경 GNB 로고 사용)
                 Image.asset(
                   'assets/logos/ezstay_logo_gnb_v2.png',
                   width: 36,
@@ -49,7 +121,6 @@ class ModeSelectionDialog extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                // 닫기 버튼
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.of(context).pop(),
@@ -77,7 +148,6 @@ class ModeSelectionDialog extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Row(
                   children: [
-                    // 게스트 모드
                     Expanded(
                       child: _buildModeCard(
                         context: context,
@@ -98,8 +168,6 @@ class ModeSelectionDialog extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: AppSpacing.lg),
-
-                    // 호스트 모드
                     Expanded(
                       child: _buildModeCard(
                         context: context,
@@ -152,7 +220,6 @@ class ModeSelectionDialog extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 아이콘
               Container(
                 width: 48,
                 height: 48,
@@ -160,22 +227,11 @@ class ModeSelectionDialog extends StatelessWidget {
                   color: AppColors.primary100,
                   borderRadius: AppRadius.radiusSm,
                 ),
-                child: Icon(
-                  icon,
-                  size: 28,
-                  color: AppColors.primary600,
-                ),
+                child: Icon(icon, size: 28, color: AppColors.primary600),
               ),
               SizedBox(height: AppSpacing.lg),
-
-              // 제목
-              Text(
-                title,
-                style: AppTextStyles.headingSmall,
-              ),
+              Text(title, style: AppTextStyles.headingSmall),
               SizedBox(height: AppSpacing.lg),
-
-              // 특징 리스트
               ...features.map((feature) => Padding(
                     padding: EdgeInsets.only(bottom: AppSpacing.md),
                     child: Column(
@@ -183,35 +239,25 @@ class ModeSelectionDialog extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(
-                              Icons.check_circle,
-                              size: 16,
-                              color: AppColors.primary600,
-                            ),
+                            Icon(Icons.check_circle,
+                                size: 16, color: AppColors.primary600),
                             SizedBox(width: AppSpacing.xs),
                             Expanded(
-                              child: Text(
-                                feature.title,
-                                style: AppTextStyles.labelMedium,
-                              ),
+                              child: Text(feature.title,
+                                  style: AppTextStyles.labelMedium),
                             ),
                           ],
                         ),
                         SizedBox(height: AppSpacing.xs),
                         Padding(
                           padding: EdgeInsets.only(left: AppSpacing.md),
-                          child: Text(
-                            feature.description,
-                            style: AppTextStyles.bodySmallSecondary,
-                          ),
+                          child: Text(feature.description,
+                              style: AppTextStyles.bodySmallSecondary),
                         ),
                       ],
                     ),
                   )),
-
               SizedBox(height: AppSpacing.lg),
-
-              // 선택 버튼
               SizedBox(
                 width: double.infinity,
                 height: 44,
@@ -241,10 +287,42 @@ class ModeSelectionDialog extends StatelessWidget {
   }
 }
 
-/// 특징 데이터 클래스
 class _Feature {
   final String title;
   final String description;
 
   _Feature({required this.title, required this.description});
+}
+
+class _ModeButton extends StatelessWidget {
+  final String label;
+  final UserMode mode;
+
+  const _ModeButton({required this.label, required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 64,
+      child: OutlinedButton(
+        onPressed: () => Navigator.of(context).pop(mode),
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: AppColors.neutral300, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: AppRadius.radiusMd,
+          ),
+          foregroundColor: AppColors.textPrimary,
+          backgroundColor: AppColors.neutral0,
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.bodyLarge.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
 }
