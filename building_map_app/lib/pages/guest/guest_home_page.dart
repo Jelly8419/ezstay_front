@@ -4,10 +4,15 @@ import 'package:go_router/go_router.dart';
 import '../../utils/format_utils.dart';
 import '../../services/auth_service.dart';
 import '../../services/analytics_service.dart';
+import '../../models/user.dart';
+import '../../services/region_alert_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/local_storage_helper.dart';
 import '../../widgets/common/app_buttons.dart';
+import '../../widgets/common/custom_toast.dart';
+import '../../widgets/modals/region_alert_modal.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../core/utils/seo_helper.dart';
@@ -28,12 +33,17 @@ class _GuestHomePageState extends State<GuestHomePage> {
   DateTime? _checkInDate;
   DateTime? _checkOutDate;
 
+  // 오픈 전 배너 노출 여부 (세션당 1회 — localStorage 기반)
+  static const _bannerDismissedKey = 'opening_banner_dismissed';
+  bool _showOpeningBanner = false;
+
   @override
   void initState() {
     super.initState();
     // Firebase 초기화 후 Analytics 사용
     _analytics = AnalyticsService();
     // 🔥 게스트 홈 화면 진입 이벤트 기록
+    _initOpeningBanner();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _analytics.logHomeViewGuest();
       SeoHelper.updatePage(
@@ -72,6 +82,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
         controller: _scrollController,
         child: Column(
           children: [
+            // 오픈 전 배너
+            _buildOpeningBanner(authService),
             // 히어로 섹션
             _buildHeroSection(isMobile: true),
 
@@ -105,6 +117,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
         controller: _scrollController,
         child: Column(
           children: [
+            // 오픈 전 배너
+            _buildOpeningBanner(authService),
             // 히어로 섹션
             _buildHeroSection(isMobile: false),
 
@@ -144,6 +158,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
                   controller: _scrollController,
                   child: Column(
                     children: [
+                      // 오픈 전 배너
+                      _buildOpeningBanner(authService),
                       // 히어로 섹션
                       _buildHeroSection(isMobile: false),
 
@@ -961,6 +977,175 @@ class _GuestHomePageState extends State<GuestHomePage> {
             description,
             style: AppTextStyles.bodyMediumSecondary,
             textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== 오픈 전 배너 ====================
+
+  /// 세션당 1회 노출: localStorage에 닫음 여부 저장
+  void _initOpeningBanner() {
+    final dismissed = LocalStorageHelper.getItem(_bannerDismissedKey);
+    setState(() {
+      _showOpeningBanner = dismissed == null;
+    });
+  }
+
+  void _dismissOpeningBanner() {
+    LocalStorageHelper.setItem(_bannerDismissedKey, '1');
+    setState(() {
+      _showOpeningBanner = false;
+    });
+  }
+
+  Future<void> _handleAlertRequest(AuthService authService) async {
+    if (!authService.isLoggedIn) {
+      context.go('/login');
+      return;
+    }
+    final result = await RegionAlertService().requestAlert();
+    if (!mounted) return;
+    if (result == null) {
+      CustomToast.error(context, '알림 신청에 실패했습니다. 다시 시도해주세요.');
+      return;
+    }
+    await RegionAlertModal.show(
+      context,
+      alreadyRegistered: result.alreadyRegistered,
+    );
+  }
+
+  Future<void> _handleHostRedirect(AuthService authService) async {
+    if (!authService.isLoggedIn) {
+      context.go('/login');
+      return;
+    }
+
+    final currentUser = authService.currentUser;
+    if (currentUser == null) return;
+
+    // 이미 호스트 모드면 바로 방 등록 페이지로
+    if (currentUser.mode == UserMode.host) {
+      context.go('/host/room-registration');
+      return;
+    }
+
+    // 본인인증 미완료 → 호스트 가입 플로우
+    if (!currentUser.phoneVerified) {
+      context.go('/register/host/kakao');
+      return;
+    }
+
+    // 본인인증 완료 + 계좌 미등록 → 계좌 입력 페이지
+    if (!currentUser.hasBank) {
+      context.go('/host/account-setup-standalone');
+      return;
+    }
+
+    // 본인인증 + 계좌 모두 완료 → 호스트 모드 전환 후 방 등록 페이지
+    try {
+      final ok = await authService.switchUserMode(UserMode.host);
+      if (!ok || !mounted) return;
+      context.go('/host/room-registration');
+    } on SwitchModeRequiresBankException {
+      if (mounted) context.go('/host/account-setup-standalone');
+    }
+  }
+
+  Widget _buildOpeningBanner(AuthService authService) {
+    if (!_showOpeningBanner) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary50, AppColors.blue50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border(
+          bottom: BorderSide(color: AppColors.primary100, width: 1),
+        ),
+      ),
+      child: Stack(
+        children: [
+          // 콘텐츠 (중앙 정렬)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: AppSpacing.xl,
+              horizontal: AppSpacing.lg,
+            ),
+            child: Column(
+              children: [
+                // 타이틀
+                Text(
+                  '오픈 전 참여하면 1만원 혜택',
+                  style: AppTextStyles.headingLarge.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: AppSpacing.md),
+
+                // 설명 (bullet)
+                Text(
+                  '• 오픈 알림 신청 후 첫 계약 시 1만원 할인',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: AppSpacing.xs),
+                Text(
+                  '• 방 등록 후 첫 계약 시 수수료 1만원 할인',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: AppSpacing.sm),
+                Text(
+                  '선착순 마감 시 혜택은 종료됩니다',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: AppSpacing.lg),
+
+                // 버튼 Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AppPrimaryButton(
+                      text: '알림 받기',
+                      fullWidth: false,
+                      onPressed: () => _handleAlertRequest(authService),
+                    ),
+                    SizedBox(width: AppSpacing.md),
+                    AppSecondaryButton(
+                      text: '방 등록하기',
+                      fullWidth: false,
+                      onPressed: () => _handleHostRedirect(authService),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // X 버튼 (우측 상단)
+          Positioned(
+            top: AppSpacing.sm,
+            right: AppSpacing.sm,
+            child: AppIconButton(
+              icon: Icons.close,
+              onPressed: _dismissOpeningBanner,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

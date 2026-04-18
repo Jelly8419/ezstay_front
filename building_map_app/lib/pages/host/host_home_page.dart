@@ -12,6 +12,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../utils/contract_utils.dart';
+import '../../widgets/common/app_buttons.dart';
 
 /// 호스트 모드 홈 화면 - 새 디자인 시스템 적용
 class HostHomePage extends StatefulWidget {
@@ -99,6 +100,7 @@ class _HostHomePageState extends State<HostHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildEventBanner(),
             _buildHeroSection(isMobile: true),
             SizedBox(height: AppSpacing.lg),
             Padding(
@@ -128,6 +130,7 @@ class _HostHomePageState extends State<HostHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildEventBanner(),
             _buildHeroSection(isMobile: false),
             SizedBox(height: AppSpacing.xl),
             Padding(
@@ -162,6 +165,7 @@ class _HostHomePageState extends State<HostHomePage> {
                   controller: _scrollController,
                   child: Column(
                     children: [
+                      _buildEventBanner(),
                       _buildHeroSection(isMobile: false),
                       SizedBox(height: AppSpacing.xxl),
                       _buildInProgressRoomsSection(),
@@ -373,6 +377,99 @@ class _HostHomePageState extends State<HostHomePage> {
     );
   }
 
+  // ==================== 이벤트 배너 ====================
+  Widget _buildEventBanner() {
+    // ignore: dead_code, API 연동 후 서버 값으로 교체 예정
+    const bool isEventActive = true;
+
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        margin: EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        padding: EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: isEventActive ? AppColors.primary50 : AppColors.neutral100,
+          borderRadius: AppRadius.radiusMd,
+          border: Border.all(
+            color: isEventActive ? AppColors.primary200 : AppColors.neutral300,
+          ),
+        ),
+        child: Row(
+          children: [
+            // 왼쪽: 뱃지 + 타이틀 + 설명
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isEventActive
+                          ? AppColors.success100
+                          : AppColors.neutral200,
+                      borderRadius: AppRadius.radiusXs,
+                    ),
+                    child: Text(
+                      isEventActive ? '진행 중' : '종료',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: isEventActive
+                            ? AppColors.success600
+                            : AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: AppSpacing.sm),
+                  Text(
+                    '지금 등록하면 혜택이 적용됩니다',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '첫 계약 시 수수료 1만원 할인',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.primary700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: AppSpacing.md),
+            // 오른쪽: 선착순 문구 + 버튼 (가로 나란히)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  '선착순 마감 시 혜택은 종료됩니다',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                SizedBox(width: AppSpacing.lg),
+                AppPrimaryButton(
+                  text: '방 등록하기',
+                  fullWidth: false,
+                  icon: Icons.arrow_forward,
+                  onPressed: () => context.go('/host/room-registration'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ==================== CTA 배너 ====================
   Widget _buildHeroSection({required bool isMobile}) {
     return Center(
@@ -452,12 +549,11 @@ class _HostHomePageState extends State<HostHomePage> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
-                        // localStorage 초기화 (비즈니스 로직 유지)
                         context.go('/host/room-registration');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.blue600,
+                        backgroundColor: AppColors.blue600,
+                        foregroundColor: Colors.white,
                         elevation: 8,
                         shadowColor: Colors.black.withValues(alpha: 0.2),
                         shape: RoundedRectangleBorder(
@@ -471,7 +567,9 @@ class _HostHomePageState extends State<HostHomePage> {
                           SizedBox(width: AppSpacing.sm),
                           Text(
                             '방 등록하기',
-                            style: AppTextStyles.headingSmall,
+                            style: AppTextStyles.headingSmall.copyWith(
+                              color: Colors.white,
+                            ),
                           ),
                         ],
                       ),

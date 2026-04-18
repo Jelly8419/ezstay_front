@@ -12,6 +12,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../services/room_service.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
 import '../../../widgets/common/custom_toast.dart';
+import '../../../widgets/modals/benefit_result_modal.dart';
 import 'steps/basic_info_step.dart';
 import 'steps/photos_step.dart';
 import 'steps/pricing_step.dart';
@@ -880,6 +881,14 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
 
       if (resultStatus == null) {
         throw Exception('심사 요청 API 호출 실패');
+      }
+
+      if (!mounted) return;
+
+      // 혜택 상태 조회 → 대상이면 모달 먼저 표시 (1회)
+      final isBenefitApplied = await _roomService.getBenefitStatus();
+      if (mounted && isBenefitApplied == true) {
+        await BenefitResultModal.show(context);
       }
 
       if (!mounted) return;
