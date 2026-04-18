@@ -32,6 +32,11 @@ class KakaoMapWebController {
   void setMapDraggable(bool enabled) {
     _state?.setMapDraggable(enabled);
   }
+
+  /// 키워드로 장소 검색 후 결과 콜백 반환
+  void searchPlace(String keyword, void Function(List<Map<String, dynamic>>) onResult) {
+    _state?.searchPlace(keyword, onResult);
+  }
 }
 
 /// 웹용 카카오 지도 위젯 (JavaScript SDK 직접 사용)
@@ -470,6 +475,63 @@ class _KakaoMapWebState extends State<KakaoMapWeb> {
     ''';
 
     js.context.callMethod('eval', [jsCode]);
+  }
+
+  static int _searchIdCounter = 0;
+  html.EventListener? _placeSearchListener;
+
+  /// 키워드로 장소 검색 (kakao.maps.services.Places 사용)
+  void searchPlace(String keyword, void Function(List<Map<String, dynamic>>) onResult) {
+    // 이전 listener 제거 — 검색어 바뀔 때 이전 결과 무시
+    if (_placeSearchListener != null) {
+      html.window.removeEventListener('message', _placeSearchListener);
+      _placeSearchListener = null;
+    }
+
+    final searchId = '${++_searchIdCounter}';
+    final escaped = keyword.replaceAll("'", "\\'");
+    final jsCode = '''
+      (function() {
+        var ps = new kakao.maps.services.Places();
+        ps.keywordSearch('$escaped', function(result, status) {
+          var places = [];
+          if (status === kakao.maps.services.Status.OK) {
+            var limit = Math.min(result.length, 8);
+            for (var i = 0; i < limit; i++) {
+              places.push(result[i].place_name + '||' + result[i].address_name + '||' + result[i].y + '||' + result[i].x);
+            }
+          }
+          window.postMessage({ type: 'place_search_result', searchId: '$searchId', places: places.join(';;') }, '*');
+        });
+      })();
+    ''';
+    js.context.callMethod('eval', [jsCode]);
+
+    _placeSearchListener = (html.Event event) {
+      final msg = event as html.MessageEvent;
+      if (msg.data is! Map) return;
+      if (msg.data['type'] != 'place_search_result') return;
+      // 현재 검색 ID와 다르면 무시 (이전 검색 결과)
+      if (msg.data['searchId'] != searchId) return;
+
+      html.window.removeEventListener('message', _placeSearchListener);
+      _placeSearchListener = null;
+
+      final raw = (msg.data['places'] as String? ?? '');
+      final places = raw.isEmpty
+          ? <Map<String, dynamic>>[]
+          : raw.split(';;').map((entry) {
+              final parts = entry.split('||');
+              return <String, dynamic>{
+                'name': parts.isNotEmpty ? parts[0] : '',
+                'address': parts.length > 1 ? parts[1] : '',
+                'lat': parts.length > 2 ? parts[2] : '',
+                'lng': parts.length > 3 ? parts[3] : '',
+              };
+            }).toList();
+      onResult(places);
+    };
+    html.window.addEventListener('message', _placeSearchListener);
   }
 
   /// 특정 방 ID의 마커를 선택
