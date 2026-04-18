@@ -71,7 +71,7 @@ class MapOnlyLayout extends StatelessWidget {
                   ],
                 ),
                 child: Text(
-                  '일치하는 조건의 매물이 없습니다',
+                  '일치하는 조건의 방이 없습니다',
                   style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
@@ -131,7 +131,7 @@ class MapOnlyLayout extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '매물 ${filteredRooms.length}개',
+                        '방 ${filteredRooms.length}개',
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF1F2937),

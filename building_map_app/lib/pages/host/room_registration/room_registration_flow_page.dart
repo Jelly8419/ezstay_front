@@ -932,7 +932,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               // 설명 (pending_review일 때만 심사 안내 표시)
               Text(
                 isPendingReview
-                    ? '방 등록이 완료되었습니다!\n\n관리자 심사가 진행됩니다. (보통 1-2일 소요)\n심사 승인 후 매물이 공개됩니다.'
+                    ? '방 등록이 완료되었습니다!\n\n관리자 심사가 진행됩니다. (보통 1-2일 소요)\n심사 승인 후 방이 공개됩니다.'
                     : '방 정보가 저장되었습니다!',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.labelLarge.copyWith(

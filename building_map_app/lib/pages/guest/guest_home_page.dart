@@ -38,7 +38,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
       _analytics.logHomeViewGuest();
       SeoHelper.updatePage(
         title: 'EZStay — 단기임대 No.1, 편리하고 안전한 단기 숙소 찾기',
-        description: '출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 찾아보세요.',
+        description:
+            '출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 찾아보세요.',
         canonicalPath: '/',
       );
     });
@@ -427,14 +428,14 @@ class _GuestHomePageState extends State<GuestHomePage> {
               _StepInfo(
                 emoji: '🔍',
                 stepNumber: 1,
-                title: '매물 검색',
-                description: '임대기간, 임대료, 지역 등\n원하는 매물을 검색',
+                title: '방 검색',
+                description: '임대기간, 임대료, 지역 등\n원하는 방을 검색',
               ),
               _StepInfo(
                 emoji: '📝',
                 stepNumber: 2,
                 title: '계약 요청',
-                description: '마음에 드는 매물에\n계약을 요청',
+                description: '마음에 드는 방에\n계약을 요청',
               ),
               _StepInfo(
                 emoji: '💳',
@@ -465,13 +466,13 @@ class _GuestHomePageState extends State<GuestHomePage> {
             ),
             child: _buildStepGuideBlock(
               title: '임대인 이용 방법',
-              subtitle: '매물 등록부터 정산까지 간단하게',
+              subtitle: '방 등록부터 정산까지 간단하게',
               steps: [
                 _StepInfo(
                   emoji: '📋',
                   stepNumber: 1,
-                  title: '매물 등록',
-                  description: '임대할 방 정보를 등록하고\n관리자 승인을 받으세요',
+                  title: '방 등록',
+                  description: '임대할 방 정보를 등록',
                 ),
                 _StepInfo(
                   emoji: '🤝',
@@ -483,7 +484,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                   emoji: '💰',
                   stepNumber: 3,
                   title: '정산',
-                  description: '계약 완료 후\n정산금을 받으세요',
+                  description: '임차인 입주 시\n임대인에게 정산금 자동 지급',
                 ),
               ],
               isMobile: isMobile,
@@ -681,14 +682,14 @@ class _GuestHomePageState extends State<GuestHomePage> {
                     _buildSafetyCard(
                       icon: Icons.verified_user,
                       title: '안전한 결제 시스템',
-                      description: '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산이 진행됩니다.',
+                      description: '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
                       color: AppColors.primary500,
                     ),
                     SizedBox(height: AppSpacing.lg),
                     _buildSafetyCard(
                       icon: Icons.check_circle_outline,
-                      title: '매물 검증',
-                      description: '모든 매물은 검증 절차를 거쳐 등록되며, 허위 매물을 방지합니다.',
+                      title: '방 검증',
+                      description: '모든 방은 검증 절차를 거쳐 등록되며, 허위 방 등록을 방지합니다.',
                       color: AppColors.success600,
                     ),
                     SizedBox(height: AppSpacing.lg),
@@ -707,7 +708,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                       child: _buildSafetyCard(
                         icon: Icons.verified_user,
                         title: '안전한 결제 시스템',
-                        description: '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산이 진행됩니다.',
+                        description: '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
                         color: AppColors.primary500,
                       ),
                     ),
@@ -887,7 +888,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '매물 검색하기',
+                        '방 검색하기',
                         style: AppTextStyles.labelLarge.copyWith(
                           color: AppColors.blue600,
                           fontWeight: FontWeight.bold,

@@ -414,7 +414,7 @@ class _DescriptionStepState extends State<DescriptionStep> {
                 const SizedBox(height: 8),
                 _buildInfoItem('등록 후 관리자 심사가 진행됩니다 (보통 1-2일 소요)'),
                 const SizedBox(height: 8),
-                _buildInfoItem('심사 승인 후 매물이 공개됩니다'),
+                _buildInfoItem('심사 승인 후 방이 공개됩니다'),
                 const SizedBox(height: 8),
                 _buildInfoItem('등록 중인 내용은 자동으로 저장됩니다'),
               ],
