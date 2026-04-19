@@ -348,8 +348,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                       icon: LucideIcons.shieldCheck,
                       iconColor: AppColors.primary500,
                       title: '안전한 결제 시스템',
-                      description:
-                          '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
+                      description: '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
                     ),
                     SizedBox(height: AppSpacing.md),
                     InfoCard(
@@ -369,38 +368,40 @@ class _GuestHomePageState extends State<GuestHomePage> {
                 );
               }
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: InfoCard(
-                      icon: LucideIcons.shieldCheck,
-                      iconColor: AppColors.primary500,
-                      title: '안전한 결제 시스템',
-                      description:
-                          '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: InfoCard(
+                        icon: LucideIcons.shieldCheck,
+                        iconColor: AppColors.primary500,
+                        title: '안전한 결제 시스템',
+                        description:
+                            '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
+                      ),
                     ),
-                  ),
-                  SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: InfoCard(
-                      icon: LucideIcons.badgeCheck,
-                      iconColor: AppColors.primary500,
-                      title: '방 검증',
-                      description: '모든 매물은 검증 절차를 거쳐 등록되며, 허위 매물을 방지합니다.',
+                    SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: InfoCard(
+                        icon: LucideIcons.badgeCheck,
+                        iconColor: AppColors.primary500,
+                        title: '방 검증',
+                        description: '모든 매물은 검증 절차를 거쳐 등록되며, 허위 매물을 방지합니다.',
+                      ),
                     ),
-                  ),
-                  SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: InfoCard(
-                      icon: LucideIcons.fileText,
-                      iconColor: AppColors.primary500,
-                      title: '투명한 계약',
-                      description:
-                          '모든 계약 내용이 명확하게 기록되고, 분쟁 시 증빙 자료로 활용됩니다.',
+                    SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: InfoCard(
+                        icon: LucideIcons.fileText,
+                        iconColor: AppColors.primary500,
+                        title: '투명한 계약',
+                        description:
+                            '모든 계약 내용이 명확하게 기록되고, 분쟁 시 증빙 자료로 활용됩니다.',
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             },
           ),
@@ -462,17 +463,14 @@ class _GuestHomePageState extends State<GuestHomePage> {
         color: AppColors.purple50,
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Icon(
-        LucideIcons.truck,
-        size: 48,
-        color: AppColors.purple600,
-      ),
+      child: Icon(LucideIcons.truck, size: 48, color: AppColors.purple600),
     );
   }
 
   Widget _buildDeliveryContent({required bool center}) {
-    final crossAxis =
-        center ? CrossAxisAlignment.center : CrossAxisAlignment.start;
+    final crossAxis = center
+        ? CrossAxisAlignment.center
+        : CrossAxisAlignment.start;
     final textAlign = center ? TextAlign.center : TextAlign.left;
 
     return Column(
