@@ -105,7 +105,7 @@ class HomeHero extends StatelessWidget {
           Text.rich(
             TextSpan(
               children: [
-                TextSpan(text: '$headline '),
+                TextSpan(text: '$headline\n'),
                 TextSpan(
                   text: brandWord,
                   style: TextStyle(color: AppColors.primary500),
