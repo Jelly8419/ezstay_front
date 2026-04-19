@@ -41,14 +41,24 @@ class AppColors {
   static const Color secondary800 = Color(0xFF5E442C);
   static const Color secondary900 = Color(0xFF3A2A1C);
 
-  // ============= Blue Colors (Material Blue) =============
+  // ============= Blue Colors (Material Blue) — DEPRECATED =============
   /// Material Blue 스타일 시스템 (primary와 동기화)
-  static const Color blue50  = Color(0xFFE3F2FD);   // --color-primary-light (text on dark)
-  static const Color blue100 = Color(0xFFBBDEFB);   // Light blue (badges, backgrounds)
-  static const Color blue500 = Color(0xFF2196F3);   // --color-primary (main brand)
-  static const Color blue600 = Color(0xFF1976D2);   // --color-primary-dark
-  static const Color blue700 = Color(0xFF1565C0);   // Dark blue (gradients end)
-  static const Color blue900 = Color(0xFF0D47A1);   // Darkest blue (text)
+  ///
+  /// ⚠️ Phase 2: blue 팔레트는 primary와 값이 동일하므로 deprecate.
+  /// 신규 코드는 `AppColors.primaryXXX`를 사용할 것.
+  /// 기존 참조는 Phase 3+에서 점진적으로 마이그레이션 예정.
+  @Deprecated('Use AppColors.primary50 instead')
+  static const Color blue50 = Color(0xFFE3F2FD);
+  @Deprecated('Use AppColors.primary100 instead')
+  static const Color blue100 = Color(0xFFBBDEFB);
+  @Deprecated('Use AppColors.primary500 instead')
+  static const Color blue500 = Color(0xFF2196F3);
+  @Deprecated('Use AppColors.primary700 instead')
+  static const Color blue600 = Color(0xFF1976D2); // 주의: primary700와 동일값
+  @Deprecated('Use AppColors.primary800 instead')
+  static const Color blue700 = Color(0xFF1565C0);
+  @Deprecated('Use AppColors.primary900 instead')
+  static const Color blue900 = Color(0xFF0D47A1);
 
   // ============= Green Colors (Host-specific) =============
   /// 호스트 전용 섹션 강조색
@@ -104,10 +114,17 @@ class AppColors {
   static const Color warning600 = Color(0xFFFFB300);
   static const Color warning700 = Color(0xFFFFA000);
 
-  /// 정보 (primary와 동기화)
+  /// 정보 (primary와 동기화) — DEPRECATED
+  ///
+  /// ⚠️ Phase 2: info 팔레트는 primary와 값이 동일하므로 deprecate.
+  /// 정보 표기가 필요한 경우에도 `AppColors.primaryXXX`로 통일.
+  @Deprecated('Use AppColors.primary50 instead')
   static const Color info50 = Color(0xFFE3F2FD);
+  @Deprecated('Use AppColors.primary500 instead')
   static const Color info500 = Color(0xFF2196F3);
+  @Deprecated('Use AppColors.primary600 instead')
   static const Color info600 = Color(0xFF1E88E5);
+  @Deprecated('Use AppColors.primary700 instead')
   static const Color info700 = Color(0xFF1976D2);
 
   // ============= Special Colors (특수 색상) =============
