@@ -653,6 +653,11 @@ class _GuestHomePageState extends State<GuestHomePage> {
                           Text(
                             '오픈 전 참여하면 1만원 혜택',
                             style: AppTextStyles.headingLarge.copyWith(
+                              fontSize: AppTextStyles.responsiveFontSize(
+                                context,
+                                mobile: 22,
+                                desktop: 32,
+                              ),
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                               shadows: [
@@ -669,6 +674,11 @@ class _GuestHomePageState extends State<GuestHomePage> {
                           Text(
                             '• 오픈 알림 신청 후 첫 계약 시 1만원 할인',
                             style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: AppTextStyles.responsiveFontSize(
+                                context,
+                                mobile: 14,
+                                desktop: 17,
+                              ),
                               color: Colors.white,
                               shadows: [
                                 Shadow(
@@ -684,6 +694,11 @@ class _GuestHomePageState extends State<GuestHomePage> {
                           Text(
                             '• 방 등록 후 첫 계약 시 수수료 1만원 할인',
                             style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: AppTextStyles.responsiveFontSize(
+                                context,
+                                mobile: 14,
+                                desktop: 17,
+                              ),
                               color: Colors.white,
                               shadows: [
                                 Shadow(
@@ -699,6 +714,11 @@ class _GuestHomePageState extends State<GuestHomePage> {
                           Text(
                             '선착순 마감 시 혜택은 종료됩니다',
                             style: AppTextStyles.bodySmall.copyWith(
+                              fontSize: AppTextStyles.responsiveFontSize(
+                                context,
+                                mobile: 12,
+                                desktop: 14,
+                              ),
                               color: Colors.white.withValues(alpha: 0.85),
                               shadows: [
                                 Shadow(
@@ -717,6 +737,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                               AppPrimaryButton(
                                 text: '알림 받기',
                                 fullWidth: false,
+                                height: isMobile ? AppSizes.buttonHeightMd : 52,
                                 onPressed: () =>
                                     _handleAlertRequest(authService),
                               ),
@@ -724,6 +745,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                               AppSecondaryButton(
                                 text: '방 등록하기',
                                 fullWidth: false,
+                                height: isMobile ? AppSizes.buttonHeightMd : 52,
                                 onPressed: () =>
                                     _handleHostRedirect(authService),
                               ),
