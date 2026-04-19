@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../../utils/format_utils.dart';
 import '../../services/auth_service.dart';
 import '../../services/analytics_service.dart';
 import '../../models/user.dart';
@@ -9,13 +9,21 @@ import '../../services/region_alert_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/utils/local_storage_helper.dart';
 import '../../widgets/common/app_buttons.dart';
 import '../../widgets/common/custom_toast.dart';
+import '../../widgets/common/guest_date_range_picker_dialog.dart';
+import '../../widgets/home/cta_button.dart';
+import '../../widgets/home/home_hero.dart';
+import '../../widgets/home/home_section.dart';
+import '../../widgets/home/info_card.dart';
+import '../../widgets/home/section_header.dart';
+import '../../widgets/home/step_card.dart';
+import '../../widgets/home/step_guide_grid.dart';
 import '../../widgets/modals/region_alert_modal.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../core/utils/seo_helper.dart';
+import '../../utils/responsive_util.dart' as responsive;
 
 /// 게스트 홈 페이지 - 심플하고 모던한 랜딩 페이지
 class GuestHomePage extends StatefulWidget {
@@ -34,7 +42,6 @@ class _GuestHomePageState extends State<GuestHomePage> {
   DateTime? _checkOutDate;
 
   // 오픈 전 배너 노출 여부 (세션당 1회 — localStorage 기반)
-  static const _bannerDismissedKey = 'opening_banner_dismissed';
   bool _showOpeningBanner = false;
 
   @override
@@ -84,23 +91,22 @@ class _GuestHomePageState extends State<GuestHomePage> {
           children: [
             // 오픈 전 배너
             _buildOpeningBanner(authService),
+            const SizedBox(height: 50),
             // 히어로 섹션
-            _buildHeroSection(isMobile: true),
+            _buildHero(),
 
-            // 서울 전용 서비스 배너
-            _buildSeoulBanner(isMobile: true),
-
-            // STEP 가이드 섹션
-            _buildStepGuideSection(isMobile: true),
+            // STEP 가이드 섹션 (임차인 + 임대인)
+            _buildGuestStepSection(),
+            _buildHostStepSection(),
 
             // 배송 서비스 섹션
-            _buildDeliverySection(isMobile: true),
+            _buildDeliverySection(),
 
             // 안전한 이유 섹션
-            _buildSafetySection(isMobile: true),
+            _buildSafetySection(),
 
             // CTA 섹션
-            _buildCTASection(isMobile: true),
+            _buildCTASection(),
 
             const AppFooter(),
           ],
@@ -120,22 +126,20 @@ class _GuestHomePageState extends State<GuestHomePage> {
             // 오픈 전 배너
             _buildOpeningBanner(authService),
             // 히어로 섹션
-            _buildHeroSection(isMobile: false),
+            _buildHero(),
 
-            // 서울 전용 서비스 배너
-            _buildSeoulBanner(isMobile: false),
-
-            // STEP 가이드 섹션
-            _buildStepGuideSection(isMobile: false),
+            // STEP 가이드 섹션 (임차인 + 임대인)
+            _buildGuestStepSection(),
+            _buildHostStepSection(),
 
             // 배송 서비스 섹션
-            _buildDeliverySection(isMobile: false),
+            _buildDeliverySection(),
 
             // 안전한 이유 섹션
-            _buildSafetySection(isMobile: false),
+            _buildSafetySection(),
 
             // CTA 섹션
-            _buildCTASection(isMobile: false),
+            _buildCTASection(),
 
             const AppFooter(),
           ],
@@ -161,26 +165,20 @@ class _GuestHomePageState extends State<GuestHomePage> {
                       // 오픈 전 배너
                       _buildOpeningBanner(authService),
                       // 히어로 섹션
-                      _buildHeroSection(isMobile: false),
+                      _buildHero(),
 
-                      // 서울 전용 서비스 배너
-                      _buildSeoulBanner(isMobile: false),
-
-                      // STEP 가이드 섹션
-                      WebContainer(
-                        child: _buildStepGuideSection(isMobile: false),
-                      ),
+                      // STEP 가이드 섹션 (임차인 + 임대인)
+                      _buildGuestStepSection(),
+                      _buildHostStepSection(),
 
                       // 배송 서비스 섹션
-                      _buildDeliverySection(isMobile: false),
+                      _buildDeliverySection(),
 
                       // 안전한 이유 섹션
-                      WebContainer(
-                        child: _buildSafetySection(isMobile: false),
-                      ),
+                      _buildSafetySection(),
 
                       // CTA 섹션
-                      _buildCTASection(isMobile: false),
+                      _buildCTASection(),
 
                       const AppFooter(),
                     ],
@@ -198,202 +196,17 @@ class _GuestHomePageState extends State<GuestHomePage> {
   }
 
   // ==================== 히어로 섹션 ====================
-  Widget _buildHeroSection({required bool isMobile}) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary50, // 연한 블루
-            Colors.white,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? AppSpacing.lg : AppSpacing.xl * 2,
-          vertical: AppSpacing.xl * 2,
-        ),
-        child: Column(
-          children: [
-            // 서브 타이틀 - 보조 텍스트
-            Text(
-              '누구나 쉽고 안전하게 사용할 수 있어요',
-              style:
-                  (isMobile
-                          ? AppTextStyles.bodyLarge
-                          : AppTextStyles.headingLarge)
-                      .copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-              textAlign: TextAlign.center,
-            ),
-
-            SizedBox(height: AppSpacing.md),
-
-            // 헤드라인 - 다크 텍스트 + 강조색
-            Text.rich(
-              TextSpan(
-                children: [
-                  const TextSpan(text: '단기임대를 편리하고 안전하게\n'),
-                  TextSpan(
-                    text: '이지스테이',
-                    style: TextStyle(color: AppColors.primary500),
-                  ),
-                ],
-              ),
-              style:
-                  (isMobile
-                          ? AppTextStyles.headingLarge.copyWith(fontSize: 28)
-                          : AppTextStyles.displayLarge)
-                      .copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-              textAlign: TextAlign.center,
-            ),
-
-            SizedBox(height: AppSpacing.xl * 2),
-
-            // 검색 입력
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 900),
-              child: isMobile
-                  ? _buildSearchInputsMobile()
-                  : _buildSearchInputsDesktop(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==================== 서울 전용 서비스 배너 (전체 너비) ====================
-  Widget _buildSeoulBanner({required bool isMobile}) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.blue50, // Blue-50 배경
-        border: Border(
-          top: BorderSide(color: AppColors.blue100, width: 1),
-          bottom: BorderSide(color: AppColors.blue100, width: 1),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.location_city, color: AppColors.blue900, size: 20),
-          SizedBox(width: AppSpacing.sm),
-          Text(
-            '현재 서울 지역만 서비스 중입니다',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.blue900,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 검색 입력 (모바일 - 세로 배치)
-  Widget _buildSearchInputsMobile() {
-    return Column(
-      children: [
-        // 날짜 선택
-        _buildDateInput(),
-        SizedBox(height: AppSpacing.lg),
-
-        // 검색 버튼
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: AppPrimaryButton(
-            text: '검색',
-            icon: Icons.search,
-            onPressed: _handleSearch,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 검색 입력 (데스크톱 - 가로 배치)
-  Widget _buildSearchInputsDesktop() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 날짜 선택
-        Expanded(child: _buildDateInput()),
-        SizedBox(width: AppSpacing.md),
-
-        // 검색 버튼
-        SizedBox(
-          width: 160,
-          height: 56,
-          child: AppPrimaryButton(
-            text: '검색',
-            icon: Icons.search,
-            onPressed: _handleSearch,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 날짜 입력 필드
-  Widget _buildDateInput() {
-    final hasDate = _checkInDate != null && _checkOutDate != null;
-
-    return InkWell(
-      onTap: _showDateSelectionDialog,
-      borderRadius: AppRadius.radiusMd,
-      child: Container(
-        height: 56,
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        decoration: BoxDecoration(
-          color: Colors.white, // 흰색 배경
-          borderRadius: AppRadius.radiusMd,
-          border: Border.all(
-            color: hasDate ? AppColors.blue600 : AppColors.border,
-            width: hasDate ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.calendar_today,
-              color: hasDate ? AppColors.primary600 : AppColors.textSecondary,
-              size: 20,
-            ),
-            SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                hasDate
-                    ? '${FormatUtils.formatDateShort(_checkInDate!)} - ${FormatUtils.formatDateShort(_checkOutDate!)}'
-                    : '날짜를 선택하세요',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: hasDate
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
-                ),
-              ),
-            ),
-            Icon(Icons.arrow_drop_down, color: AppColors.textPrimary),
-          ],
-        ),
-      ),
+  Widget _buildHero() {
+    return HomeHero(
+      tagline: '누구나 쉽고 안전하게 사용할 수 있어요',
+      headline: '단기임대를 편리하고 안전하게',
+      brandWord: '이지스테이',
+      checkIn: _checkInDate,
+      checkOut: _checkOutDate,
+      onTapDate: _showDateSelectionDialog,
+      onSearch: _handleSearch,
+      trustPoints: const ['에스크로 안심 결제', '100% 방 검증', '안전한 계약 프로세스'],
+      notice: '현재 서울 지역만 서비스 중입니다',
     );
   }
 
@@ -402,7 +215,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
   Future<void> _showDateSelectionDialog() async {
     showDialog(
       context: context,
-      builder: (dialogContext) => _GuestDateRangePickerDialog(
+      builder: (dialogContext) => GuestDateRangePickerDialog(
         initialCheckIn: _checkInDate,
         initialCheckOut: _checkOutDate,
         onDateRangeSelected: (checkIn, checkOut) {
@@ -427,382 +240,214 @@ class _GuestHomePageState extends State<GuestHomePage> {
     );
   }
 
-  // ==================== STEP 가이드 섹션 (Grid 레이아웃) ====================
-  Widget _buildStepGuideSection({required bool isMobile}) {
-    return Container(
-      width: double.infinity,
-      color: AppColors.background,
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? AppSpacing.lg : AppSpacing.xl * 2,
-        vertical: AppSpacing.xl * 2,
-      ),
+  // ==================== 임차인 STEP 가이드 섹션 ====================
+  Widget _buildGuestStepSection() {
+    return HomeSection(
+      backgroundColor: AppColors.background,
+      verticalScale: VerticalPaddingScale.md,
       child: Column(
         children: [
-          // 게스트 4-Step 가이드
-          _buildStepGuideBlock(
-            title: '임차인 이용 방법',
-            subtitle: '예약부터 입주까지 간단하게',
+          const SectionHeader(title: '임차인 이용 방법', subtitle: '예약부터 입주까지 간단하게'),
+          SizedBox(height: AppSpacing.xl),
+          const StepGuideGrid(
             steps: [
-              _StepInfo(
-                emoji: '🔍',
-                stepNumber: 1,
+              StepCard(
+                icon: LucideIcons.search,
+                stepNumber: '01',
                 title: '방 검색',
                 description: '임대기간, 임대료, 지역 등\n원하는 방을 검색',
+                variant: StepCardVariant.guest,
               ),
-              _StepInfo(
-                emoji: '📝',
-                stepNumber: 2,
+              StepCard(
+                icon: LucideIcons.fileText,
+                stepNumber: '02',
                 title: '계약 요청',
                 description: '마음에 드는 방에\n계약을 요청',
+                variant: StepCardVariant.guest,
               ),
-              _StepInfo(
-                emoji: '💳',
-                stepNumber: 3,
+              StepCard(
+                icon: LucideIcons.creditCard,
+                stepNumber: '03',
                 title: '계약 결제',
                 description: '임대인 승인 후 필요한\n물품과 함께 결제',
+                variant: StepCardVariant.guest,
               ),
-              _StepInfo(
-                emoji: '🏠',
-                stepNumber: 4,
+              StepCard(
+                icon: LucideIcons.home,
+                stepNumber: '04',
                 title: '입주 및 퇴실',
                 description: '안내를 받아 입주하고\n퇴실 후 자동으로 보증금 수령',
+                variant: StepCardVariant.guest,
               ),
             ],
-            isMobile: isMobile,
-          ),
-
-          SizedBox(height: AppSpacing.xl * 3),
-
-          // 호스트 3-Step 가이드
-          Container(
-            padding: EdgeInsets.all(
-              isMobile ? AppSpacing.md : AppSpacing.xl * 2,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: AppRadius.radiusLg,
-            ),
-            child: _buildStepGuideBlock(
-              title: '임대인 이용 방법',
-              subtitle: '방 등록부터 정산까지 간단하게',
-              steps: [
-                _StepInfo(
-                  emoji: '📋',
-                  stepNumber: 1,
-                  title: '방 등록',
-                  description: '임대할 방 정보를 등록',
-                ),
-                _StepInfo(
-                  emoji: '🤝',
-                  stepNumber: 2,
-                  title: '계약 관리',
-                  description: '임차인 계약 요청을\n확인하고 승인하세요',
-                ),
-                _StepInfo(
-                  emoji: '💰',
-                  stepNumber: 3,
-                  title: '정산',
-                  description: '임차인 입주 시\n임대인에게 정산금 자동 지급',
-                ),
-              ],
-              isMobile: isMobile,
-              isGreenTheme: true,
-            ),
           ),
         ],
       ),
     );
   }
 
-  // STEP 가이드 블록 (제목 + Grid)
-  Widget _buildStepGuideBlock({
-    required String title,
-    required String subtitle,
-    required List<_StepInfo> steps,
-    required bool isMobile,
-    bool isGreenTheme = false,
-  }) {
-    return Column(
-      children: [
-        // 제목
-        Text(
-          title,
-          style: AppTextStyles.headingLarge.copyWith(
-            fontSize: isMobile ? 24 : 32,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: AppSpacing.sm),
-        Text(
-          subtitle,
-          style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: AppSpacing.xl * 2),
-
-        // Grid 레이아웃
-        LayoutBuilder(
-          builder: (context, constraints) {
-            // 모바일: 2열, 데스크톱: 4열 (게스트) 또는 3열 (호스트)
-            final crossAxisCount = isMobile ? 2 : steps.length;
-            final childAspectRatio = isMobile ? 0.55 : 0.8;
-
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                childAspectRatio: childAspectRatio,
-                crossAxisSpacing: isMobile ? AppSpacing.md : AppSpacing.lg,
-                mainAxisSpacing: isMobile ? AppSpacing.md : AppSpacing.lg,
+  // ==================== 임대인 STEP 가이드 섹션 ====================
+  Widget _buildHostStepSection() {
+    return HomeSection(
+      backgroundColor: AppColors.surface,
+      verticalScale: VerticalPaddingScale.md,
+      child: Column(
+        children: [
+          const SectionHeader(title: '임대인 이용 방법', subtitle: '방 등록부터 정산까지 간단하게'),
+          SizedBox(height: AppSpacing.xl),
+          const StepGuideGrid(
+            steps: [
+              StepCard(
+                icon: LucideIcons.clipboardList,
+                stepNumber: '01',
+                title: '방 등록',
+                description: '임대할 방 정보를 등록',
+                variant: StepCardVariant.host,
               ),
-              itemCount: steps.length,
-              itemBuilder: (context, index) {
-                return _buildStepCard(
-                  emoji: steps[index].emoji,
-                  stepNumber: steps[index].stepNumber,
-                  title: steps[index].title,
-                  description: steps[index].description,
-                  isMobile: isMobile,
-                  isGreenTheme: isGreenTheme,
-                );
-              },
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  // Step 카드 (세로 중앙 정렬 - React 스타일)
-  Widget _buildStepCard({
-    required String emoji,
-    required int stepNumber,
-    required String title,
-    required String description,
-    required bool isMobile,
-    bool isGreenTheme = false,
-  }) {
-    final gradientColors = isGreenTheme
-        ? [AppColors.green500, AppColors.green600]
-        : [AppColors.primary500, AppColors.primary600];
-    final shadowColor = isGreenTheme
-        ? AppColors.green500
-        : AppColors.primary500;
-    final badgeColor = isGreenTheme ? AppColors.green100 : AppColors.primary100;
-    final badgeTextColor = isGreenTheme
-        ? AppColors.green600
-        : AppColors.primary600;
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // 1. Gradient Emoji Box
-        Container(
-          width: isMobile ? 64 : 96,
-          height: isMobile ? 64 : 96,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: gradientColors,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(isMobile ? 16 : 24),
-            boxShadow: [
-              BoxShadow(
-                color: shadowColor.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+              StepCard(
+                icon: LucideIcons.userCheck,
+                stepNumber: '02',
+                title: '계약 관리',
+                description: '임차인 계약 요청을\n확인하고 승인하세요',
+                variant: StepCardVariant.host,
+              ),
+              StepCard(
+                icon: LucideIcons.wallet,
+                stepNumber: '03',
+                title: '정산',
+                description: '임차인 입주 시\n임대인에게 정산금 자동 지급',
+                variant: StepCardVariant.host,
               ),
             ],
           ),
-          child: Center(
-            child: Text(
-              emoji,
-              style: AppTextStyles.displayLarge.copyWith(
-                fontSize: isMobile ? 28 : 40,
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: AppSpacing.md),
-
-        // 2. STEP Label
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: badgeColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            'STEP $stepNumber',
-            style: AppTextStyles.labelSmall.copyWith(
-              color: badgeTextColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        SizedBox(height: AppSpacing.sm),
-
-        // 3. Title
-        Text(
-          title,
-          style: (isMobile ? AppTextStyles.bodyMedium : AppTextStyles.bodyLarge)
-              .copyWith(fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: AppSpacing.xs),
-
-        // 4. Description
-        Text(
-          description,
-          style: isMobile
-              ? AppTextStyles.bodySmallSecondary
-              : AppTextStyles.bodyMediumSecondary,
-          textAlign: TextAlign.center,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   // ==================== 안전한 이유 섹션 ====================
-  Widget _buildSafetySection({required bool isMobile}) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? AppSpacing.lg : 0,
-        vertical: AppSpacing.xl * 2,
-      ),
-      color: AppColors.background,
+  Widget _buildSafetySection() {
+    return HomeSection(
+      backgroundColor: AppColors.background,
+      verticalScale: VerticalPaddingScale.md,
       child: Column(
         children: [
-          // 제목
-          Text(
-            '이지스테이가 안전한 이유',
-            style: AppTextStyles.headingLarge.copyWith(
-              fontSize: isMobile ? 28 : 36,
-            ),
-            textAlign: TextAlign.center,
+          const SectionHeader(
+            title: '이지스테이가 안전한 이유',
+            subtitle: '안심하고 거래할 수 있는 시스템을 제공합니다',
           ),
-          SizedBox(height: AppSpacing.sm),
-          Text(
-            '안심하고 거래할 수 있는 시스템을 제공합니다',
-            style: AppTextStyles.bodyMediumSecondary,
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: AppSpacing.xl * 2),
+          SizedBox(height: AppSpacing.xl),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = AppBreakpoints.isMobile(context);
 
-          // 카드 그리드
-          isMobile
-              ? Column(
+              if (isMobile) {
+                return Column(
                   children: [
-                    _buildSafetyCard(
-                      icon: Icons.verified_user,
+                    InfoCard(
+                      icon: LucideIcons.shieldCheck,
+                      iconColor: AppColors.primary500,
                       title: '안전한 결제 시스템',
                       description: '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
-                      color: AppColors.primary500,
                     ),
-                    SizedBox(height: AppSpacing.lg),
-                    _buildSafetyCard(
-                      icon: Icons.check_circle_outline,
+                    SizedBox(height: AppSpacing.md),
+                    InfoCard(
+                      icon: LucideIcons.badgeCheck,
+                      iconColor: AppColors.primary500,
                       title: '방 검증',
-                      description: '모든 방은 검증 절차를 거쳐 등록되며, 허위 방 등록을 방지합니다.',
-                      color: AppColors.success600,
+                      description: '모든 매물은 검증 절차를 거쳐 등록되며, 허위 매물을 방지합니다.',
                     ),
-                    SizedBox(height: AppSpacing.lg),
-                    _buildSafetyCard(
-                      icon: Icons.description_outlined,
+                    SizedBox(height: AppSpacing.md),
+                    InfoCard(
+                      icon: LucideIcons.fileText,
+                      iconColor: AppColors.primary500,
                       title: '투명한 계약',
                       description: '모든 계약 내용이 명확하게 기록되고, 분쟁 시 증빙 자료로 활용됩니다.',
-                      color: AppColors.info600,
                     ),
                   ],
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                );
+              }
+
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
-                      child: _buildSafetyCard(
-                        icon: Icons.verified_user,
+                      child: InfoCard(
+                        icon: LucideIcons.shieldCheck,
+                        iconColor: AppColors.primary500,
                         title: '안전한 결제 시스템',
                         description: '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
-                        color: AppColors.primary500,
                       ),
                     ),
-                    SizedBox(width: AppSpacing.lg),
+                    SizedBox(width: AppSpacing.md),
                     Expanded(
-                      child: _buildSafetyCard(
-                        icon: Icons.check_circle_outline,
-                        title: '매물 검증',
-                        description: '모든 방은 검증 절차를 거쳐 등록되며, 허위 매물을 방지합니다.',
-                        color: AppColors.success600,
+                      child: InfoCard(
+                        icon: LucideIcons.badgeCheck,
+                        iconColor: AppColors.primary500,
+                        title: '방 검증',
+                        description: '모든 매물은 검증 절차를 거쳐 등록되며, 허위 매물을 방지합니다.',
                       ),
                     ),
-                    SizedBox(width: AppSpacing.lg),
+                    SizedBox(width: AppSpacing.md),
                     Expanded(
-                      child: _buildSafetyCard(
-                        icon: Icons.description_outlined,
+                      child: InfoCard(
+                        icon: LucideIcons.fileText,
+                        iconColor: AppColors.primary500,
                         title: '투명한 계약',
                         description: '모든 계약 내용이 명확하게 기록되고, 분쟁 시 증빙 자료로 활용됩니다.',
-                        color: AppColors.info600,
                       ),
                     ),
                   ],
                 ),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
-  // ==================== 배송 서비스 섹션 (가로 배치 - React 스타일) ====================
-  Widget _buildDeliverySection({required bool isMobile}) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? AppSpacing.lg : 0,
-        vertical: AppSpacing.xl * 2,
+  // ==================== 배송 서비스 섹션 ====================
+  Widget _buildDeliverySection() {
+    return HomeSection(
+      backgroundGradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [AppColors.purple50, AppColors.primary50],
       ),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.purple50, // Purple-50
-            AppColors.blue50, // Blue-50
-          ],
+      verticalScale: VerticalPaddingScale.md,
+      child: Container(
+        padding: EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          boxShadow: AppShadows.cardDefault,
         ),
-      ),
-      child: Center(
-        child: Container(
-          constraints: BoxConstraints(maxWidth: 1200),
-          padding: EdgeInsets.all(isMobile ? AppSpacing.xl : AppSpacing.xl * 3),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: isMobile
-              ? Column(
-                  children: [
-                    _buildDeliveryIcon(),
-                    SizedBox(height: AppSpacing.xl),
-                    _buildDeliveryContent(isMobile: true),
-                  ],
-                )
-              : Row(
-                  children: [
-                    _buildDeliveryIcon(),
-                    SizedBox(width: AppSpacing.xl * 2),
-                    Expanded(child: _buildDeliveryContent(isMobile: false)),
-                  ],
-                ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = AppBreakpoints.isMobile(context);
+
+            if (isMobile) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildDeliveryIcon(),
+                  SizedBox(height: AppSpacing.lg),
+                  _buildDeliveryContent(center: true),
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildDeliveryIcon(),
+                SizedBox(width: AppSpacing.xl),
+                Expanded(child: _buildDeliveryContent(center: false)),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -816,167 +461,79 @@ class _GuestHomePageState extends State<GuestHomePage> {
         color: AppColors.purple50,
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Icon(
-        Icons.local_shipping_outlined,
-        size: 48,
-        color: AppColors.purple600,
-      ),
+      child: Icon(LucideIcons.truck, size: 48, color: AppColors.purple600),
     );
   }
 
-  Widget _buildDeliveryContent({required bool isMobile}) {
+  Widget _buildDeliveryContent({required bool center}) {
+    final crossAxis = center
+        ? CrossAxisAlignment.center
+        : CrossAxisAlignment.start;
+    final textAlign = center ? TextAlign.center : TextAlign.left;
+
     return Column(
-      crossAxisAlignment: isMobile
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
+      crossAxisAlignment: crossAxis,
       children: [
         Text(
           '입주 필수품 배송 서비스',
           style: AppTextStyles.headingLarge.copyWith(
-            fontSize: isMobile ? 24 : 28,
+            fontSize: center ? 24 : 28,
             fontWeight: FontWeight.bold,
           ),
-          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          textAlign: textAlign,
         ),
         SizedBox(height: AppSpacing.md),
         Text(
           '계약 결제 시, 필요한 상품을 함께 구매하면\n입주할 방으로 배송해드려요',
-          style: AppTextStyles.bodyLarge.copyWith(fontSize: isMobile ? 14 : 16),
-          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          style: AppTextStyles.bodyLarge.copyWith(fontSize: center ? 14 : 16),
+          textAlign: textAlign,
         ),
         SizedBox(height: AppSpacing.sm),
         Text(
           '생활용품, 침구류 등 입주에 필요한 물품을 이지스테이에서 준비할 수 있어요',
           style: AppTextStyles.bodyMediumSecondary,
-          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          textAlign: textAlign,
         ),
       ],
     );
   }
 
-  // ==================== CTA 섹션 (React 스타일 - 강력한 전환 디자인) ====================
-  Widget _buildCTASection({required bool isMobile}) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.xl * 4),
-      decoration: BoxDecoration(
-        color: AppColors.blue600, // Blue-600 단색 배경
-      ),
-      child: Center(
-        child: Container(
-          constraints: BoxConstraints(maxWidth: 800),
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? AppSpacing.lg : AppSpacing.xl * 2,
-          ),
-          child: Column(
-            children: [
-              Text(
-                '지금 바로 시작하세요',
-                style: AppTextStyles.displayLarge.copyWith(
-                  color: Colors.white,
-                  fontSize: isMobile ? 28 : 40,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: AppSpacing.lg),
-              Text(
-                '이지스테이와 함께 안전하고 쉬운 단기임대를 경험하세요',
-                style: AppTextStyles.headingSmall.copyWith(
-                  color: AppColors.blue100, // Blue-100
-                  fontSize: isMobile ? 16 : 20,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: AppSpacing.xl * 2),
-              SizedBox(
-                width: isMobile ? double.infinity : 280,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _handleSearch,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.blue600,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '방 검색하기',
-                        style: AppTextStyles.labelLarge.copyWith(
-                          color: AppColors.blue600,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      SizedBox(width: AppSpacing.sm),
-                      Icon(
-                        Icons.arrow_forward,
-                        size: 20,
-                        color: AppColors.blue600,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSafetyCard({
-    required IconData icon,
-    required String title,
-    required String description,
-    required Color color,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.radiusLg,
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.1),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
+  // ==================== CTA 섹션 ====================
+  Widget _buildCTASection() {
+    return HomeSection(
+      backgroundColor: AppColors.primary600,
+      maxWidth: AppSizes.contentMaxWidthNarrow,
+      verticalScale: VerticalPaddingScale.lg,
       child: Column(
         children: [
-          // 아이콘
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+          Text(
+            '지금 바로 시작하세요',
+            style: AppTextStyles.displayLarge.copyWith(
+              fontSize: AppTextStyles.responsiveFontSize(
+                context,
+                mobile: 28,
+                desktop: 36,
+              ),
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
             ),
-            child: Icon(icon, size: 32, color: color),
-          ),
-          SizedBox(height: AppSpacing.lg),
-
-          // 제목
-          Text(
-            title,
-            style: AppTextStyles.headingSmall.copyWith(color: color),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: AppSpacing.sm),
-
-          // 설명
+          SizedBox(height: AppSpacing.md),
           Text(
-            description,
-            style: AppTextStyles.bodyMediumSecondary,
+            '이지스테이와 함께 안전하고 쉬운\n단기임대를 경험하세요',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: Colors.white.withValues(alpha: 0.9),
+              height: 1.6,
+            ),
             textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppSpacing.xl),
+          CTAButton(
+            text: '방 검색하기',
+            trailingIcon: LucideIcons.arrowRight,
+            variant: CTAButtonVariant.onPrimary,
+            onPressed: _handleSearch,
           ),
         ],
       ),
@@ -985,18 +542,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
   // ==================== 오픈 전 배너 ====================
 
-  /// 세션당 1회 노출: localStorage에 닫음 여부 저장
   void _initOpeningBanner() {
-    final dismissed = LocalStorageHelper.getItem(_bannerDismissedKey);
     setState(() {
-      _showOpeningBanner = dismissed == null;
-    });
-  }
-
-  void _dismissOpeningBanner() {
-    LocalStorageHelper.setItem(_bannerDismissedKey, '1');
-    setState(() {
-      _showOpeningBanner = false;
+      _showOpeningBanner = true;
     });
   }
 
@@ -1057,97 +605,112 @@ class _GuestHomePageState extends State<GuestHomePage> {
   Widget _buildOpeningBanner(AuthService authService) {
     if (!_showOpeningBanner) return const SizedBox.shrink();
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary50, AppColors.blue50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    final isMobile = responsive.ResponsiveUtil.isMobile(context);
+
+    return HomeSection(
+      backgroundColor: AppColors.background,
+      maxWidth: AppSizes.contentMaxWidthWide,
+      padding: const EdgeInsets.only(bottom: 50),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: isMobile ? double.infinity : 400,
         ),
-        border: Border(
-          bottom: BorderSide(color: AppColors.primary100, width: 1),
-        ),
-      ),
-      child: Stack(
-        children: [
-          // 콘텐츠 (중앙 정렬)
-          Padding(
-            padding: EdgeInsets.symmetric(
-              vertical: AppSpacing.xl,
-              horizontal: AppSpacing.lg,
-            ),
-            child: Column(
+        child: ClipRRect(
+          borderRadius: AppRadius.radiusLg,
+          child: AspectRatio(
+            aspectRatio: isMobile ? 800 / 600 : 1920 / 500,
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                // 타이틀
-                Text(
-                  '오픈 전 참여하면 1만원 혜택',
-                  style: AppTextStyles.headingLarge.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  textAlign: TextAlign.center,
+                Image.asset(
+                  isMobile
+                      ? 'assets/images/banner_mobile.jpg'
+                      : 'assets/images/banner_desktop.jpg',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
                 ),
-                SizedBox(height: AppSpacing.md),
-
-                // 설명 (bullet)
-                Text(
-                  '• 오픈 알림 신청 후 첫 계약 시 1만원 할인',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: AppSpacing.xs),
-                Text(
-                  '• 방 등록 후 첫 계약 시 수수료 1만원 할인',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: AppSpacing.sm),
-                Text(
-                  '선착순 마감 시 혜택은 종료됩니다',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: AppSpacing.lg),
-
-                // 버튼 Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AppPrimaryButton(
-                      text: '알림 받기',
-                      fullWidth: false,
-                      onPressed: () => _handleAlertRequest(authService),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withValues(alpha: 0.55),
+                        Colors.black.withValues(alpha: 0.35),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
                     ),
-                    SizedBox(width: AppSpacing.md),
-                    AppSecondaryButton(
-                      text: '방 등록하기',
-                      fullWidth: false,
-                      onPressed: () => _handleHostRedirect(authService),
+                  ),
+                ),
+                Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: AppSpacing.lg,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '오픈 전 참여하면 1만원 혜택',
+                            style: AppTextStyles.headingLarge.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '• 오픈 알림 신청 후 첫 계약 시 1만원 할인',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '• 방 등록 후 첫 계약 시 수수료 1만원 할인',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '선착순 마감 시 혜택은 종료됩니다',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              AppPrimaryButton(
+                                text: '알림 받기',
+                                fullWidth: false,
+                                onPressed: () =>
+                                    _handleAlertRequest(authService),
+                              ),
+                              SizedBox(width: AppSpacing.md),
+                              AppSecondaryButton(
+                                text: '방 등록하기',
+                                fullWidth: false,
+                                onPressed: () =>
+                                    _handleHostRedirect(authService),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
           ),
-
-          // X 버튼 (우측 상단)
-          Positioned(
-            top: AppSpacing.sm,
-            right: AppSpacing.sm,
-            child: AppIconButton(
-              icon: Icons.close,
-              onPressed: _dismissOpeningBanner,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1168,526 +731,5 @@ class _GuestHomePageState extends State<GuestHomePage> {
     }
 
     context.go('/map', extra: extra.isNotEmpty ? extra : null);
-  }
-
-  // ==================== 유틸리티 ====================
-  String _formatPrice(int? price) {
-    if (price == null) return '미설정';
-    return FormatUtils.formatCurrency(price);
-  }
-}
-
-// ==================== Step Info 모델 ====================
-class _StepInfo {
-  final String emoji;
-  final int stepNumber;
-  final String title;
-  final String description;
-
-  _StepInfo({
-    required this.emoji,
-    required this.stepNumber,
-    required this.title,
-    required this.description,
-  });
-}
-
-// ==================== 게스트 날짜 선택 다이얼로그 ====================
-/// 게스트 홈 검색용 날짜 범위 선택 다이얼로그
-/// - minContractDays: 7일 (게스트 기본)
-/// - maxContractDays: 90일 (게스트 기본)
-class _GuestDateRangePickerDialog extends StatefulWidget {
-  final DateTime? initialCheckIn;
-  final DateTime? initialCheckOut;
-  final void Function(DateTime checkIn, DateTime checkOut) onDateRangeSelected;
-  final void Function()? onDateCleared;
-
-  const _GuestDateRangePickerDialog({
-    this.initialCheckIn,
-    this.initialCheckOut,
-    required this.onDateRangeSelected,
-    this.onDateCleared,
-  });
-
-  @override
-  State<_GuestDateRangePickerDialog> createState() =>
-      _GuestDateRangePickerDialogState();
-}
-
-class _GuestDateRangePickerDialogState
-    extends State<_GuestDateRangePickerDialog> {
-  // 게스트 기본 설정
-  static const int _minContractDays = 7;
-  static const int _maxContractDays = 90;
-
-  late DateTime _focusedMonth;
-  DateTime? _rangeStart;
-  DateTime? _rangeEnd;
-  String? _errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusedMonth = widget.initialCheckIn ?? DateTime.now();
-    _rangeStart = widget.initialCheckIn;
-    _rangeEnd = widget.initialCheckOut;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusLg),
-      child: Container(
-        padding: EdgeInsets.all(AppSpacing.lg),
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 제목
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('임대 기간 선택', style: AppTextStyles.headingMedium),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                  color: AppColors.textPrimary,
-                ),
-              ],
-            ),
-            SizedBox(height: AppSpacing.md),
-
-            // 월 네비게이션
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _focusedMonth = DateTime(
-                        _focusedMonth.year,
-                        _focusedMonth.month - 1,
-                      );
-                    });
-                  },
-                  icon: const Icon(Icons.chevron_left, size: 20),
-                  padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(),
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.neutral100,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-                Text(
-                  '${_focusedMonth.year}년 ${_focusedMonth.month}월',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _focusedMonth = DateTime(
-                        _focusedMonth.year,
-                        _focusedMonth.month + 1,
-                      );
-                    });
-                  },
-                  icon: const Icon(Icons.chevron_right, size: 20),
-                  padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(),
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.neutral100,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // 요일 헤더
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: ['일', '월', '화', '수', '목', '금', '토'].asMap().entries.map(
-                (entry) {
-                  final index = entry.key;
-                  final day = entry.value;
-                  return SizedBox(
-                    width: 36,
-                    child: Text(
-                      day,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.caption.copyWith(
-                        color: index == 0
-                            ? AppColors.error500
-                            : index == 6
-                            ? AppColors.primary600
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                  );
-                },
-              ).toList(),
-            ),
-            const SizedBox(height: 8),
-
-            // 날짜 그리드
-            _buildDateGrid(),
-
-            // 에러 메시지
-            if (_errorMessage != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: AppColors.error50,
-                  borderRadius: AppRadius.radiusSm,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 18,
-                      color: AppColors.error500,
-                    ),
-                    SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        _errorMessage!,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.error600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            // 선택된 기간 표시
-            if (_rangeStart != null && _rangeEnd != null) ...[
-              const Divider(height: 32),
-              Column(
-                children: [
-                  Text(
-                    '임대 기간',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${_rangeEnd!.difference(_rangeStart!).inDays}일',
-                    style: AppTextStyles.headingMedium.copyWith(
-                      color: AppColors.primary600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-
-            // 안내 메시지 (시작일만 선택된 상태)
-            if (_rangeStart != null && _rangeEnd == null) ...[
-              const Divider(height: 32),
-              Container(
-                padding: EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: AppColors.primary50,
-                  borderRadius: AppRadius.radiusSm,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 18,
-                      color: AppColors.primary600,
-                    ),
-                    SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        '최소 $_minContractDays일 ~ 최대 $_maxContractDays일 선택 가능',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.primary700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            // 안내 메시지 (아무것도 선택 안됨)
-            if (_rangeStart == null) ...[
-              const Divider(height: 32),
-              Text(
-                '• 최소 $_minContractDays일부터 선택 가능합니다',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-
-            // 초기화 및 확인 버튼
-            if (_rangeStart != null && _rangeEnd != null) ...[
-              const Divider(height: 32),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        setState(() {
-                          _rangeStart = null;
-                          _rangeEnd = null;
-                          _errorMessage = null;
-                        });
-                      },
-                      style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                        side: BorderSide(color: AppColors.border),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppRadius.radiusMd,
-                        ),
-                      ),
-                      child: Text(
-                        '초기화',
-                        style: AppTextStyles.buttonText.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        widget.onDateRangeSelected(_rangeStart!, _rangeEnd!);
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary600,
-                        foregroundColor: AppColors.textOnPrimary,
-                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppRadius.radiusMd,
-                        ),
-                      ),
-                      child: Text('선택 완료', style: AppTextStyles.buttonText),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 날짜 그리드 생성
-  Widget _buildDateGrid() {
-    final firstDayOfMonth = DateTime(
-      _focusedMonth.year,
-      _focusedMonth.month,
-      1,
-    );
-    final lastDayOfMonth = DateTime(
-      _focusedMonth.year,
-      _focusedMonth.month + 1,
-      0,
-    );
-    final firstWeekday = firstDayOfMonth.weekday % 7;
-    final daysInMonth = lastDayOfMonth.day;
-
-    final List<DateTime?> dateList = [];
-
-    // 앞쪽 빈칸
-    for (int i = 0; i < firstWeekday; i++) {
-      dateList.add(null);
-    }
-
-    // 실제 날짜
-    for (int day = 1; day <= daysInMonth; day++) {
-      dateList.add(DateTime(_focusedMonth.year, _focusedMonth.month, day));
-    }
-
-    // 6주(42칸) 맞추기
-    while (dateList.length < 42) {
-      dateList.add(null);
-    }
-
-    return Column(
-      children: [
-        ...List.generate(6, (weekIndex) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(7, (dayIndex) {
-                final index = weekIndex * 7 + dayIndex;
-                final date = dateList[index];
-
-                if (date == null) {
-                  return const SizedBox(width: 36, height: 36);
-                }
-
-                return _buildDateCell(date);
-              }),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  /// 날짜 셀 생성
-  Widget _buildDateCell(DateTime date) {
-    final today = DateTime.now();
-    final isToday =
-        date.year == today.year &&
-        date.month == today.month &&
-        date.day == today.day;
-    final isPast = date.isBefore(DateTime(today.year, today.month, today.day));
-
-    final isStart = _rangeStart != null && _isSameDay(date, _rangeStart!);
-    final isEnd = _rangeEnd != null && _isSameDay(date, _rangeEnd!);
-    final isInRange =
-        _rangeStart != null &&
-        _rangeEnd != null &&
-        date.isAfter(_rangeStart!) &&
-        date.isBefore(_rangeEnd!);
-
-    // 최소 계약기간 범위 확인
-    final isInMinRange = _isInMinContractRange(date);
-
-    Color? backgroundColor;
-    Color? textColor;
-    FontWeight? fontWeight;
-
-    if (isStart || isEnd) {
-      backgroundColor = AppColors.primary600;
-      textColor = AppColors.textOnPrimary;
-      fontWeight = FontWeight.w600;
-    } else if (isInRange) {
-      backgroundColor = AppColors.primary50;
-      textColor = AppColors.primary600;
-      fontWeight = FontWeight.normal;
-    } else if (isInMinRange) {
-      // 최소 계약기간 범위: 회색 (선택 불가 표시)
-      backgroundColor = AppColors.neutral100;
-      textColor = AppColors.textDisabled;
-      fontWeight = FontWeight.normal;
-    } else if (isToday) {
-      backgroundColor = AppColors.primary50.withValues(alpha: 0.5);
-      textColor = AppColors.primary600;
-      fontWeight = FontWeight.w600;
-    } else if (isPast) {
-      textColor = AppColors.textDisabled;
-      fontWeight = FontWeight.normal;
-    } else {
-      textColor = AppColors.textPrimary;
-      fontWeight = FontWeight.normal;
-    }
-
-    return InkWell(
-      onTap: isPast ? null : () => _onDateSelected(date),
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        width: 36,
-        height: 36,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          shape: BoxShape.circle,
-        ),
-        child: Text(
-          '${date.day}',
-          style: AppTextStyles.caption.copyWith(
-            fontWeight: fontWeight,
-            color: textColor,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 최소 계약기간 범위 내인지 확인
-  bool _isInMinContractRange(DateTime date) {
-    if (_rangeStart == null || _rangeEnd != null) return false;
-    if (_isSameDay(date, _rangeStart!)) return false;
-
-    final minEndDate = _rangeStart!.add(Duration(days: _minContractDays - 1));
-
-    return date.isAfter(_rangeStart!) &&
-        (date.isBefore(minEndDate) || _isSameDay(date, minEndDate));
-  }
-
-  /// 날짜 선택 핸들러
-  void _onDateSelected(DateTime selectedDate) {
-    setState(() {
-      _errorMessage = null;
-
-      // 1. 시작일만 선택된 상태에서 같은 날짜 클릭 → 선택 해제
-      if (_rangeStart != null &&
-          _rangeEnd == null &&
-          _isSameDay(selectedDate, _rangeStart!)) {
-        _rangeStart = null;
-        _rangeEnd = null;
-        widget.onDateCleared?.call();
-        return;
-      }
-
-      // 2. 시작일만 선택된 상태 → 종료일 선택
-      if (_rangeStart != null && _rangeEnd == null) {
-        final DateTime earlierDate;
-        final DateTime laterDate;
-
-        if (selectedDate.isBefore(_rangeStart!)) {
-          earlierDate = _normalizeDate(selectedDate);
-          laterDate = _normalizeDate(_rangeStart!);
-        } else {
-          earlierDate = _normalizeDate(_rangeStart!);
-          laterDate = _normalizeDate(selectedDate);
-        }
-
-        final duration = laterDate.difference(earlierDate).inDays;
-
-        if (duration < _minContractDays) {
-          _errorMessage = '최소 $_minContractDays일 이상 선택해주세요';
-          return;
-        }
-
-        if (duration > _maxContractDays) {
-          _errorMessage = '최대 $_maxContractDays일까지 선택 가능합니다';
-          return;
-        }
-
-        _rangeStart = earlierDate;
-        _rangeEnd = laterDate;
-      }
-      // 3. 범위가 이미 선택된 상태 → 초기화 후 새 시작일 설정
-      else if (_rangeStart != null && _rangeEnd != null) {
-        _rangeStart = _normalizeDate(selectedDate);
-        _rangeEnd = null;
-      }
-      // 4. 아무것도 선택되지 않은 상태 → 시작일 설정
-      else {
-        _rangeStart = _normalizeDate(selectedDate);
-        _rangeEnd = null;
-      }
-    });
-  }
-
-  DateTime _normalizeDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }

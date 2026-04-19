@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'app_spacing.dart';
 
 /// 앱 전체의 타이포그래피 시스템을 정의합니다.
 ///
@@ -222,4 +223,35 @@ class AppTextStyles {
     color: AppColors.primary600,
     decoration: TextDecoration.underline,
   );
+
+  // ============= 반응형 폰트 스케일 =============
+  /// 화면 크기별 fontSize 값을 반환한다.
+  ///
+  /// 기존 패턴:
+  /// ```dart
+  /// AppTextStyles.headingLarge.copyWith(fontSize: isMobile ? 24 : 32)
+  /// ```
+  /// 대체 패턴:
+  /// ```dart
+  /// AppTextStyles.headingLarge.copyWith(
+  ///   fontSize: AppTextStyles.responsiveFontSize(
+  ///     context,
+  ///     mobile: 24,
+  ///     desktop: 32,
+  ///   ),
+  /// )
+  /// ```
+  ///
+  /// - [tablet] 생략 시 데스크탑 구간(>= AppBreakpoints.desktop) 전까지 mobile 값 사용
+  /// - 태블릿 전용 값이 필요한 경우에만 [tablet] 지정
+  static double responsiveFontSize(
+    BuildContext context, {
+    required double mobile,
+    double? tablet,
+    required double desktop,
+  }) {
+    if (AppBreakpoints.isDesktop(context)) return desktop;
+    if (AppBreakpoints.isTablet(context)) return tablet ?? mobile;
+    return mobile;
+  }
 }
