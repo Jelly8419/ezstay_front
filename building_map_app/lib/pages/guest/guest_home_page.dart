@@ -523,7 +523,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
           Text(
             '이지스테이와 함께 안전하고 쉬운\n단기임대를 경험하세요',
             style: AppTextStyles.bodyLarge.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: Colors.white,
+              fontWeight: FontWeight.w400,
               height: 1.6,
             ),
             textAlign: TextAlign.center,
@@ -616,7 +617,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
           maxHeight: isMobile ? double.infinity : 400,
         ),
         child: ClipRRect(
-          borderRadius: AppRadius.radiusLg,
+          borderRadius: isMobile
+              ? BorderRadius.zero
+              : AppRadius.radiusLg,
           child: AspectRatio(
             aspectRatio: isMobile ? 800 / 600 : 1920 / 500,
             child: Stack(
@@ -645,17 +648,27 @@ class _GuestHomePageState extends State<GuestHomePage> {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        vertical: AppSpacing.lg,
-                      ),
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             '오픈 전 참여하면 1만원 혜택',
                             style: AppTextStyles.headingLarge.copyWith(
+                              fontSize: AppTextStyles.responsiveFontSize(
+                                context,
+                                mobile: 22,
+                                desktop: 32,
+                              ),
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  offset: const Offset(0, 1),
+                                  blurRadius: 3,
+                                ),
+                              ],
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -663,7 +676,19 @@ class _GuestHomePageState extends State<GuestHomePage> {
                           Text(
                             '• 오픈 알림 신청 후 첫 계약 시 1만원 할인',
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: AppTextStyles.responsiveFontSize(
+                                context,
+                                mobile: 14,
+                                desktop: 17,
+                              ),
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  offset: const Offset(0, 1),
+                                  blurRadius: 3,
+                                ),
+                              ],
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -671,7 +696,19 @@ class _GuestHomePageState extends State<GuestHomePage> {
                           Text(
                             '• 방 등록 후 첫 계약 시 수수료 1만원 할인',
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: AppTextStyles.responsiveFontSize(
+                                context,
+                                mobile: 14,
+                                desktop: 17,
+                              ),
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  offset: const Offset(0, 1),
+                                  blurRadius: 3,
+                                ),
+                              ],
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -679,7 +716,19 @@ class _GuestHomePageState extends State<GuestHomePage> {
                           Text(
                             '선착순 마감 시 혜택은 종료됩니다',
                             style: AppTextStyles.bodySmall.copyWith(
-                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: AppTextStyles.responsiveFontSize(
+                                context,
+                                mobile: 12,
+                                desktop: 14,
+                              ),
+                              color: Colors.white.withValues(alpha: 0.85),
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  offset: const Offset(0, 1),
+                                  blurRadius: 3,
+                                ),
+                              ],
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -690,6 +739,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                               AppPrimaryButton(
                                 text: '알림 받기',
                                 fullWidth: false,
+                                height: isMobile ? AppSizes.buttonHeightMd : 52,
                                 onPressed: () =>
                                     _handleAlertRequest(authService),
                               ),
@@ -697,6 +747,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                               AppSecondaryButton(
                                 text: '방 등록하기',
                                 fullWidth: false,
+                                height: isMobile ? AppSizes.buttonHeightMd : 52,
                                 onPressed: () =>
                                     _handleHostRedirect(authService),
                               ),

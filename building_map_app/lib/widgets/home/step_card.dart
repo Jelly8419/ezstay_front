@@ -95,7 +95,7 @@ class StepCard extends StatelessWidget {
           Text(
             description,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
               height: 1.5,
             ),
           ),
