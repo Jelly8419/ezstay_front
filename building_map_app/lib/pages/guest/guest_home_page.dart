@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
@@ -13,6 +14,10 @@ import '../../widgets/common/content_container.dart';
 import '../../widgets/common/custom_toast.dart';
 import '../../widgets/common/guest_date_range_picker_dialog.dart';
 import '../../widgets/home/home_hero.dart';
+import '../../widgets/home/home_section.dart';
+import '../../widgets/home/section_header.dart';
+import '../../widgets/home/step_card.dart';
+import '../../widgets/home/step_guide_grid.dart';
 import '../../widgets/modals/region_alert_modal.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
@@ -89,8 +94,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
             // 히어로 섹션
             _buildHero(),
 
-            // STEP 가이드 섹션
-            _buildStepGuideSection(isMobile: true),
+            // STEP 가이드 섹션 (임차인 + 임대인)
+            _buildGuestStepSection(),
+            _buildHostStepSection(),
 
             // 배송 서비스 섹션
             _buildDeliverySection(isMobile: true),
@@ -121,8 +127,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
             // 히어로 섹션
             _buildHero(),
 
-            // STEP 가이드 섹션
-            _buildStepGuideSection(isMobile: false),
+            // STEP 가이드 섹션 (임차인 + 임대인)
+            _buildGuestStepSection(),
+            _buildHostStepSection(),
 
             // 배송 서비스 섹션
             _buildDeliverySection(isMobile: false),
@@ -159,8 +166,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
                       // 히어로 섹션
                       _buildHero(),
 
-                      // STEP 가이드 섹션
-                      _buildStepGuideSection(isMobile: false),
+                      // STEP 가이드 섹션 (임차인 + 임대인)
+                      _buildGuestStepSection(),
+                      _buildHostStepSection(),
 
                       // 배송 서비스 섹션
                       _buildDeliverySection(isMobile: false),
@@ -235,241 +243,94 @@ class _GuestHomePageState extends State<GuestHomePage> {
     );
   }
 
-  // ==================== STEP 가이드 섹션 (Grid 레이아웃) ====================
-  Widget _buildStepGuideSection({required bool isMobile}) {
-    return Container(
-      width: double.infinity,
-      color: AppColors.background,
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.xl * 2),
-      child: ContentContainer(
-        child: Column(
-          children: [
-            // 게스트 4-Step 가이드
-            _buildStepGuideBlock(
-              title: '임차인 이용 방법',
-              subtitle: '예약부터 입주까지 간단하게',
-              steps: [
-                _StepInfo(
-                  emoji: '🔍',
-                  stepNumber: 1,
-                  title: '방 검색',
-                  description: '임대기간, 임대료, 지역 등\n원하는 방을 검색',
-                ),
-                _StepInfo(
-                  emoji: '📝',
-                  stepNumber: 2,
-                  title: '계약 요청',
-                  description: '마음에 드는 방에\n계약을 요청',
-                ),
-                _StepInfo(
-                  emoji: '💳',
-                  stepNumber: 3,
-                  title: '계약 결제',
-                  description: '임대인 승인 후 필요한\n물품과 함께 결제',
-                ),
-                _StepInfo(
-                  emoji: '🏠',
-                  stepNumber: 4,
-                  title: '입주 및 퇴실',
-                  description: '안내를 받아 입주하고\n퇴실 후 자동으로 보증금 수령',
-                ),
-              ],
-              isMobile: isMobile,
-            ),
-
-            SizedBox(height: AppSpacing.xl * 3),
-
-            // 호스트 3-Step 가이드
-            Container(
-              padding: EdgeInsets.all(
-                isMobile ? AppSpacing.md : AppSpacing.xl * 2,
+  // ==================== 임차인 STEP 가이드 섹션 ====================
+  Widget _buildGuestStepSection() {
+    return HomeSection(
+      backgroundColor: AppColors.background,
+      verticalScale: VerticalPaddingScale.md,
+      child: Column(
+        children: [
+          const SectionHeader(
+            title: '임차인 이용 방법',
+            subtitle: '예약부터 입주까지 간단하게',
+          ),
+          SizedBox(height: AppSpacing.xl),
+          const StepGuideGrid(
+            steps: [
+              StepCard(
+                icon: LucideIcons.search,
+                stepNumber: '01',
+                title: '방 검색',
+                description: '임대기간, 임대료, 지역 등\n원하는 방을 검색',
+                variant: StepCardVariant.guest,
               ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: AppRadius.radiusLg,
+              StepCard(
+                icon: LucideIcons.fileText,
+                stepNumber: '02',
+                title: '계약 요청',
+                description: '마음에 드는 방에\n계약을 요청',
+                variant: StepCardVariant.guest,
               ),
-              child: _buildStepGuideBlock(
-                title: '임대인 이용 방법',
-                subtitle: '방 등록부터 정산까지 간단하게',
-                steps: [
-                  _StepInfo(
-                    emoji: '📋',
-                    stepNumber: 1,
-                    title: '방 등록',
-                    description: '임대할 방 정보를 등록',
-                  ),
-                  _StepInfo(
-                    emoji: '🤝',
-                    stepNumber: 2,
-                    title: '계약 관리',
-                    description: '임차인 계약 요청을\n확인하고 승인하세요',
-                  ),
-                  _StepInfo(
-                    emoji: '💰',
-                    stepNumber: 3,
-                    title: '정산',
-                    description: '임차인 입주 시\n임대인에게 정산금 자동 지급',
-                  ),
-                ],
-                isMobile: isMobile,
-                isGreenTheme: true,
+              StepCard(
+                icon: LucideIcons.creditCard,
+                stepNumber: '03',
+                title: '계약 결제',
+                description: '임대인 승인 후 필요한\n물품과 함께 결제',
+                variant: StepCardVariant.guest,
               ),
-            ),
-          ],
-        ),
+              StepCard(
+                icon: LucideIcons.home,
+                stepNumber: '04',
+                title: '입주 및 퇴실',
+                description: '안내를 받아 입주하고\n퇴실 후 자동으로 보증금 수령',
+                variant: StepCardVariant.guest,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  // STEP 가이드 블록 (제목 + Grid)
-  Widget _buildStepGuideBlock({
-    required String title,
-    required String subtitle,
-    required List<_StepInfo> steps,
-    required bool isMobile,
-    bool isGreenTheme = false,
-  }) {
-    return Column(
-      children: [
-        // 제목
-        Text(
-          title,
-          style: AppTextStyles.headingLarge.copyWith(
-            fontSize: isMobile ? 24 : 32,
-            fontWeight: FontWeight.bold,
+  // ==================== 임대인 STEP 가이드 섹션 ====================
+  Widget _buildHostStepSection() {
+    return HomeSection(
+      backgroundColor: AppColors.surface,
+      verticalScale: VerticalPaddingScale.md,
+      child: Column(
+        children: [
+          const SectionHeader(
+            title: '임대인 이용 방법',
+            subtitle: '방 등록부터 정산까지 간단하게',
           ),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: AppSpacing.sm),
-        Text(
-          subtitle,
-          style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: AppSpacing.xl * 2),
-
-        // Grid 레이아웃
-        LayoutBuilder(
-          builder: (context, constraints) {
-            // 모바일: 2열, 데스크톱: 4열 (게스트) 또는 3열 (호스트)
-            final crossAxisCount = isMobile ? 2 : steps.length;
-            final childAspectRatio = isMobile ? 0.55 : 0.8;
-
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                childAspectRatio: childAspectRatio,
-                crossAxisSpacing: isMobile ? AppSpacing.md : AppSpacing.lg,
-                mainAxisSpacing: isMobile ? AppSpacing.md : AppSpacing.lg,
+          SizedBox(height: AppSpacing.xl),
+          const StepGuideGrid(
+            steps: [
+              StepCard(
+                icon: LucideIcons.clipboardList,
+                stepNumber: '01',
+                title: '방 등록',
+                description: '임대할 방 정보를 등록',
+                variant: StepCardVariant.host,
               ),
-              itemCount: steps.length,
-              itemBuilder: (context, index) {
-                return _buildStepCard(
-                  emoji: steps[index].emoji,
-                  stepNumber: steps[index].stepNumber,
-                  title: steps[index].title,
-                  description: steps[index].description,
-                  isMobile: isMobile,
-                  isGreenTheme: isGreenTheme,
-                );
-              },
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  // Step 카드 (세로 중앙 정렬 - React 스타일)
-  Widget _buildStepCard({
-    required String emoji,
-    required int stepNumber,
-    required String title,
-    required String description,
-    required bool isMobile,
-    bool isGreenTheme = false,
-  }) {
-    final gradientColors = isGreenTheme
-        ? [AppColors.green500, AppColors.green600]
-        : [AppColors.primary500, AppColors.primary600];
-    final shadowColor = isGreenTheme
-        ? AppColors.green500
-        : AppColors.primary500;
-    final badgeColor = isGreenTheme ? AppColors.green100 : AppColors.primary100;
-    final badgeTextColor = isGreenTheme
-        ? AppColors.green600
-        : AppColors.primary600;
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // 1. Gradient Emoji Box
-        Container(
-          width: isMobile ? 64 : 96,
-          height: isMobile ? 64 : 96,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: gradientColors,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(isMobile ? 16 : 24),
-            boxShadow: [
-              BoxShadow(
-                color: shadowColor.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+              StepCard(
+                icon: LucideIcons.userCheck,
+                stepNumber: '02',
+                title: '계약 승인',
+                description: '임차인 계약 요청을\n확인하고 승인하세요',
+                variant: StepCardVariant.host,
+              ),
+              StepCard(
+                icon: LucideIcons.wallet,
+                stepNumber: '03',
+                title: '정산 수령',
+                description: '임차인 입주 시\n임대인에게 정산금 자동 지급',
+                variant: StepCardVariant.host,
               ),
             ],
           ),
-          child: Center(
-            child: Text(
-              emoji,
-              style: AppTextStyles.displayLarge.copyWith(
-                fontSize: isMobile ? 28 : 40,
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: AppSpacing.md),
-
-        // 2. STEP Label
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: badgeColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            'STEP $stepNumber',
-            style: AppTextStyles.labelSmall.copyWith(
-              color: badgeTextColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        SizedBox(height: AppSpacing.sm),
-
-        // 3. Title
-        Text(
-          title,
-          style: (isMobile ? AppTextStyles.bodyMedium : AppTextStyles.bodyLarge)
-              .copyWith(fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: AppSpacing.xs),
-
-        // 4. Description
-        Text(
-          description,
-          style: isMobile
-              ? AppTextStyles.bodySmallSecondary
-              : AppTextStyles.bodyMediumSecondary,
-          textAlign: TextAlign.center,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -980,17 +841,3 @@ class _GuestHomePageState extends State<GuestHomePage> {
   }
 }
 
-// ==================== Step Info 모델 ====================
-class _StepInfo {
-  final String emoji;
-  final int stepNumber;
-  final String title;
-  final String description;
-
-  _StepInfo({
-    required this.emoji,
-    required this.stepNumber,
-    required this.title,
-    required this.description,
-  });
-}
