@@ -205,7 +205,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       checkOut: _checkOutDate,
       onTapDate: _showDateSelectionDialog,
       onSearch: _handleSearch,
-      trustPoints: const ['에스크로 안심 결제', '100% 방 검증', '투명한 표준 계약서'],
+      trustPoints: const ['에스크로 안심 결제', '100% 방 검증', '안전한 계약 프로세스'],
       notice: '현재 서울 지역만 서비스 중입니다',
     );
   }
