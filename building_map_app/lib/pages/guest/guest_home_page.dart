@@ -610,111 +610,107 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
     final isMobile = responsive.ResponsiveUtil.isMobile(context);
 
-    return ColoredBox(
-      color: AppColors.background,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 50),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: 1280,
-              maxHeight: isMobile ? double.infinity : 400,
-            ),
-            child: ClipRRect(
-              borderRadius: AppRadius.radiusLg,
-              child: AspectRatio(
-                aspectRatio: isMobile ? 800 / 600 : 1920 / 500,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.asset(
-                      isMobile
-                          ? 'assets/images/banner_mobile.jpg'
-                          : 'assets/images/banner_desktop.jpg',
-                      fit: BoxFit.cover,
-                      alignment: Alignment.topCenter,
+    return HomeSection(
+      backgroundColor: AppColors.background,
+      maxWidth: AppSizes.contentMaxWidthWide,
+      padding: const EdgeInsets.only(bottom: 50),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: isMobile ? double.infinity : 400,
+        ),
+        child: ClipRRect(
+          borderRadius: AppRadius.radiusLg,
+          child: AspectRatio(
+            aspectRatio: isMobile ? 800 / 600 : 1920 / 500,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  isMobile
+                      ? 'assets/images/banner_mobile.jpg'
+                      : 'assets/images/banner_desktop.jpg',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withValues(alpha: 0.55),
+                        Colors.black.withValues(alpha: 0.35),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
                     ),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.black.withValues(alpha: 0.55),
-                            Colors.black.withValues(alpha: 0.35),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
+                  ),
+                ),
+                Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: AppSpacing.lg,
                       ),
-                    ),
-                    Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            vertical: AppSpacing.lg,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '오픈 전 참여하면 1만원 혜택',
+                            style: AppTextStyles.headingLarge.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                          const SizedBox(height: 8),
+                          Text(
+                            '• 오픈 알림 신청 후 첫 계약 시 1만원 할인',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '• 방 등록 후 첫 계약 시 수수료 1만원 할인',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '선착순 마감 시 혜택은 종료됩니다',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                '오픈 전 참여하면 1만원 혜택',
-                                style: AppTextStyles.headingLarge.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                textAlign: TextAlign.center,
+                              AppPrimaryButton(
+                                text: '알림 받기',
+                                fullWidth: false,
+                                onPressed: () =>
+                                    _handleAlertRequest(authService),
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '• 오픈 알림 신청 후 첫 계약 시 1만원 할인',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '• 방 등록 후 첫 계약 시 수수료 1만원 할인',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '선착순 마감 시 혜택은 종료됩니다',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.7),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  AppPrimaryButton(
-                                    text: '알림 받기',
-                                    fullWidth: false,
-                                    onPressed: () =>
-                                        _handleAlertRequest(authService),
-                                  ),
-                                  SizedBox(width: AppSpacing.md),
-                                  AppSecondaryButton(
-                                    text: '방 등록하기',
-                                    fullWidth: false,
-                                    onPressed: () =>
-                                        _handleHostRedirect(authService),
-                                  ),
-                                ],
+                              SizedBox(width: AppSpacing.md),
+                              AppSecondaryButton(
+                                text: '방 등록하기',
+                                fullWidth: false,
+                                onPressed: () =>
+                                    _handleHostRedirect(authService),
                               ),
                             ],
                           ),
-                        ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
