@@ -33,38 +33,32 @@ class InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(AppSpacing.xl),
+      padding: EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.neutral200, width: 0.5),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowLight,
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppShadows.cardDefault,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               // ignore: deprecated_member_use_from_same_package
               color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, size: 28, color: iconColor),
+            child: Icon(icon, size: 24, color: iconColor),
           ),
           SizedBox(height: AppSpacing.lg),
           Text(
             title,
-            style: AppTextStyles.headingMedium.copyWith(
-              fontWeight: FontWeight.w700,
+            style: AppTextStyles.headingSmall.copyWith(
+              fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
           ),
