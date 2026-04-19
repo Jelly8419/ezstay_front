@@ -52,18 +52,12 @@ class StepCard extends StatelessWidget {
     };
 
     return Container(
-      padding: EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border.all(color: AppColors.neutral200, width: 0.5),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowLight,
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.cardDefault,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,8 +87,8 @@ class StepCard extends StatelessWidget {
           SizedBox(height: AppSpacing.md),
           Text(
             title,
-            style: AppTextStyles.headingMedium.copyWith(
-              fontWeight: FontWeight.w700,
+            style: AppTextStyles.headingSmall.copyWith(
+              fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: AppSpacing.xs),

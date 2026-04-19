@@ -22,8 +22,8 @@ class StepGuideGrid extends StatelessWidget {
   const StepGuideGrid({
     super.key,
     required this.steps,
-    this.mobileCardWidth = 160,
-    this.desktopCardWidth = 260,
+    this.mobileCardWidth = 140,
+    this.desktopCardWidth = 240,
     this.spacing = AppSpacing.md,
   });
 
