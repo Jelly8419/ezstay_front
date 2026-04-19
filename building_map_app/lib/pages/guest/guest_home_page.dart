@@ -15,6 +15,7 @@ import '../../widgets/common/custom_toast.dart';
 import '../../widgets/common/guest_date_range_picker_dialog.dart';
 import '../../widgets/home/home_hero.dart';
 import '../../widgets/home/home_section.dart';
+import '../../widgets/home/info_card.dart';
 import '../../widgets/home/section_header.dart';
 import '../../widgets/home/step_card.dart';
 import '../../widgets/home/step_guide_grid.dart';
@@ -99,10 +100,10 @@ class _GuestHomePageState extends State<GuestHomePage> {
             _buildHostStepSection(),
 
             // 배송 서비스 섹션
-            _buildDeliverySection(isMobile: true),
+            _buildDeliverySection(),
 
             // 안전한 이유 섹션
-            _buildSafetySection(isMobile: true),
+            _buildSafetySection(),
 
             // CTA 섹션
             _buildCTASection(isMobile: true),
@@ -132,10 +133,10 @@ class _GuestHomePageState extends State<GuestHomePage> {
             _buildHostStepSection(),
 
             // 배송 서비스 섹션
-            _buildDeliverySection(isMobile: false),
+            _buildDeliverySection(),
 
             // 안전한 이유 섹션
-            _buildSafetySection(isMobile: false),
+            _buildSafetySection(),
 
             // CTA 섹션
             _buildCTASection(isMobile: false),
@@ -171,10 +172,10 @@ class _GuestHomePageState extends State<GuestHomePage> {
                       _buildHostStepSection(),
 
                       // 배송 서비스 섹션
-                      _buildDeliverySection(isMobile: false),
+                      _buildDeliverySection(),
 
                       // 안전한 이유 섹션
-                      _buildSafetySection(isMobile: false),
+                      _buildSafetySection(),
 
                       // CTA 섹션
                       _buildCTASection(isMobile: false),
@@ -325,139 +326,129 @@ class _GuestHomePageState extends State<GuestHomePage> {
   }
 
   // ==================== 안전한 이유 섹션 ====================
-  Widget _buildSafetySection({required bool isMobile}) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.xl * 2),
-      color: AppColors.background,
-      child: ContentContainer(
-        child: Column(
-          children: [
-            // 제목
-            Text(
-              '이지스테이가 안전한 이유',
-              style: AppTextStyles.headingLarge.copyWith(
-                fontSize: isMobile ? 28 : 36,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: AppSpacing.sm),
-            Text(
-              '안심하고 거래할 수 있는 시스템을 제공합니다',
-              style: AppTextStyles.bodyMediumSecondary,
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: AppSpacing.xl * 2),
+  Widget _buildSafetySection() {
+    return HomeSection(
+      backgroundColor: AppColors.background,
+      verticalScale: VerticalPaddingScale.md,
+      child: Column(
+        children: [
+          const SectionHeader(
+            title: '이지스테이가 안전한 이유',
+            subtitle: '안심하고 거래할 수 있는 시스템을 제공합니다',
+          ),
+          SizedBox(height: AppSpacing.xl),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = AppBreakpoints.isMobile(context);
 
-            // 카드 그리드
-            isMobile
-                ? Column(
-                    children: [
-                      _buildSafetyCard(
-                        icon: Icons.verified_user,
-                        title: '안전한 결제 시스템',
-                        description: '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
-                        color: AppColors.primary500,
-                      ),
-                      SizedBox(height: AppSpacing.lg),
-                      _buildSafetyCard(
-                        icon: Icons.check_circle_outline,
-                        title: '방 검증',
-                        description: '모든 방은 검증 절차를 거쳐 등록되며, 허위 방 등록을 방지합니다.',
-                        color: AppColors.success600,
-                      ),
-                      SizedBox(height: AppSpacing.lg),
-                      _buildSafetyCard(
-                        icon: Icons.description_outlined,
-                        title: '투명한 계약',
-                        description: '모든 계약 내용이 명확하게 기록되고, 분쟁 시 증빙 자료로 활용됩니다.',
-                        color: AppColors.info600,
-                      ),
-                    ],
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _buildSafetyCard(
-                          icon: Icons.verified_user,
-                          title: '안전한 결제 시스템',
-                          description:
-                              '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
-                          color: AppColors.primary500,
-                        ),
-                      ),
-                      SizedBox(width: AppSpacing.lg),
-                      Expanded(
-                        child: _buildSafetyCard(
-                          icon: Icons.check_circle_outline,
-                          title: '매물 검증',
-                          description: '모든 방은 검증 절차를 거쳐 등록되며, 허위 매물을 방지합니다.',
-                          color: AppColors.success600,
-                        ),
-                      ),
-                      SizedBox(width: AppSpacing.lg),
-                      Expanded(
-                        child: _buildSafetyCard(
-                          icon: Icons.description_outlined,
-                          title: '투명한 계약',
-                          description:
-                              '모든 계약 내용이 명확하게 기록되고, 분쟁 시 증빙 자료로 활용됩니다.',
-                          color: AppColors.info600,
-                        ),
-                      ),
-                    ],
+              if (isMobile) {
+                return Column(
+                  children: [
+                    InfoCard(
+                      icon: LucideIcons.shieldCheck,
+                      iconColor: AppColors.primary500,
+                      title: '안전한 결제 시스템',
+                      description:
+                          '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
+                    ),
+                    SizedBox(height: AppSpacing.md),
+                    InfoCard(
+                      icon: LucideIcons.badgeCheck,
+                      iconColor: AppColors.primary500,
+                      title: '방 검증',
+                      description: '모든 매물은 검증 절차를 거쳐 등록되며, 허위 매물을 방지합니다.',
+                    ),
+                    SizedBox(height: AppSpacing.md),
+                    InfoCard(
+                      icon: LucideIcons.fileText,
+                      iconColor: AppColors.primary500,
+                      title: '투명한 계약',
+                      description: '모든 계약 내용이 명확하게 기록되고, 분쟁 시 증빙 자료로 활용됩니다.',
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: InfoCard(
+                      icon: LucideIcons.shieldCheck,
+                      iconColor: AppColors.primary500,
+                      title: '안전한 결제 시스템',
+                      description:
+                          '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
+                    ),
                   ),
-          ],
-        ),
+                  SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: InfoCard(
+                      icon: LucideIcons.badgeCheck,
+                      iconColor: AppColors.primary500,
+                      title: '방 검증',
+                      description: '모든 매물은 검증 절차를 거쳐 등록되며, 허위 매물을 방지합니다.',
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: InfoCard(
+                      icon: LucideIcons.fileText,
+                      iconColor: AppColors.primary500,
+                      title: '투명한 계약',
+                      description:
+                          '모든 계약 내용이 명확하게 기록되고, 분쟁 시 증빙 자료로 활용됩니다.',
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
-  // ==================== 배송 서비스 섹션 (가로 배치 - React 스타일) ====================
-  Widget _buildDeliverySection({required bool isMobile}) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.xl * 2),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.purple50, // Purple-50
-            AppColors.blue50, // Blue-50
-          ],
-        ),
+  // ==================== 배송 서비스 섹션 ====================
+  Widget _buildDeliverySection() {
+    return HomeSection(
+      backgroundGradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [AppColors.purple50, AppColors.primary50],
       ),
-      child: ContentContainer(
-        child: Container(
-          padding: EdgeInsets.all(isMobile ? AppSpacing.xl : AppSpacing.xl * 3),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: isMobile
-              ? Column(
-                  children: [
-                    _buildDeliveryIcon(),
-                    SizedBox(height: AppSpacing.xl),
-                    _buildDeliveryContent(isMobile: true),
-                  ],
-                )
-              : Row(
-                  children: [
-                    _buildDeliveryIcon(),
-                    SizedBox(width: AppSpacing.xl * 2),
-                    Expanded(child: _buildDeliveryContent(isMobile: false)),
-                  ],
-                ),
+      verticalScale: VerticalPaddingScale.md,
+      child: Container(
+        padding: EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          boxShadow: AppShadows.cardDefault,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = AppBreakpoints.isMobile(context);
+
+            if (isMobile) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildDeliveryIcon(),
+                  SizedBox(height: AppSpacing.lg),
+                  _buildDeliveryContent(center: true),
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildDeliveryIcon(),
+                SizedBox(width: AppSpacing.xl),
+                Expanded(child: _buildDeliveryContent(center: false)),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -472,38 +463,40 @@ class _GuestHomePageState extends State<GuestHomePage> {
         borderRadius: BorderRadius.circular(24),
       ),
       child: Icon(
-        Icons.local_shipping_outlined,
+        LucideIcons.truck,
         size: 48,
         color: AppColors.purple600,
       ),
     );
   }
 
-  Widget _buildDeliveryContent({required bool isMobile}) {
+  Widget _buildDeliveryContent({required bool center}) {
+    final crossAxis =
+        center ? CrossAxisAlignment.center : CrossAxisAlignment.start;
+    final textAlign = center ? TextAlign.center : TextAlign.left;
+
     return Column(
-      crossAxisAlignment: isMobile
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
+      crossAxisAlignment: crossAxis,
       children: [
         Text(
           '입주 필수품 배송 서비스',
           style: AppTextStyles.headingLarge.copyWith(
-            fontSize: isMobile ? 24 : 28,
+            fontSize: center ? 24 : 28,
             fontWeight: FontWeight.bold,
           ),
-          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          textAlign: textAlign,
         ),
         SizedBox(height: AppSpacing.md),
         Text(
           '계약 결제 시, 필요한 상품을 함께 구매하면\n입주할 방으로 배송해드려요',
-          style: AppTextStyles.bodyLarge.copyWith(fontSize: isMobile ? 14 : 16),
-          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          style: AppTextStyles.bodyLarge.copyWith(fontSize: center ? 14 : 16),
+          textAlign: textAlign,
         ),
         SizedBox(height: AppSpacing.sm),
         Text(
           '생활용품, 침구류 등 입주에 필요한 물품을 이지스테이에서 준비할 수 있어요',
           style: AppTextStyles.bodyMediumSecondary,
-          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          textAlign: textAlign,
         ),
       ],
     );
@@ -576,59 +569,6 @@ class _GuestHomePageState extends State<GuestHomePage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSafetyCard({
-    required IconData icon,
-    required String title,
-    required String description,
-    required Color color,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.radiusLg,
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.1),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // 아이콘
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 32, color: color),
-          ),
-          SizedBox(height: AppSpacing.lg),
-
-          // 제목
-          Text(
-            title,
-            style: AppTextStyles.headingSmall.copyWith(color: color),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: AppSpacing.sm),
-
-          // 설명
-          Text(
-            description,
-            style: AppTextStyles.bodyMediumSecondary,
-            textAlign: TextAlign.center,
-          ),
-        ],
       ),
     );
   }
