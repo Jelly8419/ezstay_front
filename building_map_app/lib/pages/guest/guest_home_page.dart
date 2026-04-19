@@ -13,6 +13,7 @@ import '../../widgets/common/app_buttons.dart';
 import '../../widgets/common/content_container.dart';
 import '../../widgets/common/custom_toast.dart';
 import '../../widgets/common/guest_date_range_picker_dialog.dart';
+import '../../widgets/home/cta_button.dart';
 import '../../widgets/home/home_hero.dart';
 import '../../widgets/home/home_section.dart';
 import '../../widgets/home/info_card.dart';
@@ -106,7 +107,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
             _buildSafetySection(),
 
             // CTA 섹션
-            _buildCTASection(isMobile: true),
+            _buildCTASection(),
 
             const AppFooter(),
           ],
@@ -139,7 +140,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
             _buildSafetySection(),
 
             // CTA 섹션
-            _buildCTASection(isMobile: false),
+            _buildCTASection(),
 
             const AppFooter(),
           ],
@@ -178,7 +179,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                       _buildSafetySection(),
 
                       // CTA 섹션
-                      _buildCTASection(isMobile: false),
+                      _buildCTASection(),
 
                       const AppFooter(),
                     ],
@@ -500,73 +501,44 @@ class _GuestHomePageState extends State<GuestHomePage> {
     );
   }
 
-  // ==================== CTA 섹션 (React 스타일 - 강력한 전환 디자인) ====================
-  Widget _buildCTASection({required bool isMobile}) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.xl * 4),
-      decoration: BoxDecoration(
-        color: AppColors.blue600, // Blue-600 단색 배경
-      ),
-      child: ContentContainer(
-        maxWidth: 800,
-        child: Column(
-          children: [
-            Text(
-              '지금 바로 시작하세요',
-              style: AppTextStyles.displayLarge.copyWith(
-                color: Colors.white,
-                fontSize: isMobile ? 28 : 40,
-                fontWeight: FontWeight.bold,
+  // ==================== CTA 섹션 ====================
+  Widget _buildCTASection() {
+    return HomeSection(
+      backgroundColor: AppColors.primary600,
+      maxWidth: AppSizes.contentMaxWidthNarrow,
+      verticalScale: VerticalPaddingScale.lg,
+      child: Column(
+        children: [
+          Text(
+            '지금 바로 시작하세요',
+            style: AppTextStyles.displayLarge.copyWith(
+              fontSize: AppTextStyles.responsiveFontSize(
+                context,
+                mobile: 28,
+                desktop: 36,
               ),
-              textAlign: TextAlign.center,
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
             ),
-            SizedBox(height: AppSpacing.lg),
-            Text(
-              '이지스테이와 함께 안전하고 쉬운 단기임대를 경험하세요',
-              style: AppTextStyles.headingSmall.copyWith(
-                color: AppColors.blue100, // Blue-100
-                fontSize: isMobile ? 16 : 20,
-              ),
-              textAlign: TextAlign.center,
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppSpacing.md),
+          Text(
+            '이지스테이와 함께 안전하고 쉬운\n단기임대를 경험하세요',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: Colors.white.withValues(alpha: 0.9),
+              height: 1.6,
             ),
-            SizedBox(height: AppSpacing.xl * 2),
-            SizedBox(
-              width: isMobile ? double.infinity : 280,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _handleSearch,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.blue600,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '방 검색하기',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: AppColors.blue600,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    SizedBox(width: AppSpacing.sm),
-                    Icon(
-                      Icons.arrow_forward,
-                      size: 20,
-                      color: AppColors.blue600,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppSpacing.xl),
+          CTAButton(
+            text: '방 검색하기',
+            trailingIcon: LucideIcons.arrowRight,
+            variant: CTAButtonVariant.onPrimary,
+            onPressed: _handleSearch,
+          ),
+        ],
       ),
     );
   }
