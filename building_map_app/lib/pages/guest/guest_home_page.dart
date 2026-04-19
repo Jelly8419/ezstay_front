@@ -10,7 +10,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../widgets/common/app_buttons.dart';
-import '../../widgets/common/content_container.dart';
 import '../../widgets/common/custom_toast.dart';
 import '../../widgets/common/guest_date_range_picker_dialog.dart';
 import '../../widgets/home/cta_button.dart';
@@ -378,8 +377,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                         icon: LucideIcons.shieldCheck,
                         iconColor: AppColors.primary500,
                         title: '안전한 결제 시스템',
-                        description:
-                            '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
+                        description: '에스크로 방식으로 안전하게 결제하고, 계약 확정 후 정산금을 지급합니다.',
                       ),
                     ),
                     SizedBox(width: AppSpacing.md),
@@ -397,8 +395,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                         icon: LucideIcons.fileText,
                         iconColor: AppColors.primary500,
                         title: '투명한 계약',
-                        description:
-                            '모든 계약 내용이 명확하게 기록되고, 분쟁 시 증빙 자료로 활용됩니다.',
+                        description: '모든 계약 내용이 명확하게 기록되고, 분쟁 시 증빙 자료로 활용됩니다.',
                       ),
                     ),
                   ],
