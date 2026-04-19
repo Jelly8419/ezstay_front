@@ -135,7 +135,7 @@ class HomeHero extends StatelessWidget {
             Text(
               notice!,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textPrimary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -207,7 +207,8 @@ class HomeHero extends StatelessWidget {
               Text(
                 text,
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
