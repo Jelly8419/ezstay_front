@@ -204,11 +204,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       checkOut: _checkOutDate,
       onTapDate: _showDateSelectionDialog,
       onSearch: _handleSearch,
-      trustPoints: const [
-        '에스크로 안심 결제',
-        '100% 방 검증',
-        '투명한 표준 계약서',
-      ],
+      trustPoints: const ['에스크로 안심 결제', '100% 방 검증', '투명한 표준 계약서'],
       notice: '현재 서울 지역만 서비스 중입니다',
     );
   }
@@ -250,10 +246,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       verticalScale: VerticalPaddingScale.md,
       child: Column(
         children: [
-          const SectionHeader(
-            title: '임차인 이용 방법',
-            subtitle: '예약부터 입주까지 간단하게',
-          ),
+          const SectionHeader(title: '임차인 이용 방법', subtitle: '예약부터 입주까지 간단하게'),
           SizedBox(height: AppSpacing.xl),
           const StepGuideGrid(
             steps: [
@@ -299,10 +292,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       verticalScale: VerticalPaddingScale.md,
       child: Column(
         children: [
-          const SectionHeader(
-            title: '임대인 이용 방법',
-            subtitle: '방 등록부터 정산까지 간단하게',
-          ),
+          const SectionHeader(title: '임대인 이용 방법', subtitle: '방 등록부터 정산까지 간단하게'),
           SizedBox(height: AppSpacing.xl),
           const StepGuideGrid(
             steps: [
@@ -316,14 +306,14 @@ class _GuestHomePageState extends State<GuestHomePage> {
               StepCard(
                 icon: LucideIcons.userCheck,
                 stepNumber: '02',
-                title: '계약 승인',
+                title: '계약 관리',
                 description: '임차인 계약 요청을\n확인하고 승인하세요',
                 variant: StepCardVariant.host,
               ),
               StepCard(
                 icon: LucideIcons.wallet,
                 stepNumber: '03',
-                title: '정산 수령',
+                title: '정산',
                 description: '임차인 입주 시\n임대인에게 정산금 자동 지급',
                 variant: StepCardVariant.host,
               ),
@@ -840,4 +830,3 @@ class _GuestHomePageState extends State<GuestHomePage> {
     context.go('/map', extra: extra.isNotEmpty ? extra : null);
   }
 }
-
