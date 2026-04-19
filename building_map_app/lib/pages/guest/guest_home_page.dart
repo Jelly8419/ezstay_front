@@ -617,7 +617,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
           maxHeight: isMobile ? double.infinity : 400,
         ),
         child: ClipRRect(
-          borderRadius: AppRadius.radiusLg,
+          borderRadius: isMobile
+              ? BorderRadius.zero
+              : AppRadius.radiusLg,
           child: AspectRatio(
             aspectRatio: isMobile ? 800 / 600 : 1920 / 500,
             child: Stack(
