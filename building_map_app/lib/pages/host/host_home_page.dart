@@ -12,6 +12,9 @@ import '../../core/theme/app_spacing.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../utils/contract_utils.dart';
+import '../../widgets/common/app_buttons.dart';
+import '../../widgets/common/content_container.dart';
+import '../../utils/responsive_util.dart' as responsive;
 
 /// 호스트 모드 홈 화면 - 새 디자인 시스템 적용
 class HostHomePage extends StatefulWidget {
@@ -99,20 +102,13 @@ class _HostHomePageState extends State<HostHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildEventBanner(),
             _buildHeroSection(isMobile: true),
             SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildInProgressRoomsSection(),
-                  if (_inProgressRooms.isNotEmpty) SizedBox(height: AppSpacing.lg),
-                  _buildManagementGrid(),
-                  SizedBox(height: AppSpacing.xxl),
-                ],
-              ),
-            ),
+            _buildInProgressRoomsSection(),
+            if (_inProgressRooms.isNotEmpty) SizedBox(height: AppSpacing.lg),
+            _buildManagementGrid(),
+            SizedBox(height: AppSpacing.xxl),
             const AppFooter(),
           ],
         ),
@@ -128,20 +124,13 @@ class _HostHomePageState extends State<HostHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildEventBanner(),
             _buildHeroSection(isMobile: false),
             SizedBox(height: AppSpacing.xl),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildInProgressRoomsSection(),
-                  if (_inProgressRooms.isNotEmpty) SizedBox(height: AppSpacing.xl),
-                  _buildManagementGrid(),
-                  SizedBox(height: AppSpacing.xxxl),
-                ],
-              ),
-            ),
+            _buildInProgressRoomsSection(),
+            if (_inProgressRooms.isNotEmpty) SizedBox(height: AppSpacing.xl),
+            _buildManagementGrid(),
+            SizedBox(height: AppSpacing.xxxl),
             const AppFooter(),
           ],
         ),
@@ -162,6 +151,7 @@ class _HostHomePageState extends State<HostHomePage> {
                   controller: _scrollController,
                   child: Column(
                     children: [
+                      _buildEventBanner(),
                       _buildHeroSection(isMobile: false),
                       SizedBox(height: AppSpacing.xxl),
                       _buildInProgressRoomsSection(),
@@ -185,9 +175,8 @@ class _HostHomePageState extends State<HostHomePage> {
   Widget _buildInProgressRoomsSection() {
     if (_inProgressRooms.isEmpty) return const SizedBox.shrink();
 
-    return Center(
+    return ContentContainer(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 1200),
         padding: AppSpacing.paddingLg,
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -373,12 +362,130 @@ class _HostHomePageState extends State<HostHomePage> {
     );
   }
 
+  // ==================== 이벤트 배너 ====================
+  Widget _buildEventBanner() {
+    // ignore: dead_code, API 연동 후 서버 값으로 교체 예정
+    const bool isEventActive = true;
+
+    return ContentContainer(
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Container(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.radiusMd,
+          image: DecorationImage(
+            image: AssetImage(
+              responsive.ResponsiveUtil.isMobile(context)
+                  ? 'assets/images/banner_mobile.jpg'
+                  : 'assets/images/banner_desktop.jpg',
+            ),
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: AppRadius.radiusMd,
+          child: Stack(
+            children: [
+              // 오버레이
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withValues(alpha: 0.6),
+                        Colors.black.withValues(alpha: 0.35),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                  ),
+                ),
+              ),
+              // 콘텐츠
+              Padding(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: Row(
+                  children: [
+                    // 왼쪽: 뱃지 + 타이틀 + 설명
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              // ignore: dead_code
+                              color: isEventActive ? AppColors.success100 : AppColors.neutral200,
+                              borderRadius: AppRadius.radiusXs,
+                            ),
+                            child: Text(
+                              // ignore: dead_code
+                              isEventActive ? '진행 중' : '종료',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                // ignore: dead_code
+                                color: isEventActive ? AppColors.success600 : AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: AppSpacing.sm),
+                          Text(
+                            '지금 등록하면 혜택이 적용됩니다',
+                            style: AppTextStyles.bodyLarge.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: AppSpacing.xs),
+                          Text(
+                            '첫 계약 시 수수료 1만원 할인',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.md),
+                    // 오른쪽: 선착순 문구 + 버튼
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          '선착순 마감 시 혜택은 종료됩니다',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Colors.white.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        SizedBox(width: AppSpacing.lg),
+                        AppPrimaryButton(
+                          text: '방 등록하기',
+                          fullWidth: false,
+                          icon: Icons.arrow_forward,
+                          onPressed: () => context.go('/host/room-registration'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ==================== CTA 배너 ====================
   Widget _buildHeroSection({required bool isMobile}) {
-    return Center(
+    return ContentContainer(
+      padding: EdgeInsets.symmetric(vertical: isMobile ? AppSpacing.md : AppSpacing.lg),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        margin: EdgeInsets.all(isMobile ? AppSpacing.md : AppSpacing.lg),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [AppColors.blue600, AppColors.blue700],
@@ -452,12 +559,11 @@ class _HostHomePageState extends State<HostHomePage> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
-                        // localStorage 초기화 (비즈니스 로직 유지)
                         context.go('/host/room-registration');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.blue600,
+                        backgroundColor: AppColors.blue600,
+                        foregroundColor: Colors.white,
                         elevation: 8,
                         shadowColor: Colors.black.withValues(alpha: 0.2),
                         shape: RoundedRectangleBorder(
@@ -471,7 +577,9 @@ class _HostHomePageState extends State<HostHomePage> {
                           SizedBox(width: AppSpacing.sm),
                           Text(
                             '방 등록하기',
-                            style: AppTextStyles.headingSmall,
+                            style: AppTextStyles.headingSmall.copyWith(
+                              color: Colors.white,
+                            ),
                           ),
                         ],
                       ),
@@ -515,10 +623,8 @@ class _HostHomePageState extends State<HostHomePage> {
 
   // ==================== 빠른 메뉴 (모바일 2열, 태블릿/데스크톱 5열) ====================
   Widget _buildManagementGrid() {
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        child: LayoutBuilder(
+    return ContentContainer(
+      child: LayoutBuilder(
           builder: (context, constraints) {
             // 모바일: 2열, 태블릿/데스크톱: 5열
             final crossAxisCount = constraints.maxWidth > 768 ? 5 : 2;
@@ -575,8 +681,7 @@ class _HostHomePageState extends State<HostHomePage> {
             );
           },
         ),
-      ),
-    );
+      );
   }
 
   // 빠른 메뉴 버튼 위젯

@@ -40,7 +40,6 @@ class AppPrimaryButton extends StatelessWidget {
 
     return SizedBox(
       width: fullWidth ? double.infinity : null,
-      height: height,
       child: ElevatedButton(
         onPressed: isInteractive ? onPressed : null,
         style: ElevatedButton.styleFrom(
@@ -49,9 +48,9 @@ class AppPrimaryButton extends StatelessWidget {
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 14,
           ),
         ),
         child: isLoading
@@ -111,7 +110,6 @@ class AppSecondaryButton extends StatelessWidget {
 
     return SizedBox(
       width: fullWidth ? double.infinity : null,
-      height: height,
       child: OutlinedButton(
         onPressed: isInteractive ? onPressed : null,
         style: OutlinedButton.styleFrom(
@@ -125,9 +123,9 @@ class AppSecondaryButton extends StatelessWidget {
           ),
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 14,
           ),
         ),
         child: isLoading

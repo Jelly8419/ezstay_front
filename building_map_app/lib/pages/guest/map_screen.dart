@@ -17,10 +17,15 @@ import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../widgets/common/mobile_bottom_nav.dart';
+import '../../services/auth_service.dart';
 import '../../services/map_interaction_coordinator.dart';
+import '../../services/region_alert_service.dart';
 import '../../widgets/map/kakao_map_section.dart';
 import '../../widgets/map/map_only_layout.dart';
+import '../../widgets/map/opening_notice_card.dart';
 import '../../widgets/map/property_list_panel.dart';
+import '../../widgets/common/custom_toast.dart';
+import '../../widgets/modals/region_alert_modal.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/seo_helper.dart';
 
@@ -74,6 +79,13 @@ class _MapScreenState extends State<MapScreen> {
   // 지도 초기화 후 localStorage 복원 여부 (onBoundsChanged 최초 1회)
   bool _mapRestoreAttempted = false;
 
+  // ────────────────────────────────────────────────
+  // 🚧 PRE-LAUNCH FLAG: 정식 런칭 전까지 true로 유지.
+  //    true: 지도 드래그 시 API 요청 차단 + OpeningNoticeCard 항상 표시
+  //    false: 정상 동작 (런칭 후 이 줄만 주석 해제)
+  // static const bool _isPreLaunch = false;
+  static const bool _isPreLaunch = true;
+  // ────────────────────────────────────────────────
 
   // 캐시된 반응형 값 (JS 콜백에서 안전하게 사용)
   bool _isMobile = false;
@@ -144,7 +156,6 @@ class _MapScreenState extends State<MapScreen> {
     // idle 모드일 때만 지도 드래그 허용, 그 외에는 차단
     final shouldEnableDrag = coordinator.currentMode == InteractionMode.idle;
     _mapController.setMapDraggable(shouldEnableDrag);
-
   }
 
   @override
@@ -167,7 +178,6 @@ class _MapScreenState extends State<MapScreen> {
         // SearchFilters 초기화 (전달받은 값으로)
         _initializeFiltersFromParams();
       });
-
     }
   }
 
@@ -203,8 +213,12 @@ class _MapScreenState extends State<MapScreen> {
     int? zoom,
     bool forceRefresh = false,
   }) async {
+    // 🚧 PRE-LAUNCH: API 요청 차단
+    if (_isPreLaunch) {
+      setState(() => _isLoading = false);
+      return;
+    }
     try {
-
       // 줌 레벨 6 이상이면 리스트 비우기
       if (zoom != null && zoom >= 6) {
         setState(() {
@@ -266,7 +280,9 @@ class _MapScreenState extends State<MapScreen> {
         final rooms = List<Map<String, dynamic>>.from(result['rooms']);
         for (var room in rooms) {
           if (room['thumbnail'] != null) {
-            room['thumbnail'] = ContractUtils.getFullImageUrl(room['thumbnail'].toString());
+            room['thumbnail'] = ContractUtils.getFullImageUrl(
+              room['thumbnail'].toString(),
+            );
           }
         }
 
@@ -303,7 +319,6 @@ class _MapScreenState extends State<MapScreen> {
 
   /// 초기 로드 (지도가 초기화되면 자동으로 bounds_changed 이벤트 발생)
   Future<void> _loadRooms() async {
-
     // 초기 상태 설정 (빈 배열로 시작, 로딩 종료하여 지도 렌더링 허용)
     setState(() {
       _roomsForMap = []; // 빈 배열로 시작
@@ -329,7 +344,6 @@ class _MapScreenState extends State<MapScreen> {
         final clusterRoomIds =
             (data['clusterRoomIds'] as List?)?.cast<int>() ?? [];
 
-
         // 빈 배열인 경우: 클러스터 필터링 해제 (전체 매물 표시)
         if (clusterRoomIds.isEmpty) {
           setState(() {
@@ -341,8 +355,7 @@ class _MapScreenState extends State<MapScreen> {
           });
 
           // 모바일 PageView를 첫 번째 카드로 이동
-          if (_isMobile &&
-              _mobileCardController.hasClients) {
+          if (_isMobile && _mobileCardController.hasClients) {
             _mobileCardController.jumpToPage(0);
           }
           return;
@@ -383,8 +396,7 @@ class _MapScreenState extends State<MapScreen> {
         }
 
         // 모바일 PageView를 첫 번째 카드로 이동
-        if (_isMobile &&
-            _mobileCardController.hasClients) {
+        if (_isMobile && _mobileCardController.hasClients) {
           _mobileCardController.jumpToPage(0);
         }
       }
@@ -466,7 +478,8 @@ class _MapScreenState extends State<MapScreen> {
       if (data['filters'] != null) {
         setState(() {
           _filters = SearchFilters.fromJson(
-              data['filters'] as Map<String, dynamic>);
+            data['filters'] as Map<String, dynamic>,
+          );
           _syncDatesFromFilters();
         });
       }
@@ -485,7 +498,6 @@ class _MapScreenState extends State<MapScreen> {
     bool focusMap = false,
     bool shouldScroll = true,
   }) {
-
     setState(() {
       _selectedRoom = room;
     });
@@ -633,8 +645,19 @@ class _MapScreenState extends State<MapScreen> {
                   filteredRooms.isEmpty &&
                   _roomsForMap.isNotEmpty)
                 Positioned.fill(
+                  child: Center(child: _buildEmptyMessage('일치하는 조건의 방이 없습니다')),
+                ),
+
+              // 오픈 전 안내 overlay 카드
+              if (_roomsForMap.isEmpty)
+                Positioned(
+                  bottom: 32,
+                  left: 0,
+                  right: 0,
                   child: Center(
-                    child: _buildEmptyMessage('일치하는 조건의 방이 없습니다'),
+                    child: OpeningNoticeCard(
+                      onAlertTap: _handleMapAlertRequest,
+                    ),
                   ),
                 ),
             ],
@@ -713,6 +736,26 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  /// 오픈 알림 신청 (지도 화면용)
+  Future<void> _handleMapAlertRequest() async {
+    // 로그인 상태 확인
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (!authService.isLoggedIn) {
+      context.go('/login');
+      return;
+    }
+    final result = await RegionAlertService().requestAlert();
+    if (!mounted) return;
+    if (result == null) {
+      CustomToast.error(context, '알림 신청에 실패했습니다. 다시 시도해주세요.');
+      return;
+    }
+    await RegionAlertModal.show(
+      context,
+      alreadyRegistered: result.alreadyRegistered,
+    );
+  }
+
   /// 지도만 표시 (모바일/태블릿용)
   Widget _buildMapOnly() {
     return MapOnlyLayout(
@@ -723,6 +766,9 @@ class _MapScreenState extends State<MapScreen> {
       currentMobileCardIndex: _currentMobileCardIndex,
       currentZoomLevel: _currentZoomLevel,
       mobileCardController: _mobileCardController,
+      openingNoticeWidget: _roomsForMap.isEmpty
+          ? OpeningNoticeCard(onAlertTap: _handleMapAlertRequest)
+          : null,
       onBadgeTap: () {
         setState(() {
           _showMobileCardList = !_showMobileCardList;
@@ -909,7 +955,6 @@ class _MapScreenState extends State<MapScreen> {
       'status': 'published',
     };
   }
-
 
   /// 드래그 가능한 스크롤 인디케이터
 }

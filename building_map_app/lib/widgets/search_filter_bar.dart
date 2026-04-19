@@ -1,6 +1,7 @@
 import '../../core/theme/app_colors.dart';
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import '../models/search_filters.dart';
 import '../utils/responsive_util.dart';
@@ -35,6 +36,15 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
   final GlobalKey _dateRangeButtonKey = GlobalKey();
   final GlobalKey _buildingTypeButtonKey = GlobalKey();
   final GlobalKey _rentRangeButtonKey = GlobalKey();
+
+  // 장소 검색
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  OverlayEntry? _searchOverlayEntry;
+  final GlobalKey _searchFieldKey = GlobalKey();
+  List<Map<String, dynamic>> _searchResults = [];
+  bool _isSearching = false;
+  Timer? _searchDebounce;
 
   // 날짜 선택 상태
   DateTime _focusedMonth = DateTime.now();
@@ -80,7 +90,11 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _removeOverlay();
+    _removeSearchOverlay();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -137,6 +151,11 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
       ),
       child: Row(
         children: [
+          // 장소 검색창
+          if (widget.mapController != null) ...[
+            _buildPlaceSearchField(),
+            const SizedBox(width: 12),
+          ],
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -270,6 +289,62 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
     );
   }
 
+  Widget _buildPlaceSearchField() {
+    final isMobile = ResponsiveUtil.isMobile(context);
+    return SizedBox(
+      width: isMobile ? 140 : 200,
+      height: 36,
+      child: TextField(
+        key: _searchFieldKey,
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        onChanged: _onSearchChanged,
+        style: AppTextStyles.bodyMedium.copyWith(color: Colors.black87),
+        decoration: InputDecoration(
+          hintText: '지역 검색',
+          hintStyle: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[400]),
+          prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey[400]),
+          suffixIcon: _isSearching
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: Padding(
+                    padding: EdgeInsets.all(10),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.close, size: 16, color: Colors.grey[400]),
+                      onPressed: () {
+                        _searchController.clear();
+                        _removeSearchOverlay();
+                        setState(() => _searchResults = []);
+                      },
+                      padding: EdgeInsets.zero,
+                    )
+                  : null,
+          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+          isDense: true,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF3B82F6)),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+      ),
+    );
+  }
+
   /// 데스크톱 필터 버튼 (React: rounded-lg, px-4 py-2)
   Widget _buildDesktopFilterButton({
     required GlobalKey key,
@@ -373,6 +448,136 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
         ),
       ),
     );
+  }
+
+  // ========== 장소 검색 메서드 ==========
+
+  void _removeSearchOverlay() {
+    _searchOverlayEntry?.remove();
+    _searchOverlayEntry = null;
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    if (value.trim().isEmpty) {
+      _removeSearchOverlay();
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+    if (value.trim().length < 2) {
+      _removeSearchOverlay();
+      setState(() => _isSearching = false);
+      return;
+    }
+    setState(() => _isSearching = true);
+    _searchDebounce = Timer(const Duration(milliseconds: 1500), () {
+      widget.mapController?.searchPlace(value.trim(), (results) {
+        if (!mounted) return;
+        setState(() {
+          _searchResults = results;
+          _isSearching = false;
+        });
+        _showSearchResultOverlay();
+      });
+    });
+  }
+
+  void _showSearchResultOverlay() {
+    _removeSearchOverlay();
+    if (_searchResults.isEmpty) return;
+
+    final renderBox = _searchFieldKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null || !renderBox.hasSize) return;
+
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    _searchOverlayEntry = OverlayEntry(
+      builder: (ctx) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _removeSearchOverlay,
+              behavior: HitTestBehavior.translucent,
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          Positioned(
+            top: offset.dy + size.height + 4,
+            left: offset.dx,
+            width: size.width,
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 320),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shrinkWrap: true,
+                  itemCount: _searchResults.length,
+                  separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey[100]),
+                  itemBuilder: (_, i) {
+                    final place = _searchResults[i];
+                    return InkWell(
+                      onTap: () => _onPlaceSelected(place),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Row(
+                          children: [
+                            Icon(Icons.location_on_outlined, size: 18, color: AppColors.primary500),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    place['name'] ?? '',
+                                    style: AppTextStyles.labelMedium.copyWith(color: Colors.black87),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if ((place['address'] as String?)?.isNotEmpty == true) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      place['address'] ?? '',
+                                      style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[500]),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    Overlay.of(context).insert(_searchOverlayEntry!);
+  }
+
+  void _onPlaceSelected(Map<String, dynamic> place) {
+    _removeSearchOverlay();
+    _searchController.text = place['name'] ?? '';
+    _searchFocusNode.unfocus();
+    final lat = double.tryParse(place['lat']?.toString() ?? '');
+    final lng = double.tryParse(place['lng']?.toString() ?? '');
+    if (lat != null && lng != null) {
+      widget.mapController?.focusOnLocation(lat, lng, zoomLevel: 4);
+    }
   }
 
   // ========== 포맷팅 메서드 ==========

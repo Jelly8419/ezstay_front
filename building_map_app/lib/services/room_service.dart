@@ -426,6 +426,26 @@ class RoomService {
     }
   }
 
+  /// 15. 호스트 혜택 상태 조회
+  /// GET /host/benefit-status → { "isBenefitApplied": true/false }
+  /// 오류 시 null 반환
+  Future<bool?> getBenefitStatus() async {
+    try {
+      final response = await _apiClient.get(
+        Uri.parse('${ApiConfig.baseUrl}/host/benefit-status'),
+        headers: await _getHeaders(),
+      );
+      if (response != null) {
+        final data = json.decode(response.body);
+        return data['isBenefitApplied'] as bool?;
+      }
+      return null;
+    } catch (e) {
+      AppLogger.e('❌ [BENEFIT] 혜택 상태 조회 에러: $e');
+      return null;
+    }
+  }
+
   /// 14. 지도 영역 기반 방 검색 (게스트용 - 인증 불필요)
   Future<Map<String, dynamic>?> getRoomsByMapBounds({
     required double swLat,

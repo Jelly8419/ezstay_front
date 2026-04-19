@@ -414,4 +414,14 @@ class AppSizes {
 
   // Minimum touch target (접근성)
   static const double minTouchTarget = 48;
+
+  // ============= Content max widths =============
+  /// 일반 섹션 기본 (랜딩·리스트 등)
+  static const double contentMaxWidthDefault = 1200;
+
+  /// 넓은 히어로/배너용
+  static const double contentMaxWidthWide = 1280;
+
+  /// 좁은 CTA/집중형 섹션용
+  static const double contentMaxWidthNarrow = 800;
 }
