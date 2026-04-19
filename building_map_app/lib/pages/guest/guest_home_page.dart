@@ -189,9 +189,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
   // ==================== 히어로 섹션 ====================
   Widget _buildHero() {
     return HomeHero(
-      kicker: 'SHORT-TERM RENTAL PLATFORM',
-      tagline: '단기임대, 더 쉽고 더 안전하게',
-      headline: '이 모든 게',
+      tagline: '누구나 쉽고 안전하게 사용할 수 있어요',
+      headline: '단기임대를 편리하고 안전하게',
       brandWord: '이지스테이',
       checkIn: _checkInDate,
       checkOut: _checkOutDate,
@@ -199,7 +198,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       onSearch: _handleSearch,
       trustPoints: const [
         '에스크로 안심 결제',
-        '100% 매물 검증',
+        '100% 방 검증',
         '투명한 표준 계약서',
       ],
       notice: '현재 서울 지역만 서비스 중입니다',

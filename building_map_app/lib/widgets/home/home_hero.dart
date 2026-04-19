@@ -101,7 +101,7 @@ class HomeHero extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.lg),
           Text.rich(
             TextSpan(
               children: [
