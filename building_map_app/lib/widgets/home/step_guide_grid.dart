@@ -54,6 +54,23 @@ class StepGuideGrid extends StatelessWidget {
         final effectiveWidth =
             approxPerRow == 1 ? available : cardWidth.toDouble();
 
+        // 한 줄에 모든 카드가 들어가는 경우 Row+IntrinsicHeight로 배치하여
+        // 설명 줄 수가 달라도 카드 높이를 일치시킨다.
+        if (approxPerRow >= steps.length) {
+          return IntrinsicHeight(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < steps.length; i++) ...[
+                  if (i > 0) SizedBox(width: spacing),
+                  SizedBox(width: effectiveWidth, child: steps[i]),
+                ],
+              ],
+            ),
+          );
+        }
+
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
