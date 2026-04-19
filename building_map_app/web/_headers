@@ -22,6 +22,32 @@
 /index.html
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
+# Flutter Manifest 파일들 - 에셋 매핑 정보
+# 패키지/에셋 업데이트 시 즉시 반영되어야 함
+/assets/AssetManifest.json
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/assets/AssetManifest.bin
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/assets/AssetManifest.bin.json
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/assets/FontManifest.json
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/assets/NOTICES
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+# 폰트 파일 - 5분 캐시 + 재검증
+# Lucide 등 아이콘 폰트가 패키지 업데이트 시 글리프 추가/제거됨
+# must-revalidate로 바뀐 경우 빠르게 반영
+/assets/fonts/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+/assets/packages/*/fonts/*
+  Cache-Control: public, max-age=300, must-revalidate
+
 # sitemap.xml — 순수 XML 보장 (Cloudflare 스크립트 주입 방지)
 /sitemap.xml
   Content-Type: application/xml; charset=utf-8
@@ -31,7 +57,8 @@
 /robots.txt
   Content-Type: text/plain; charset=utf-8
 
-# 이미지, 폰트 등 정적 자원은 캐시 허용
+# 이미지 등 정적 자원은 24시간 캐시 유지
+# (이미지는 파일명이 거의 바뀌지 않으므로 안전)
 /assets/*
   Cache-Control: public, max-age=86400
 
