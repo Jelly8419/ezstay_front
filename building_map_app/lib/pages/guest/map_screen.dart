@@ -87,7 +87,6 @@ class _MapScreenState extends State<MapScreen> {
   static const bool _isPreLaunch = true;
   // ────────────────────────────────────────────────
 
-
   // 캐시된 반응형 값 (JS 콜백에서 안전하게 사용)
   bool _isMobile = false;
   bool _isDesktop = true;
@@ -157,7 +156,6 @@ class _MapScreenState extends State<MapScreen> {
     // idle 모드일 때만 지도 드래그 허용, 그 외에는 차단
     final shouldEnableDrag = coordinator.currentMode == InteractionMode.idle;
     _mapController.setMapDraggable(shouldEnableDrag);
-
   }
 
   @override
@@ -180,7 +178,6 @@ class _MapScreenState extends State<MapScreen> {
         // SearchFilters 초기화 (전달받은 값으로)
         _initializeFiltersFromParams();
       });
-
     }
   }
 
@@ -222,7 +219,6 @@ class _MapScreenState extends State<MapScreen> {
       return;
     }
     try {
-
       // 줌 레벨 6 이상이면 리스트 비우기
       if (zoom != null && zoom >= 6) {
         setState(() {
@@ -284,7 +280,9 @@ class _MapScreenState extends State<MapScreen> {
         final rooms = List<Map<String, dynamic>>.from(result['rooms']);
         for (var room in rooms) {
           if (room['thumbnail'] != null) {
-            room['thumbnail'] = ContractUtils.getFullImageUrl(room['thumbnail'].toString());
+            room['thumbnail'] = ContractUtils.getFullImageUrl(
+              room['thumbnail'].toString(),
+            );
           }
         }
 
@@ -321,7 +319,6 @@ class _MapScreenState extends State<MapScreen> {
 
   /// 초기 로드 (지도가 초기화되면 자동으로 bounds_changed 이벤트 발생)
   Future<void> _loadRooms() async {
-
     // 초기 상태 설정 (빈 배열로 시작, 로딩 종료하여 지도 렌더링 허용)
     setState(() {
       _roomsForMap = []; // 빈 배열로 시작
@@ -347,7 +344,6 @@ class _MapScreenState extends State<MapScreen> {
         final clusterRoomIds =
             (data['clusterRoomIds'] as List?)?.cast<int>() ?? [];
 
-
         // 빈 배열인 경우: 클러스터 필터링 해제 (전체 매물 표시)
         if (clusterRoomIds.isEmpty) {
           setState(() {
@@ -359,8 +355,7 @@ class _MapScreenState extends State<MapScreen> {
           });
 
           // 모바일 PageView를 첫 번째 카드로 이동
-          if (_isMobile &&
-              _mobileCardController.hasClients) {
+          if (_isMobile && _mobileCardController.hasClients) {
             _mobileCardController.jumpToPage(0);
           }
           return;
@@ -401,8 +396,7 @@ class _MapScreenState extends State<MapScreen> {
         }
 
         // 모바일 PageView를 첫 번째 카드로 이동
-        if (_isMobile &&
-            _mobileCardController.hasClients) {
+        if (_isMobile && _mobileCardController.hasClients) {
           _mobileCardController.jumpToPage(0);
         }
       }
@@ -484,7 +478,8 @@ class _MapScreenState extends State<MapScreen> {
       if (data['filters'] != null) {
         setState(() {
           _filters = SearchFilters.fromJson(
-              data['filters'] as Map<String, dynamic>);
+            data['filters'] as Map<String, dynamic>,
+          );
           _syncDatesFromFilters();
         });
       }
@@ -503,7 +498,6 @@ class _MapScreenState extends State<MapScreen> {
     bool focusMap = false,
     bool shouldScroll = true,
   }) {
-
     setState(() {
       _selectedRoom = room;
     });
@@ -651,9 +645,7 @@ class _MapScreenState extends State<MapScreen> {
                   filteredRooms.isEmpty &&
                   _roomsForMap.isNotEmpty)
                 Positioned.fill(
-                  child: Center(
-                    child: _buildEmptyMessage('일치하는 조건의 방이 없습니다'),
-                  ),
+                  child: Center(child: _buildEmptyMessage('일치하는 조건의 방이 없습니다')),
                 ),
 
               // 오픈 전 안내 overlay 카드
@@ -963,7 +955,6 @@ class _MapScreenState extends State<MapScreen> {
       'status': 'published',
     };
   }
-
 
   /// 드래그 가능한 스크롤 인디케이터
 }
