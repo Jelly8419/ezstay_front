@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -12,21 +13,13 @@ import 'home_section.dart';
 /// - 날짜 선택과 검색 버튼은 콜백 형태로 노출 — Analytics 이벤트 로깅을
 ///   외부(페이지) 쪽에서 주입할 수 있게 한다.
 ///
-/// 사용 예시:
-/// ```dart
-/// HomeHero(
-///   checkIn: _checkInDate,
-///   checkOut: _checkOutDate,
-///   onTapDate: () async {
-///     _analytics.logHomeOpenDatePicker();
-///     await _showDateDialog();
-///   },
-///   onSearch: () {
-///     _analytics.logHomeGoMap(hasDateSelected: hasDate);
-///     context.go('/map', extra: extra);
-///   },
-/// )
-/// ```
+/// 화면 순서 (위→아래):
+/// 1. [kicker] — 영문 상단 라벨 (예: "SHORT-TERM RENTAL PLATFORM")
+/// 2. [tagline] — 서브 카피
+/// 3. [headline] + [brandWord] — 메인 카피 (브랜드 워드는 primary 색)
+/// 4. 날짜 검색 박스
+/// 5. [trustPoints] — 체크 포인트 3~n개
+/// 6. [notice] — 하단 안내 문구
 class HomeHero extends StatelessWidget {
   const HomeHero({
     super.key,
@@ -34,9 +27,11 @@ class HomeHero extends StatelessWidget {
     required this.checkOut,
     required this.onTapDate,
     required this.onSearch,
+    this.kicker,
     this.tagline = '누구나 쉽고 안전하게 사용할 수 있어요',
     this.headline = '단기임대를 편리하고 안전하게',
     this.brandWord = '이지스테이',
+    this.trustPoints,
     this.notice,
   });
 
@@ -49,9 +44,15 @@ class HomeHero extends StatelessWidget {
   /// 검색 버튼 클릭 콜백.
   final VoidCallback onSearch;
 
+  /// 최상단 영문/라벨 (선택). null이면 표시 안 함.
+  final String? kicker;
+
   final String tagline;
   final String headline;
   final String brandWord;
+
+  /// 검색 박스 아래 체크 포인트 리스트 (선택). null이면 표시 안 함.
+  final List<String>? trustPoints;
 
   /// 히어로 하단 안내 문구. null이면 표시 안 함.
   /// 지역 안내 띠를 별도 섹션으로 두는 경우 null로 지정.
@@ -63,8 +64,8 @@ class HomeHero extends StatelessWidget {
 
     final headlineFontSize = AppTextStyles.responsiveFontSize(
       context,
-      mobile: 28,
-      desktop: 44,
+      mobile: 24,
+      desktop: 36,
     );
     final taglineStyle = isMobile
         ? AppTextStyles.bodyLarge
@@ -80,6 +81,18 @@ class HomeHero extends StatelessWidget {
       ),
       child: Column(
         children: [
+          if (kicker != null) ...[
+            Text(
+              kicker!,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.primary600,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: AppSpacing.sm),
+          ],
           Text(
             tagline,
             style: taglineStyle.copyWith(
@@ -92,7 +105,7 @@ class HomeHero extends StatelessWidget {
           Text.rich(
             TextSpan(
               children: [
-                TextSpan(text: '$headline\n'),
+                TextSpan(text: '$headline '),
                 TextSpan(
                   text: brandWord,
                   style: TextStyle(color: AppColors.primary500),
@@ -108,11 +121,15 @@ class HomeHero extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.xl * 2),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
+            constraints: const BoxConstraints(maxWidth: 560),
             child: isMobile
                 ? _buildSearchMobile(context)
                 : _buildSearchDesktop(context),
           ),
+          if (trustPoints != null && trustPoints!.isNotEmpty) ...[
+            SizedBox(height: AppSpacing.lg),
+            _buildTrustPoints(isMobile),
+          ],
           if (notice != null) ...[
             SizedBox(height: AppSpacing.md),
             Text(
@@ -142,7 +159,7 @@ class HomeHero extends StatelessWidget {
           height: 56,
           child: AppPrimaryButton(
             text: '검색',
-            icon: Icons.search,
+            icon: LucideIcons.search,
             onPressed: onSearch,
           ),
         ),
@@ -167,11 +184,54 @@ class HomeHero extends StatelessWidget {
           height: 56,
           child: AppPrimaryButton(
             text: '검색',
-            icon: Icons.search,
+            icon: LucideIcons.search,
             onPressed: onSearch,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTrustPoints(bool isMobile) {
+    final items = trustPoints!
+        .map(
+          (text) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                LucideIcons.checkCircle,
+                size: 16,
+                color: AppColors.green500,
+              ),
+              SizedBox(width: AppSpacing.xs),
+              Text(
+                text,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        )
+        .toList();
+
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          for (int i = 0; i < items.length; i++) ...[
+            if (i > 0) SizedBox(height: AppSpacing.sm),
+            items[i],
+          ],
+        ],
+      );
+    }
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: AppSpacing.lg,
+      runSpacing: AppSpacing.sm,
+      children: items,
     );
   }
 }
