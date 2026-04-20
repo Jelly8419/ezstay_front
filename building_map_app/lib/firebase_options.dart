@@ -54,7 +54,7 @@ class DefaultFirebaseOptions {
     projectId: 'ezstay-prod',
     authDomain: 'ezstay-prod.firebaseapp.com',
     storageBucket: 'ezstay-prod.firebasestorage.app',
-    measurementId: 'G-HLOJJSF99W',
+    measurementId: 'G-HL0JJSF99W',
   );
 
   // 로컬/테스트 환경 (ezstay-864bc)
