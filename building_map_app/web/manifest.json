@@ -1,11 +1,11 @@
 {
-    "name": "EZStay",
-    "short_name": "EZStay",
+    "name": "이지스테이 (EZStay)",
+    "short_name": "이지스테이",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",
     "theme_color": "#4DD9FA",
-    "description": "단기임대 No.1, 편리하고 안전한 단기 숙소 찾기",
+    "description": "이지스테이(EZStay) - 단기임대 No.1, 편리하고 안전한 단기 숙소 찾기",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
