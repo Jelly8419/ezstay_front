@@ -20,6 +20,7 @@ import '../../widgets/home/section_header.dart';
 import '../../widgets/home/step_card.dart';
 import '../../widgets/home/step_guide_grid.dart';
 import '../../widgets/modals/region_alert_modal.dart';
+import '../../widgets/modals/opening_event_modal.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../core/utils/seo_helper.dart';
@@ -58,6 +59,12 @@ class _GuestHomePageState extends State<GuestHomePage> {
         description:
             '출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 찾아보세요.',
         canonicalPath: '/',
+      );
+      final authService = context.read<AuthService>();
+      OpeningEventModal.maybeShow(
+        context,
+        onAlertRequest: () => _handleAlertRequest(authService),
+        onHostRedirect: () => _handleHostRedirect(authService),
       );
     });
   }
@@ -484,13 +491,13 @@ class _GuestHomePageState extends State<GuestHomePage> {
         ),
         SizedBox(height: AppSpacing.md),
         Text(
-          '계약 결제 시, 필요한 상품을 함께 구매하면\n입주할 방으로 배송해드려요',
+          '임차인은 계약 시, 필요한 용품을 이지스테이에서 함께 구매할 수 있어요\n구매한 상품은 입주할 방으로 배송해 드려요',
           style: AppTextStyles.bodyLarge.copyWith(fontSize: center ? 14 : 16),
           textAlign: textAlign,
         ),
         SizedBox(height: AppSpacing.sm),
         Text(
-          '생활용품, 침구류 등 입주에 필요한 물품을 이지스테이에서 준비할 수 있어요',
+          '생활용품, 침구류 등 입주에 필요한 물품을 이지스테이에서 준비할 수 있어요\n임대인은 방에 용품을 구비해둘 필요 없어요',
           style: AppTextStyles.bodyMediumSecondary,
           textAlign: textAlign,
         ),
@@ -617,9 +624,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
           maxHeight: isMobile ? double.infinity : 400,
         ),
         child: ClipRRect(
-          borderRadius: isMobile
-              ? BorderRadius.zero
-              : AppRadius.radiusLg,
+          borderRadius: isMobile ? BorderRadius.zero : AppRadius.radiusLg,
           child: AspectRatio(
             aspectRatio: isMobile ? 800 / 600 : 1920 / 500,
             child: Stack(
@@ -653,7 +658,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            '오픈 전 참여하면 1만원 혜택',
+                            '오픈 전 참여하면 2만원 혜택',
                             style: AppTextStyles.headingLarge.copyWith(
                               fontSize: AppTextStyles.responsiveFontSize(
                                 context,
@@ -673,48 +678,52 @@ class _GuestHomePageState extends State<GuestHomePage> {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            '• 오픈 알림 신청 후 첫 계약 시 1만원 할인',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              fontSize: AppTextStyles.responsiveFontSize(
-                                context,
-                                mobile: 14,
-                                desktop: 17,
-                              ),
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  offset: const Offset(0, 1),
-                                  blurRadius: 3,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '• 임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  fontSize: AppTextStyles.responsiveFontSize(
+                                    context,
+                                    mobile: 14,
+                                    desktop: 17,
+                                  ),
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withValues(alpha: 0.5),
+                                      offset: const Offset(0, 1),
+                                      blurRadius: 3,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '• 임대인은 방 등록 후 첫 계약 정산 수수료 2만원 할인',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  fontSize: AppTextStyles.responsiveFontSize(
+                                    context,
+                                    mobile: 14,
+                                    desktop: 17,
+                                  ),
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withValues(alpha: 0.5),
+                                      offset: const Offset(0, 1),
+                                      blurRadius: 3,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '• 방 등록 후 첫 계약 시 수수료 1만원 할인',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              fontSize: AppTextStyles.responsiveFontSize(
-                                context,
-                                mobile: 14,
-                                desktop: 17,
-                              ),
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  offset: const Offset(0, 1),
-                                  blurRadius: 3,
-                                ),
-                              ],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '선착순 마감 시 혜택은 종료됩니다',
+                            '5월 초 오픈 전 각 선착순 100명 마감 시, 혜택은 종료됩니다',
                             style: AppTextStyles.bodySmall.copyWith(
                               fontSize: AppTextStyles.responsiveFontSize(
                                 context,

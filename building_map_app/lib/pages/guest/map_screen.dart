@@ -629,7 +629,7 @@ class _MapScreenState extends State<MapScreen> {
               _buildMap(),
 
               // 결과 없음 메시지 (줌 레벨에 따라 다른 메시지 표시)
-              if (_roomsForMap.isEmpty)
+              if (!_isPreLaunch && _roomsForMap.isEmpty)
                 Positioned.fill(
                   child: Center(
                     child: _buildEmptyMessage(
@@ -641,19 +641,17 @@ class _MapScreenState extends State<MapScreen> {
                 ),
 
               // 필터링 결과 없음 메시지
-              if (!_isLoading &&
+              if (!_isPreLaunch &&
+                  !_isLoading &&
                   filteredRooms.isEmpty &&
                   _roomsForMap.isNotEmpty)
                 Positioned.fill(
                   child: Center(child: _buildEmptyMessage('일치하는 조건의 방이 없습니다')),
                 ),
 
-              // 오픈 전 안내 overlay 카드
+              // 오픈 전 안내 overlay 카드 (런칭 전까지 _buildEmptyMessage 대체)
               if (_roomsForMap.isEmpty)
-                Positioned(
-                  bottom: 32,
-                  left: 0,
-                  right: 0,
+                Positioned.fill(
                   child: Center(
                     child: OpeningNoticeCard(
                       onAlertTap: _handleMapAlertRequest,
