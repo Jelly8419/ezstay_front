@@ -9,7 +9,10 @@ import 'package:flutter/foundation.dart'
 
 class DefaultFirebaseOptions {
   // --dart-define=ENVIRONMENT=production 으로 환경 분기
-  static const _env = String.fromEnvironment('ENVIRONMENT', defaultValue: 'local');
+  static const _env = String.fromEnvironment(
+    'ENVIRONMENT',
+    defaultValue: 'local',
+  );
   static bool get _isProduction => _env == 'production';
 
   static FirebaseOptions get currentPlatform {
@@ -46,8 +49,8 @@ class DefaultFirebaseOptions {
   // 운영 환경 (ezstay-prod)
   static const FirebaseOptions webProduction = FirebaseOptions(
     apiKey: 'AIzaSyC37Xu7zGwC9wwTIHURk10XLo92JoS6zmw',
-    appId: '1:943255185973:web:d0c8951d279e415fd55c3c',
-    messagingSenderId: '943255185973',
+    appId: '1:943256185973:web:d0c8951d279e415fd55c3c',
+    messagingSenderId: '943256185973',
     projectId: 'ezstay-prod',
     authDomain: 'ezstay-prod.firebaseapp.com',
     storageBucket: 'ezstay-prod.firebasestorage.app',
