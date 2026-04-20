@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
 import '../../services/analytics_service.dart';
 import '../../models/user.dart';
+import '../../providers/promotion_provider.dart';
 import '../../services/region_alert_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -52,7 +53,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
     _analytics = AnalyticsService();
     // 🔥 게스트 홈 화면 진입 이벤트 기록
     _initOpeningBanner();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _analytics.logHomeViewGuest();
       SeoHelper.updatePage(
         title: 'EZStay — 단기임대 No.1, 편리하고 안전한 단기 숙소 찾기',
@@ -60,6 +61,11 @@ class _GuestHomePageState extends State<GuestHomePage> {
             '출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 찾아보세요.',
         canonicalPath: '/',
       );
+      // 프로모션 이벤트 로드 완료 후에만 모달 노출 (이벤트 없으면 미노출)
+      final promotion = context.read<PromotionProvider>();
+      await promotion.loadActivePromotions();
+      if (!mounted) return;
+      if (promotion.guestEvent == null && promotion.hostEvent == null) return;
       final authService = context.read<AuthService>();
       OpeningEventModal.maybeShow(
         context,
@@ -612,6 +618,14 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
   Widget _buildOpeningBanner(AuthService authService) {
     if (!_showOpeningBanner) return const SizedBox.shrink();
+
+    // 진행 중 이벤트가 전혀 없으면 배너 숨김 (게스트는 호스트/게스트 이벤트 모두 노출 대상)
+    // 로드 완료 전에는 배너를 그리지 않아 '보였다 사라지는' 깜빡임 방지
+    final promotion = context.watch<PromotionProvider>();
+    if (!promotion.hasLoadedOnce) return const SizedBox.shrink();
+    if (promotion.guestEvent == null && promotion.hostEvent == null) {
+      return const SizedBox.shrink();
+    }
 
     final isMobile = responsive.ResponsiveUtil.isMobile(context);
 

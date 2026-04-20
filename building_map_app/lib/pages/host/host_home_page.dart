@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../providers/promotion_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/analytics_service.dart';
 import '../../services/room_service.dart';
@@ -38,6 +39,8 @@ class _HostHomePageState extends State<HostHomePage> {
     // 🔥 호스트 홈 화면 진입 이벤트 기록
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _analytics.logHomeViewHost();
+      if (!mounted) return;
+      context.read<PromotionProvider>().loadActivePromotions();
     });
     _checkInProgressRooms();
   }
@@ -363,8 +366,11 @@ class _HostHomePageState extends State<HostHomePage> {
 
   // ==================== 이벤트 배너 ====================
   Widget _buildEventBanner() {
-    // ignore: dead_code, API 연동 후 서버 값으로 교체 예정
-    const bool isEventActive = true;
+    // 호스트 대상 진행 중 이벤트가 없으면 배너 숨김
+    // 로드 완료 전에는 배너를 그리지 않아 '보였다 사라지는' 깜빡임 방지
+    final promotion = context.watch<PromotionProvider>();
+    if (!promotion.hasLoadedOnce) return const SizedBox.shrink();
+    if (promotion.hostEvent == null) return const SizedBox.shrink();
 
     return ContentContainer(
       padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -417,20 +423,13 @@ class _HostHomePageState extends State<HostHomePage> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              // ignore: dead_code
-                              color: isEventActive
-                                  ? AppColors.success100
-                                  : AppColors.neutral200,
+                              color: AppColors.success100,
                               borderRadius: AppRadius.radiusXs,
                             ),
                             child: Text(
-                              // ignore: dead_code
-                              isEventActive ? '진행 중' : '종료',
+                              '진행 중',
                               style: AppTextStyles.labelSmall.copyWith(
-                                // ignore: dead_code
-                                color: isEventActive
-                                    ? AppColors.success600
-                                    : AppColors.textSecondary,
+                                color: AppColors.success600,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
