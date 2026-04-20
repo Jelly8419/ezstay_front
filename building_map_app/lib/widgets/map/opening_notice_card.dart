@@ -62,7 +62,10 @@ class OpeningNoticeCard extends StatelessWidget {
                 borderRadius: AppRadius.radiusMd,
               ),
             ),
-            child: Text('오픈 알림 받기', style: AppTextStyles.labelSmall),
+            child: Text(
+              '오픈 알림 받기',
+              style: AppTextStyles.labelSmall.copyWith(color: Colors.white),
+            ),
           ),
         ],
       ),

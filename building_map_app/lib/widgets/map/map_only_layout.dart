@@ -209,17 +209,12 @@ class MapOnlyLayout extends StatelessWidget {
             ),
           ),
 
-        // 오픈 전 안내 overlay 카드 (방 없을 때)
+        // 오픈 전 안내 overlay 카드 (방 없을 때 — 런칭 전까지 결과 없음 메시지 대체)
         if (filteredRooms.isEmpty && openingNoticeWidget != null)
-          Positioned(
-            bottom: 100,
-            left: 0,
-            right: 0,
-            child: Center(child: openingNoticeWidget!),
-          ),
+          Positioned.fill(child: Center(child: openingNoticeWidget!)),
 
-        // 결과 없음 메시지
-        if (filteredRooms.isEmpty)
+        // 결과 없음 메시지 (런칭 후에만 노출)
+        if (filteredRooms.isEmpty && openingNoticeWidget == null)
           Center(
             child: Container(
               padding: const EdgeInsets.all(24),
