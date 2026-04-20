@@ -20,6 +20,7 @@ import '../../widgets/home/section_header.dart';
 import '../../widgets/home/step_card.dart';
 import '../../widgets/home/step_guide_grid.dart';
 import '../../widgets/modals/region_alert_modal.dart';
+import '../../widgets/modals/opening_event_modal.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../core/utils/seo_helper.dart';
@@ -58,6 +59,12 @@ class _GuestHomePageState extends State<GuestHomePage> {
         description:
             '출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 찾아보세요.',
         canonicalPath: '/',
+      );
+      final authService = context.read<AuthService>();
+      OpeningEventModal.maybeShow(
+        context,
+        onAlertRequest: () => _handleAlertRequest(authService),
+        onHostRedirect: () => _handleHostRedirect(authService),
       );
     });
   }
