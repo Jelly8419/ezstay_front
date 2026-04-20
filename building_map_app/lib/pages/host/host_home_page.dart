@@ -155,7 +155,8 @@ class _HostHomePageState extends State<HostHomePage> {
                       _buildHeroSection(isMobile: false),
                       SizedBox(height: AppSpacing.xxl),
                       _buildInProgressRoomsSection(),
-                      if (_inProgressRooms.isNotEmpty) SizedBox(height: AppSpacing.xl),
+                      if (_inProgressRooms.isNotEmpty)
+                        SizedBox(height: AppSpacing.xl),
                       _buildManagementGrid(),
                       SizedBox(height: AppSpacing.xxl),
                       const AppFooter(),
@@ -343,9 +344,7 @@ class _HostHomePageState extends State<HostHomePage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.blue600,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppRadius.radiusMd,
-                ),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -419,7 +418,9 @@ class _HostHomePageState extends State<HostHomePage> {
                             ),
                             decoration: BoxDecoration(
                               // ignore: dead_code
-                              color: isEventActive ? AppColors.success100 : AppColors.neutral200,
+                              color: isEventActive
+                                  ? AppColors.success100
+                                  : AppColors.neutral200,
                               borderRadius: AppRadius.radiusXs,
                             ),
                             child: Text(
@@ -427,14 +428,16 @@ class _HostHomePageState extends State<HostHomePage> {
                               isEventActive ? '진행 중' : '종료',
                               style: AppTextStyles.labelSmall.copyWith(
                                 // ignore: dead_code
-                                color: isEventActive ? AppColors.success600 : AppColors.textSecondary,
+                                color: isEventActive
+                                    ? AppColors.success600
+                                    : AppColors.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                           SizedBox(height: AppSpacing.sm),
                           Text(
-                            '지금 등록하면 혜택이 적용됩니다',
+                            '방 등록만 해도 바로 받는 혜택',
                             style: AppTextStyles.bodyLarge.copyWith(
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -442,7 +445,7 @@ class _HostHomePageState extends State<HostHomePage> {
                           ),
                           SizedBox(height: AppSpacing.xs),
                           Text(
-                            '첫 계약 시 수수료 1만원 할인',
+                            '첫 계약 정산 수수료 2만원 할인\n(등록된 방은 5월 초 오픈 시 전체 공개됩니다)',
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: Colors.white.withValues(alpha: 0.9),
                               fontWeight: FontWeight.w600,
@@ -467,7 +470,8 @@ class _HostHomePageState extends State<HostHomePage> {
                           text: '방 등록하기',
                           fullWidth: false,
                           icon: Icons.arrow_forward,
-                          onPressed: () => context.go('/host/room-registration'),
+                          onPressed: () =>
+                              context.go('/host/room-registration'),
                         ),
                       ],
                     ),
@@ -484,7 +488,9 @@ class _HostHomePageState extends State<HostHomePage> {
   // ==================== CTA 배너 ====================
   Widget _buildHeroSection({required bool isMobile}) {
     return ContentContainer(
-      padding: EdgeInsets.symmetric(vertical: isMobile ? AppSpacing.md : AppSpacing.lg),
+      padding: EdgeInsets.symmetric(
+        vertical: isMobile ? AppSpacing.md : AppSpacing.lg,
+      ),
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -625,63 +631,63 @@ class _HostHomePageState extends State<HostHomePage> {
   Widget _buildManagementGrid() {
     return ContentContainer(
       child: LayoutBuilder(
-          builder: (context, constraints) {
-            // 모바일: 2열, 태블릿/데스크톱: 5열
-            final crossAxisCount = constraints.maxWidth > 768 ? 5 : 2;
+        builder: (context, constraints) {
+          // 모바일: 2열, 태블릿/데스크톱: 5열
+          final crossAxisCount = constraints.maxWidth > 768 ? 5 : 2;
 
-            return Container(
-              padding: AppSpacing.paddingLg,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: AppRadius.radiusMd,
-                boxShadow: AppShadows.cardDefault,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('빠른 메뉴', style: AppTextStyles.headingSmall),
-                  SizedBox(height: AppSpacing.md),
-                  GridView.count(
-                    crossAxisCount: crossAxisCount,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: AppSpacing.md,
-                    mainAxisSpacing: AppSpacing.md,
-                    childAspectRatio: 2.0,
-                    children: [
-                      _buildQuickMenuButton(
-                        icon: Icons.home_work_outlined,
-                        label: '방 관리',
-                        onTap: () => context.go('/host/room-management'),
-                      ),
-                      _buildQuickMenuButton(
-                        icon: Icons.chat_bubble_outline,
-                        label: '채팅',
-                        onTap: () => context.go('/chat-list'),
-                      ),
-                      _buildQuickMenuButton(
-                        icon: Icons.settings_outlined,
-                        label: '자동메시지',
-                        onTap: () => context.go('/host/chat/auto-message'),
-                      ),
-                      _buildQuickMenuButton(
-                        icon: Icons.description_outlined,
-                        label: '계약관리',
-                        onTap: () => context.go('/host/contracts'),
-                      ),
-                      _buildQuickMenuButton(
-                        icon: Icons.account_balance_wallet_outlined,
-                        label: '정산',
-                        onTap: () => context.go('/host/settlement'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      );
+          return Container(
+            padding: AppSpacing.paddingLg,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: AppRadius.radiusMd,
+              boxShadow: AppShadows.cardDefault,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('빠른 메뉴', style: AppTextStyles.headingSmall),
+                SizedBox(height: AppSpacing.md),
+                GridView.count(
+                  crossAxisCount: crossAxisCount,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: AppSpacing.md,
+                  mainAxisSpacing: AppSpacing.md,
+                  childAspectRatio: 2.0,
+                  children: [
+                    _buildQuickMenuButton(
+                      icon: Icons.home_work_outlined,
+                      label: '방 관리',
+                      onTap: () => context.go('/host/room-management'),
+                    ),
+                    _buildQuickMenuButton(
+                      icon: Icons.chat_bubble_outline,
+                      label: '채팅',
+                      onTap: () => context.go('/chat-list'),
+                    ),
+                    _buildQuickMenuButton(
+                      icon: Icons.settings_outlined,
+                      label: '자동메시지',
+                      onTap: () => context.go('/host/chat/auto-message'),
+                    ),
+                    _buildQuickMenuButton(
+                      icon: Icons.description_outlined,
+                      label: '계약관리',
+                      onTap: () => context.go('/host/contracts'),
+                    ),
+                    _buildQuickMenuButton(
+                      icon: Icons.account_balance_wallet_outlined,
+                      label: '정산',
+                      onTap: () => context.go('/host/settlement'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   // 빠른 메뉴 버튼 위젯
@@ -753,5 +759,4 @@ class _HostHomePageState extends State<HostHomePage> {
       ),
     );
   }
-
 }
