@@ -1,0 +1,366 @@
+/* EZstay 정적 랜딩 페이지 공통 스타일 */
+
+:root {
+  --primary: #2196F3;
+  --primary-dark: #1976D2;
+  --primary-light: #E3F2FD;
+  --primary-50: #E3F2FD;
+  --primary-100: #BBDEFB;
+  --text-primary: #212121;
+  --text-secondary: #616161;
+  --text-tertiary: #9E9E9E;
+  --bg-white: #FFFFFF;
+  --bg-gray: #FAFAFA;
+  --bg-light: #F5F5F5;
+  --border: #E0E0E0;
+  --accent: #FFB300;
+  --success: #4CAF50;
+  --max-width: 1100px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
+  line-height: 1.6;
+  background: var(--bg-gray);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/assets/fonts/Pretendard-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/assets/fonts/Pretendard-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/assets/fonts/Pretendard-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-white);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+}
+.site-header .inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.site-header .logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+}
+.site-header .logo img { height: 28px; }
+.site-header nav { display: flex; gap: 20px; align-items: center; }
+.site-header nav a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+.site-header nav a:hover { color: var(--primary); }
+.site-header .cta-btn {
+  padding: 8px 16px;
+  background: var(--primary);
+  color: var(--bg-white) !important;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.site-header .cta-btn:hover { background: var(--primary-dark); }
+
+/* ── Container ──────────────────────────────────────── */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ── Hero ───────────────────────────────────────────── */
+.hero {
+  background: linear-gradient(135deg, var(--primary-50) 0%, var(--bg-white) 100%);
+  padding: 80px 20px 60px;
+  text-align: center;
+}
+.hero h1 {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+.hero .subtitle {
+  font-size: 18px;
+  color: var(--text-secondary);
+  max-width: 700px;
+  margin: 0 auto 32px;
+}
+.hero .cta-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.hero .badge {
+  display: inline-block;
+  background: var(--primary);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+/* ── Buttons ────────────────────────────────────────── */
+.btn {
+  display: inline-block;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(33, 150, 243, 0.25); }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-outline { background: white; color: var(--primary); border: 2px solid var(--primary); }
+.btn-outline:hover { background: var(--primary-50); }
+
+/* ── Section ────────────────────────────────────────── */
+section {
+  padding: 60px 20px;
+}
+section h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  text-align: center;
+}
+section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 24px 0 12px;
+}
+section p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+section.bg-white { background: var(--bg-white); }
+
+/* ── Feature Cards ──────────────────────────────────── */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-top: 32px;
+}
+.feature-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  transition: box-shadow 0.2s;
+}
+.feature-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.feature-card .icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+.feature-card h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.feature-card p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Benefit Card (이벤트 혜택) ─────────────────────── */
+.benefit-card {
+  background: var(--bg-white);
+  border: 2px solid var(--primary);
+  border-radius: 16px;
+  padding: 32px;
+  margin: 20px auto;
+  max-width: 800px;
+  position: relative;
+}
+.benefit-card .tag {
+  position: absolute;
+  top: -12px;
+  left: 24px;
+  background: var(--primary);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.benefit-card h3 {
+  font-size: 22px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+.benefit-card ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 16px;
+}
+.benefit-card li {
+  padding: 8px 0 8px 28px;
+  position: relative;
+  color: var(--text-secondary);
+}
+.benefit-card li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* ── Comparison Table ───────────────────────────────── */
+.comparison-table {
+  width: 100%;
+  max-width: 900px;
+  margin: 24px auto;
+  border-collapse: collapse;
+  background: var(--bg-white);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.comparison-table th,
+.comparison-table td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+}
+.comparison-table th {
+  background: var(--primary-50);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.comparison-table tr.highlight {
+  background: #FFF9E6;
+}
+.comparison-table tr.highlight td { font-weight: 600; color: var(--primary-dark); }
+
+/* ── FAQ ────────────────────────────────────────────── */
+.faq-item {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-bottom: 10px;
+}
+.faq-item .q {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.faq-item .q::before { content: "Q. "; color: var(--primary); }
+.faq-item .a {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ── Footer ─────────────────────────────────────────── */
+.site-footer {
+  background: #263238;
+  color: #B0BEC5;
+  padding: 40px 20px 24px;
+  margin-top: 60px;
+  text-align: center;
+}
+.site-footer .inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+.site-footer .brand {
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.site-footer .links {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 16px 0;
+  font-size: 14px;
+}
+.site-footer .links a {
+  color: #B0BEC5;
+  text-decoration: none;
+}
+.site-footer .links a:hover { color: white; }
+.site-footer .copyright {
+  font-size: 13px;
+  color: #78909C;
+  margin-top: 12px;
+}
+
+/* ── Utility ────────────────────────────────────────── */
+.text-center { text-align: center; }
+.mt-0 { margin-top: 0; }
+.mt-2 { margin-top: 24px; }
+.mt-3 { margin-top: 32px; }
+.mb-2 { margin-bottom: 24px; }
+.mb-3 { margin-bottom: 32px; }
+.highlight-text { color: var(--primary); font-weight: 600; }
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero { padding: 60px 20px 40px; }
+  .hero h1 { font-size: 28px; }
+  .hero .subtitle { font-size: 16px; }
+  section { padding: 40px 20px; }
+  section h2 { font-size: 22px; }
+  .site-header nav { display: none; }
+  .site-header nav.mobile-show { display: flex; flex-direction: column; }
+  .benefit-card { padding: 24px 20px; }
+  .comparison-table th,
+  .comparison-table td { padding: 10px 12px; font-size: 13px; }
+}
