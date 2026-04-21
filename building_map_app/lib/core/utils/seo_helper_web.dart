@@ -7,20 +7,22 @@ class SeoHelper {
 
   static const String _baseUrl = 'https://ezstay.io';
 
-  /// 페이지 타이틀, description, canonical을 한 번에 업데이트합니다.
+  /// 페이지 타이틀, description, canonical, og:image, robots를 업데이트합니다.
   ///
-  /// [title] — 브라우저 탭 및 구글 검색결과에 표시되는 제목
-  /// [description] — 검색결과 스니펫에 표시되는 설명 (생략 시 유지)
+  /// [title] — 브라우저 탭 및 검색 결과에 표시되는 제목
+  /// [description] — 검색 결과 스니펫에 표시되는 설명 (생략 시 유지)
   /// [canonicalPath] — '/guest' 형식의 경로 (생략 시 canonical 미변경)
+  /// [imageUrl] — 페이지별 og:image (생략 시 기존 값 유지)
+  /// [noindex] — true 시 robots=noindex,nofollow (방 재고 없는 페이지 등)
   static void updatePage({
     required String title,
     String? description,
     String? canonicalPath,
+    String? imageUrl,
+    bool noindex = false,
   }) {
-    // 1. document.title
     web.document.title = title;
 
-    // 2. meta description + OG + Twitter 동기화
     if (description != null) {
       _setMetaByName('description', description);
       _setMetaByProperty('og:title', title);
@@ -29,12 +31,19 @@ class SeoHelper {
       _setMetaByName('twitter:description', description);
     }
 
-    // 3. canonical + og:url
     if (canonicalPath != null) {
       final canonical = '$_baseUrl$canonicalPath';
       _setCanonical(canonical);
       _setMetaByProperty('og:url', canonical);
     }
+
+    if (imageUrl != null) {
+      final absoluteUrl = imageUrl.startsWith('http') ? imageUrl : '$_baseUrl$imageUrl';
+      _setMetaByProperty('og:image', absoluteUrl);
+      _setMetaByName('twitter:image', absoluteUrl);
+    }
+
+    _setMetaByName('robots', noindex ? 'noindex, nofollow' : 'index, follow');
   }
 
   /// 동적 JSON-LD 구조화 데이터를 `<head>`에 주입합니다.
@@ -77,20 +86,43 @@ class SeoHelper {
     );
   }
 
+  /// Breadcrumb JSON-LD 제거 (페이지 dispose 시 호출 권장)
+  static void removeBreadcrumb() {
+    removeJsonLd('breadcrumb-jsonld');
+  }
+
   // ── 내부 헬퍼 ──────────────────────────────────────────────
 
   static void _setMetaByName(String name, String content) {
-    final el = web.document.head?.querySelector('meta[name="$name"]');
-    el?.setAttribute('content', content);
+    final head = web.document.head;
+    if (head == null) return;
+    var el = head.querySelector('meta[name="$name"]');
+    if (el == null) {
+      el = web.document.createElement('meta')..setAttribute('name', name);
+      head.append(el);
+    }
+    el.setAttribute('content', content);
   }
 
   static void _setMetaByProperty(String property, String content) {
-    final el = web.document.head?.querySelector('meta[property="$property"]');
-    el?.setAttribute('content', content);
+    final head = web.document.head;
+    if (head == null) return;
+    var el = head.querySelector('meta[property="$property"]');
+    if (el == null) {
+      el = web.document.createElement('meta')..setAttribute('property', property);
+      head.append(el);
+    }
+    el.setAttribute('content', content);
   }
 
   static void _setCanonical(String href) {
-    final el = web.document.head?.querySelector('link[rel="canonical"]');
-    el?.setAttribute('href', href);
+    final head = web.document.head;
+    if (head == null) return;
+    var el = head.querySelector('link[rel="canonical"]');
+    if (el == null) {
+      el = web.document.createElement('link')..setAttribute('rel', 'canonical');
+      head.append(el);
+    }
+    el.setAttribute('href', href);
   }
 }

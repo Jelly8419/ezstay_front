@@ -56,9 +56,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _analytics.logHomeViewGuest();
       SeoHelper.updatePage(
-        title: 'EZStay — 단기임대 No.1, 편리하고 안전한 단기 숙소 찾기',
+        title: '이지스테이(EZstay) ― 서울 단기임대 5월 오픈 · 선착순 100명 2만원 할인',
         description:
-            '출장, 이사, 한달살기에 필요한 단기임대 숙소를 쉽고 빠르게. 1주일부터 계약 가능한 전국의 원룸, 오피스텔, 아파트를 찾아보세요.',
+            '서울 단기임대 플랫폼 이지스테이(EZstay) 5월 오픈. 사전등록 선착순 100명 첫 계약 2만원 할인. 1주~90일 서울 전역 단기 계약 가능한 원룸·오피스텔·아파트.',
         canonicalPath: '/',
       );
       // 프로모션 이벤트 로드 완료 후에만 모달 노출 (이벤트 없으면 미노출)

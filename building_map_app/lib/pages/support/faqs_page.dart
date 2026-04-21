@@ -39,8 +39,8 @@ class _FAQsPageState extends State<FAQsPage> {
     _fetchInitialData();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SeoHelper.updatePage(
-        title: '자주 묻는 질문 | EZStay',
-        description: 'EZStay 이용 중 궁금한 점을 FAQ에서 빠르게 해결하세요.',
+        title: '자주 묻는 질문 | 이지스테이(EZstay)',
+        description: '이지스테이(EZstay) 이용 중 궁금한 점을 FAQ에서 빠르게 해결하세요.',
         canonicalPath: '/support/faqs',
       );
       SeoHelper.injectBreadcrumb([

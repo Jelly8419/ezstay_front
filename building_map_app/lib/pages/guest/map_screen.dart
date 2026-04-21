@@ -99,8 +99,8 @@ class _MapScreenState extends State<MapScreen> {
     _setupCoordinatorListener();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SeoHelper.updatePage(
-        title: '지도로 단기 숙소 검색 | EZStay',
-        description: '원하는 지역의 단기임대 숙소를 지도에서 직접 찾아보세요. 원룸, 오피스텔, 아파트 단기 계약.',
+        title: '서울 단기임대 지도 검색 | 이지스테이(EZstay) 5월 오픈',
+        description: '서울 전역 1주~90일 단기임대 지도 검색. 이지스테이(EZstay) 5월 오픈 사전등록 선착순 100명 첫 계약 2만원 할인.',
         canonicalPath: '/map',
       );
     });

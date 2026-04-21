@@ -63,8 +63,8 @@ class _CustomerCenterPageState extends State<CustomerCenterPage> {
     // initState에서는 context 사용 불가, didChangeDependencies에서 데이터 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SeoHelper.updatePage(
-        title: '고객센터 | EZStay',
-        description: '공지사항, 자주 묻는 질문, 1:1 문의 등 EZStay 고객센터를 이용해보세요.',
+        title: '고객센터 | 이지스테이(EZstay)',
+        description: '공지사항, 자주 묻는 질문, 1:1 문의 등 이지스테이(EZstay) 고객센터를 이용해보세요.',
         canonicalPath: '/support',
       );
     });

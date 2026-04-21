@@ -76,6 +76,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
   @override
   void dispose() {
     _thumbnailScrollController.dispose();
+    SeoHelper.removeBreadcrumb();
     super.dispose();
   }
 
@@ -122,9 +123,10 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
         if (!widget.isSnapshot) {
           final monthlyPrice = (room.monthlyRent / 10000).round();
           SeoHelper.updatePage(
-            title: '${room.roomName} | EZStay',
-            description: '${room.address} · ${room.buildingType} · 월 $monthlyPrice만원~. EZStay에서 단기임대로 계약하세요.',
+            title: '${room.roomName} | 이지스테이(EZstay)',
+            description: '${room.address} · ${room.buildingType} · 월 $monthlyPrice만원~. 이지스테이(EZstay)에서 서울 단기임대로 계약하세요.',
             canonicalPath: '/guest/room/detail/${room.id}',
+            noindex: true,
           );
           SeoHelper.injectBreadcrumb([
             {'name': '홈', 'path': '/'},
