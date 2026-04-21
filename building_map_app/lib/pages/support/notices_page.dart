@@ -30,8 +30,8 @@ class _NoticesPageState extends State<NoticesPage> {
     _fetchNotices();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SeoHelper.updatePage(
-        title: '공지사항 | EZStay',
-        description: 'EZStay 서비스 공지사항을 확인하세요.',
+        title: '공지사항 | 이지스테이(EZstay)',
+        description: '이지스테이(EZstay) 서비스 공지사항을 확인하세요.',
         canonicalPath: '/support/notices',
       );
       SeoHelper.injectBreadcrumb([
@@ -40,6 +40,12 @@ class _NoticesPageState extends State<NoticesPage> {
         {'name': '공지사항', 'path': '/support/notices'},
       ]);
     });
+  }
+
+  @override
+  void dispose() {
+    SeoHelper.removeBreadcrumb();
+    super.dispose();
   }
 
   Future<void> _fetchNotices() async {
