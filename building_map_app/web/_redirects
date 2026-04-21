@@ -1,6 +1,4 @@
-# 호스트 랜딩: Flutter /host 라우트와 충돌 회피용 rewrite
-# (다른 페이지는 Cloudflare의 자동 .html 확장자 처리에 맡김)
-/for-hosts /host.html 200
-
 # Flutter 앱 - SPA fallback
+# 정적 랜딩 페이지(seoul.html, event.html, guide.html, for-hosts.html)는
+# Cloudflare Pages가 파일명 매칭으로 자동 서빙함 (확장자 자동 제거)
 /* /index.html 200!
