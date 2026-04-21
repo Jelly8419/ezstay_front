@@ -21,7 +21,7 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- 호스트 모집 랜딩 -->
+  <!-- 임대인 모집 랜딩 -->
   <url>
     <loc>https://ezstay.io/for-hosts</loc>
     <changefreq>weekly</changefreq>
