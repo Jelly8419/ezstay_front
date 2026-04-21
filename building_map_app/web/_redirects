@@ -1,3 +1,9 @@
+# /host는 Flutter 앱의 호스트 홈 라우트 (정적 랜딩 for-hosts.html과 분리)
+# 명시적으로 Flutter index.html로 rewrite — Cloudflare가 과거 host.html
+# 매핑을 캐시했을 가능성 대응
+/host /index.html 200
+/host/* /index.html 200
+
 # Flutter 앱 - SPA fallback
 # 정적 랜딩 페이지(seoul.html, event.html, guide.html, for-hosts.html)는
 # Cloudflare Pages가 파일명 매칭으로 자동 서빙함 (확장자 자동 제거)
