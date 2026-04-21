@@ -23,7 +23,7 @@
 
   <!-- 호스트 모집 랜딩 -->
   <url>
-    <loc>https://ezstay.io/host</loc>
+    <loc>https://ezstay.io/for-hosts</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>

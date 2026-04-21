@@ -2,7 +2,7 @@
 /seoul    /seoul.html    200
 /event    /event.html    200
 /guide    /guide.html    200
-/host     /host.html     200
+/for-hosts /host.html    200
 
 # Flutter 앱 - SPA fallback
 /* /index.html 200!
