@@ -36,7 +36,24 @@ class OpeningEventModal extends StatefulWidget {
         return;
       }
     }
+    await _show(context, onAlertRequest, onHostRedirect);
+  }
 
+  /// 숨김 조건을 무시하고 강제로 모달을 띄운다.
+  /// 정적 랜딩에서 `?action=alert` 쿼리로 진입한 경우 사용.
+  static Future<void> forceShow(
+    BuildContext context, {
+    required VoidCallback onAlertRequest,
+    required VoidCallback onHostRedirect,
+  }) async {
+    await _show(context, onAlertRequest, onHostRedirect);
+  }
+
+  static Future<void> _show(
+    BuildContext context,
+    VoidCallback onAlertRequest,
+    VoidCallback onHostRedirect,
+  ) async {
     if (!context.mounted) return;
     await showDialog(
       context: context,

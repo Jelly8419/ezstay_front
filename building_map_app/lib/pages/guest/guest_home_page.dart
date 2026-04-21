@@ -61,17 +61,36 @@ class _GuestHomePageState extends State<GuestHomePage> {
             '서울 단기임대 플랫폼 이지스테이(EZstay) 5월 오픈. 사전등록 선착순 100명 첫 계약 2만원 할인. 1주~90일 서울 전역 단기 계약 가능한 원룸·오피스텔·아파트.',
         canonicalPath: '/',
       );
+
+      // 정적 랜딩에서 `?action=` 쿼리로 진입한 경우 즉시 해당 플로우 실행
+      final action = Uri.base.queryParameters['action'];
+      if (action == 'host-register' && mounted) {
+        final authService = context.read<AuthService>();
+        _handleHostRedirect(authService);
+        return;
+      }
+
       // 프로모션 이벤트 로드 완료 후에만 모달 노출 (이벤트 없으면 미노출)
       final promotion = context.read<PromotionProvider>();
       await promotion.loadActivePromotions();
       if (!mounted) return;
       if (promotion.guestEvent == null && promotion.hostEvent == null) return;
       final authService = context.read<AuthService>();
-      OpeningEventModal.maybeShow(
-        context,
-        onAlertRequest: () => _handleAlertRequest(authService),
-        onHostRedirect: () => _handleHostRedirect(authService),
-      );
+
+      // `?action=alert`면 24시간 숨김 무시하고 강제 오픈
+      if (action == 'alert') {
+        OpeningEventModal.forceShow(
+          context,
+          onAlertRequest: () => _handleAlertRequest(authService),
+          onHostRedirect: () => _handleHostRedirect(authService),
+        );
+      } else {
+        OpeningEventModal.maybeShow(
+          context,
+          onAlertRequest: () => _handleAlertRequest(authService),
+          onHostRedirect: () => _handleHostRedirect(authService),
+        );
+      }
     });
   }
 
