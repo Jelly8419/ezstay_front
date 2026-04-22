@@ -173,24 +173,10 @@ class _OpeningEventModalState extends State<OpeningEventModal> {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildBulletText('임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인'),
+                _buildBulletText('임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인\n(선착순 100명 마감 시, 혜택은 종료됩니다)'),
                 const SizedBox(height: 4),
-                _buildBulletText('임대인은 방 등록 시, 오픈 후 90일 간 정산 수수료 무료 (등록한 모든 방에 적용)'),
+                _buildBulletText('임대인은 방 등록 시, 8월까지 정산 수수료 무료 (등록한 모든 방에 적용)'),
               ],
-            ),
-            SizedBox(height: AppSpacing.sm),
-            Text(
-              '5월 초 오픈 전 각 선착순 100명 마감 시, 혜택은 종료됩니다',
-              style: AppTextStyles.bodySmall.copyWith(
-                fontSize: AppTextStyles.responsiveFontSize(
-                  context,
-                  mobile: 12,
-                  desktop: 13,
-                ),
-                color: Colors.white.withValues(alpha: 0.85),
-                shadows: [_textShadow],
-              ),
-              textAlign: TextAlign.center,
             ),
             SizedBox(height: AppSpacing.lg),
             Row(

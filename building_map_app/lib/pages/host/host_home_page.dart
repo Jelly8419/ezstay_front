@@ -444,7 +444,7 @@ class _HostHomePageState extends State<HostHomePage> {
                           ),
                           SizedBox(height: AppSpacing.xs),
                           Text(
-                            '오픈 후 90일 간 정산 수수료 무료 · 등록한 모든 방에 적용\n(등록된 방은 5월 초 오픈 시 전체 공개됩니다)',
+                            '8월까지 정산 수수료 무료 · 등록한 모든 방에 적용\n(등록된 방은 5월 초 오픈 시 전체 공개됩니다)',
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: Colors.white.withValues(alpha: 0.9),
                               fontWeight: FontWeight.w600,
@@ -454,12 +454,12 @@ class _HostHomePageState extends State<HostHomePage> {
                       ),
                     ),
                     SizedBox(width: AppSpacing.md),
-                    // 오른쪽: 선착순 문구 + 버튼
+                    // 오른쪽: 안내 문구 + 버튼
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          '선착순 마감 시 혜택은 종료됩니다',
+                          '오픈 전 등록 완료한 모든 임대인 대상',
                           style: AppTextStyles.bodySmall.copyWith(
                             color: Colors.white.withValues(alpha: 0.8),
                           ),
