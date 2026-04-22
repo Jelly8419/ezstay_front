@@ -688,7 +688,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            '오픈 전 참여하면 2만원 혜택',
+                            '오픈 전 참여 혜택',
                             style: AppTextStyles.headingLarge.copyWith(
                               fontSize: AppTextStyles.responsiveFontSize(
                                 context,
@@ -709,11 +709,12 @@ class _GuestHomePageState extends State<GuestHomePage> {
                           ),
                           const SizedBox(height: 8),
                           Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                '• 임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인',
+                                '임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인\n(선착순 100명 마감 시, 혜택은 종료됩니다)',
+                                textAlign: TextAlign.center,
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   fontSize: AppTextStyles.responsiveFontSize(
                                     context,
@@ -723,7 +724,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
                                   color: Colors.white,
                                   shadows: [
                                     Shadow(
-                                      color: Colors.black.withValues(alpha: 0.5),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.5,
+                                      ),
                                       offset: const Offset(0, 1),
                                       blurRadius: 3,
                                     ),
@@ -732,7 +735,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '• 임대인은 방 등록 후 첫 계약 정산 수수료 2만원 할인',
+                                '임대인은 방 등록 시, 8월까지 정산 수수료 무료 (등록한 모든 방에 적용)',
+                                textAlign: TextAlign.center,
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   fontSize: AppTextStyles.responsiveFontSize(
                                     context,
@@ -742,7 +746,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
                                   color: Colors.white,
                                   shadows: [
                                     Shadow(
-                                      color: Colors.black.withValues(alpha: 0.5),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.5,
+                                      ),
                                       offset: const Offset(0, 1),
                                       blurRadius: 3,
                                     ),
@@ -750,26 +756,6 @@ class _GuestHomePageState extends State<GuestHomePage> {
                                 ),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '5월 초 오픈 전 각 선착순 100명 마감 시, 혜택은 종료됩니다',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              fontSize: AppTextStyles.responsiveFontSize(
-                                context,
-                                mobile: 12,
-                                desktop: 14,
-                              ),
-                              color: Colors.white.withValues(alpha: 0.85),
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  offset: const Offset(0, 1),
-                                  blurRadius: 3,
-                                ),
-                              ],
-                            ),
-                            textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
                           Row(

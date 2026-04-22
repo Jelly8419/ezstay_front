@@ -155,7 +155,7 @@ class _OpeningEventModalState extends State<OpeningEventModal> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '오픈 전 참여하면 2만원 혜택',
+              '오픈 전 참여 혜택',
               style: AppTextStyles.headingLarge.copyWith(
                 fontSize: AppTextStyles.responsiveFontSize(
                   context,
@@ -170,27 +170,13 @@ class _OpeningEventModalState extends State<OpeningEventModal> {
             ),
             SizedBox(height: AppSpacing.md),
             Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildBulletText('• 임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인'),
+                _buildBulletText('임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인\n(선착순 100명 마감 시, 혜택은 종료됩니다)'),
                 const SizedBox(height: 4),
-                _buildBulletText('• 임대인은 방 등록 후 첫 계약 정산 수수료 2만원 할인'),
+                _buildBulletText('임대인은 방 등록 시, 8월까지 정산 수수료 무료 (등록한 모든 방에 적용)'),
               ],
-            ),
-            SizedBox(height: AppSpacing.sm),
-            Text(
-              '5월 초 오픈 전 각 선착순 100명 마감 시, 혜택은 종료됩니다',
-              style: AppTextStyles.bodySmall.copyWith(
-                fontSize: AppTextStyles.responsiveFontSize(
-                  context,
-                  mobile: 12,
-                  desktop: 13,
-                ),
-                color: Colors.white.withValues(alpha: 0.85),
-                shadows: [_textShadow],
-              ),
-              textAlign: TextAlign.center,
             ),
             SizedBox(height: AppSpacing.lg),
             Row(
@@ -232,6 +218,7 @@ class _OpeningEventModalState extends State<OpeningEventModal> {
   Widget _buildBulletText(String text) {
     return Text(
       text,
+      textAlign: TextAlign.center,
       style: AppTextStyles.bodyMedium.copyWith(
         fontSize: AppTextStyles.responsiveFontSize(
           context,
