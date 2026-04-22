@@ -15,8 +15,8 @@ import 'home_section.dart';
 ///
 /// 화면 순서 (위→아래):
 /// 1. [kicker] — 영문 상단 라벨 (예: "SHORT-TERM RENTAL PLATFORM")
-/// 2. [tagline] — 서브 카피
-/// 3. [headline] + [brandWord] — 메인 카피 (브랜드 워드는 primary 색)
+/// 2. [brandWord] — 브랜드 라벨 (primary 색, 본문보다 5pt 작게)
+/// 3. [headline] — 본문 카피 (개행 `\n`으로 여러 줄 표현)
 /// 4. 날짜 검색 박스
 /// 5. [trustPoints] — 체크 포인트 3~n개
 /// 6. [notice] — 하단 안내 문구
@@ -28,9 +28,9 @@ class HomeHero extends StatelessWidget {
     required this.onTapDate,
     required this.onSearch,
     this.kicker,
-    this.tagline = '누구나 쉽고 안전하게 사용할 수 있어요',
-    this.headline = '단기임대를 편리하고 안전하게',
-    this.brandWord = '이지스테이',
+    this.headline =
+        '단기임대 계약부터 입주용품 준비, 청소까지\n모두 준비할 필요 없이 편하게',
+    this.brandWord = '이지스테이에서',
     this.trustPoints,
     this.notice,
   });
@@ -47,9 +47,11 @@ class HomeHero extends StatelessWidget {
   /// 최상단 영문/라벨 (선택). null이면 표시 안 함.
   final String? kicker;
 
-  final String tagline;
-  final String headline;
+  /// 본문 위에 표시되는 브랜드 라벨. 본문보다 5pt 작고 primary 색.
   final String brandWord;
+
+  /// 본문 카피. `\n`으로 여러 줄을 표현한다.
+  final String headline;
 
   /// 검색 박스 아래 체크 포인트 리스트 (선택). null이면 표시 안 함.
   final List<String>? trustPoints;
@@ -67,9 +69,7 @@ class HomeHero extends StatelessWidget {
       mobile: 24,
       desktop: 36,
     );
-    final taglineStyle = isMobile
-        ? AppTextStyles.bodyLarge
-        : AppTextStyles.headingLarge;
+    final brandFontSize = headlineFontSize - 5;
 
     return HomeSection(
       maxWidth: AppSizes.contentMaxWidthWide,
@@ -94,24 +94,17 @@ class HomeHero extends StatelessWidget {
             SizedBox(height: AppSpacing.sm),
           ],
           Text(
-            tagline,
-            style: taglineStyle.copyWith(
-              color: AppColors.textPrimary,
+            brandWord,
+            style: AppTextStyles.displayLarge.copyWith(
+              fontSize: brandFontSize,
+              color: AppColors.primary500,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: AppSpacing.lg),
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(text: '$headline\n'),
-                TextSpan(
-                  text: brandWord,
-                  style: TextStyle(color: AppColors.primary500),
-                ),
-              ],
-            ),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            headline,
             style: AppTextStyles.displayLarge.copyWith(
               fontSize: headlineFontSize,
               color: AppColors.textPrimary,
