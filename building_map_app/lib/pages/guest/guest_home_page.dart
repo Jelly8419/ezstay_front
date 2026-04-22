@@ -230,9 +230,6 @@ class _GuestHomePageState extends State<GuestHomePage> {
   // ==================== 히어로 섹션 ====================
   Widget _buildHero() {
     return HomeHero(
-      tagline: '누구나 쉽고 안전하게 사용할 수 있어요',
-      headline: '단기임대를 편리하고 안전하게',
-      brandWord: '이지스테이',
       checkIn: _checkInDate,
       checkOut: _checkOutDate,
       onTapDate: _showDateSelectionDialog,
