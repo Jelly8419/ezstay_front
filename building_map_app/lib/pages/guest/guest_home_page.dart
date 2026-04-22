@@ -709,11 +709,12 @@ class _GuestHomePageState extends State<GuestHomePage> {
                           ),
                           const SizedBox(height: 8),
                           Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                '• 임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인',
+                                '임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인',
+                                textAlign: TextAlign.center,
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   fontSize: AppTextStyles.responsiveFontSize(
                                     context,
@@ -734,7 +735,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '• 임대인은 방 등록 시, 오픈 후 90일 간 정산 수수료 무료 (등록한 모든 방에 적용)',
+                                '임대인은 방 등록 시, 오픈 후 90일 간 정산 수수료 무료 (등록한 모든 방에 적용)',
+                                textAlign: TextAlign.center,
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   fontSize: AppTextStyles.responsiveFontSize(
                                     context,
