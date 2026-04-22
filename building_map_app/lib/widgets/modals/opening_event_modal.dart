@@ -155,7 +155,7 @@ class _OpeningEventModalState extends State<OpeningEventModal> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '오픈 전 참여하면 2만원 혜택',
+              '오픈 전 참여 혜택',
               style: AppTextStyles.headingLarge.copyWith(
                 fontSize: AppTextStyles.responsiveFontSize(
                   context,
@@ -175,7 +175,7 @@ class _OpeningEventModalState extends State<OpeningEventModal> {
               children: [
                 _buildBulletText('• 임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인'),
                 const SizedBox(height: 4),
-                _buildBulletText('• 임대인은 방 등록 후 첫 계약 정산 수수료 2만원 할인'),
+                _buildBulletText('• 임대인은 방 등록 시, 오픈 후 90일 간 정산 수수료 무료 (등록한 모든 방에 적용)'),
               ],
             ),
             SizedBox(height: AppSpacing.sm),

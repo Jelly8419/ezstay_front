@@ -688,7 +688,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            '오픈 전 참여하면 2만원 혜택',
+                            '오픈 전 참여 혜택',
                             style: AppTextStyles.headingLarge.copyWith(
                               fontSize: AppTextStyles.responsiveFontSize(
                                 context,
@@ -723,7 +723,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
                                   color: Colors.white,
                                   shadows: [
                                     Shadow(
-                                      color: Colors.black.withValues(alpha: 0.5),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.5,
+                                      ),
                                       offset: const Offset(0, 1),
                                       blurRadius: 3,
                                     ),
@@ -732,7 +734,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '• 임대인은 방 등록 후 첫 계약 정산 수수료 2만원 할인',
+                                '• 임대인은 방 등록 시, 오픈 후 90일 간 정산 수수료 무료 (등록한 모든 방에 적용)',
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   fontSize: AppTextStyles.responsiveFontSize(
                                     context,
@@ -742,7 +744,9 @@ class _GuestHomePageState extends State<GuestHomePage> {
                                   color: Colors.white,
                                   shadows: [
                                     Shadow(
-                                      color: Colors.black.withValues(alpha: 0.5),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.5,
+                                      ),
                                       offset: const Offset(0, 1),
                                       blurRadius: 3,
                                     ),
