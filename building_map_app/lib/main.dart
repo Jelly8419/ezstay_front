@@ -17,6 +17,7 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/app_text_styles.dart';
 import 'services/auth_service.dart';
 import 'services/error_handler_service.dart';
+import 'services/launch_status_service.dart';
 import 'services/map_interaction_coordinator.dart';
 import 'services/payment_service_unified.dart';
 import 'providers/gnb_provider.dart';
@@ -266,6 +267,10 @@ Future<void> main() async {
   // AuthService 생성 및 초기화
   final authService = AuthService();
 
+  // 런칭 상태 서비스 (앱 부팅 시 1회 선조회, 실패해도 true 폴백으로 진행)
+  final launchStatusService = LaunchStatusService();
+  unawaited(launchStatusService.ensureLoaded());
+
   // 웹에서 카카오 콜백 확인
   if (kIsWeb) {
     await authService.handleKakaoWebCallback();
@@ -289,6 +294,7 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authService),
+        ChangeNotifierProvider.value(value: launchStatusService),
         ChangeNotifierProvider(create: (_) => GNBProvider()),
         // 지도 상호작용 조정자 (이벤트 충돌 방지)
         ChangeNotifierProvider(create: (_) => MapInteractionCoordinator()),
