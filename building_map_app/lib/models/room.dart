@@ -3,6 +3,7 @@ import 'room_photo.dart';
 import 'room_amenity_freezed.dart';
 import 'room_ez_service.dart';
 import 'rental_item.dart';
+import 'promotion.dart';
 
 /// 임대 불가능 기간 (계약 중이거나 호스트가 차단한 기간)
 class UnavailablePeriod {
@@ -112,6 +113,9 @@ class Room {
   final List<UnavailablePeriod> unavailablePeriods; // 임대 불가능 기간 목록
   final String? rejectionReason; // 반려 사유
 
+  // 프로모션 정보 (로그인한 게스트에게 자격이 있는 이벤트)
+  final List<EligiblePromotion> eligiblePromotions;
+
   /// 호스트 표시명 (닉네임 우선, 없으면 이름)
   String get hostDisplayName =>
       (hostNickname?.isNotEmpty == true) ? hostNickname! : (hostName ?? '임대인');
@@ -211,6 +215,7 @@ class Room {
     this.isAvailable = true,
     this.unavailablePeriods = const [],
     this.rejectionReason,
+    this.eligiblePromotions = const [],
   });
 
 
@@ -319,6 +324,10 @@ class Room {
               .toList()
           : const [],
       rejectionReason: json['rejectionReason'] as String?,
+      eligiblePromotions: parsePromotionList<EligiblePromotion>(
+        json['eligiblePromotions'],
+        EligiblePromotion.fromJson,
+      ),
     );
   }
 
@@ -440,6 +449,7 @@ class Room {
       'status': status,
       'isActive': isActive,
       'rejectionReason': rejectionReason,
+      'eligiblePromotions': eligiblePromotions.map((p) => p.toJson()).toList(),
     };
   }
 
@@ -544,6 +554,7 @@ class Room {
     String? status,
     bool? isActive,
     String? rejectionReason,
+    List<EligiblePromotion>? eligiblePromotions,
   }) {
     return Room(
       id: id ?? this.id,
@@ -608,6 +619,7 @@ class Room {
       status: status ?? this.status,
       isActive: isActive ?? this.isActive,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      eligiblePromotions: eligiblePromotions ?? this.eligiblePromotions,
     );
   }
 

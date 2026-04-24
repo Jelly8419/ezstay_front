@@ -2,6 +2,7 @@ import 'dart:convert';
 import '../constants/fee_constants.dart';
 import 'contract.dart';
 import 'payment_history.dart';
+import 'promotion.dart';
 
 /// 계약 상세 정보 모델 (상세 페이지용)
 class ContractDetail {
@@ -26,7 +27,10 @@ class ContractDetail {
   final int cleaningFee; // 청소비
   final int deposit; // 보증금
   final int rentalItemsFee; // 옵션 상품 총액
-  final int platformFee; // 플랫폼 수수료
+  final int platformFee; // 플랫폼 수수료 (할인 후, DB 저장값)
+  final int? platformFeeOriginal; // 원본 수수료 (ACTIVE benefits 합 포함)
+  final int? platformFeeDiscount; // 수수료 할인액 (ACTIVE benefits 합)
+  final List<AppliedPromotion> appliedPromotions; // 적용된 프로모션 (ACTIVE만)
   final int finalTotalAmount; // 최종 총액
 
   // 상태 정보
@@ -115,6 +119,9 @@ class ContractDetail {
     required this.deposit,
     required this.rentalItemsFee,
     required this.platformFee,
+    this.platformFeeOriginal,
+    this.platformFeeDiscount,
+    this.appliedPromotions = const [],
     required this.finalTotalAmount,
     required this.status,
     this.paidAt,
@@ -293,6 +300,12 @@ class ContractDetail {
         return 0;
       }(),
       platformFee: json['platformFee'] as int,
+      platformFeeOriginal: json['platformFeeOriginal'] as int?,
+      platformFeeDiscount: json['platformFeeDiscount'] as int?,
+      appliedPromotions: parsePromotionList<AppliedPromotion>(
+        json['appliedPromotions'],
+        AppliedPromotion.fromJson,
+      ),
       finalTotalAmount: json['finalTotalAmount'] as int,
       // 상태 정보
       status: parseStringField(json['status'], 'PENDING'),
@@ -383,6 +396,9 @@ class ContractDetail {
       cleaningFee: cleaningFee,
       rentalItemsFee: rentalItemsFee,
       platformFee: platformFee,
+      platformFeeOriginal: platformFeeOriginal,
+      platformFeeDiscount: platformFeeDiscount,
+      appliedPromotions: appliedPromotions,
       discountAmount: 0,
       subtotal: finalTotalAmount,
       totalUsageFee: finalTotalAmount,
@@ -428,6 +444,9 @@ class ContractDetail {
       'deposit': deposit,
       'rentalItemsFee': rentalItemsFee,
       'platformFee': platformFee,
+      if (platformFeeOriginal != null) 'platformFeeOriginal': platformFeeOriginal,
+      if (platformFeeDiscount != null) 'platformFeeDiscount': platformFeeDiscount,
+      'appliedPromotions': appliedPromotions.map((p) => p.toJson()).toList(),
       'finalTotalAmount': finalTotalAmount,
       'status': status,
       if (paidAt != null) 'paidAt': paidAt,

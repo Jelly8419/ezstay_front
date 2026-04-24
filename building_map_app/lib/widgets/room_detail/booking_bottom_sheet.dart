@@ -334,7 +334,34 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
               ),
             ),
           ),
-        _buildPriceRow('계약 수수료', breakdown.contractFee),
+        _buildPriceRow('계약 수수료', breakdown.contractFeeOriginal),
+        if (breakdown.feeDiscount > 0) ...[
+          _buildPriceRow(
+            '수수료 할인 (${breakdown.appliedPromotions.length}건)',
+            -breakdown.feeDiscount,
+            isDiscount: true,
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 12, bottom: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: breakdown.appliedPromotions
+                  .map(
+                    (p) => Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        '· ${p.eventName}',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
         if (breakdown.rentalItemsFee > 0)
           _buildPriceRow('옵션', breakdown.rentalItemsFee),
         _buildPriceRow('보증금(퇴실 후 환급)', breakdown.deposit),

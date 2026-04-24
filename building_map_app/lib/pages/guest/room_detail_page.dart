@@ -97,7 +97,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       final Room? room;
       if (widget.isSnapshot && widget.contractId != null) {
         // 스냅샷 모드: 계약 당시 방 정보 조회
-        room = await _contractService.getContractRoomSnapshot(widget.contractId!);
+        room = await _contractService.getContractRoomSnapshot(
+          widget.contractId!,
+        );
       } else {
         // 일반 모드: 현재 방 정보 조회
         room = await _guestRoomService.getRoomDetail(widget.roomId);
@@ -124,7 +126,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           final monthlyPrice = (room.monthlyRent / 10000).round();
           SeoHelper.updatePage(
             title: '${room.roomName} | 이지스테이(EZstay)',
-            description: '${room.address} · ${room.buildingType} · 월 $monthlyPrice만원~. 이지스테이(EZstay)에서 서울 단기임대로 계약하세요.',
+            description:
+                '${room.address} · ${room.buildingType} · 월 $monthlyPrice만원~. 이지스테이(EZstay)에서 서울 단기임대로 계약하세요.',
             canonicalPath: '/guest/room/detail/${room.id}',
             noindex: true,
           );
@@ -238,6 +241,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           ? priceBreakdown.quickMoveInDiscount
           : null,
       platformFee: priceBreakdown.contractFee,
+      platformFeeOriginal: priceBreakdown.contractFeeOriginal,
+      platformFeeDiscount: priceBreakdown.feeDiscount,
+      appliedPromotions: priceBreakdown.appliedPromotions,
       rentalItemsFee: priceBreakdown.rentalItemsFee,
       subtotal: priceBreakdown.subtotal,
       totalUsageFee: priceBreakdown.subtotal + priceBreakdown.contractFee,
@@ -303,11 +309,11 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               final contractId = widget.contractId;
               final backPath = contractId != null
                   ? (widget.isHostViewing
-                      ? '/host/contracts/$contractId'
-                      : '/guest/contracts/$contractId')
+                        ? '/host/contracts/$contractId'
+                        : '/guest/contracts/$contractId')
                   : (widget.isHostViewing
-                      ? '/host/contracts'
-                      : '/guest/contracts');
+                        ? '/host/contracts'
+                        : '/guest/contracts');
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 context.go(backPath);
               });
@@ -692,9 +698,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     if (_room!.amenity == null) {
       return Text(
         '제공되는 편의시설이 없습니다.',
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.textPrimary,
-        ),
+        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
       );
     }
 
@@ -755,9 +759,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     if (basicOptions.isEmpty && convenienceOptions.isEmpty) {
       return Text(
         '제공되는 편의시설이 없습니다.',
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.textPrimary,
-        ),
+        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
       );
     }
 
@@ -1109,17 +1111,21 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: RefundPolicySection(
-              rules: _refundPolicy?.rules
-                      .map((r) => RefundRuleItem(
-                            daysBeforeMin: r.daysBeforeMin,
-                            daysBeforeMax: r.daysBeforeMax,
-                            refundRate: r.refundRate,
-                            isSameDayCancellation: r.isSameDayCancellation,
-                            description: r.description,
-                          ))
+              rules:
+                  _refundPolicy?.rules
+                      .map(
+                        (r) => RefundRuleItem(
+                          daysBeforeMin: r.daysBeforeMin,
+                          daysBeforeMax: r.daysBeforeMax,
+                          refundRate: r.refundRate,
+                          isSameDayCancellation: r.isSameDayCancellation,
+                          description: r.description,
+                        ),
+                      )
                       .toList() ??
                   [],
-              isLoading: _refundPolicy == null && _room!.refundPolicy.isNotEmpty,
+              isLoading:
+                  _refundPolicy == null && _room!.refundPolicy.isNotEmpty,
             ),
           ),
         ],
@@ -1196,7 +1202,8 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
     } else {
       displayName = _room!.hostDisplayName;
       isVerified =
-          _room!.hostPhoneVerified == true || _room!.hostAccountVerified == true;
+          _room!.hostPhoneVerified == true ||
+          _room!.hostAccountVerified == true;
       roleLabel = '임대인';
     }
 
@@ -1286,8 +1293,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
       final dt = DateTime.tryParse(widget.capturedAt!);
       if (dt != null) {
         final local = dt.toLocal();
-        dateLabel =
-            '${local.year}. ${local.month}. ${local.day}.';
+        dateLabel = '${local.year}. ${local.month}. ${local.day}.';
       }
     }
 
@@ -1406,7 +1412,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               child: Stack(
                 children: [
                   Image.network(
-                    ContractUtils.getFullImageUrl(_room!.photos[_currentPhotoIndex].url),
+                    ContractUtils.getFullImageUrl(
+                      _room!.photos[_currentPhotoIndex].url,
+                    ),
                     width: double.infinity,
                     height: double.infinity,
                     fit: BoxFit.cover,
@@ -1420,7 +1428,7 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                             color: AppColors.neutral400,
                             value: loadingProgress.expectedTotalBytes != null
                                 ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
+                                      loadingProgress.expectedTotalBytes!
                                 : null,
                           ),
                         ),
@@ -1844,7 +1852,36 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               ),
             if (priceBreakdown.rentalItemsFee > 0)
               _buildPriceRowDetailed('옵션', priceBreakdown.rentalItemsFee),
-            _buildPriceRowDetailed('계약 수수료', priceBreakdown.contractFee),
+            _buildPriceRowDetailed(
+              '계약 수수료',
+              priceBreakdown.contractFeeOriginal,
+            ),
+            if (priceBreakdown.feeDiscount > 0) ...[
+              _buildPriceRowDetailed(
+                '수수료 할인 (${priceBreakdown.appliedPromotions.length}건)',
+                -priceBreakdown.feeDiscount,
+                isDiscount: true,
+              ),
+              Padding(
+                padding: EdgeInsets.only(left: AppSpacing.md, bottom: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: priceBreakdown.appliedPromotions
+                      .map(
+                        (p) => Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            '· ${p.eventName}',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ],
             _buildPriceRowDetailed('보증금(퇴실 후 환급)', priceBreakdown.deposit),
 
             SizedBox(height: AppSpacing.sm),
@@ -1918,7 +1955,9 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
                   SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
-                      PriceCalculator.rentalAmountErrorMessage(currentAmount: priceBreakdown.rentalItemsFee),
+                      PriceCalculator.rentalAmountErrorMessage(
+                        currentAmount: priceBreakdown.rentalItemsFee,
+                      ),
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.error700,
                       ),
@@ -1946,9 +1985,10 @@ class _RoomDetailPageState extends State<RoomDetailPage> {
               child: Text(
                 canRequestContract
                     ? '계약 요청'
-                    : (_bookingState.hasSelectedDates && priceBreakdown.total <= 0)
-                        ? '결제 금액을 확인해주세요'
-                        : '날짜를 선택해주세요',
+                    : (_bookingState.hasSelectedDates &&
+                          priceBreakdown.total <= 0)
+                    ? '결제 금액을 확인해주세요'
+                    : '날짜를 선택해주세요',
                 style: AppTextStyles.buttonText,
               ),
             ),

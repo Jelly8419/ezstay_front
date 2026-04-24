@@ -1,6 +1,7 @@
 import '../constants/fee_constants.dart';
 import '../models/room.dart';
 import '../models/booking_state.dart';
+import '../models/promotion.dart';
 
 /// 가격 계산 결과 (React UI의 가격 분석과 동일)
 class PriceBreakdown {
@@ -11,7 +12,9 @@ class PriceBreakdown {
   final int rentalItemsFee; // 렌탈 아이템 총 비용
   final int longTermDiscount; // 장기 계약 할인
   final int quickMoveInDiscount; // 빠른 입주 할인
-  final int contractFee; // 계약 수수료 (9.9%)
+  final int contractFeeOriginal; // 원본 계약 수수료 (9.9%, 프로모션 적용 전)
+  final int feeDiscount; // 프로모션에 의한 수수료 할인액 (0 ~ contractFeeOriginal)
+  final List<EligiblePromotion> appliedPromotions; // 적용된 프로모션 (할인 금액 = 원본 값, 클램프 전)
 
   const PriceBreakdown({
     required this.baseRent,
@@ -21,16 +24,21 @@ class PriceBreakdown {
     required this.rentalItemsFee,
     required this.longTermDiscount,
     required this.quickMoveInDiscount,
-    required this.contractFee,
+    required this.contractFeeOriginal,
+    this.feeDiscount = 0,
+    this.appliedPromotions = const [],
   });
 
-  /// 총 할인 금액
+  /// 할인 적용 후 실제 부과되는 계약 수수료
+  int get contractFee => contractFeeOriginal - feeDiscount;
+
+  /// 총 할인 금액 (임대료 할인만, 수수료 할인은 별도)
   int get totalDiscount => longTermDiscount + quickMoveInDiscount;
 
   /// 소계 (임대료 + 관리비 + 청소비 + 렌탈 아이템 - 할인)
   int get subtotal => baseRent + maintenanceFee + cleaningFee + rentalItemsFee - totalDiscount;
 
-  /// 최종 총액 (소계 + 보증금 + 계약 수수료)
+  /// 최종 총액 (소계 + 보증금 + 할인 후 계약 수수료)
   int get total => subtotal + deposit + contractFee;
 }
 
@@ -52,7 +60,7 @@ class PriceCalculator {
         rentalItemsFee: 0,
         longTermDiscount: 0,
         quickMoveInDiscount: 0,
-        contractFee: 0,
+        contractFeeOriginal: 0,
       );
     }
 
@@ -130,7 +138,13 @@ class PriceCalculator {
     final feeBase = isEzCleaningService
         ? baseRent + maintenanceFee - totalDiscount  // EZ청소 사용시 청소비 제외
         : baseRent + maintenanceFee + cleaningFee - totalDiscount;
-    final contractFee = FeeConstants.calculateGuestFee(feeBase);
+    final contractFeeOriginal = FeeConstants.calculateGuestFee(feeBase);
+
+    // 9. 프로모션에 의한 수수료 할인 (복수 이벤트 합산, 원본 수수료 한도로 클램프)
+    final feeDiscount = _calculateFeeDiscount(
+      promotions: room.eligiblePromotions,
+      contractFeeOriginal: contractFeeOriginal,
+    );
 
     return PriceBreakdown(
       baseRent: baseRent,
@@ -140,8 +154,26 @@ class PriceCalculator {
       rentalItemsFee: rentalItemsFee,
       longTermDiscount: longTermDiscount,
       quickMoveInDiscount: quickMoveInDiscount,
-      contractFee: contractFee,
+      contractFeeOriginal: contractFeeOriginal,
+      feeDiscount: feeDiscount,
+      appliedPromotions: room.eligiblePromotions,
     );
+  }
+
+  /// 프로모션 수수료 할인 합계 (원본 수수료 한도로 클램프)
+  /// - 프로모션 없음: 0
+  /// - 합계가 원본 수수료 초과: contractFeeOriginal로 제한 (수수료 음수 방지)
+  static int _calculateFeeDiscount({
+    required List<EligiblePromotion> promotions,
+    required int contractFeeOriginal,
+  }) {
+    if (promotions.isEmpty || contractFeeOriginal <= 0) return 0;
+    final sum = promotions.fold<int>(
+      0,
+      (acc, p) => acc + p.discountAmount,
+    );
+    if (sum <= 0) return 0;
+    return sum > contractFeeOriginal ? contractFeeOriginal : sum;
   }
 
   /// 숫자를 한국 통화 형식으로 포맷 (예: 1000000 -> "1,000,000원")

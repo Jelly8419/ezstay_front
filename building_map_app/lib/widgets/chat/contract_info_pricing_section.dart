@@ -155,6 +155,46 @@ class ContractInfoPricingSection extends StatelessWidget {
                   ],
                 ),
               ),
+
+              // 임차인 프로모션 수수료 할인 (정보성 — 정산에 영향 없음)
+              if ((contract.platformFeeDiscount ?? 0) > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '임차인 수수료 할인 (${contract.appliedPromotions.length}건)',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.neutral500,
+                            ),
+                          ),
+                          Text(
+                            '-${FormatUtils.formatKRW(contract.platformFeeDiscount ?? 0)}',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.neutral500,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      ...contract.appliedPromotions.map(
+                        (p) => Padding(
+                          padding: const EdgeInsets.only(left: 8, top: 2),
+                          child: Text(
+                            '· ${p.eventName}',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.neutral500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
@@ -163,6 +203,9 @@ class ContractInfoPricingSection extends StatelessWidget {
   }
 
   Widget _buildGuestSection() {
+    final platformFeeOriginal =
+        contract.platformFeeOriginal ?? contract.platformFee;
+    final platformFeeDiscount = contract.platformFeeDiscount ?? 0;
     final total = contract.rentalFee +
         contract.maintenanceFee +
         contract.cleaningFee +
@@ -183,7 +226,35 @@ class ContractInfoPricingSection extends StatelessWidget {
             cleaningFee: contract.cleaningFee,
             isEzCleaning: contract.isEzCleaning),
         const SizedBox(height: 12),
-        _PriceRow(label: '계약 수수료', amount: contract.platformFee),
+        _PriceRow(label: '계약 수수료', amount: platformFeeOriginal),
+        if (platformFeeDiscount > 0) ...[
+          const SizedBox(height: 12),
+          _PriceRow(
+            label:
+                '수수료 할인 (${contract.appliedPromotions.length}건)',
+            amount: -platformFeeDiscount,
+            isDiscount: true,
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: contract.appliedPromotions
+                  .map(
+                    (p) => Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        '· ${p.eventName}',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.neutral500,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
 
         // 보증금
@@ -239,19 +310,28 @@ class ContractInfoPricingSection extends StatelessWidget {
 class _PriceRow extends StatelessWidget {
   final String label;
   final int amount;
+  final bool isDiscount;
 
-  const _PriceRow({required this.label, required this.amount});
+  const _PriceRow({
+    required this.label,
+    required this.amount,
+    this.isDiscount = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final displayText = isDiscount
+        ? '-${FormatUtils.formatKRW(amount.abs())}'
+        : FormatUtils.formatKRW(amount);
+    final valueColor = isDiscount ? AppColors.primary600 : AppColors.gray900;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label,
             style: AppTextStyles.bodySmall.copyWith(color: AppColors.neutral700)),
-        Text(FormatUtils.formatKRW(amount),
+        Text(displayText,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.gray900,
+              color: valueColor,
               fontWeight: FontWeight.w700,
             )),
       ],
