@@ -372,115 +372,167 @@ class _HostHomePageState extends State<HostHomePage> {
     if (!promotion.hasLoadedOnce) return const SizedBox.shrink();
     if (promotion.hostEvent == null) return const SizedBox.shrink();
 
+    final isMobile = responsive.ResponsiveUtil.isMobile(context);
+
     return ContentContainer(
       padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Container(
-        padding: EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          borderRadius: AppRadius.radiusMd,
-          image: DecorationImage(
-            image: AssetImage(
-              responsive.ResponsiveUtil.isMobile(context)
-                  ? 'assets/images/banner_mobile.jpg'
-                  : 'assets/images/banner_desktop.jpg',
+      child: ClipRRect(
+        borderRadius: AppRadius.radiusMd,
+        child: Stack(
+          children: [
+            // 배경 이미지
+            Positioned.fill(
+              child: Image.asset(
+                isMobile
+                    ? 'assets/images/banner_mobile.jpg'
+                    : 'assets/images/banner_desktop.jpg',
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+              ),
             ),
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: AppRadius.radiusMd,
-          child: Stack(
-            children: [
-              // 오버레이
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.black.withValues(alpha: 0.6),
-                        Colors.black.withValues(alpha: 0.35),
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
+            // 오버레이
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.black.withValues(alpha: 0.6),
+                      Colors.black.withValues(alpha: 0.35),
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                   ),
                 ),
               ),
-              // 콘텐츠
-              Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
-                child: Row(
-                  children: [
-                    // 왼쪽: 뱃지 + 타이틀 + 설명
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.success100,
-                              borderRadius: AppRadius.radiusXs,
-                            ),
-                            child: Text(
-                              '진행 중',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.success600,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: AppSpacing.sm),
-                          Text(
-                            '방 등록만 해도 바로 받는 혜택',
-                            style: AppTextStyles.bodyLarge.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: AppSpacing.xs),
-                          Text(
-                            '8월까지 정산 수수료 무료 · 등록한 모든 방에 적용\n(등록된 방은 5월 초 오픈 시 전체 공개됩니다)',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: AppSpacing.md),
-                    // 오른쪽: 안내 문구 + 버튼
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          '오픈 전 등록 완료한 모든 임대인 대상',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: Colors.white.withValues(alpha: 0.8),
-                          ),
-                        ),
-                        SizedBox(width: AppSpacing.lg),
-                        AppPrimaryButton(
-                          text: '방 등록하기',
-                          fullWidth: false,
-                          icon: Icons.arrow_forward,
-                          onPressed: () =>
-                              context.go('/host/room-registration'),
-                        ),
-                      ],
-                    ),
-                  ],
+            ),
+            // 콘텐츠
+            Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: isMobile
+                  ? _buildEventBannerMobileContent()
+                  : _buildEventBannerWideContent(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEventBannerBadge() {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.success100,
+        borderRadius: AppRadius.radiusXs,
+      ),
+      child: Text(
+        '진행 중',
+        style: AppTextStyles.labelSmall.copyWith(
+          color: AppColors.success600,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEventBannerMobileContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildEventBannerBadge(),
+        SizedBox(height: AppSpacing.sm),
+        Text(
+          '방 등록만 해도 바로 받는 혜택',
+          style: AppTextStyles.bodyLarge.copyWith(
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        SizedBox(height: AppSpacing.xs),
+        Text(
+          '8월까지 정산 수수료 무료 · 등록한 모든 방에 적용',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: Colors.white.withValues(alpha: 0.9),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        SizedBox(height: AppSpacing.xs),
+        Text(
+          '오픈 전 등록 완료한 모든 임대인 대상',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: Colors.white.withValues(alpha: 0.8),
+          ),
+        ),
+        SizedBox(height: AppSpacing.md),
+        SizedBox(
+          width: double.infinity,
+          child: AppPrimaryButton(
+            text: '방 등록하기',
+            fullWidth: true,
+            icon: Icons.arrow_forward,
+            onPressed: () => context.go('/host/room-registration'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEventBannerWideContent() {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildEventBannerBadge(),
+              SizedBox(height: AppSpacing.sm),
+              Text(
+                '방 등록만 해도 바로 받는 혜택',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: AppSpacing.xs),
+              Text(
+                '8월까지 정산 수수료 무료 · 등록한 모든 방에 적용\n(등록된 방은 5월 초 오픈 시 전체 공개됩니다)',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
         ),
-      ),
+        SizedBox(width: AppSpacing.md),
+        Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  '오픈 전 등록 완료한 모든 임대인 대상',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Colors.white.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
+              SizedBox(width: AppSpacing.lg),
+              AppPrimaryButton(
+                text: '방 등록하기',
+                fullWidth: false,
+                icon: Icons.arrow_forward,
+                onPressed: () => context.go('/host/room-registration'),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
