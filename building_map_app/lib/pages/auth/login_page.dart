@@ -25,12 +25,51 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoggingIn = false;
   bool _autoLogin = false;
   bool _obscurePassword = true;
+  bool _oauthErrorHandled = false;
 
   // PRD 5.2: 로그인 실패 횟수 제한 (5회/10분)
   int _failureCount = 0;
   DateTime? _lockoutEndTime;
   static const int _maxFailures = 5;
   static const Duration _lockoutDuration = Duration(minutes: 10);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_oauthErrorHandled) {
+      _oauthErrorHandled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _handleOAuthError());
+    }
+  }
+
+  /// 카카오 OAuth 콜백에서 전달된 error_code 처리
+  /// (백엔드 스펙: /auth/callback?error_code=<숫자>&message=<한글>)
+  /// 백엔드 message는 이메일 원문을 포함할 수 있어 보안상 사용하지 않고,
+  /// 프론트의 LoginResult 기본 메시지만 노출한다.
+  void _handleOAuthError() {
+    if (!mounted) return;
+    final uri = GoRouterState.of(context).uri;
+    final errorCode = uri.queryParameters['error_code'];
+    if (errorCode == null) return;
+
+    final LoginResult result;
+    switch (errorCode) {
+      case '4016':
+        result = LoginResult.kakaoEmailExistsAsLocal;
+        break;
+      case '1008':
+      case '1009':
+        result = LoginResult.kakaoOAuthFailed;
+        break;
+      default:
+        result = LoginResult.kakaoConnectionFailed;
+    }
+
+    // URL에서 에러 파라미터 제거 (새로고침 시 중복 노출 방지)
+    context.go('/login');
+
+    _showErrorDialog(result.message);
+  }
 
   @override
   void dispose() {
@@ -545,8 +584,9 @@ class _LoginPageState extends State<LoginPage> {
             'isSocialLogin': true,
           },
         );
-      } else if (result == LoginResult.kakaoEmailDuplicate) {
-        // PRD 8: 이메일 중복 안내
+      } else if (result == LoginResult.kakaoEmailDuplicate ||
+          result == LoginResult.kakaoEmailExistsAsLocal) {
+        // PRD 8: 이메일 중복 안내 (로컬 가입자 동일 이메일 소셜 로그인 포함)
         _showErrorDialog(result.message);
       } else if (result == LoginResult.accountWithdrawn) {
         _showWithdrawnAccountDialog();

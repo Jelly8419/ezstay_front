@@ -9,6 +9,8 @@ import '../../../utils/contract_utils.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import 'package:provider/provider.dart';
+import '../../../services/launch_status_service.dart';
 import '../../../services/room_service.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
 import '../../../widgets/common/custom_toast.dart';
@@ -897,6 +899,8 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
       CustomToast.success(context, '방 등록이 완료되었습니다!');
 
       final isPendingReview = resultStatus == 'pending_review';
+      // 런칭 전에는 "할인 혜택 적용" 안내, 런칭 후에는 기존 "공개" 안내
+      final isPrelaunch = context.read<LaunchStatusService>().isPrelaunch;
 
       // 성공 다이얼로그 표시
       showDialog(
@@ -941,7 +945,7 @@ class _RoomRegistrationFlowPageState extends State<RoomRegistrationFlowPage> {
               // 설명 (pending_review일 때만 심사 안내 표시)
               Text(
                 isPendingReview
-                    ? '방 등록이 완료되었습니다!\n\n관리자 심사가 진행됩니다. (보통 1-2일 소요)\n심사 승인 후 방이 공개됩니다.'
+                    ? '방 등록이 완료되었습니다!\n\n관리자 심사가 진행됩니다. (보통 1-2일 소요)\n${isPrelaunch ? '심사 승인 후 해당 방에 할인 혜택이 적용됩니다.' : '심사 승인 후 방이 공개됩니다.'}'
                     : '방 정보가 저장되었습니다!',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.labelLarge.copyWith(

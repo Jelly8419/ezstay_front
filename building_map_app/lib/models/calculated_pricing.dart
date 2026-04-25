@@ -1,4 +1,5 @@
 import '../constants/fee_constants.dart';
+import 'promotion.dart';
 
 /// 방 상세페이지에서 계산된 금액 정보
 /// PRD: 반드시 상세페이지 계산값 그대로 사용하고 재계산 금지
@@ -13,7 +14,10 @@ class CalculatedPricing {
   final int? longTermWeeks; // 장기계약 기준 주수
   final int? longTermDiscount; // 장기계약 할인율 (%)
   final int? quickMoveInDiscount; // 빠른 입주 할인 금액
-  final int platformFee;
+  final int platformFee; // 할인 후 최종 수수료
+  final int platformFeeOriginal; // 원본 수수료 (할인 전)
+  final int platformFeeDiscount; // 수수료 할인액
+  final List<EligiblePromotion> appliedPromotions; // 적용된 프로모션
   final int rentalItemsFee;
   final int subtotal;
   final int totalUsageFee;
@@ -32,12 +36,15 @@ class CalculatedPricing {
     this.longTermDiscount,
     this.quickMoveInDiscount,
     required this.platformFee,
+    int? platformFeeOriginal,
+    this.platformFeeDiscount = 0,
+    this.appliedPromotions = const [],
     this.rentalItemsFee = 0,
     required this.subtotal,
     required this.totalUsageFee,
     required this.deposit,
     required this.finalTotalAmount,
-  });
+  }) : platformFeeOriginal = platformFeeOriginal ?? platformFee;
 
   factory CalculatedPricing.fromJson(Map<String, dynamic> json) {
     return CalculatedPricing(
@@ -52,6 +59,12 @@ class CalculatedPricing {
       longTermDiscount: json['longTermDiscount'] as int?,
       quickMoveInDiscount: json['quickMoveInDiscount'] as int?,
       platformFee: json['platformFee'] as int? ?? 0,
+      platformFeeOriginal: json['platformFeeOriginal'] as int?,
+      platformFeeDiscount: json['platformFeeDiscount'] as int? ?? 0,
+      appliedPromotions: parsePromotionList<EligiblePromotion>(
+        json['appliedPromotions'],
+        EligiblePromotion.fromJson,
+      ),
       rentalItemsFee: json['rentalItemsFee'] as int? ?? 0,
       subtotal: json['subtotal'] as int? ?? 0,
       totalUsageFee: json['totalUsageFee'] as int? ?? 0,
@@ -73,6 +86,10 @@ class CalculatedPricing {
       if (longTermDiscount != null) 'longTermDiscount': longTermDiscount,
       if (quickMoveInDiscount != null) 'quickMoveInDiscount': quickMoveInDiscount,
       'platformFee': platformFee,
+      'platformFeeOriginal': platformFeeOriginal,
+      'platformFeeDiscount': platformFeeDiscount,
+      if (appliedPromotions.isNotEmpty)
+        'appliedPromotions': appliedPromotions.map((p) => p.toJson()).toList(),
       'rentalItemsFee': rentalItemsFee,
       'subtotal': subtotal,
       'totalUsageFee': totalUsageFee,
@@ -110,6 +127,9 @@ class CalculatedPricing {
     int? longTermDiscount,
     int? quickMoveInDiscount,
     int? platformFee,
+    int? platformFeeOriginal,
+    int? platformFeeDiscount,
+    List<EligiblePromotion>? appliedPromotions,
     int? rentalItemsFee,
     int? subtotal,
     int? totalUsageFee,
@@ -128,6 +148,9 @@ class CalculatedPricing {
       longTermDiscount: longTermDiscount ?? this.longTermDiscount,
       quickMoveInDiscount: quickMoveInDiscount ?? this.quickMoveInDiscount,
       platformFee: platformFee ?? this.platformFee,
+      platformFeeOriginal: platformFeeOriginal ?? this.platformFeeOriginal,
+      platformFeeDiscount: platformFeeDiscount ?? this.platformFeeDiscount,
+      appliedPromotions: appliedPromotions ?? this.appliedPromotions,
       rentalItemsFee: rentalItemsFee ?? this.rentalItemsFee,
       subtotal: subtotal ?? this.subtotal,
       totalUsageFee: totalUsageFee ?? this.totalUsageFee,

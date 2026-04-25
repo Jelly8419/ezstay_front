@@ -521,8 +521,20 @@ class AuthService extends ChangeNotifier {
 
         AppLogger.w('⚠️ [KAKAO_AUTH] 응답에 토큰 정보가 없습니다');
         return LoginResult.unknownError;
+      } else if (response.statusCode == 400) {
+        // 백엔드 에러 코드 기반 분기
+        try {
+          final data = json.decode(response.body);
+          final errorCode = data['code'];
+          if (errorCode == 4016) {
+            // EMAIL_EXISTS_AS_LOCAL: 로컬 가입자가 동일 이메일로 소셜 로그인 시도
+            AppLogger.e('❌ [KAKAO_AUTH] 로컬 이메일 중복(4016): ${response.body}');
+            return LoginResult.kakaoEmailExistsAsLocal;
+          }
+        } catch (_) {}
+        return LoginResult.kakaoConnectionFailed;
       } else if (response.statusCode == 409) {
-        // PRD 8: 이메일 중복 - 카카오 이메일이 기존 이메일 계정과 동일
+        // 하위 호환: 과거 이메일 중복 응답
         AppLogger.e('❌ [KAKAO_AUTH] 이메일 중복: ${response.body}');
         return LoginResult.kakaoEmailDuplicate;
       } else if (response.statusCode == 403) {
@@ -568,11 +580,12 @@ class AuthService extends ChangeNotifier {
 
       // /auth/callback 경로 체크
       if (uri.path == '/auth/callback') {
-        // 에러 파라미터 체크
-        final errorParam = uri.queryParameters['error'];
-        if (errorParam != null) {
-          AppLogger.e('❌ 카카오 로그인 에러: $errorParam');
-          html.window.history.replaceState({}, '', '/');
+        // 에러 파라미터 체크 (백엔드 리다이렉트 스펙: error_code=<숫자>&message=<한글>)
+        final errorCode = uri.queryParameters['error_code'];
+        if (errorCode != null) {
+          AppLogger.e('❌ 카카오 로그인 에러: code=$errorCode, message=${uri.queryParameters['message']}');
+          // 라우터의 /auth/callback 빌더에서 실제 분기/다이얼로그를 처리하므로
+          // 여기서는 URL을 보존하고 라우팅에 맡김
           return false;
         }
 

@@ -20,6 +20,9 @@ enum LoginResult {
   /// 카카오 이메일이 기존 이메일 계정과 중복 (백엔드 에러코드: 4010)
   kakaoEmailDuplicate,
 
+  /// 로컬(이메일) 가입자가 동일 이메일로 소셜 로그인 시도 (백엔드 에러코드: 4016)
+  kakaoEmailExistsAsLocal,
+
   /// 카카오 OAuth 인증 실패
   kakaoOAuthFailed,
 
@@ -47,6 +50,8 @@ enum LoginResult {
         return '탈퇴한 계정입니다.\n재가입 하시겠습니까?';
       case LoginResult.kakaoEmailDuplicate:
         return '이미 가입된 계정입니다.\n이메일 로그인을 이용해주세요.';
+      case LoginResult.kakaoEmailExistsAsLocal:
+        return '이미 이메일로 가입된 계정입니다.\n이메일 로그인을 이용해주세요.';
       case LoginResult.kakaoOAuthFailed:
         return '카카오 로그인에 실패했습니다.\n다시 시도해주세요.';
       case LoginResult.kakaoConnectionFailed:

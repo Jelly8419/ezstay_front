@@ -1,6 +1,7 @@
 import 'package:building_map_app/core/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'promotion.dart';
 
 /// 계약 상태 (백엔드 CONTRACT_STATUS 매핑)
 enum ContractStatus {
@@ -208,7 +209,10 @@ class ContractListItem {
   final int? maintenanceFee; // 관리비
   final int? cleaningFee; // 청소비
   final int? rentalItemsFee; // 렌탈 아이템 비용
-  final int? platformFee; // 플랫폼 수수료
+  final int? platformFee; // 플랫폼 수수료 (할인 후, DB 저장값)
+  final int? platformFeeOriginal; // 원본 수수료 (platformFee + ACTIVE benefits 합)
+  final int? platformFeeDiscount; // 수수료 할인액 (ACTIVE benefits 합)
+  final List<AppliedPromotion> appliedPromotions; // 적용된 프로모션 (ACTIVE만)
   final int? discountAmount; // 할인 금액
   final DiscountType? discountType; // 할인 유형
   final String? discountCode; // 할인 쿠폰 코드
@@ -270,6 +274,9 @@ class ContractListItem {
     this.cleaningFee,
     this.rentalItemsFee,
     this.platformFee,
+    this.platformFeeOriginal,
+    this.platformFeeDiscount,
+    this.appliedPromotions = const [],
     this.discountAmount,
     this.discountType,
     this.discountCode,
@@ -328,6 +335,12 @@ class ContractListItem {
       cleaningFee: json['cleaningFee'] as int?,
       rentalItemsFee: json['rentalItemsFee'] as int?,
       platformFee: json['platformFee'] as int?,
+      platformFeeOriginal: json['platformFeeOriginal'] as int?,
+      platformFeeDiscount: json['platformFeeDiscount'] as int?,
+      appliedPromotions: parsePromotionList<AppliedPromotion>(
+        json['appliedPromotions'],
+        AppliedPromotion.fromJson,
+      ),
       discountAmount: json['discountAmount'] as int?,
       discountType: json['discountType'] != null
           ? DiscountType.fromString(json['discountType'] as String)
@@ -390,6 +403,9 @@ class Contract {
   final int cleaningFee;
   final int rentalItemsFee;
   final int platformFee;
+  final int? platformFeeOriginal;
+  final int? platformFeeDiscount;
+  final List<AppliedPromotion> appliedPromotions;
   final int discountAmount;
   final DiscountType? discountType;
   final String? discountCode;
@@ -453,6 +469,9 @@ class Contract {
     required this.cleaningFee,
     required this.rentalItemsFee,
     required this.platformFee,
+    this.platformFeeOriginal,
+    this.platformFeeDiscount,
+    this.appliedPromotions = const [],
     required this.discountAmount,
     this.discountType,
     this.discountCode,
@@ -516,6 +535,12 @@ class Contract {
       cleaningFee: json['cleaningFee'] as int? ?? 0,
       rentalItemsFee: json['rentalItemsFee'] as int? ?? 0,
       platformFee: json['platformFee'] as int? ?? 0,
+      platformFeeOriginal: json['platformFeeOriginal'] as int?,
+      platformFeeDiscount: json['platformFeeDiscount'] as int?,
+      appliedPromotions: parsePromotionList<AppliedPromotion>(
+        json['appliedPromotions'],
+        AppliedPromotion.fromJson,
+      ),
       discountAmount: json['discountAmount'] as int? ?? 0,
       discountType: json['discountType'] != null
           ? DiscountType.fromString(json['discountType'] as String)

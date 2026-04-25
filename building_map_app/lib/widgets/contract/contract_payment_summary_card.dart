@@ -2,6 +2,7 @@ import '../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/calculated_pricing.dart';
+import '../../models/promotion.dart';
 import '../../utils/format_utils.dart';
 import '../../utils/price_calculator.dart';
 
@@ -104,7 +105,16 @@ class ContractPaymentSummaryCard extends StatelessWidget {
             _buildPriceRow('옵션 상품', actualRentalItemsFee),
           ],
           const SizedBox(height: 10),
-          _buildPriceRow('계약 수수료', pricing.platformFee),
+          _buildPriceRow('계약 수수료', pricing.platformFeeOriginal),
+          if (pricing.platformFeeDiscount > 0) ...[
+            const SizedBox(height: 10),
+            _buildPriceRow(
+              '수수료 할인 (${pricing.appliedPromotions.length}건)',
+              -pricing.platformFeeDiscount,
+              isDiscount: true,
+            ),
+            ..._buildPromotionEventLines(pricing.appliedPromotions),
+          ],
           const Divider(height: 32),
           _buildPriceRow(
             '실이용 금액',
@@ -194,7 +204,16 @@ class ContractPaymentSummaryCard extends StatelessWidget {
                   _buildPriceRow('옵션 상품', actualRentalItemsFee),
                 ],
                 const SizedBox(height: 10),
-                _buildPriceRow('계약 수수료', pricing.platformFee),
+                _buildPriceRow('계약 수수료', pricing.platformFeeOriginal),
+                if (pricing.platformFeeDiscount > 0) ...[
+                  const SizedBox(height: 10),
+                  _buildPriceRow(
+                    '수수료 할인 (${pricing.appliedPromotions.length}건)',
+                    -pricing.platformFeeDiscount,
+                    isDiscount: true,
+                  ),
+                  ..._buildPromotionEventLines(pricing.appliedPromotions),
+                ],
                 const Divider(height: 32),
                 _buildPriceRow(
                   '실이용 금액',
@@ -381,6 +400,33 @@ class ContractPaymentSummaryCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// 적용된 프로모션 이벤트명을 수수료 할인 아래에 들여쓰기로 나열
+  List<Widget> _buildPromotionEventLines(List<EligiblePromotion> promotions) {
+    if (promotions.isEmpty) return const [];
+    return [
+      const SizedBox(height: 4),
+      Padding(
+        padding: const EdgeInsets.only(left: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: promotions
+              .map(
+                (p) => Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '· ${p.eventName}',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    ];
   }
 
   /// 할인 라벨

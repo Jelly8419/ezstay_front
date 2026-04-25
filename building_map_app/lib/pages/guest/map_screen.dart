@@ -18,6 +18,7 @@ import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../widgets/common/mobile_bottom_nav.dart';
 import '../../services/auth_service.dart';
+import '../../services/launch_status_service.dart';
 import '../../services/map_interaction_coordinator.dart';
 import '../../services/region_alert_service.dart';
 import '../../widgets/map/kakao_map_section.dart';
@@ -79,13 +80,12 @@ class _MapScreenState extends State<MapScreen> {
   // 지도 초기화 후 localStorage 복원 여부 (onBoundsChanged 최초 1회)
   bool _mapRestoreAttempted = false;
 
-  // ────────────────────────────────────────────────
-  // 🚧 PRE-LAUNCH FLAG: 정식 런칭 전까지 true로 유지.
-  //    true: 지도 드래그 시 API 요청 차단 + OpeningNoticeCard 항상 표시
-  //    false: 정상 동작 (런칭 후 이 줄만 주석 해제)
-  // static const bool _isPreLaunch = false;
-  static const bool _isPreLaunch = true;
-  // ────────────────────────────────────────────────
+  // 🚧 PRE-LAUNCH: LaunchStatusService에서 실시간 조회 (GET /api/system/launch-status).
+  //    true: 지도 bounds API 요청 차단 + OpeningNoticeCard 항상 표시
+  //    false: 정상 동작
+  //    조회 실패 시 true 폴백 (검색 차단 유지).
+  LaunchStatusService? _launchStatus;
+  bool get _isPreLaunch => _launchStatus?.isPrelaunch ?? true;
 
   // 캐시된 반응형 값 (JS 콜백에서 안전하게 사용)
   bool _isMobile = false;
@@ -161,6 +161,12 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    // 런칭 상태 Provider 구독 (플래그 변경 시 rebuild)
+    final launchStatus = context.watch<LaunchStatusService>();
+    _launchStatus = launchStatus;
+    // 캐시 stale 시 백엔드 재조회 (메서드 내부에서 중복 요청 방지)
+    launchStatus.ensureLoaded();
 
     // 반응형 값 캐시 (JS 콜백에서 context 접근 없이 사용)
     _isMobile = ResponsiveUtil.isMobile(context);
@@ -649,8 +655,8 @@ class _MapScreenState extends State<MapScreen> {
                   child: Center(child: _buildEmptyMessage('일치하는 조건의 방이 없습니다')),
                 ),
 
-              // 오픈 전 안내 overlay 카드 (런칭 전까지 _buildEmptyMessage 대체)
-              if (_roomsForMap.isEmpty)
+              // 오픈 전 안내 overlay 카드 (런칭 전 한정, _buildEmptyMessage 대체)
+              if (_isPreLaunch && _roomsForMap.isEmpty)
                 Positioned.fill(
                   child: Center(
                     child: OpeningNoticeCard(
@@ -764,7 +770,7 @@ class _MapScreenState extends State<MapScreen> {
       currentMobileCardIndex: _currentMobileCardIndex,
       currentZoomLevel: _currentZoomLevel,
       mobileCardController: _mobileCardController,
-      openingNoticeWidget: _roomsForMap.isEmpty
+      openingNoticeWidget: (_isPreLaunch && _roomsForMap.isEmpty)
           ? OpeningNoticeCard(onAlertTap: _handleMapAlertRequest)
           : null,
       onBadgeTap: () {

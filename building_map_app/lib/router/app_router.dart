@@ -762,10 +762,32 @@ class AppRouter {
             // 백엔드에서 전달한 JWT 토큰 추출
             final token = state.uri.queryParameters['token'];
             final refreshToken = state.uri.queryParameters['refresh'];
+            // 백엔드 에러 리다이렉트 스펙: error_code=<숫자>&message=<한글>
+            final errorCode = state.uri.queryParameters['error_code'];
+            final errorMessage = state.uri.queryParameters['message'];
             // localStorage에서 pending register mode 읽기 (웹 OAuth 리다이렉트 후 복원)
             final authServiceForMode = Provider.of<AuthService>(context, listen: false);
             final pendingMode = authServiceForMode.popPendingRegisterMode();
             AppLogger.d('[AUTH_CALLBACK] fullUri=${state.uri} | pendingMode=$pendingMode');
+
+            // 에러 파라미터가 있으면 로그인 페이지로 에러 정보 전달
+            if (errorCode != null) {
+              AppLogger.e('❌ [AUTH_CALLBACK] 에러 수신: code=$errorCode, message=$errorMessage');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  final qp = {
+                    'error_code': errorCode,
+                    if (errorMessage != null && errorMessage.isNotEmpty)
+                      'message': errorMessage,
+                  };
+                  final qs = Uri(queryParameters: qp).query;
+                  context.go('/login?$qs');
+                }
+              });
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
 
             // 토큰이 없으면 로그인 페이지로 리다이렉트
             if (token == null || refreshToken == null) {

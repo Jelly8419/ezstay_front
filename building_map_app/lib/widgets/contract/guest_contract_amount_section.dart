@@ -45,7 +45,36 @@ class GuestContractAmountSection extends StatelessWidget {
             contract.cleaningFee,
             showEzBadge: contract.isEzCleaning,
           ),
-          _buildAmountRow('계약 수수료', contract.platformFee),
+          _buildAmountRow(
+            '계약 수수료',
+            contract.platformFeeOriginal ?? contract.platformFee,
+          ),
+          if ((contract.platformFeeDiscount ?? 0) > 0) ...[
+            _buildAmountRow(
+              '수수료 할인 (${contract.appliedPromotions.length}건)',
+              -(contract.platformFeeDiscount ?? 0),
+              isDiscount: true,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: contract.appliedPromotions
+                    .map(
+                      (p) => Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          '· ${p.eventName}',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+          ],
 
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -69,7 +98,18 @@ class GuestContractAmountSection extends StatelessWidget {
     );
   }
 
-  Widget _buildAmountRow(String label, int amount, {bool isTotal = false}) {
+  Widget _buildAmountRow(
+    String label,
+    int amount, {
+    bool isTotal = false,
+    bool isDiscount = false,
+  }) {
+    final valueColor = isDiscount
+        ? AppColors.primary600
+        : AppColors.gray900;
+    final displayText = isDiscount
+        ? '-${FormatUtils.formatCurrency(amount.abs())}원'
+        : '${FormatUtils.formatCurrency(amount)}원';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -83,9 +123,9 @@ class GuestContractAmountSection extends StatelessWidget {
             ),
           ),
           Text(
-            '${FormatUtils.formatCurrency(amount)}원',
+            displayText,
             style: (isTotal ? AppTextStyles.labelLarge : AppTextStyles.labelMedium).copyWith(
-              color: AppColors.gray900,
+              color: valueColor,
             ),
           ),
         ],

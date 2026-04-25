@@ -154,7 +154,10 @@ class ContractService {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else if (response.statusCode == 400) {
         final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? '잘못된 요청입니다.');
+        final code = errorData['errorCode']?.toString() ?? errorData['code']?.toString();
+        final msg = errorData['message'] ?? '잘못된 요청입니다.';
+        // errorCode를 메시지 prefix로 포함해 호출측에서 contains로 판별 가능하게 함
+        throw Exception(code != null ? '[$code] $msg' : msg);
       } else if (response.statusCode == 401) {
         throw const UnauthorizedException();
       } else if (response.statusCode == 404) {

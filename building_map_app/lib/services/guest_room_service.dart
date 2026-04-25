@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../models/room.dart';
 import '../models/search_filters.dart';
 import 'api_client.dart';
+import 'token_service.dart';
 import '../config/api_config.dart';
 
 /// 게스트용 방 검색 및 조회 서비스
@@ -96,10 +97,23 @@ class GuestRoomService {
   }
 
   /// 특정 방 상세 정보 조회
+  ///
+  /// 서버는 optionalAuth로 처리하므로 토큰 없어도 200 OK.
+  /// 로그인 상태에서는 Authorization 헤더를 실어 보내 eligiblePromotions를 채워 받는다.
   Future<Room?> getRoomDetail(int roomId) async {
     try {
       final uri = Uri.parse(ApiConfig.getRoomById(roomId));
-      final response = await _apiClient.get(uri);
+      // 토큰 만료 시 refresh 실패해도 공개 조회는 가능하도록 실패를 흡수
+      String? token;
+      try {
+        token = await TokenService.getValidAccessToken(autoRefresh: true);
+      } catch (_) {
+        token = null;
+      }
+      final headers = token != null
+          ? {'Authorization': 'Bearer $token'}
+          : null;
+      final response = await _apiClient.get(uri, headers: headers);
 
       if (response != null && response.statusCode == 200) {
         final Map<String, dynamic> jsonData =

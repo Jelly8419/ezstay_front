@@ -550,6 +550,17 @@ class _ContractStartPageState extends State<ContractStartPage> {
           }
         }
 
+        // 에러코드 4308: 프로모션 혜택 변경 (선착순 소진/기간 만료/자격 재평가 등)
+        // → 방 상세 페이지로 돌아가 최신 eligiblePromotions를 다시 불러오도록 유도
+        if (errorStr.contains('4308') ||
+            errorStr.contains('혜택 적용 상태가 변경되었습니다')) {
+          await _showPromotionChangedDialog();
+          if (mounted) {
+            context.go('/room/${widget.room.id}');
+          }
+          return;
+        }
+
         // 에러 메시지 파싱 (백엔드 에러 메시지 추출)
         String errorMessage = errorStr;
         if (errorMessage.contains('Exception:')) {
@@ -565,6 +576,28 @@ class _ContractStartPageState extends State<ContractStartPage> {
     return ContractStartDialogs.showOptionDeadlineExpiredDialog(
       context,
       checkInDate: widget.checkInDate,
+    );
+  }
+
+  /// 프로모션 혜택 변경 안내 다이얼로그 (4308)
+  /// 선착순 소진/기간 만료/자격 재평가 등으로 프리뷰 ↔ 실제 적용 상태가 달라진 경우
+  Future<void> _showPromotionChangedDialog() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('혜택이 변경되었습니다'),
+        content: const Text(
+          '프로모션 혜택 적용 상태가 변경되었습니다.\n'
+          '방 상세 페이지에서 최신 혜택과 금액을 다시 확인한 뒤 요청해주세요.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
     );
   }
 
