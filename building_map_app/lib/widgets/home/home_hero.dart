@@ -29,7 +29,7 @@ class HomeHero extends StatelessWidget {
     required this.onSearch,
     this.kicker,
     this.headline =
-        '단기임대 계약부터 입주용품 준비, 청소까지\n모두 준비할 필요 없이 편하게',
+        '단기임대 계약부터 입주용품, 청소까지\n모두 준비할 필요 없이 편하게',
     this.brandWord = '이지스테이에서',
     this.trustPoints,
     this.notice,
