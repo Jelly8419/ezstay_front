@@ -97,11 +97,8 @@ class RegistrationValidator {
       errors.add('사진을 최소 5장 이상 업로드해주세요 (현재 ${uploadedImages.length}장)');
     }
 
-    // 기본 옵션 선택 여부 확인 (최소 1개)
+    // 기본 옵션은 선택사항 (가구/가전이 없는 집도 등록 가능)
     final basicOptions = formData['basicOptions'] as List<dynamic>?;
-    if (basicOptions == null || basicOptions.isEmpty) {
-      errors.add('기본 옵션을 최소 1개 이상 선택해주세요');
-    }
 
     // 침대 선택 시 침대 정보 필수 - bedSelections 필드 확인
     if (basicOptions != null && basicOptions.contains('침대')) {
