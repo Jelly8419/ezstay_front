@@ -368,12 +368,12 @@ class _PhotosStepState extends State<PhotosStep> {
 
           // 기본 옵션 섹션
           FormSection(
-            title: '기본 옵션',
+            title: '기본 옵션 (선택)',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '방에 제공되는 기본 옵션을 선택해주세요',
+                  '방에 제공되는 기본 옵션이 있다면 선택해주세요',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textPrimary,
                   ),
