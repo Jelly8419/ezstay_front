@@ -23,30 +23,23 @@ class ContractStartDialogs {
           children: [
             const Text('계약 승인을 요청하시겠습니까?'),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.textPrimary,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '최종 결제 금액',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
+            Row(
+              children: [
+                Text(
+                  '최종 결제 금액',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${FormatUtils.formatCurrency(finalTotalAmount)}원',
-                    style: AppTextStyles.headingSmall.copyWith(
-                      color: AppColors.primary600,
-                    ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${FormatUtils.formatCurrency(finalTotalAmount)}원',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary600,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Text(
