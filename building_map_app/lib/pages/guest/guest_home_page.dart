@@ -201,6 +201,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
                       // STEP 가이드 섹션 (임차인 + 임대인)
                       _buildGuestStepSection(),
+                      _buildMoveInEntrySection(),
                       _buildHostStepSection(),
 
                       // 배송 서비스 섹션
@@ -311,6 +312,72 @@ class _GuestHomePageState extends State<GuestHomePage> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // ==================== 입주 준비 서비스 진입 카드 ====================
+  Widget _buildMoveInEntrySection() {
+    return HomeSection(
+      backgroundColor: AppColors.background,
+      verticalScale: VerticalPaddingScale.sm,
+      child: Material(
+        color: AppColors.primary50,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => context.go('/guest/move-in'),
+          borderRadius: BorderRadius.circular(16),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.primary100, width: 1),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      LucideIcons.package,
+                      size: 24,
+                      color: AppColors.primary700,
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '입주 준비 서비스',
+                          style: AppTextStyles.headingSmall,
+                        ),
+                        SizedBox(height: AppSpacing.xs),
+                        Text(
+                          '입주에 필요한 옵션을 한 번에 선택하고 결제하세요.',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

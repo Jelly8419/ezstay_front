@@ -33,6 +33,19 @@ class _LoginPageState extends State<LoginPage> {
   static const int _maxFailures = 5;
   static const Duration _lockoutDuration = Duration(minutes: 10);
 
+  /// `?returnUrl=` 쿼리에서 same-origin 경로만 추출
+  ///
+  /// - `/` 로 시작해야 함 (외부 URL 차단)
+  /// - `//` 시작은 protocol-relative URL이므로 차단
+  String? _safeReturnUrl() {
+    if (!mounted) return null;
+    final raw = GoRouterState.of(context).uri.queryParameters['returnUrl'];
+    if (raw == null || raw.isEmpty) return null;
+    final decoded = Uri.decodeComponent(raw);
+    if (!decoded.startsWith('/') || decoded.startsWith('//')) return null;
+    return decoded;
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -529,7 +542,7 @@ class _LoginPageState extends State<LoginPage> {
         if (result == LoginResult.success) {
           _failureCount = 0;
           _lockoutEndTime = null;
-          context.go('/');
+          context.go(_safeReturnUrl() ?? '/');
         } else if (result == LoginResult.accountWithdrawn) {
           // PRD 5.3.2: 탈퇴 계정 재가입 다이얼로그
           _showWithdrawnAccountDialog();

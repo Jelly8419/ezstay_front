@@ -24,6 +24,8 @@ import 'providers/gnb_provider.dart';
 import 'providers/map_state_provider.dart';
 import 'providers/promotion_provider.dart';
 import 'providers/move_in/move_in_list_provider.dart';
+import 'providers/guest_move_in/guest_move_in_list_provider.dart';
+import 'providers/guest_move_in/guest_move_in_detail_provider.dart';
 import 'router/app_router.dart';
 import 'widgets/splash_screen.dart';
 
@@ -305,6 +307,9 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => PromotionProvider()),
         // 입주 준비 서비스 — 호스트 케이스 목록 (홈 화면 진입 시 load)
         ChangeNotifierProvider(create: (_) => MoveInListProvider()),
+        // 입주 준비 서비스 — 게스트 (목록/상세)
+        ChangeNotifierProvider(create: (_) => GuestMoveInListProvider()),
+        ChangeNotifierProvider(create: (_) => GuestMoveInDetailProvider()),
         // Firebase 초기화 Future 제공
         Provider<Future<FirebaseApp>>.value(value: firebaseInitFuture),
       ],

@@ -27,6 +27,9 @@ enum NotificationType {
   depositReturned,
   // 입주 리마인더 (D-1)
   checkinReminder,
+  // 게스트 입주 준비 서비스
+  moveInPaymentRequest,
+  moveInPaymentCompleted,
 }
 
 /// 딥링크 타입
@@ -37,6 +40,7 @@ enum DeeplinkType {
   inquiry,
   room,
   home,
+  moveIn,
 }
 
 /// 알림 아이템 모델
@@ -184,6 +188,10 @@ class NotificationItem {
         return NotificationType.depositReturned;
       case 'CHECKIN_REMINDER':
         return NotificationType.checkinReminder;
+      case 'MOVE_IN_PAYMENT_REQUEST':
+        return NotificationType.moveInPaymentRequest;
+      case 'MOVE_IN_PAYMENT_COMPLETED':
+        return NotificationType.moveInPaymentCompleted;
       default:
         return NotificationType.notice;
     }
@@ -238,6 +246,10 @@ class NotificationItem {
         return 'DEPOSIT_RETURNED';
       case NotificationType.checkinReminder:
         return 'CHECKIN_REMINDER';
+      case NotificationType.moveInPaymentRequest:
+        return 'MOVE_IN_PAYMENT_REQUEST';
+      case NotificationType.moveInPaymentCompleted:
+        return 'MOVE_IN_PAYMENT_COMPLETED';
     }
   }
 
@@ -256,6 +268,9 @@ class NotificationItem {
         return DeeplinkType.inquiry;
       case 'room':
         return DeeplinkType.room;
+      case 'move-in':
+      case 'moveIn':
+        return DeeplinkType.moveIn;
       case 'home':
       default:
         return DeeplinkType.home;
@@ -277,6 +292,8 @@ class NotificationItem {
         return 'room';
       case DeeplinkType.home:
         return 'home';
+      case DeeplinkType.moveIn:
+        return 'move-in';
     }
   }
 }

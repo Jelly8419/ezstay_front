@@ -72,10 +72,13 @@ class _AppGNBState extends State<AppGNB> {
                     // 로고
                     _buildLogo(context),
 
-                    // 중앙 메뉴 (호스트 모드에서만 표시)
+                    // 중앙 메뉴 (모드별 분기)
                     if (isLoggedIn && isHostMode) ...[
                       SizedBox(width: AppSpacing.xl),
                       _buildHostCenterMenu(context),
+                    ] else if (isLoggedIn && !isHostMode) ...[
+                      SizedBox(width: AppSpacing.xl),
+                      _buildGuestCenterMenu(context),
                     ],
 
                     Spacer(),
@@ -124,6 +127,37 @@ class _AppGNBState extends State<AppGNB> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 게스트 모드 중앙 메뉴 (홈, 지도, 입주 준비 서비스, 계약)
+  Widget _buildGuestCenterMenu(BuildContext context) {
+    return Row(
+      children: [
+        _buildTextButton(
+          context,
+          label: '홈',
+          onPressed: () => context.go('/guest'),
+        ),
+        SizedBox(width: AppSpacing.md),
+        _buildTextButton(
+          context,
+          label: '지도',
+          onPressed: () => context.go('/map'),
+        ),
+        SizedBox(width: AppSpacing.md),
+        _buildTextButton(
+          context,
+          label: '입주 준비 서비스',
+          onPressed: () => context.go('/guest/move-in'),
+        ),
+        SizedBox(width: AppSpacing.md),
+        _buildTextButton(
+          context,
+          label: '계약',
+          onPressed: () => context.go('/guest/contracts'),
+        ),
+      ],
     );
   }
 
