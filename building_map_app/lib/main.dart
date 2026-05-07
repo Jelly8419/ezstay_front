@@ -23,6 +23,7 @@ import 'services/payment_service_unified.dart';
 import 'providers/gnb_provider.dart';
 import 'providers/map_state_provider.dart';
 import 'providers/promotion_provider.dart';
+import 'providers/move_in/move_in_list_provider.dart';
 import 'router/app_router.dart';
 import 'widgets/splash_screen.dart';
 
@@ -302,6 +303,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => MapStateProvider()),
         // 진행 중 프로모션 이벤트 전역 상태
         ChangeNotifierProvider(create: (_) => PromotionProvider()),
+        // 입주 준비 서비스 — 호스트 케이스 목록 (홈 화면 진입 시 load)
+        ChangeNotifierProvider(create: (_) => MoveInListProvider()),
         // Firebase 초기화 Future 제공
         Provider<Future<FirebaseApp>>.value(value: firebaseInitFuture),
       ],

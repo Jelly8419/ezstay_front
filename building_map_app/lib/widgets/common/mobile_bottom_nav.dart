@@ -12,7 +12,7 @@ import 'gnb_notification_badge.dart';
 ///
 /// 1024px 미만에서만 표시 (AppShellScaffold에서 분기).
 ///
-/// 임대인 모드: 홈 | 방 관리 | 계약 | 채팅 | My
+/// 임대인 모드: 홈 | 방 관리 | 입주 준비 | 계약 | 더보기
 /// 임차인 모드: 홈 | 지도   | 계약 | 채팅 | My
 class MobileBottomNav extends StatelessWidget {
   const MobileBottomNav({super.key});
@@ -75,23 +75,24 @@ class MobileBottomNav extends StatelessWidget {
       ),
       _buildTab(
         context: context,
+        icon: Icons.cleaning_services_outlined,
+        label: '입주 준비',
+        isActive: _isMoveIn(location),
+        onTap: () => context.go('/host/move-in'),
+      ),
+      _buildTab(
+        context: context,
         icon: Icons.description_outlined,
         label: '계약',
         isActive: _isHostContracts(location),
         onTap: () => context.go('/host/contracts'),
       ),
-      _buildChatTab(
-        context: context,
-        isActive: _isChat(location),
-        hasUnread: gnbProvider.hasUnreadChats,
-        onTap: () => context.go('/chat-list'),
-      ),
       _buildTab(
         context: context,
-        icon: Icons.person_outline,
-        label: 'My',
-        isActive: _isHostMy(location),
-        onTap: () => context.go('/host/my-page'),
+        icon: Icons.more_horiz,
+        label: '더보기',
+        isActive: _isHostMore(location),
+        onTap: () => context.go('/host/more'),
       ),
     ];
   }
@@ -147,18 +148,27 @@ class MobileBottomNav extends StatelessWidget {
       location == '/host' ||
       (location.startsWith('/host') &&
           !_isRoomManagement(location) &&
+          !_isMoveIn(location) &&
           !_isHostContracts(location) &&
-          !_isHostMy(location));
+          !_isHostMore(location));
 
   bool _isRoomManagement(String location) =>
       location.startsWith('/host/room');
 
+  bool _isMoveIn(String location) =>
+      location.startsWith('/host/move-in');
+
   bool _isHostContracts(String location) =>
       location.startsWith('/host/contracts');
 
-  bool _isHostMy(String location) =>
+  /// "더보기" 탭 활성화 영역 — 더보기 페이지 자체와 그 안에서 진입하는 모든 자식 화면.
+  /// 채팅·정산·My·고객센터 어디 있든 더보기 탭이 하이라이트되도록 묶음.
+  bool _isHostMore(String location) =>
+      location.startsWith('/host/more') ||
+      location.startsWith('/host/settlement') ||
       location.startsWith('/host/my-page') ||
-      location.startsWith('/support');
+      location.startsWith('/support') ||
+      location.startsWith('/chat');
 
   bool _isGuestHome(String location) =>
       location == '/guest' ||

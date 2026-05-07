@@ -127,7 +127,7 @@ class _AppGNBState extends State<AppGNB> {
     );
   }
 
-  /// 호스트 모드 중앙 메뉴 (방 관리, 계약, 정산)
+  /// 호스트 모드 중앙 메뉴 (방 관리, 입주 준비 서비스, 계약, 정산)
   Widget _buildHostCenterMenu(BuildContext context) {
     return Row(
       children: [
@@ -135,6 +135,12 @@ class _AppGNBState extends State<AppGNB> {
           context,
           label: '방 관리',
           onPressed: () => context.go('/host/room-management'),
+        ),
+        SizedBox(width: AppSpacing.md),
+        _buildTextButton(
+          context,
+          label: '입주 준비 서비스',
+          onPressed: () => context.go('/host/move-in'),
         ),
         SizedBox(width: AppSpacing.md),
         _buildTextButton(

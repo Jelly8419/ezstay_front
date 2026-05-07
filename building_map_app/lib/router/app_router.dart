@@ -40,6 +40,10 @@ import '../pages/chat/auto_message_management_page.dart'
 import '../pages/host/room_management_page.dart' deferred as room_management;
 import '../pages/host/room_schedule_page.dart'; // 즉시 로딩으로 변경 (Focus 에러 방지)
 import '../pages/host/host_my_page.dart' deferred as host_my_page;
+import '../pages/host/host_more_page.dart' deferred as host_more_page;
+import '../pages/host/move_in/move_in_home_page.dart' deferred as move_in_home;
+import '../pages/host/move_in/move_in_create_page.dart' deferred as move_in_create;
+import '../pages/host/move_in/move_in_detail_page.dart' deferred as move_in_detail;
 import '../pages/payment/payment_callback_page.dart' deferred as payment_callback;
 import '../pages/payment/rental_payment_callback_page.dart'
     deferred as rental_payment_callback;
@@ -521,6 +525,61 @@ class AppRouter {
                   },
                 ),
               ],
+            ),
+            // 호스트 - 입주 준비 서비스
+            GoRoute(
+              path: '/host/move-in',
+              name: 'host-move-in',
+              builder: (context, state) => _deferredShellWidget(
+                move_in_home.loadLibrary,
+                () => move_in_home.MoveInHomePage(),
+              ),
+              routes: [
+                GoRoute(
+                  path: 'new',
+                  name: 'host-move-in-create',
+                  builder: (context, state) {
+                    final tab = state.uri.queryParameters['tab'];
+                    return _deferredShellWidget(
+                      move_in_create.loadLibrary,
+                      () => move_in_create.MoveInCreatePage(initialTab: tab),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: ':caseId',
+                  name: 'host-move-in-detail',
+                  builder: (context, state) {
+                    final caseId = _parseIntParameter(state.pathParameters['caseId']);
+                    if (caseId == null) {
+                      return _buildShellInvalidAccessWidget(
+                        context,
+                        message: '잘못된 접근입니다.',
+                        buttonText: '입주 준비 서비스로 돌아가기',
+                        redirectPath: '/host/move-in',
+                      );
+                    }
+                    final action = state.uri.queryParameters['action'];
+                    return _deferredShellWidget(
+                      move_in_detail.loadLibrary,
+                      () => move_in_detail.MoveInDetailPage(
+                        key: ValueKey('move-in-detail-$caseId'),
+                        caseId: caseId,
+                        initialAction: action,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            // 호스트 - 더보기 (모바일 GNB 5번째 탭)
+            GoRoute(
+              path: '/host/more',
+              name: 'host-more',
+              builder: (context, state) => _deferredShellWidget(
+                host_more_page.loadLibrary,
+                () => host_more_page.HostMorePage(),
+              ),
             ),
             // 채팅 목록
             GoRoute(
