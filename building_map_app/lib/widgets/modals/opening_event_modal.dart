@@ -4,18 +4,16 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/utils/local_storage_helper.dart';
 import '../common/app_buttons.dart';
 
-/// 오픈 전 이벤트 공지 모달
+/// 임대인 방 등록 혜택 안내 모달
 ///
 /// - 페이지 진입 시 자동 노출 (OpeningEventModal.maybeShow)
 /// - "오늘 하루 보지 않기" 체크 후 닫으면 24시간 동안 재노출 안 됨
 /// - localStorage 타임스탬프 기반 (웹 전용, 非웹에서는 매번 노출)
 class OpeningEventModal extends StatefulWidget {
-  final VoidCallback onAlertRequest;
   final VoidCallback onHostRedirect;
 
   const OpeningEventModal({
     super.key,
-    required this.onAlertRequest,
     required this.onHostRedirect,
   });
 
@@ -25,7 +23,6 @@ class OpeningEventModal extends StatefulWidget {
   /// 24시간 숨김 조건이 해제된 경우에만 모달을 띄운다.
   static Future<void> maybeShow(
     BuildContext context, {
-    required VoidCallback onAlertRequest,
     required VoidCallback onHostRedirect,
   }) async {
     final hiddenUntilStr = LocalStorageHelper.getItem(_storageKey);
@@ -36,22 +33,11 @@ class OpeningEventModal extends StatefulWidget {
         return;
       }
     }
-    await _show(context, onAlertRequest, onHostRedirect);
-  }
-
-  /// 숨김 조건을 무시하고 강제로 모달을 띄운다.
-  /// 정적 랜딩에서 `?action=alert` 쿼리로 진입한 경우 사용.
-  static Future<void> forceShow(
-    BuildContext context, {
-    required VoidCallback onAlertRequest,
-    required VoidCallback onHostRedirect,
-  }) async {
-    await _show(context, onAlertRequest, onHostRedirect);
+    await _show(context, onHostRedirect);
   }
 
   static Future<void> _show(
     BuildContext context,
-    VoidCallback onAlertRequest,
     VoidCallback onHostRedirect,
   ) async {
     if (!context.mounted) return;
@@ -60,7 +46,6 @@ class OpeningEventModal extends StatefulWidget {
       barrierDismissible: true,
       barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (_) => OpeningEventModal(
-        onAlertRequest: onAlertRequest,
         onHostRedirect: onHostRedirect,
       ),
     );
@@ -155,7 +140,7 @@ class _OpeningEventModalState extends State<OpeningEventModal> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '오픈 전 참여 혜택',
+              '임대인 방 등록 혜택',
               style: AppTextStyles.headingLarge.copyWith(
                 fontSize: AppTextStyles.responsiveFontSize(
                   context,
@@ -169,43 +154,16 @@ class _OpeningEventModalState extends State<OpeningEventModal> {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: AppSpacing.md),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildBulletText('임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인\n(선착순 100명 마감 시, 혜택은 종료됩니다)'),
-                const SizedBox(height: 4),
-                _buildBulletText('임대인은 방 등록 시, 8월까지 정산 수수료 무료 (등록한 모든 방에 적용)'),
-              ],
-            ),
+            _buildBulletText('방 등록 후 임대 계약 시, 8월까지 정산 수수료 무료'),
             SizedBox(height: AppSpacing.lg),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: AppPrimaryButton(
-                    text: '알림 받기',
-                    fullWidth: false,
-                    height: AppSizes.buttonHeightMd,
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      widget.onAlertRequest();
-                    },
-                  ),
-                ),
-                SizedBox(width: AppSpacing.sm),
-                Flexible(
-                  child: AppSecondaryButton(
-                    text: '방 등록하기',
-                    fullWidth: false,
-                    height: AppSizes.buttonHeightMd,
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      widget.onHostRedirect();
-                    },
-                  ),
-                ),
-              ],
+            AppPrimaryButton(
+              text: '방 등록하기',
+              fullWidth: false,
+              height: AppSizes.buttonHeightMd,
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.onHostRedirect();
+              },
             ),
             SizedBox(height: AppSpacing.lg),
             _buildBottomRow(),

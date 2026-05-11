@@ -6,12 +6,10 @@ import '../../services/auth_service.dart';
 import '../../services/analytics_service.dart';
 import '../../models/user.dart';
 import '../../providers/promotion_provider.dart';
-import '../../services/region_alert_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../widgets/common/app_buttons.dart';
-import '../../widgets/common/custom_toast.dart';
 import '../../widgets/common/guest_date_range_picker_dialog.dart';
 import '../../widgets/home/cta_button.dart';
 import '../../widgets/home/home_hero.dart';
@@ -20,7 +18,6 @@ import '../../widgets/home/info_card.dart';
 import '../../widgets/home/section_header.dart';
 import '../../widgets/home/step_card.dart';
 import '../../widgets/home/step_guide_grid.dart';
-import '../../widgets/modals/region_alert_modal.dart';
 import '../../widgets/modals/opening_event_modal.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
@@ -56,13 +53,13 @@ class _GuestHomePageState extends State<GuestHomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _analytics.logHomeViewGuest();
       SeoHelper.updatePage(
-        title: '이지스테이(EZstay) ― 서울 단기임대 5월 오픈 · 선착순 100명 2만원 할인',
+        title: '이지스테이(EZstay) ― 서울 단기임대 · 임대인 8월까지 정산 수수료 무료',
         description:
-            '서울 단기임대 플랫폼 이지스테이(EZstay) 5월 오픈. 사전등록 선착순 100명 첫 계약 2만원 할인. 1주~90일 서울 전역 단기 계약 가능한 원룸·오피스텔·아파트.',
+            '서울 단기임대 플랫폼 이지스테이(EZstay). 임대인 방 등록 후 임대 계약 시 8월까지 정산 수수료 무료. 1주~90일 서울 전역 단기 계약 가능한 원룸·오피스텔·아파트.',
         canonicalPath: '/',
       );
 
-      // 정적 랜딩에서 `?action=` 쿼리로 진입한 경우 즉시 해당 플로우 실행
+      // 정적 랜딩에서 `?action=host-register` 쿼리로 진입한 경우 즉시 호스트 플로우 실행
       final action = Uri.base.queryParameters['action'];
       if (action == 'host-register' && mounted) {
         final authService = context.read<AuthService>();
@@ -70,27 +67,17 @@ class _GuestHomePageState extends State<GuestHomePage> {
         return;
       }
 
-      // 프로모션 이벤트 로드 완료 후에만 모달 노출 (이벤트 없으면 미노출)
+      // 프로모션 이벤트 로드 완료 후에만 모달 노출 (호스트 이벤트 없으면 미노출)
       final promotion = context.read<PromotionProvider>();
       await promotion.loadActivePromotions();
       if (!mounted) return;
-      if (promotion.guestEvent == null && promotion.hostEvent == null) return;
+      if (promotion.hostEvent == null) return;
       final authService = context.read<AuthService>();
 
-      // `?action=alert`면 24시간 숨김 무시하고 강제 오픈
-      if (action == 'alert') {
-        OpeningEventModal.forceShow(
-          context,
-          onAlertRequest: () => _handleAlertRequest(authService),
-          onHostRedirect: () => _handleHostRedirect(authService),
-        );
-      } else {
-        OpeningEventModal.maybeShow(
-          context,
-          onAlertRequest: () => _handleAlertRequest(authService),
-          onHostRedirect: () => _handleHostRedirect(authService),
-        );
-      }
+      OpeningEventModal.maybeShow(
+        context,
+        onHostRedirect: () => _handleHostRedirect(authService),
+      );
     });
   }
 
@@ -1026,23 +1013,6 @@ class _GuestHomePageState extends State<GuestHomePage> {
     });
   }
 
-  Future<void> _handleAlertRequest(AuthService authService) async {
-    if (!authService.isLoggedIn) {
-      context.go('/login');
-      return;
-    }
-    final result = await RegionAlertService().requestAlert();
-    if (!mounted) return;
-    if (result == null) {
-      CustomToast.error(context, '알림 신청에 실패했습니다. 다시 시도해주세요.');
-      return;
-    }
-    await RegionAlertModal.show(
-      context,
-      alreadyRegistered: result.alreadyRegistered,
-    );
-  }
-
   Future<void> _handleHostRedirect(AuthService authService) async {
     if (!authService.isLoggedIn) {
       context.go('/login');
@@ -1087,11 +1057,14 @@ class _GuestHomePageState extends State<GuestHomePage> {
     // 로드 완료 전에는 배너를 그리지 않아 '보였다 사라지는' 깜빡임 방지
     final promotion = context.watch<PromotionProvider>();
     if (!promotion.hasLoadedOnce) return const SizedBox.shrink();
-    if (promotion.guestEvent == null && promotion.hostEvent == null) {
-      return const SizedBox.shrink();
-    }
+    if (promotion.hostEvent == null) return const SizedBox.shrink();
 
     final isMobile = responsive.ResponsiveUtil.isMobile(context);
+    final textShadow = Shadow(
+      color: Colors.black.withValues(alpha: 0.5),
+      offset: const Offset(0, 1),
+      blurRadius: 3,
+    );
 
     return HomeSection(
       backgroundColor: AppColors.background,
@@ -1136,7 +1109,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            '오픈 전 참여 혜택',
+                            '임대인 방 등록 혜택',
                             style: AppTextStyles.headingLarge.copyWith(
                               fontSize: AppTextStyles.responsiveFontSize(
                                 context,
@@ -1145,86 +1118,30 @@ class _GuestHomePageState extends State<GuestHomePage> {
                               ),
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  offset: const Offset(0, 1),
-                                  blurRadius: 3,
-                                ),
-                              ],
+                              shadows: [textShadow],
                             ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '임차인은 오픈 알림 신청 후 첫 계약 시 2만원 할인\n(선착순 100명 마감 시, 혜택은 종료됩니다)',
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  fontSize: AppTextStyles.responsiveFontSize(
-                                    context,
-                                    mobile: 14,
-                                    desktop: 17,
-                                  ),
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.5,
-                                      ),
-                                      offset: const Offset(0, 1),
-                                      blurRadius: 3,
-                                    ),
-                                  ],
-                                ),
+                          Text(
+                            '방 등록 후 임대 계약 시, 8월까지 정산 수수료 무료',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: AppTextStyles.responsiveFontSize(
+                                context,
+                                mobile: 14,
+                                desktop: 17,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '임대인은 방 등록 시, 8월까지 정산 수수료 무료 (등록한 모든 방에 적용)',
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  fontSize: AppTextStyles.responsiveFontSize(
-                                    context,
-                                    mobile: 14,
-                                    desktop: 17,
-                                  ),
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.5,
-                                      ),
-                                      offset: const Offset(0, 1),
-                                      blurRadius: 3,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                              color: Colors.white,
+                              shadows: [textShadow],
+                            ),
                           ),
                           const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              AppPrimaryButton(
-                                text: '알림 받기',
-                                fullWidth: false,
-                                height: isMobile ? AppSizes.buttonHeightMd : 52,
-                                onPressed: () =>
-                                    _handleAlertRequest(authService),
-                              ),
-                              SizedBox(width: AppSpacing.md),
-                              AppSecondaryButton(
-                                text: '방 등록하기',
-                                fullWidth: false,
-                                height: isMobile ? AppSizes.buttonHeightMd : 52,
-                                onPressed: () =>
-                                    _handleHostRedirect(authService),
-                              ),
-                            ],
+                          AppPrimaryButton(
+                            text: '방 등록하기',
+                            fullWidth: false,
+                            height: isMobile ? AppSizes.buttonHeightMd : 52,
+                            onPressed: () => _handleHostRedirect(authService),
                           ),
                         ],
                       ),

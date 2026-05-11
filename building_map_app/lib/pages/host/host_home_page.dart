@@ -460,13 +460,6 @@ class _HostHomePageState extends State<HostHomePage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        SizedBox(height: AppSpacing.xs),
-        Text(
-          '오픈 전 등록 완료한 모든 임대인 대상',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: Colors.white.withValues(alpha: 0.8),
-          ),
-        ),
         SizedBox(height: AppSpacing.md),
         SizedBox(
           width: double.infinity,
@@ -499,7 +492,7 @@ class _HostHomePageState extends State<HostHomePage> {
               ),
               SizedBox(height: AppSpacing.xs),
               Text(
-                '8월까지 정산 수수료 무료 · 등록한 모든 방에 적용\n(등록된 방은 5월 초 오픈 시 전체 공개됩니다)',
+                '8월까지 정산 수수료 무료 · 등록한 모든 방에 적용',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: Colors.white.withValues(alpha: 0.9),
                   fontWeight: FontWeight.w600,
@@ -509,28 +502,11 @@ class _HostHomePageState extends State<HostHomePage> {
           ),
         ),
         SizedBox(width: AppSpacing.md),
-        Flexible(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Flexible(
-                child: Text(
-                  '오픈 전 등록 완료한 모든 임대인 대상',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
-                ),
-              ),
-              SizedBox(width: AppSpacing.lg),
-              AppPrimaryButton(
-                text: '방 등록하기',
-                fullWidth: false,
-                icon: Icons.arrow_forward,
-                onPressed: () => context.go('/host/room-registration'),
-              ),
-            ],
-          ),
+        AppPrimaryButton(
+          text: '방 등록하기',
+          fullWidth: false,
+          icon: Icons.arrow_forward,
+          onPressed: () => context.go('/host/room-registration'),
         ),
       ],
     );
