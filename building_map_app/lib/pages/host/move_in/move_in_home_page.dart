@@ -52,7 +52,6 @@ class _MoveInHomePageState extends State<MoveInHomePage> {
     return ResponsivePageLayout(
       child: Padding(
         padding: EdgeInsets.symmetric(
-          vertical: AppSpacing.lg,
           horizontal: isMobile ? 0 : AppSpacing.xs,
         ),
         child: Column(
