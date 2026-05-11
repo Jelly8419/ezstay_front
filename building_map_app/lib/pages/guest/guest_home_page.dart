@@ -124,6 +124,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
             // 오픈 전 배너
             _buildOpeningBanner(authService),
             const SizedBox(height: 50),
+            // 입주 준비 서비스 진입 섹션 (이미 계약한 사용자용)
+            _buildMoveInPromoSection(authService),
             // 히어로 섹션
             _buildHero(),
 
@@ -157,6 +159,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
           children: [
             // 오픈 전 배너
             _buildOpeningBanner(authService),
+            // 입주 준비 서비스 진입 섹션 (이미 계약한 사용자용)
+            _buildMoveInPromoSection(authService),
             // 히어로 섹션
             _buildHero(),
 
@@ -196,6 +200,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
                     children: [
                       // 오픈 전 배너
                       _buildOpeningBanner(authService),
+                      // 입주 준비 서비스 진입 섹션 (이미 계약한 사용자용)
+                      _buildMoveInPromoSection(authService),
                       // 히어로 섹션
                       _buildHero(),
 
@@ -314,6 +320,381 @@ class _GuestHomePageState extends State<GuestHomePage> {
         ],
       ),
     );
+  }
+
+  // ==================== 입주 준비 서비스 프로모 섹션 (이미 계약한 사용자 대상) ====================
+  Widget _buildMoveInPromoSection(AuthService authService) {
+    return HomeSection(
+      backgroundColor: AppColors.background,
+      maxWidth: AppSizes.contentMaxWidthWide,
+      verticalScale: VerticalPaddingScale.sm,
+      child: Container(
+        padding: EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          boxShadow: AppShadows.cardDefault,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = AppBreakpoints.isDesktop(context);
+            if (isDesktop) {
+              return Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 5,
+                        child: _buildMoveInPromoIntro(authService),
+                      ),
+                      SizedBox(width: AppSpacing.xl),
+                      Expanded(
+                        flex: 7,
+                        child: _buildMoveInPromoCards(horizontal: true),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: AppSpacing.xl),
+                  _buildMoveInPromoButtons(authService, stacked: false),
+                ],
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildMoveInPromoIntro(authService),
+                SizedBox(height: AppSpacing.xl),
+                _buildMoveInPromoCards(
+                  horizontal: !AppBreakpoints.isMobile(context),
+                ),
+                SizedBox(height: AppSpacing.xl),
+                _buildMoveInPromoButtons(authService, stacked: true),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoveInPromoIntro(AuthService authService) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 상단 안내 칩
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.primary50,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            '이미 단기임대 계약을 하셨나요?',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.primary700,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        SizedBox(height: AppSpacing.lg),
+        Text(
+          '입주 준비 서비스만\n따로 이용할 수 있어요!',
+          style: AppTextStyles.headingLarge.copyWith(
+            fontSize: AppTextStyles.responsiveFontSize(
+              context,
+              mobile: 24,
+              desktop: 32,
+            ),
+            fontWeight: FontWeight.w700,
+            height: 1.3,
+          ),
+        ),
+        SizedBox(height: AppSpacing.md),
+        Text(
+          '직접 준비가 부담되는 입주용품, 침구류 준비, 청소를\n필요한 서비스만 선택해 간편하게 이용할 수 있어요.',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            height: 1.5,
+          ),
+        ),
+        SizedBox(height: AppSpacing.xl),
+        // Feature item: 필요한 옵션만 선택
+        _buildMoveInPromoFeature(
+          icon: LucideIcons.shoppingBag,
+          iconBg: AppColors.primary50,
+          iconColor: AppColors.primary600,
+          title: '필요한 옵션만 선택',
+          description: '입주용품, 침구류, 청소 등 필요한 서비스만 골라보세요.',
+        ),
+        SizedBox(height: AppSpacing.md),
+        Divider(color: AppColors.divider, height: 1),
+        SizedBox(height: AppSpacing.md),
+        _buildMoveInPromoFeature(
+          icon: LucideIcons.calendar,
+          iconBg: AppColors.primary50,
+          iconColor: AppColors.primary600,
+          title: '입주 일정에 맞춰 제공',
+          description: '원하는 날짜에 맞춰 배송·준비가 진행돼요.',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMoveInPromoFeature({
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String title,
+    required String description,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: iconBg,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Icon(icon, size: 20, color: iconColor),
+        ),
+        SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: AppSpacing.xs),
+              Text(
+                description,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMoveInPromoCards({required bool horizontal}) {
+    final cards = const [
+      _MoveInPromoCardData(
+        icon: LucideIcons.shoppingBag,
+        iconColor: Color(0xFF2563EB), // blue-600
+        bgColor: Color(0xFFEFF6FF), // blue-50
+        title: '입주용품 세트',
+        description: '구매하기 번거로운 생활용품을\n입주일에 맞춰 준비해드려요.',
+        emoji: '🧺',
+      ),
+      _MoveInPromoCardData(
+        icon: LucideIcons.bed,
+        iconColor: Color(0xFF059669), // emerald-600
+        bgColor: Color(0xFFECFDF5), // emerald-50
+        title: '침구류 대여',
+        description: '침구를 직접 챙기지 않아도\n입주일에 맞춰 준비해드려요.',
+        emoji: '🛏️',
+      ),
+      _MoveInPromoCardData(
+        icon: LucideIcons.sprayCan,
+        iconColor: Color(0xFFEA580C), // orange-600
+        bgColor: Color(0xFFFFF7ED), // orange-50
+        title: '청소 서비스',
+        description: '퇴실 후 청소가 필요할 때\n간편하게 신청하세요.',
+        emoji: '🧴',
+      ),
+    ];
+
+    if (horizontal) {
+      return IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < cards.length; i++) ...[
+              Expanded(child: _buildMoveInPromoCard(cards[i])),
+              if (i != cards.length - 1) SizedBox(width: AppSpacing.md),
+            ],
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        for (var i = 0; i < cards.length; i++) ...[
+          _buildMoveInPromoCard(cards[i]),
+          if (i != cards.length - 1) SizedBox(height: AppSpacing.md),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildMoveInPromoCard(_MoveInPromoCardData data) {
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: data.bgColor,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 우측 상단 아이콘 뱃지
+          Align(
+            alignment: Alignment.topLeft,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x14000000),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(data.icon, size: 18, color: data.iconColor),
+            ),
+          ),
+          SizedBox(height: AppSpacing.lg),
+          // 일러스트 영역 (실제 이미지 없이 이모지로 대체)
+          AspectRatio(
+            aspectRatio: 1.2,
+            child: Center(
+              child: Text(
+                data.emoji,
+                style: const TextStyle(fontSize: 72),
+              ),
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          Text(
+            data.title,
+            style: AppTextStyles.headingSmall.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Container(
+            width: 24,
+            height: 2,
+            decoration: BoxDecoration(
+              color: data.iconColor,
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            data.description,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMoveInPromoButtons(
+    AuthService authService, {
+    required bool stacked,
+  }) {
+    if (stacked) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppPrimaryButton(
+            text: '임대인으로 사용',
+            icon: LucideIcons.user,
+            onPressed: () => _handleMoveInHostEntry(authService),
+          ),
+          SizedBox(height: AppSpacing.sm),
+          AppSecondaryButton(
+            text: '임차인으로 사용',
+            icon: LucideIcons.user,
+            onPressed: () => context.go('/guest/move-in'),
+          ),
+        ],
+      );
+    }
+    return Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: AppSpacing.md,
+        runSpacing: AppSpacing.sm,
+        children: [
+          SizedBox(
+            width: 220,
+            child: AppPrimaryButton(
+              text: '임대인으로 사용',
+              icon: LucideIcons.user,
+              onPressed: () => _handleMoveInHostEntry(authService),
+            ),
+          ),
+          SizedBox(
+            width: 220,
+            child: AppSecondaryButton(
+              text: '임차인으로 사용',
+              icon: LucideIcons.user,
+              onPressed: () => context.go('/guest/move-in'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleMoveInHostEntry(AuthService authService) async {
+    if (!authService.isLoggedIn) {
+      context.go('/login');
+      return;
+    }
+    final currentUser = authService.currentUser;
+    if (currentUser == null) return;
+
+    // 이미 호스트 모드면 바로 이동
+    if (currentUser.mode == UserMode.host) {
+      context.go('/host/move-in');
+      return;
+    }
+
+    // 본인인증 미완료 → 호스트 가입 플로우
+    if (!currentUser.phoneVerified) {
+      context.go('/register/host/kakao');
+      return;
+    }
+
+    // 계좌 미등록 → 계좌 입력 페이지
+    if (!currentUser.hasBank) {
+      context.go('/host/account-setup-standalone');
+      return;
+    }
+
+    // 호스트 모드 전환 후 이동
+    try {
+      final ok = await authService.switchUserMode(UserMode.host);
+      if (!ok || !mounted) return;
+      context.go('/host/move-in');
+    } on SwitchModeRequiresBankException {
+      if (mounted) context.go('/host/account-setup-standalone');
+    }
   }
 
   // ==================== 입주 준비 서비스 진입 카드 ====================
@@ -875,4 +1256,23 @@ class _GuestHomePageState extends State<GuestHomePage> {
 
     context.go('/map', extra: extra.isNotEmpty ? extra : null);
   }
+}
+
+/// 입주 준비 서비스 프로모 카드 데이터.
+class _MoveInPromoCardData {
+  const _MoveInPromoCardData({
+    required this.icon,
+    required this.iconColor,
+    required this.bgColor,
+    required this.title,
+    required this.description,
+    required this.emoji,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Color bgColor;
+  final String title;
+  final String description;
+  final String emoji;
 }
