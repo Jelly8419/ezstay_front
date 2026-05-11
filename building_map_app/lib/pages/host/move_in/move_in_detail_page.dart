@@ -166,8 +166,6 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
       children: [
         MoveInDetailHeader(moveInCase: c, onEdit: _onEditCase),
         SizedBox(height: AppSpacing.md),
-        const MoveInIndependenceNotice(),
-        SizedBox(height: AppSpacing.md),
         if (isMobile) ...[
           cleaning,
           SizedBox(height: AppSpacing.md),

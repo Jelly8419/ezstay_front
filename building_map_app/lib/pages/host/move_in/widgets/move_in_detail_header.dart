@@ -111,37 +111,3 @@ class MoveInDetailHeader extends StatelessWidget {
     return phone;
   }
 }
-
-/// 청소·임차인 결제 요청이 독립 이벤트라는 PRD 안내 박스 (이미지 ③ 중앙)
-class MoveInIndependenceNotice extends StatelessWidget {
-  const MoveInIndependenceNotice({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.primary50,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(
-          color: AppColors.primary500.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline, size: 18, color: AppColors.primary700),
-          SizedBox(width: AppSpacing.xs),
-          Expanded(
-            child: Text(
-              '청소 서비스 신청/결제와 임차인 결제 요청은 서로 종속되지 않습니다.',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.primary700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
