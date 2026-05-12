@@ -485,7 +485,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
         bgColor: Color(0xFFEFF6FF), // blue-50
         title: '입주용품 세트',
         description: '구매하기 번거로운 생활용품을\n입주일에 맞춰 준비해드려요.',
-        emoji: '🧺',
+        imagePath: 'assets/images/move_in_supplies.webp',
       ),
       _MoveInPromoCardData(
         icon: LucideIcons.bed,
@@ -493,7 +493,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
         bgColor: Color(0xFFECFDF5), // emerald-50
         title: '침구류 대여',
         description: '침구를 직접 챙기지 않아도\n입주일에 맞춰 준비해드려요.',
-        emoji: '🛏️',
+        imagePath: 'assets/images/move_in_bedding.webp',
       ),
       _MoveInPromoCardData(
         icon: LucideIcons.sprayCan,
@@ -501,7 +501,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
         bgColor: Color(0xFFFFF7ED), // orange-50
         title: '청소 서비스',
         description: '퇴실 후 청소가 필요할 때\n간편하게 신청하세요.',
-        emoji: '🧴',
+        imagePath: 'assets/images/move_in_cleaning.webp',
       ),
     ];
 
@@ -560,13 +560,14 @@ class _GuestHomePageState extends State<GuestHomePage> {
             ),
           ),
           SizedBox(height: AppSpacing.lg),
-          // 일러스트 영역 (실제 이미지 없이 이모지로 대체)
+          // 일러스트 영역
           AspectRatio(
             aspectRatio: 1.2,
             child: Center(
-              child: Text(
-                data.emoji,
-                style: const TextStyle(fontSize: 72),
+              child: Image.asset(
+                data.imagePath,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.medium,
               ),
             ),
           ),
@@ -1183,7 +1184,7 @@ class _MoveInPromoCardData {
     required this.bgColor,
     required this.title,
     required this.description,
-    required this.emoji,
+    required this.imagePath,
   });
 
   final IconData icon;
@@ -1191,5 +1192,5 @@ class _MoveInPromoCardData {
   final Color bgColor;
   final String title;
   final String description;
-  final String emoji;
+  final String imagePath;
 }
