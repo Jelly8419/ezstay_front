@@ -252,6 +252,7 @@ class MoveInService {
   /// DELETE /cases/:caseId/cleaning/request — 청소 신청 취소
   ///
   /// PAYMENT_PENDING 상태에서만 가능. PAID는 취소 불가.
+  /// 백엔드는 부분 응답({caseId, cleaningStatus})만 반환 — provider 에서 별도 재조회 필요.
   Future<MoveInCase> cancelCleaningRequest(int caseId) async {
     return _call(() async {
       final response = await http

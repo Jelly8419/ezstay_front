@@ -61,11 +61,14 @@ class MoveInDetailProvider extends ChangeNotifier {
     final body = cleaningRequestedDate == null
         ? null
         : CleaningRequestBody(cleaningRequestedDate: cleaningRequestedDate);
-    return _runMutation(() => _service.requestCleaning(caseId, body: body));
+    // 백엔드가 부분 응답(caseId/cleaningStatus/cleaningFee)만 반환 →
+    // 케이스 전체는 별도 재조회로 동기화.
+    return _runCleaningAction(() => _service.requestCleaning(caseId, body: body));
   }
 
   Future<MoveInCase?> cancelCleaningRequest() {
-    return _runMutation(() => _service.cancelCleaningRequest(caseId));
+    // 백엔드가 부분 응답(caseId/cleaningStatus)만 반환 → 케이스 재조회로 동기화.
+    return _runCleaningAction(() => _service.cancelCleaningRequest(caseId));
   }
 
   // ============================================================
@@ -107,6 +110,29 @@ class MoveInDetailProvider extends ChangeNotifier {
       final updated = await block();
       _case = updated;
       return updated;
+    } on MoveInException catch (e) {
+      _error = e;
+      return null;
+    } finally {
+      _isMutating = false;
+      notifyListeners();
+    }
+  }
+
+  /// 청소 액션(request/cancel) 전용 헬퍼
+  ///
+  /// 백엔드가 부분 응답(caseId/cleaningStatus[/cleaningFee])만 내려주기 때문에
+  /// 액션 후 [getMoveInCase] 로 케이스 전체를 재조회해야 detail UI 가 깡통으로 덮어쓰이지 않는다.
+  Future<MoveInCase?> _runCleaningAction(Future<void> Function() block) async {
+    if (_isMutating) return null;
+    _isMutating = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await block();
+      _case = await _service.getMoveInCase(caseId);
+      return _case;
     } on MoveInException catch (e) {
       _error = e;
       return null;

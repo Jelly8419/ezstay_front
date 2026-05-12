@@ -267,14 +267,17 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
   Future<void> _onCancelCleaning() async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: const Text('청소 신청을 취소하시겠습니까?'),
         content: const Text('취소 후 다시 신청할 수 있지만, 결제가 진행 중이면 PG 처리 정책에 따라 환불 절차가 필요할 수 있습니다.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('닫기')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('닫기'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.error500),
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
             child: const Text('취소'),
           ),
         ],
