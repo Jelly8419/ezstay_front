@@ -37,7 +37,10 @@ class _MoveInCreateSimpleTabState extends State<MoveInCreateSimpleTab> {
     try {
       final created = await _service.createMoveInRoom(request);
       if (!mounted) return;
-      CustomToast.success(context, '방 정보를 등록했습니다.');
+      CustomToast.success(
+        context,
+        '간편 방 정보가 등록되었습니다. 관리자 심사 후 사용 가능합니다.',
+      );
       widget.onCreated(created);
     } on MoveInException catch (e) {
       if (!mounted) return;
@@ -64,9 +67,19 @@ class _MoveInCreateSimpleTabState extends State<MoveInCreateSimpleTab> {
                     color: AppColors.primary50,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
-                  child: Text(
-                    '방 정보만 먼저 등록한 뒤, "등록된 방에서 선택" 탭에서 계약 정보와 함께 등록을 완료할 수 있습니다.',
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary700),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '방 정보만 먼저 등록한 뒤, "등록된 방에서 선택" 탭에서 계약 정보와 함께 등록을 완료할 수 있습니다.',
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary700),
+                      ),
+                      SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '등록한 방은 관리자 심사 후 사용 가능하며, 심사 결과는 인앱 알림으로 안내됩니다.',
+                        style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary700),
+                      ),
+                    ],
                   ),
                 ),
                 SizedBox(height: AppSpacing.lg),

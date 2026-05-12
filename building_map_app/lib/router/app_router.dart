@@ -577,9 +577,15 @@ class AppRouter {
                   name: 'host-move-in-create',
                   builder: (context, state) {
                     final tab = state.uri.queryParameters['tab'];
+                    final highlightRoomId = _parseIntParameter(
+                      state.uri.queryParameters['highlightRoomId'],
+                    );
                     return _deferredShellWidget(
                       move_in_create.loadLibrary,
-                      () => move_in_create.MoveInCreatePage(initialTab: tab),
+                      () => move_in_create.MoveInCreatePage(
+                        initialTab: tab,
+                        highlightRoomId: highlightRoomId,
+                      ),
                     );
                   },
                 ),

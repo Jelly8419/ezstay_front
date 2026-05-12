@@ -23,6 +23,9 @@ class MoveInCreateExistingTab extends StatefulWidget {
   /// 외부에서 전달된 초기 선택 방 (탭 2에서 등록 후 자동 전환된 경우)
   final int? initialSelectedRoomId;
 
+  /// 알림 딥링크에서 전달된 강조 대상 방 id — 자동 스크롤 + 펄스 보더 + (APPROVED일 때) 자동 선택
+  final int? highlightRoomId;
+
   /// 부모 위젯이 보유한 방 목록 — 탭 2에서 등록한 방을 즉시 반영하기 위해 외부 주입
   final List<MoveInRoom> rooms;
   final bool isLoadingRooms;
@@ -36,6 +39,7 @@ class MoveInCreateExistingTab extends StatefulWidget {
     required this.isLoadingRooms,
     required this.onRoomsChanged,
     this.initialSelectedRoomId,
+    this.highlightRoomId,
   });
 
   @override
@@ -49,10 +53,17 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
   MoveInRoom? _selectedRoom;
   bool _isSaving = false;
 
+  /// 방 id 별 GlobalKey — 하이라이트 자동 스크롤에 사용
+  final Map<int, GlobalKey> _roomKeys = {};
+
+  /// 자동 스크롤은 한 번만 — 이후 화면 갱신 때 다시 튀지 않게
+  bool _didScrollToHighlight = false;
+
   @override
   void initState() {
     super.initState();
     _applyInitialSelection();
+    _maybeScheduleHighlight();
   }
 
   @override
@@ -62,6 +73,10 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
         oldWidget.rooms.length != widget.rooms.length) {
       _applyInitialSelection();
     }
+    if (oldWidget.highlightRoomId != widget.highlightRoomId) {
+      _didScrollToHighlight = false;
+    }
+    _maybeScheduleHighlight();
   }
 
   void _applyInitialSelection() {
@@ -74,6 +89,43 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
     }
   }
 
+  /// 하이라이트 대상 방이 로드된 첫 프레임에 자동 스크롤 + (APPROVED) 자동 선택
+  void _maybeScheduleHighlight() {
+    final targetId = widget.highlightRoomId;
+    if (targetId == null || _didScrollToHighlight) return;
+    MoveInRoom? target;
+    for (final r in widget.rooms) {
+      if (r.id == targetId) {
+        target = r;
+        break;
+      }
+    }
+    if (target == null) return;
+    _didScrollToHighlight = true;
+
+    final approvedRoom = target;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // APPROVED 인 경우에만 자동 선택 (가드: PENDING/REJECTED 는 라디오 disabled 와 동일 정책)
+      if (approvedRoom.isSelectable && _selectedRoom?.id != approvedRoom.id) {
+        setState(() => _selectedRoom = approvedRoom);
+      }
+      final key = _roomKeys[approvedRoom.id];
+      final ctx = key?.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 350),
+          alignment: 0.1,
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
+  }
+
+  Key _ensureRoomKey(int roomId) =>
+      _roomKeys.putIfAbsent(roomId, () => GlobalKey(debugLabel: 'move-in-room-$roomId'));
+
   Future<void> _onEditRoom(MoveInRoom room) async {
     final updated = await showMoveInRoomEditDialog(context, room: room);
     if (updated == null) return;
@@ -81,6 +133,42 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
       if (_selectedRoom?.id == updated.id) _selectedRoom = updated;
     });
     widget.onRoomsChanged();
+  }
+
+  Future<void> _onDeleteRoom(MoveInRoom room) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('방을 삭제하시겠어요?'),
+        content: Text(
+          '"${room.displayName}" 방을 삭제합니다.\n'
+          '연결된 입주 준비 케이스가 있으면 삭제되지 않습니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('취소'),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _service.deleteMoveInRoom(room.id);
+      if (!mounted) return;
+      if (_selectedRoom?.id == room.id) {
+        setState(() => _selectedRoom = null);
+      }
+      CustomToast.success(context, '방을 삭제했습니다.');
+      widget.onRoomsChanged();
+    } on MoveInException catch (e) {
+      if (!mounted) return;
+      CustomToast.error(context, e.message);
+    }
   }
 
   Future<void> _onSave() async {
@@ -154,6 +242,13 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
         if (goExisting == true && caseId != null && mounted) {
           context.go('/host/move-in/$caseId');
         }
+      } else if (e.errorCode == MoveInErrorCode.moveInRoomNotApproved) {
+        // 가이드 §1.4 — details.reviewStatus 로 PENDING/REJECTED 분기
+        final reviewStatus = (e.details is Map ? e.details['reviewStatus'] : null)?.toString();
+        final message = reviewStatus == 'REJECTED'
+            ? '방이 심사 반려되었습니다. 사유를 확인하고 수정 후 다시 시도해주세요.'
+            : '방이 아직 심사 대기 중입니다. 승인 후 다시 시도해주세요.';
+        CustomToast.error(context, message);
       } else {
         CustomToast.error(context, e.message);
       }
@@ -190,7 +285,10 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
                   selectedRoomId: _selectedRoom?.id,
                   onSelected: (room) => setState(() => _selectedRoom = room),
                   onEditTap: _onEditRoom,
+                  onDeleteTap: _onDeleteRoom,
                   isLoading: widget.isLoadingRooms,
+                  highlightRoomId: widget.highlightRoomId,
+                  highlightKeyBuilder: _ensureRoomKey,
                 ),
                 if (_selectedRoom != null) ...[
                   SizedBox(height: AppSpacing.lg),

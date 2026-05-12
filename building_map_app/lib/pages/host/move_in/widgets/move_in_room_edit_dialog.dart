@@ -35,6 +35,58 @@ class _MoveInRoomEditDialogState extends State<_MoveInRoomEditDialog> {
   final MoveInService _service = MoveInService();
   bool _isSaving = false;
 
+  /// 재심사 트리거 필드 — 가이드 §1.3
+  ///
+  /// 이 필드 중 하나라도 변경되면 APPROVED/REJECTED 방이 자동 PENDING 으로 복귀.
+  /// `beds` 배열 자체는 비트리거지만 `bedCount` 는 트리거.
+  List<String> _changedTriggerFields(MoveInRoomRequest next) {
+    final prev = widget.room;
+    final changed = <String>[];
+    if (next.address != prev.address) changed.add('주소');
+    if (next.detailAddress != prev.detailAddress) changed.add('상세 주소');
+    if (next.areaPyeong != prev.areaPyeong) changed.add('평수');
+    if (next.livingRoomCount != prev.livingRoomCount) changed.add('거실 수');
+    if (next.roomCount != prev.roomCount) changed.add('방 수');
+    if (next.bathroomCount != prev.bathroomCount) changed.add('욕실 수');
+    if (next.bedCount != prev.bedCount) changed.add('침대 수');
+    return changed;
+  }
+
+  Future<bool> _confirmReReview(List<String> changedFields) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('재심사가 진행됩니다'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '변경된 항목이 있어 방이 다시 심사 대기 상태로 전환됩니다.\n'
+              '관리자 승인 후 다시 사용할 수 있습니다.',
+            ),
+            SizedBox(height: AppSpacing.md),
+            Text(
+              '변경 항목: ${changedFields.join(', ')}',
+              style: AppTextStyles.labelSmall,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('계속'),
+          ),
+        ],
+      ),
+    );
+    return result == true;
+  }
+
   Future<void> _onSave() async {
     final request = _formController.buildRequest();
     if (request == null) {
@@ -42,11 +94,29 @@ class _MoveInRoomEditDialogState extends State<_MoveInRoomEditDialog> {
       return;
     }
 
+    // 트리거 필드 변경 + 현재 APPROVED/REJECTED 방인 경우에만 확인 모달
+    final isApprovedOrRejected = widget.room.reviewStatus != MoveInRoomReviewStatus.pending;
+    if (isApprovedOrRejected) {
+      final triggered = _changedTriggerFields(request);
+      if (triggered.isNotEmpty) {
+        final proceed = await _confirmReReview(triggered);
+        if (!proceed) return;
+      }
+    }
+
     setState(() => _isSaving = true);
     try {
       final updated = await _service.updateMoveInRoom(widget.room.id, request);
       if (!mounted) return;
-      CustomToast.success(context, '방 정보를 수정했습니다.');
+      // 응답 status로 안내 메시지 분기 (가이드 §1.3)
+      final wentToReview = updated.reviewStatus == MoveInRoomReviewStatus.pending &&
+          widget.room.reviewStatus != MoveInRoomReviewStatus.pending;
+      CustomToast.success(
+        context,
+        wentToReview
+            ? '방 정보가 수정되었습니다. 변경 항목이 있어 재심사가 진행됩니다.'
+            : '방 정보를 수정했습니다.',
+      );
       Navigator.of(context).pop(updated);
     } on MoveInException catch (e) {
       if (!mounted) return;

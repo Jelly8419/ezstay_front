@@ -19,7 +19,10 @@ class MoveInCreatePage extends StatefulWidget {
   /// 초기 활성 탭 — 'existing' (기본) 또는 'new'
   final String? initialTab;
 
-  const MoveInCreatePage({super.key, this.initialTab});
+  /// 알림 딥링크에서 전달된 강조 대상 방 id — ExistingTab 에서 자동 스크롤 + 자동 선택 + 펄스
+  final int? highlightRoomId;
+
+  const MoveInCreatePage({super.key, this.initialTab, this.highlightRoomId});
 
   @override
   State<MoveInCreatePage> createState() => _MoveInCreatePageState();
@@ -37,12 +40,15 @@ class _MoveInCreatePageState extends State<MoveInCreatePage>
   @override
   void initState() {
     super.initState();
-    final initialIndex = widget.initialTab == 'new' ? 1 : 0;
+    // highlightRoomId 가 오면 'existing' 탭이 강제로 열려야 한다 — 'new' 명시 시에만 1번 탭
+    final initialIndex = (widget.initialTab == 'new' && widget.highlightRoomId == null) ? 1 : 0;
     _tabController = TabController(
       length: 2,
       vsync: this,
       initialIndex: initialIndex,
     );
+    // 딥링크로 들어온 경우 해당 방을 우선 자동 선택
+    _selectedRoomIdForExistingTab = widget.highlightRoomId;
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadRooms());
   }
 
@@ -118,6 +124,7 @@ class _MoveInCreatePageState extends State<MoveInCreatePage>
                     rooms: _rooms,
                     isLoadingRooms: _isLoadingRooms,
                     initialSelectedRoomId: _selectedRoomIdForExistingTab,
+                    highlightRoomId: widget.highlightRoomId,
                     onRoomsChanged: _loadRooms,
                   ),
                   MoveInCreateSimpleTab(onCreated: _onSimpleRoomCreated),
