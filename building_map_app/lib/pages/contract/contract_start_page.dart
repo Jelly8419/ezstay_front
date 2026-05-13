@@ -59,11 +59,15 @@ class _ContractStartPageState extends State<ContractStartPage> {
   bool get _isValidContractPeriod {
     if (!_hasValidDates) return false;
     final days = widget.checkOutDate!.difference(widget.checkInDate!).inDays;
-    return days >= widget.room.minContractDays && days <= widget.room.maxContractDays;
+    return days >= widget.room.minContractDays &&
+        days <= widget.room.maxContractDays;
   }
 
   // 계약 요청 가능 여부
-  bool get _canSubmit => _hasValidDates && _isValidContractPeriod && widget.calculatedPricing.isValid;
+  bool get _canSubmit =>
+      _hasValidDates &&
+      _isValidContractPeriod &&
+      widget.calculatedPricing.isValid;
 
   @override
   void initState() {
@@ -157,7 +161,8 @@ class _ContractStartPageState extends State<ContractStartPage> {
                                       room: widget.room,
                                       checkInDate: widget.checkInDate,
                                       checkOutDate: widget.checkOutDate,
-                                      calculatedPricing: widget.calculatedPricing,
+                                      calculatedPricing:
+                                          widget.calculatedPricing,
                                       isWideScreen: isWideScreen,
                                     ),
                                     const SizedBox(height: 24),
@@ -293,7 +298,6 @@ class _ContractStartPageState extends State<ContractStartPage> {
     );
   }
 
-
   /// 옵션 상품 섹션
   Widget _buildRentalItemsSection() {
     return ContractRentalItemsSection(
@@ -375,13 +379,14 @@ class _ContractStartPageState extends State<ContractStartPage> {
           // React: helper text with asterisk
           Text(
             '임대 목적을 임대인에게 미리 전달해주세요.',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),
     );
   }
-
 
   /// 계약 요청하기 버튼 (React: "계약 요청하기")
   Widget _buildSubmitButton() {

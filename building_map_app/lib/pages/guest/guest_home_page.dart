@@ -403,7 +403,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
         ),
         SizedBox(height: AppSpacing.md),
         Text(
-          '직접 준비가 부담되는 입주용품, 침구류 준비, 청소를\n필요한 서비스만 선택해 간편하게 이용할 수 있어요.',
+          '임대인은 입주 준비 서비스를 통해 청소를 신청하고,\n임차인에게 입주용품 결제 요청을 보낼 수 있어요.',
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textSecondary,
             height: 1.5,
@@ -724,10 +724,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          '입주 준비 서비스',
-                          style: AppTextStyles.headingSmall,
-                        ),
+                        Text('입주 준비 서비스', style: AppTextStyles.headingSmall),
                         SizedBox(height: AppSpacing.xs),
                         Text(
                           '입주에 필요한 옵션을 한 번에 선택하고 결제하세요.',
@@ -738,10 +735,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.chevron_right,
-                    color: AppColors.textSecondary,
-                  ),
+                  Icon(Icons.chevron_right, color: AppColors.textSecondary),
                 ],
               ),
             ),
