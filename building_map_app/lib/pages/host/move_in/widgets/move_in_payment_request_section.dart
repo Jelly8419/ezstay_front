@@ -52,7 +52,7 @@ class MoveInPaymentRequestSection extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'B. 임차인 결제 요청 (입주용품 / 침구류 대여)',
+                  '임차인 입주 서비스 요청',
                   style: AppTextStyles.headingSmall,
                 ),
               ),
@@ -70,10 +70,13 @@ class MoveInPaymentRequestSection extends StatelessWidget {
               _row('재발송 횟수', '${paymentRequest.resendCount}회'),
           ],
           _row('요청 항목', '입주용품 세트 / 침구류 세트'),
-          SizedBox(height: AppSpacing.xs),
+          SizedBox(height: AppSpacing.sm),
           Text(
-            '※ 임차인의 결제 완료 여부는 임대인에게 노출되지 않습니다.',
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+            '* 임차인이 결제를 완료하면, 배송 준비를 진행합니다.',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           if (devNote != null && devNote!.isNotEmpty) ...[
             SizedBox(height: AppSpacing.sm),
@@ -101,12 +104,12 @@ class MoveInPaymentRequestSection extends StatelessWidget {
       children: [
         OutlinedButton(
           onPressed: isMutating ? null : onCopyLink,
-          child: const Text('링크 복사'),
+          child: const Text('결제 링크 복사'),
         ),
         SizedBox(width: AppSpacing.sm),
         FilledButton(
           onPressed: isMutating ? null : onResend,
-          child: const Text('다시 보내기'),
+          child: const Text('알림톡 보내기'),
         ),
       ],
     );

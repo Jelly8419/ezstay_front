@@ -47,7 +47,7 @@ class MoveInCleaningSection extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text('A. 청소 서비스', style: AppTextStyles.headingSmall),
+                child: Text('청소 서비스', style: AppTextStyles.headingSmall),
               ),
               CleaningStatusChip(status: c.cleaningStatus),
             ],
@@ -98,14 +98,20 @@ class MoveInCleaningSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _row('신청 상태', '신청 완료'),
-            if (c.cleaningRequestedDate != null)
+            if (c.cleaningRequestedDate != null) ...[
               _row('희망 청소일', _formatDate(c.cleaningRequestedDate!)),
+              if (_extractTime(c.cleaningRequestedDate!) != null)
+                _row('희망 청소 시간', _extractTime(c.cleaningRequestedDate!)!),
+            ],
             _row('청소용품 구비', _suppliesText(c.roomSnapshot)),
             _row('청소 금액', _money(c.cleaningFee)),
             SizedBox(height: AppSpacing.sm),
             Text(
-              '결제를 진행해야 청소 일정이 확정됩니다.',
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning700),
+              '결제를 진행하면 청소 일정이 예약됩니다.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         );
@@ -114,8 +120,11 @@ class MoveInCleaningSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _row('신청 상태', '결제 완료'),
-            if (c.cleaningRequestedDate != null)
+            if (c.cleaningRequestedDate != null) ...[
               _row('희망 청소일', _formatDate(c.cleaningRequestedDate!)),
+              if (_extractTime(c.cleaningRequestedDate!) != null)
+                _row('희망 청소 시간', _extractTime(c.cleaningRequestedDate!)!),
+            ],
             _row('청소용품 구비', _suppliesText(c.roomSnapshot)),
             _row('결제 일시', _formatDateTime(c.cleaningPaidAt)),
             _row('결제 금액', _money(c.cleaningFee)),
@@ -147,12 +156,12 @@ class MoveInCleaningSection extends StatelessWidget {
                 foregroundColor: AppColors.error600,
                 side: BorderSide(color: AppColors.error500.withValues(alpha: 0.5)),
               ),
-              child: const Text('청소 신청 취소'),
+              child: const Text('신청 취소'),
             ),
             SizedBox(width: AppSpacing.sm),
             FilledButton(
               onPressed: isMutating ? null : onPay,
-              child: Text('PG 결제하기 (${_money(c.cleaningFee)})'),
+              child: const Text('결제하기'),
             ),
           ],
         );
@@ -200,6 +209,14 @@ class MoveInCleaningSection extends StatelessWidget {
     } catch (_) {
       return yyyymmdd;
     }
+  }
+
+  /// `'YYYY-MM-DD HH:mm'` 형태에서 'HH:mm' 부분만 꺼냄. 시간이 없으면 null.
+  String? _extractTime(String raw) {
+    final parts = raw.trim().split(RegExp(r'\s+'));
+    if (parts.length < 2) return null;
+    final time = parts[1];
+    return RegExp(r'^\d{2}:\d{2}').hasMatch(time) ? time.substring(0, 5) : null;
   }
 
   String _formatDateTime(String? iso) {

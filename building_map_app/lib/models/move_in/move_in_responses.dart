@@ -88,12 +88,14 @@ class MoveInCaseListResponse {
 class MoveInCaseCounts {
   final int total;
   final int cleaningPending;
+  final int cleaningPaid;
   final int paymentRequestPending;
   final int inProgress;
 
   const MoveInCaseCounts({
     required this.total,
     required this.cleaningPending,
+    required this.cleaningPaid,
     required this.paymentRequestPending,
     required this.inProgress,
   });
@@ -103,6 +105,7 @@ class MoveInCaseCounts {
     return MoveInCaseCounts(
       total: (json['total'] ?? 0).toInt(),
       cleaningPending: (json['cleaningPending'] ?? 0).toInt(),
+      cleaningPaid: (json['cleaningPaid'] ?? 0).toInt(),
       paymentRequestPending: (json['paymentRequestPending'] ?? 0).toInt(),
       inProgress: (json['inProgress'] ?? 0).toInt(),
     );
@@ -113,6 +116,7 @@ class MoveInCaseCounts {
     return MoveInCaseCounts(
       total: cases.length,
       cleaningPending: cases.where((c) => c.cleaningStatus == CleaningStatus.paymentPending).length,
+      cleaningPaid: cases.where((c) => c.cleaningStatus == CleaningStatus.paid).length,
       paymentRequestPending: cases.where((c) => !c.isPaymentRequestSent).length,
       inProgress: cases.where((c) => c.cleaningStatus == CleaningStatus.paid || c.isPaymentRequestSent).length,
     );

@@ -4,7 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/common/custom_text_field.dart';
-import '../../../../widgets/common/date_range_picker.dart';
+import '../../../../widgets/common/date_range_picker.dart' show DateRangePicker, SingleDatePicker;
 
 /// 계약 정보 + 자동발송 + 청소 서비스 폼 (탭 1 Step 2~4)
 ///
@@ -34,6 +34,8 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
   DateTime? _checkInDate;
   DateTime? _checkOutDate;
   DateTime? _cleaningRequestedDate;
+  /// 청소 희망 시간 — 'HH:mm' (30분 단위 드롭다운 값)
+  String? _cleaningRequestedTime;
 
   /// 자동발송 체크박스 — Q3-A 결정대로 기본 ON
   bool _sendGuestPaymentRequest = true;
@@ -67,21 +69,6 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
     super.dispose();
   }
 
-  Future<void> _pickDate(
-    BuildContext context, {
-    required DateTime? initial,
-    required ValueChanged<DateTime> onPicked,
-  }) async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initial ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 2),
-    );
-    if (picked != null) onPicked(picked);
-  }
-
   String _formatDate(DateTime? d) =>
       d == null ? '' : DateFormat('yyyy-MM-dd').format(d);
 
@@ -91,6 +78,7 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
     if (_checkInDate == null || _checkOutDate == null) return false;
     if (_checkOutDate!.isBefore(_checkInDate!)) return false;
     if (_cleaningRequested && _cleaningRequestedDate == null) return false;
+    if (_cleaningRequested && _cleaningRequestedTime == null) return false;
     return true;
   }
 
@@ -104,7 +92,19 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
     if (_cleaningRequested && _cleaningRequestedDate == null) {
       return '청소 희망일을 선택해주세요.';
     }
+    if (_cleaningRequested && _cleaningRequestedTime == null) {
+      return '청소 희망 시간을 선택해주세요.';
+    }
     return null;
+  }
+
+  /// 청소 희망일+시간을 백엔드 cleaningRequestedDate 단일 필드에 'YYYY-MM-DD HH:mm'로 합쳐 보낸다.
+  String? _composeCleaningRequestedDate() {
+    if (!_cleaningRequested || _cleaningRequestedDate == null) return null;
+    final date = _formatDate(_cleaningRequestedDate);
+    return _cleaningRequestedTime == null
+        ? date
+        : '$date $_cleaningRequestedTime';
   }
 
   MoveInContractFormResult _buildResult() {
@@ -116,7 +116,7 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
       requestMemo: _memoCtrl.text.trim().isEmpty ? null : _memoCtrl.text.trim(),
       sendGuestPaymentRequest: _sendGuestPaymentRequest,
       cleaningRequested: _cleaningRequested,
-      cleaningRequestedDate: _cleaningRequested ? _formatDate(_cleaningRequestedDate) : null,
+      cleaningRequestedDate: _composeCleaningRequestedDate(),
     );
   }
 
@@ -186,14 +186,13 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
             ),
             if (_cleaningRequested) ...[
               SizedBox(height: AppSpacing.md),
-              _DatePickerField(
-                label: '청소 희망일',
-                date: _cleaningRequestedDate,
-                onPick: () => _pickDate(
-                  context,
-                  initial: _cleaningRequestedDate ?? _checkInDate,
-                  onPicked: (d) => setState(() => _cleaningRequestedDate = d),
-                ),
+              SingleDatePicker(
+                selectedDate: _cleaningRequestedDate,
+                placeholderText: '청소 희망일 선택',
+                onDateSelected: (d) =>
+                    setState(() => _cleaningRequestedDate = d),
+                onDateCleared: () =>
+                    setState(() => _cleaningRequestedDate = null),
               ),
               SizedBox(height: AppSpacing.xs),
               Container(
@@ -205,6 +204,20 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
                 child: Text(
                   '청소비는 방 평수 기준으로 서버에서 자동 산정됩니다.\n결제는 저장 후 상세 페이지에서 진행할 수 있습니다.',
                   style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary700),
+                ),
+              ),
+              SizedBox(height: AppSpacing.md),
+              _CleaningTimeDropdown(
+                value: _cleaningRequestedTime,
+                onChanged: (v) => setState(() => _cleaningRequestedTime = v),
+              ),
+              SizedBox(height: AppSpacing.xs),
+              Text(
+                '해당 시간 부터 최대 4시간 동안 청소 진행으로 입실이 어려울 수 있으니, '
+                '다른 임차인의 예약과 겹치지 않게 주의해주세요.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.primary700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -224,40 +237,6 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
           SizedBox(height: AppSpacing.sm),
           ...children,
         ],
-      ),
-    );
-  }
-}
-
-class _DatePickerField extends StatelessWidget {
-  final String label;
-  final DateTime? date;
-  final VoidCallback onPick;
-
-  const _DatePickerField({
-    required this.label,
-    required this.date,
-    required this.onPick,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPick,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
-          isDense: true,
-          suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
-        ),
-        child: Text(
-          date == null ? '날짜 선택' : DateFormat('yyyy-MM-dd').format(date!),
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: date == null ? AppColors.textDisabled : AppColors.textPrimary,
-          ),
-        ),
       ),
     );
   }
@@ -310,6 +289,37 @@ class _AutoSendCheckbox extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 청소 희망 시간 드롭다운 — 30분 단위 (00:00 ~ 23:30)
+class _CleaningTimeDropdown extends StatelessWidget {
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  const _CleaningTimeDropdown({required this.value, required this.onChanged});
+
+  static final List<String> _slots = List.generate(48, (i) {
+    final hour = (i ~/ 2).toString().padLeft(2, '0');
+    final minute = (i % 2 == 0 ? '00' : '30');
+    return '$hour:$minute';
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      decoration: InputDecoration(
+        labelText: '청소 희망 시간',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+        isDense: true,
+      ),
+      items: _slots
+          .map((slot) => DropdownMenuItem(value: slot, child: Text(slot)))
+          .toList(),
+      onChanged: onChanged,
+      validator: (v) => v == null ? '청소 희망 시간을 선택해주세요.' : null,
     );
   }
 }

@@ -37,7 +37,7 @@ class PaymentRequestStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = _colors(status);
-    final label = status == PaymentRequestStatus.notSent ? '요청 대기' : '요청 완료';
+    final label = status == PaymentRequestStatus.notSent ? '요청 대기' : '알림톡 발송 완료';
     return _Chip(label: label, background: bg, foreground: fg);
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +11,6 @@ import '../../../utils/responsive_util.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
 import 'widgets/move_in_case_list.dart';
 import 'widgets/move_in_empty_states.dart';
-import 'widgets/move_in_filter_bar.dart';
 import 'widgets/move_in_summary_cards.dart';
 
 /// 입주 준비 서비스 홈 (호스트) — 이미지 ① 화면
@@ -25,15 +25,26 @@ class MoveInHomePage extends StatefulWidget {
 }
 
 class _MoveInHomePageState extends State<MoveInHomePage> {
+  late final TextEditingController _searchController;
+  Timer? _searchDebounce;
+
   @override
   void initState() {
     super.initState();
+    final provider = context.read<MoveInListProvider>();
+    _searchController = TextEditingController(text: provider.search);
     // 첫 진입 시 한 번 로드 — 이미 로드되어 있으면 갱신 없이 즉시 표시
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final provider = context.read<MoveInListProvider>();
       if (!provider.hasLoadedOnce) provider.load();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _goCreate() => context.go('/host/move-in/new');
@@ -41,8 +52,54 @@ class _MoveInHomePageState extends State<MoveInHomePage> {
   void _goDetail(MoveInCase c) => context.go('/host/move-in/${c.id}');
 
   /// 청소 결제 — 상세 페이지에서 결제 모달이 자동 오픈되도록 쿼리 파라미터 전달
-  /// (Phase 5/6에서 상세 페이지가 처리)
   void _goPay(MoveInCase c) => context.go('/host/move-in/${c.id}?action=pay');
+
+  MoveInSummaryFilter _currentFilter(MoveInListProvider p) {
+    if (p.cleaningStatus == CleaningStatus.paymentPending) {
+      return MoveInSummaryFilter.cleaningPending;
+    }
+    if (p.cleaningStatus == CleaningStatus.paid) {
+      return MoveInSummaryFilter.cleaningPaid;
+    }
+    return MoveInSummaryFilter.all;
+  }
+
+  void _onSummarySelected(MoveInSummaryFilter filter) {
+    final provider = context.read<MoveInListProvider>();
+    switch (filter) {
+      case MoveInSummaryFilter.all:
+        provider.setFilters(
+          requestStatus: null,
+          cleaningStatus: null,
+          search: provider.search,
+        );
+      case MoveInSummaryFilter.cleaningPending:
+        provider.setFilters(
+          requestStatus: null,
+          cleaningStatus: CleaningStatus.paymentPending,
+          search: provider.search,
+        );
+      case MoveInSummaryFilter.cleaningPaid:
+        provider.setFilters(
+          requestStatus: null,
+          cleaningStatus: CleaningStatus.paid,
+          search: provider.search,
+        );
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      final provider = context.read<MoveInListProvider>();
+      provider.setFilters(
+        requestStatus: provider.requestStatus,
+        cleaningStatus: provider.cleaningStatus,
+        search: value,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,37 +108,34 @@ class _MoveInHomePageState extends State<MoveInHomePage> {
 
     return ResponsivePageLayout(
       child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 0 : AppSpacing.xs,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 0 : AppSpacing.xs),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(context, provider, isMobile),
             SizedBox(height: AppSpacing.lg),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? AppSpacing.md : 0),
-              child: MoveInSummaryCards(counts: provider.counts),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? AppSpacing.md : 0,
+              ),
+              child: MoveInSummaryCards(
+                counts: provider.counts,
+                selected: _currentFilter(provider),
+                onSelected: _onSummarySelected,
+              ),
             ),
             SizedBox(height: AppSpacing.lg),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? AppSpacing.md : 0),
-              child: MoveInFilterBar(
-                search: provider.search,
-                requestStatus: provider.requestStatus,
-                cleaningStatus: provider.cleaningStatus,
-                onChanged: ({requestStatus, cleaningStatus, search}) {
-                  context.read<MoveInListProvider>().setFilters(
-                        requestStatus: requestStatus,
-                        cleaningStatus: cleaningStatus,
-                        search: search,
-                      );
-                },
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? AppSpacing.md : 0,
               ),
+              child: _buildSearchField(),
             ),
             SizedBox(height: AppSpacing.md),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? AppSpacing.md : 0),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? AppSpacing.md : 0,
+              ),
               child: _buildBody(context, provider),
             ),
             SizedBox(height: AppSpacing.lg),
@@ -89,7 +143,8 @@ class _MoveInHomePageState extends State<MoveInHomePage> {
               MoveInPaginator(
                 currentPage: provider.page,
                 totalPages: provider.totalPages,
-                onPageChanged: (p) => context.read<MoveInListProvider>().goToPage(p),
+                onPageChanged: (p) =>
+                    context.read<MoveInListProvider>().goToPage(p),
               ),
             SizedBox(height: AppSpacing.xxl),
           ],
@@ -98,7 +153,35 @@ class _MoveInHomePageState extends State<MoveInHomePage> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, MoveInListProvider provider, bool isMobile) {
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      onChanged: _onSearchChanged,
+      decoration: InputDecoration(
+        hintText: '방 이름, 주소, 임차인 이름 검색',
+        prefixIcon: const Icon(Icons.search, size: 20),
+        isDense: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: BorderSide(color: AppColors.primary500, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(
+    BuildContext context,
+    MoveInListProvider provider,
+    bool isMobile,
+  ) {
     final children = <Widget>[
       Expanded(
         child: Column(
@@ -107,8 +190,11 @@ class _MoveInHomePageState extends State<MoveInHomePage> {
             Text('입주 준비 서비스', style: AppTextStyles.headingLarge),
             SizedBox(height: AppSpacing.xs),
             Text(
-              '외부 플랫폼에서 계약된 단기임대 건의 청소·임차인 옵션 결제를 관리합니다.',
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+              '외부에서 계약된 건을 위해 임대인이 청소를 신청하고, '
+              '임차인은 필요한 입주용품을 직접 결제하도록 요청할 수 있어요.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -162,13 +248,17 @@ class _MoveInHomePageState extends State<MoveInHomePage> {
       );
     }
     if (provider.cases.isEmpty) {
-      final hasFilters = provider.requestStatus != null ||
+      final hasFilters =
+          provider.requestStatus != null ||
           provider.cleaningStatus != null ||
           provider.search.isNotEmpty;
       return MoveInEmptyState(
         hasFilters: hasFilters,
         onCreateNew: _goCreate,
-        onClearFilters: () => provider.clearFilters(),
+        onClearFilters: () {
+          _searchController.clear();
+          provider.clearFilters();
+        },
       );
     }
     return Stack(

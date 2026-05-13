@@ -48,8 +48,11 @@ class _CleaningQuoteDialog extends StatelessWidget {
             _row('주소', room.fullAddress),
             _row('입주일', _formatDate(c.checkInDate)),
             _row('퇴실일', _formatDate(c.checkOutDate)),
-            if (c.cleaningRequestedDate != null)
+            if (c.cleaningRequestedDate != null) ...[
               _row('희망 청소일', _formatDate(c.cleaningRequestedDate!)),
+              if (_extractTime(c.cleaningRequestedDate!) != null)
+                _row('희망 청소 시간', _extractTime(c.cleaningRequestedDate!)!),
+            ],
             if (room.cleaningSuppliesLocation?.isNotEmpty == true)
               _row('청소용품 위치', room.cleaningSuppliesLocation!),
             const Divider(height: 24),
@@ -122,5 +125,13 @@ class _CleaningQuoteDialog extends StatelessWidget {
     } catch (_) {
       return yyyymmdd;
     }
+  }
+
+  /// `'YYYY-MM-DD HH:mm'` 형태에서 'HH:mm' 부분만 꺼냄. 시간이 없으면 null.
+  String? _extractTime(String raw) {
+    final parts = raw.trim().split(RegExp(r'\s+'));
+    if (parts.length < 2) return null;
+    final time = parts[1];
+    return RegExp(r'^\d{2}:\d{2}').hasMatch(time) ? time.substring(0, 5) : null;
   }
 }

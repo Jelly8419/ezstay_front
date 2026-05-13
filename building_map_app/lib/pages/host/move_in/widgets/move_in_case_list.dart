@@ -105,7 +105,7 @@ class _DesktopTable extends StatelessWidget {
           Expanded(flex: 4, child: Text('방 정보', style: cellStyle)),
           Expanded(flex: 3, child: Text('입주일 - 퇴실일', style: cellStyle)),
           Expanded(flex: 2, child: Text('청소 서비스', style: cellStyle)),
-          Expanded(flex: 2, child: Text('임차인 결제 요청', style: cellStyle)),
+          Expanded(flex: 2, child: Text('임차인 입주 서비스 요청', style: cellStyle)),
           SizedBox(width: 180, child: Text('관리', style: cellStyle)),
         ],
       ),

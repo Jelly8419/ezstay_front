@@ -19,6 +19,7 @@ class MoveInListProvider extends ChangeNotifier {
   MoveInCaseCounts _counts = const MoveInCaseCounts(
     total: 0,
     cleaningPending: 0,
+    cleaningPaid: 0,
     paymentRequestPending: 0,
     inProgress: 0,
   );
