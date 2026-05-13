@@ -18,6 +18,7 @@ class PgPayload {
   final int? amount;
   final String? productName;
   final String? buyerName;
+  final String? customerPhone;
 
   const PgPayload({
     required this.mock,
@@ -27,6 +28,7 @@ class PgPayload {
     this.amount,
     this.productName,
     this.buyerName,
+    this.customerPhone,
   });
 
   factory PgPayload.fromJson(dynamic raw) {
@@ -40,6 +42,7 @@ class PgPayload {
       amount: (json['amount'] as num?)?.toInt(),
       productName: json['productName']?.toString(),
       buyerName: json['buyerName']?.toString(),
+      customerPhone: json['customerPhone']?.toString(),
     );
   }
 }

@@ -143,8 +143,10 @@ class CleaningPaymentController {
     final amount = (pgPayload['amount'] as num?)?.toInt() ?? initResp.amount;
     final productName =
         (pgPayload['productName'] as String?) ?? '입주 청소 서비스';
-    final buyerName =
-        (pgPayload['buyerName'] as String?) ?? moveInCase.guestName;
+    // 결제자는 호스트 본인 — 백엔드가 pgPayload 에 결제자 본인 정보를 채워 내려줌.
+    // (계약 결제와 동일 패턴: req.user.name / req.user.phoneNumber)
+    final buyerName = (pgPayload['buyerName'] as String?) ?? '';
+    final customerPhone = (pgPayload['customerPhone'] as String?) ?? '';
     // 청소 결제는 일반적으로 카드. PRD/가이드에 별도 명시 없으므로 'BC' 기본값.
     final payType = (pgPayload['payType'] as String?) ?? 'BC';
 
@@ -155,7 +157,7 @@ class CleaningPaymentController {
         orderName: productName,
         payType: payType,
         customerName: buyerName,
-        customerPhone: moveInCase.guestPhone,
+        customerPhone: customerPhone,
       );
 
       if (!response.isSuccess || response.recvPayparam == null) {

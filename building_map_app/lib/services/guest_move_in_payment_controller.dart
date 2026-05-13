@@ -73,17 +73,16 @@ class GuestMoveInPaymentController {
   }
 
   /// INITIAL 결제 — 케이스의 첫 결제
+  ///
+  /// `buyerName`/`customerPhone`은 백엔드 `pgPayload`에서 채워 내려주므로
+  /// 호출 측에서 전달할 필요 없음 (계약 결제와 동일 패턴).
   Future<GuestMoveInPaymentResult> payInitial({
     required int caseId,
     required List<GuestSelectedItem> items,
-    required String buyerName,
-    required String buyerPhone,
   }) =>
       _runPayment(
         caseId: caseId,
         items: items,
-        buyerName: buyerName,
-        buyerPhone: buyerPhone,
         isAdditional: false,
       );
 
@@ -91,22 +90,16 @@ class GuestMoveInPaymentController {
   Future<GuestMoveInPaymentResult> payAdditional({
     required int caseId,
     required List<GuestSelectedItem> items,
-    required String buyerName,
-    required String buyerPhone,
   }) =>
       _runPayment(
         caseId: caseId,
         items: items,
-        buyerName: buyerName,
-        buyerPhone: buyerPhone,
         isAdditional: true,
       );
 
   Future<GuestMoveInPaymentResult> _runPayment({
     required int caseId,
     required List<GuestSelectedItem> items,
-    required String buyerName,
-    required String buyerPhone,
     required bool isAdditional,
   }) async {
     if (items.isEmpty) {
@@ -150,8 +143,6 @@ class GuestMoveInPaymentController {
     }
     return _callPayTagAndConfirm(
       caseId: caseId,
-      buyerName: buyerName,
-      buyerPhone: buyerPhone,
       isAdditional: isAdditional,
       initResp: initResp,
     );
@@ -191,8 +182,6 @@ class GuestMoveInPaymentController {
 
   Future<GuestMoveInPaymentResult> _callPayTagAndConfirm({
     required int caseId,
-    required String buyerName,
-    required String buyerPhone,
     required bool isAdditional,
     required GuestPaymentInitResponse initResp,
   }) async {
@@ -200,6 +189,8 @@ class GuestMoveInPaymentController {
     final orderId = pg.orderId ?? initResp.orderId;
     final amount = pg.amount ?? initResp.amount;
     final productName = pg.productName ?? '입주 준비 옵션';
+    final buyerName = pg.buyerName ?? '';
+    final customerPhone = pg.customerPhone ?? '';
 
     try {
       final response = await _webService!.requestPayment(
@@ -208,7 +199,7 @@ class GuestMoveInPaymentController {
         orderName: productName,
         payType: 'BC',
         customerName: buyerName,
-        customerPhone: buyerPhone,
+        customerPhone: customerPhone,
       );
 
       if (!response.isSuccess || response.recvPayparam == null) {

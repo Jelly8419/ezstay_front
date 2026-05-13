@@ -6,7 +6,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/guest_move_in/guest_move_in.dart';
 import '../../../providers/guest_move_in/guest_move_in_detail_provider.dart';
-import '../../../services/auth_service.dart';
 import '../../../services/guest_move_in_payment_controller.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
 import 'utils/guest_move_in_format.dart';
@@ -70,26 +69,19 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
 
     setState(() => _paying = true);
     try {
-      final auth = context.read<AuthService>();
-      final user = auth.currentUser;
-      final buyerName = user?.displayName ?? '';
-
       // 추가 결제 여부 — 상세 응답이 있으면 그걸 보고 판단
       final detail = context.read<GuestMoveInDetailProvider>().detail;
       final isAdditional = detail?.hasPaidInitial ?? false;
 
+      // buyerName/customerPhone 은 백엔드 pgPayload 에서 채워 내려옴
       final result = isAdditional
           ? await _controller.payAdditional(
               caseId: widget.caseId,
               items: items,
-              buyerName: buyerName,
-              buyerPhone: '',
             )
           : await _controller.payInitial(
               caseId: widget.caseId,
               items: items,
-              buyerName: buyerName,
-              buyerPhone: '',
             );
 
       if (!mounted) return;
