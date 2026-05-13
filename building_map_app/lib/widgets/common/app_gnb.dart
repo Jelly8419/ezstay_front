@@ -130,7 +130,7 @@ class _AppGNBState extends State<AppGNB> {
     );
   }
 
-  /// 게스트 모드 중앙 메뉴 (홈, 지도, 입주 준비 서비스, 계약)
+  /// 게스트 모드 중앙 메뉴 (홈, 지도, 계약 | 입주 준비 서비스)
   Widget _buildGuestCenterMenu(BuildContext context) {
     return Row(
       children: [
@@ -148,33 +148,33 @@ class _AppGNBState extends State<AppGNB> {
         SizedBox(width: AppSpacing.md),
         _buildTextButton(
           context,
-          label: '입주 준비 서비스',
-          onPressed: () => context.go('/guest/move-in'),
-        ),
-        SizedBox(width: AppSpacing.md),
-        _buildTextButton(
-          context,
           label: '계약',
           onPressed: () => context.go('/guest/contracts'),
+        ),
+        _buildMenuDivider(),
+        _buildTextButton(
+          context,
+          label: '입주 준비 서비스',
+          onPressed: () => context.go('/guest/move-in'),
         ),
       ],
     );
   }
 
-  /// 호스트 모드 중앙 메뉴 (방 관리, 입주 준비 서비스, 계약, 정산)
+  /// 호스트 모드 중앙 메뉴 (입주 준비 서비스 | 방 관리, 계약, 정산)
   Widget _buildHostCenterMenu(BuildContext context) {
     return Row(
       children: [
         _buildTextButton(
           context,
-          label: '방 관리',
-          onPressed: () => context.go('/host/room-management'),
-        ),
-        SizedBox(width: AppSpacing.md),
-        _buildTextButton(
-          context,
           label: '입주 준비 서비스',
           onPressed: () => context.go('/host/move-in'),
+        ),
+        _buildMenuDivider(),
+        _buildTextButton(
+          context,
+          label: '방 관리',
+          onPressed: () => context.go('/host/room-management'),
         ),
         SizedBox(width: AppSpacing.md),
         _buildTextButton(
@@ -189,6 +189,18 @@ class _AppGNBState extends State<AppGNB> {
           onPressed: () => context.go('/host/settlement'),
         ),
       ],
+    );
+  }
+
+  /// 메뉴 그룹 사이 세로 구분선
+  Widget _buildMenuDivider() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Container(
+        width: 1,
+        height: 20,
+        color: AppColors.border,
+      ),
     );
   }
 
