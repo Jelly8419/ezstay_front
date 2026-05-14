@@ -7,7 +7,9 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../models/guest_move_in/guest_move_in.dart';
 import '../../../providers/guest_move_in/guest_move_in_detail_provider.dart';
 import '../../../services/guest_move_in_payment_controller.dart';
+import '../../../utils/price_calculator.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
+import '../../../widgets/payment_method_modal.dart';
 import 'utils/guest_move_in_format.dart';
 import 'widgets/guest_move_in_info_banner.dart';
 import 'widgets/guest_move_in_option_card.dart';
@@ -59,6 +61,13 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
     });
   }
 
+  /// 선택된 옵션의 합계 금액
+  int _calcTotalAmount(GuestMoveInOptionsResponse ctx) {
+    final priceById = {for (final o in ctx.options) o.optionId: o.price};
+    return _selectedQuantities.entries
+        .fold<int>(0, (sum, e) => sum + (priceById[e.key] ?? 0) * e.value);
+  }
+
   /// 결제 시작 — INITIAL/ADDITIONAL 분기는 detail 의 hasPaidInitial 로 판단
   Future<void> _onPayPressed() async {
     final items = _selectedQuantities.entries
@@ -66,6 +75,29 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
         .map((e) => GuestSelectedItem(optionId: e.key, quantity: e.value))
         .toList();
     if (items.isEmpty) return;
+
+    final ctx = context.read<GuestMoveInDetailProvider>().optionsContext;
+    if (ctx == null) return;
+    final totalAmount = _calcTotalAmount(ctx);
+
+    // 최소 금액 가드 (PG 정책 — 옵션 상품 합계 10,000원 이상)
+    if (PriceCalculator.isInvalidRentalAmount(totalAmount)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(PriceCalculator.rentalAmountErrorMessage(
+            currentAmount: totalAmount,
+          )),
+        ),
+      );
+      return;
+    }
+
+    // 결제 수단 선택 (게스트 계약 결제와 동일 패턴)
+    final selectedMethod = await showPaymentMethodModal(
+      context,
+      totalAmount: totalAmount,
+    );
+    if (selectedMethod == null || !mounted) return;
 
     setState(() => _paying = true);
     try {
@@ -78,10 +110,12 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
           ? await _controller.payAdditional(
               caseId: widget.caseId,
               items: items,
+              payType: selectedMethod.value,
             )
           : await _controller.payInitial(
               caseId: widget.caseId,
               items: items,
+              payType: selectedMethod.value,
             );
 
       if (!mounted) return;
@@ -198,7 +232,9 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
 
   Widget _buildBody(GuestMoveInOptionsResponse ctx) {
     final hasSelection = _selectedQuantities.values.any((v) => v > 0);
-    final ctaEnabled = ctx.canPay && hasSelection && !_paying;
+    final totalAmount = _calcTotalAmount(ctx);
+    final isBelowMinimum = PriceCalculator.isInvalidRentalAmount(totalAmount);
+    final ctaEnabled = ctx.canPay && hasSelection && !isBelowMinimum && !_paying;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -246,6 +282,34 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
             options: ctx.options,
             selectedQuantities: _selectedQuantities,
           ),
+          if (isBelowMinimum) ...[
+            SizedBox(height: AppSpacing.md),
+            Container(
+              padding: EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.error500.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.error500),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline,
+                      size: 16, color: AppColors.error500),
+                  SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      PriceCalculator.rentalAmountErrorMessage(
+                        currentAmount: totalAmount,
+                      ),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.error700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           SizedBox(height: AppSpacing.lg),
           SizedBox(
             width: double.infinity,

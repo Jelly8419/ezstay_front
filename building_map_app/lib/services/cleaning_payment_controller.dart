@@ -73,7 +73,13 @@ class CleaningPaymentController {
   }
 
   /// 2~4단계 통합: 결제 시작 → PG 호출 → confirm
-  Future<CleaningPaymentResult> pay({required MoveInCase moveInCase}) async {
+  ///
+  /// [payType] — PayTag SDK 결제 수단 코드 (예: 'BC', 'KP', 'NP').
+  /// 호출 측에서 [PaymentMethodModal] 로 받은 값을 전달.
+  Future<CleaningPaymentResult> pay({
+    required MoveInCase moveInCase,
+    required String payType,
+  }) async {
     final caseId = moveInCase.id;
 
     try {
@@ -95,6 +101,7 @@ class CleaningPaymentController {
         caseId: caseId,
         moveInCase: moveInCase,
         initResp: initResp,
+        payType: payType,
       );
     } on MoveInException catch (e) {
       return CleaningPaymentResult(
@@ -137,6 +144,7 @@ class CleaningPaymentController {
     required int caseId,
     required MoveInCase moveInCase,
     required CleaningPaymentInitResponse initResp,
+    required String payType,
   }) async {
     final pgPayload = initResp.pgPayload;
     final orderId = (pgPayload['orderId'] as String?) ?? initResp.orderId;
@@ -147,8 +155,6 @@ class CleaningPaymentController {
     // (계약 결제와 동일 패턴: req.user.name / req.user.phoneNumber)
     final buyerName = (pgPayload['buyerName'] as String?) ?? '';
     final customerPhone = (pgPayload['customerPhone'] as String?) ?? '';
-    // 청소 결제는 일반적으로 카드. PRD/가이드에 별도 명시 없으므로 'BC' 기본값.
-    final payType = (pgPayload['payType'] as String?) ?? 'BC';
 
     try {
       final response = await _webService!.requestPayment(

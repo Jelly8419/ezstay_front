@@ -76,31 +76,37 @@ class GuestMoveInPaymentController {
   ///
   /// `buyerName`/`customerPhone`은 백엔드 `pgPayload`에서 채워 내려주므로
   /// 호출 측에서 전달할 필요 없음 (계약 결제와 동일 패턴).
+  /// [payType] — PayTag SDK 결제 수단 코드 (예: 'BC', 'KP', 'NP').
   Future<GuestMoveInPaymentResult> payInitial({
     required int caseId,
     required List<GuestSelectedItem> items,
+    required String payType,
   }) =>
       _runPayment(
         caseId: caseId,
         items: items,
         isAdditional: false,
+        payType: payType,
       );
 
   /// ADDITIONAL 결제 — INITIAL `PAID` 후 추가 옵션 결제
   Future<GuestMoveInPaymentResult> payAdditional({
     required int caseId,
     required List<GuestSelectedItem> items,
+    required String payType,
   }) =>
       _runPayment(
         caseId: caseId,
         items: items,
         isAdditional: true,
+        payType: payType,
       );
 
   Future<GuestMoveInPaymentResult> _runPayment({
     required int caseId,
     required List<GuestSelectedItem> items,
     required bool isAdditional,
+    required String payType,
   }) async {
     if (items.isEmpty) {
       return GuestMoveInPaymentResult(
@@ -145,6 +151,7 @@ class GuestMoveInPaymentController {
       caseId: caseId,
       isAdditional: isAdditional,
       initResp: initResp,
+      payType: payType,
     );
   }
 
@@ -184,6 +191,7 @@ class GuestMoveInPaymentController {
     required int caseId,
     required bool isAdditional,
     required GuestPaymentInitResponse initResp,
+    required String payType,
   }) async {
     final pg = initResp.pgPayload;
     final orderId = pg.orderId ?? initResp.orderId;
@@ -197,7 +205,7 @@ class GuestMoveInPaymentController {
         orderId: orderId,
         amount: amount,
         orderName: productName,
-        payType: 'BC',
+        payType: payType,
         customerName: buyerName,
         customerPhone: customerPhone,
       );

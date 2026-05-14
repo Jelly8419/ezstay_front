@@ -12,6 +12,7 @@ import '../../../services/cleaning_payment_controller.dart';
 import '../../../utils/responsive_util.dart';
 import '../../../widgets/common/custom_toast.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
+import '../../../widgets/payment_method_modal.dart';
 import 'widgets/cleaning_quote_dialog.dart';
 import 'widgets/move_in_case_edit_dialog.dart';
 import 'widgets/move_in_cleaning_section.dart';
@@ -330,8 +331,18 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
       );
       if (confirmed != true || !mounted) return;
 
+      // 결제 수단 선택 (게스트 계약 결제와 동일 패턴)
+      final selectedMethod = await showPaymentMethodModal(
+        context,
+        totalAmount: quote.cleaningFee,
+      );
+      if (selectedMethod == null || !mounted) return;
+
       // 2~4단계: PG init → SDK → confirm
-      final result = await _paymentController.pay(moveInCase: c);
+      final result = await _paymentController.pay(
+        moveInCase: c,
+        payType: selectedMethod.value,
+      );
       if (!mounted) return;
 
       switch (result.stage) {
