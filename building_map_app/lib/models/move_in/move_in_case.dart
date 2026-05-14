@@ -52,8 +52,18 @@ class MoveInCase {
 
   final CleaningStatus cleaningStatus;
   final int? cleaningFee;
-  final String? cleaningRequestedDate;  // [Q2] 청소 희망일 (이미지 ②번 폼)
+
+  /// 청소 희망 일자 'YYYY-MM-DD' (백엔드 컬럼: `cleaning_date`)
+  final String? cleaningDate;
+
+  /// 청소 희망 시작 시각 'HH:mm:ss' (DB TIME 컬럼은 SS까지 반환)
+  final String? cleaningTime;
+
   final String? cleaningPaidAt;
+
+  /// 결제 마감 시각 (KST) — 백엔드가 입주일 기준 계산하여 응답에 포함
+  final String? cleaningPaymentDeadline;
+  final String? optionPaymentDeadline;
 
   final MoveInRoom roomSnapshot;
   final MoveInPaymentRequestSummary? paymentRequest;
@@ -72,8 +82,11 @@ class MoveInCase {
     this.requestMemo,
     required this.cleaningStatus,
     this.cleaningFee,
-    this.cleaningRequestedDate,
+    this.cleaningDate,
+    this.cleaningTime,
     this.cleaningPaidAt,
+    this.cleaningPaymentDeadline,
+    this.optionPaymentDeadline,
     required this.roomSnapshot,
     this.paymentRequest,
     required this.createdAt,
@@ -93,8 +106,11 @@ class MoveInCase {
       requestMemo: json['requestMemo']?.toString(),
       cleaningStatus: CleaningStatus.fromCode(json['cleaningStatus']?.toString()),
       cleaningFee: (json['cleaningFee'] as num?)?.toInt(),
-      cleaningRequestedDate: json['cleaningRequestedDate']?.toString(),
+      cleaningDate: json['cleaningDate']?.toString(),
+      cleaningTime: json['cleaningTime']?.toString(),
       cleaningPaidAt: json['cleaningPaidAt']?.toString(),
+      cleaningPaymentDeadline: json['cleaningPaymentDeadline']?.toString(),
+      optionPaymentDeadline: json['optionPaymentDeadline']?.toString(),
       roomSnapshot: MoveInRoom.fromJson(json['roomSnapshot']),
       paymentRequest: json['paymentRequest'] == null
           ? null

@@ -98,11 +98,10 @@ class MoveInCleaningSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _row('신청 상태', '신청 완료'),
-            if (c.cleaningRequestedDate != null) ...[
-              _row('희망 청소일', _formatDate(c.cleaningRequestedDate!)),
-              if (_extractTime(c.cleaningRequestedDate!) != null)
-                _row('희망 청소 시간', _extractTime(c.cleaningRequestedDate!)!),
-            ],
+            if (c.cleaningDate != null)
+              _row('희망 청소일', _formatDate(c.cleaningDate!)),
+            if (c.cleaningTime != null)
+              _row('희망 청소 시간', _formatTime(c.cleaningTime!)),
             _row('청소용품 구비', _suppliesText(c.roomSnapshot)),
             _row('청소 금액', _money(c.cleaningFee)),
             SizedBox(height: AppSpacing.sm),
@@ -120,11 +119,10 @@ class MoveInCleaningSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _row('신청 상태', '결제 완료'),
-            if (c.cleaningRequestedDate != null) ...[
-              _row('희망 청소일', _formatDate(c.cleaningRequestedDate!)),
-              if (_extractTime(c.cleaningRequestedDate!) != null)
-                _row('희망 청소 시간', _extractTime(c.cleaningRequestedDate!)!),
-            ],
+            if (c.cleaningDate != null)
+              _row('희망 청소일', _formatDate(c.cleaningDate!)),
+            if (c.cleaningTime != null)
+              _row('희망 청소 시간', _formatTime(c.cleaningTime!)),
             _row('청소용품 구비', _suppliesText(c.roomSnapshot)),
             _row('결제 일시', _formatDateTime(c.cleaningPaidAt)),
             _row('결제 금액', _money(c.cleaningFee)),
@@ -211,12 +209,9 @@ class MoveInCleaningSection extends StatelessWidget {
     }
   }
 
-  /// `'YYYY-MM-DD HH:mm'` 형태에서 'HH:mm' 부분만 꺼냄. 시간이 없으면 null.
-  String? _extractTime(String raw) {
-    final parts = raw.trim().split(RegExp(r'\s+'));
-    if (parts.length < 2) return null;
-    final time = parts[1];
-    return RegExp(r'^\d{2}:\d{2}').hasMatch(time) ? time.substring(0, 5) : null;
+  /// 'HH:mm:ss' 또는 'HH:mm' → 'HH:mm' 표시용 (DB TIME 컬럼은 SS까지 반환).
+  String _formatTime(String raw) {
+    return raw.length >= 5 ? raw.substring(0, 5) : raw;
   }
 
   String _formatDateTime(String? iso) {

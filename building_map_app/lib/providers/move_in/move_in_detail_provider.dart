@@ -57,13 +57,12 @@ class MoveInDetailProvider extends ChangeNotifier {
   // 청소 액션
   // ============================================================
 
-  Future<MoveInCase?> requestCleaning({String? cleaningRequestedDate}) {
-    final body = cleaningRequestedDate == null
-        ? null
-        : CleaningRequestBody(cleaningRequestedDate: cleaningRequestedDate);
+  Future<MoveInCase?> requestCleaning() {
+    // 청소 희망 일자/시간은 케이스 생성/수정 시점에 이미 저장되어 있음.
+    // 본 호출은 상태 전환만 수행.
     // 백엔드가 부분 응답(caseId/cleaningStatus/cleaningFee)만 반환 →
     // 케이스 전체는 별도 재조회로 동기화.
-    return _runCleaningAction(() => _service.requestCleaning(caseId, body: body));
+    return _runCleaningAction(() => _service.requestCleaning(caseId));
   }
 
   Future<MoveInCase?> cancelCleaningRequest() {

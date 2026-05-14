@@ -195,6 +195,8 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
           guestPhone: result.guestPhone,
           requestMemo: result.requestMemo,
           sendGuestPaymentRequest: result.sendGuestPaymentRequest,
+          cleaningDate: result.cleaningDate,
+          cleaningTime: result.cleaningTime,
         ),
       );
       if (!mounted) return;
@@ -203,13 +205,11 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
       _showAutoSendToast(response.autoSend);
 
       // 2단계 — 청소 신청 (Q5-D: 실패해도 케이스는 살아있다는 솔직 안내)
+      // 일자/시간은 1단계에서 이미 저장됨. 본 호출은 상태 전환만.
       String? cleaningWarn;
       if (result.cleaningRequested) {
         try {
-          await _service.requestCleaning(
-            response.moveInCase.id,
-            body: CleaningRequestBody(cleaningRequestedDate: result.cleaningRequestedDate),
-          );
+          await _service.requestCleaning(response.moveInCase.id);
         } on MoveInException catch (e) {
           cleaningWarn = e.message;
         }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../models/move_in/move_in_deadline_policy.dart';
 import '../../../../widgets/common/custom_text_field.dart';
 import '../../../../widgets/common/date_range_picker.dart' show DateRangePicker, SingleDatePicker;
 
@@ -98,16 +100,8 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
     return null;
   }
 
-  /// 청소 희망일+시간을 백엔드 cleaningRequestedDate 단일 필드에 'YYYY-MM-DD HH:mm'로 합쳐 보낸다.
-  String? _composeCleaningRequestedDate() {
-    if (!_cleaningRequested || _cleaningRequestedDate == null) return null;
-    final date = _formatDate(_cleaningRequestedDate);
-    return _cleaningRequestedTime == null
-        ? date
-        : '$date $_cleaningRequestedTime';
-  }
-
   MoveInContractFormResult _buildResult() {
+    final cleaningOn = _cleaningRequested && _cleaningRequestedDate != null;
     return MoveInContractFormResult(
       checkInDate: _formatDate(_checkInDate),
       checkOutDate: _formatDate(_checkOutDate),
@@ -116,7 +110,8 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
       requestMemo: _memoCtrl.text.trim().isEmpty ? null : _memoCtrl.text.trim(),
       sendGuestPaymentRequest: _sendGuestPaymentRequest,
       cleaningRequested: _cleaningRequested,
-      cleaningRequestedDate: _composeCleaningRequestedDate(),
+      cleaningDate: cleaningOn ? _formatDate(_cleaningRequestedDate) : null,
+      cleaningTime: cleaningOn ? _cleaningRequestedTime : null,
     );
   }
 
@@ -157,10 +152,13 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
               hint: '01012345678',
               controller: _guestPhoneCtrl,
               keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(11),
+              ],
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return '임차인 연락처를 입력해주세요.';
-                final digits = v.replaceAll(RegExp(r'\D'), '');
-                if (digits.length < 10 || digits.length > 11) return '올바른 휴대폰 번호를 입력해주세요.';
+                if (v.length < 10 || v.length > 11) return '올바른 휴대폰 번호를 입력해주세요.';
                 return null;
               },
             ),
@@ -171,6 +169,11 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
               controller: _memoCtrl,
               maxLines: 2,
             ),
+            // 결제 마감 기한 안내 — 입주일/퇴실일 둘 다 선택 시 노출
+            if (_checkInDate != null && _checkOutDate != null) ...[
+              SizedBox(height: AppSpacing.md),
+              _PaymentDeadlineNotice(checkInDate: _checkInDate!),
+            ],
           ]),
           // 자동발송 체크박스 (Q3-A) — 계약 정보 영역 하단에 배치
           _AutoSendCheckbox(
@@ -293,16 +296,18 @@ class _AutoSendCheckbox extends StatelessWidget {
   }
 }
 
-/// 청소 희망 시간 드롭다운 — 30분 단위 (00:00 ~ 23:30)
+/// 청소 희망 시간 드롭다운 — 30분 단위 (09:00 ~ 18:00)
 class _CleaningTimeDropdown extends StatelessWidget {
   final String? value;
   final ValueChanged<String?> onChanged;
 
   const _CleaningTimeDropdown({required this.value, required this.onChanged});
 
-  static final List<String> _slots = List.generate(48, (i) {
-    final hour = (i ~/ 2).toString().padLeft(2, '0');
-    final minute = (i % 2 == 0 ? '00' : '30');
+  /// 09:00 ~ 18:00 (30분 단위, 18:00 포함 → 19개)
+  static final List<String> _slots = List.generate(19, (i) {
+    final minutes = 9 * 60 + i * 30;
+    final hour = (minutes ~/ 60).toString().padLeft(2, '0');
+    final minute = (minutes % 60).toString().padLeft(2, '0');
     return '$hour:$minute';
   });
 
@@ -370,6 +375,172 @@ class _CleaningToggle extends StatelessWidget {
   }
 }
 
+/// 결제 마감 기한 안내 카드 (청소 D-2, 입주용품/침구류 D-5)
+///
+/// 마감 정의: 입주일의 D-N **23:59:59** 까지.
+/// 마감 시각이 현재보다 과거이면 회색 칩 + "사용 불가" 표시로 안내.
+class _PaymentDeadlineNotice extends StatelessWidget {
+  final DateTime checkInDate;
+
+  const _PaymentDeadlineNotice({required this.checkInDate});
+
+  @override
+  Widget build(BuildContext context) {
+    final cleaningDeadline = MoveInDeadlinePolicy.cleaningDeadline(checkInDate);
+    final optionDeadline = MoveInDeadlinePolicy.optionDeadline(checkInDate);
+
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.primary50,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.primary200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.access_time, color: AppColors.primary500, size: 20),
+              SizedBox(width: AppSpacing.xs),
+              Text(
+                '결제 마감기한 안내',
+                style: AppTextStyles.labelLarge.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _DeadlineItem(
+                  icon: Icons.cleaning_services_outlined,
+                  iconColor: AppColors.primary500,
+                  title: '청소 서비스',
+                  deadline: cleaningDeadline,
+                  chipBg: AppColors.primary50,
+                  chipFg: AppColors.primary700,
+                ),
+              ),
+              SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _DeadlineItem(
+                  icon: Icons.shopping_bag_outlined,
+                  iconColor: const Color(0xFF8B5CF6),
+                  title: '입주용품/침구류',
+                  subtitle: '(임차인 결제)',
+                  deadline: optionDeadline,
+                  chipBg: const Color(0xFFF3E8FF),
+                  chipFg: const Color(0xFF6D28D9),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline,
+                  size: 14, color: AppColors.textSecondary),
+              SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  '결제 마감 기한은 청소 서비스 - 입주일 2일 전, '
+                  '입주 용품/침구류 - 입주일 5일 전까지 입니다. '
+                  '마감 기한 이후에는 결제 요청 또는 결제가 제한될 수 있습니다.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeadlineItem extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String? subtitle;
+  final DateTime deadline;
+  final Color chipBg;
+  final Color chipFg;
+
+  const _DeadlineItem({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    this.subtitle,
+    required this.deadline,
+    required this.chipBg,
+    required this.chipFg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isExpired = deadline.isBefore(DateTime.now());
+    final dateText = DateFormat('yyyy.MM.dd (E) HH:mm', 'ko_KR').format(deadline);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, color: iconColor, size: 24),
+            SizedBox(width: AppSpacing.xs),
+            Flexible(
+              child: Text.rich(
+                TextSpan(
+                  text: title,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  children: subtitle == null
+                      ? null
+                      : [
+                          TextSpan(
+                            text: ' $subtitle',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppSpacing.xs),
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: 4,
+          ),
+          decoration: BoxDecoration(
+            color: isExpired ? AppColors.neutral100 : chipBg,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: Text(
+            isExpired ? '$dateText · 사용 불가' : '$dateText 까지',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: isExpired ? AppColors.textSecondary : chipFg,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// 외부 노출 결과 객체
 class MoveInContractFormResult {
   final String checkInDate;
@@ -379,7 +550,12 @@ class MoveInContractFormResult {
   final String? requestMemo;
   final bool sendGuestPaymentRequest;
   final bool cleaningRequested;
-  final String? cleaningRequestedDate;
+
+  /// 청소 희망 일자 'YYYY-MM-DD' (cleaningRequested == false 면 null)
+  final String? cleaningDate;
+
+  /// 청소 희망 시작 시각 'HH:mm' (30분 단위, 09:00~18:00)
+  final String? cleaningTime;
 
   const MoveInContractFormResult({
     required this.checkInDate,
@@ -389,7 +565,8 @@ class MoveInContractFormResult {
     this.requestMemo,
     required this.sendGuestPaymentRequest,
     required this.cleaningRequested,
-    this.cleaningRequestedDate,
+    this.cleaningDate,
+    this.cleaningTime,
   });
 }
 

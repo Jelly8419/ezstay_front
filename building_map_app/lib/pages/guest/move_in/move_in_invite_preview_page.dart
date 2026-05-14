@@ -185,8 +185,6 @@ class _MoveInInvitePreviewPageState extends State<MoveInInvitePreviewPage> {
 
   Widget _buildContent(GuestMoveInInvitePreview preview) {
     final eligibility = preview.paymentEligibility;
-    final ctaLabel =
-        !eligibility.loggedIn ? '본인확인 후 결제하기' : '선택한 상품 결제하기';
     final canSelect = preview.options.isNotEmpty;
     final hasSelection = _selectedQuantities.values.any((v) => v > 0);
     final ctaEnabled = !eligibility.loggedIn || hasSelection;
@@ -270,7 +268,7 @@ class _MoveInInvitePreviewPageState extends State<MoveInInvitePreviewPage> {
                 ),
               ),
               child: Text(
-                ctaLabel,
+                '결제하기',
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,

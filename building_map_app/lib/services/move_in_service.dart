@@ -235,14 +235,16 @@ class MoveInService {
 
   /// POST /cases/:caseId/cleaning/request — 청소 신청 (cleaningFee 락인)
   ///
-  /// [body.cleaningRequestedDate] (Q2) — 이미지 ② 폼의 청소 희망일.
-  Future<MoveInCase> requestCleaning(int caseId, {CleaningRequestBody? body}) async {
+  /// 청소 희망 일자/시간은 케이스 생성/수정 시점에 [MoveInCaseCreateRequest.cleaningDate]
+  /// / [MoveInCaseCreateRequest.cleaningTime] 으로 저장되어 있어 본 엔드포인트는
+  /// 상태 전환만 수행. 빈 본문 전송.
+  Future<MoveInCase> requestCleaning(int caseId) async {
     return _call(() async {
       final response = await http
           .post(
             _uri('/cases/$caseId/cleaning/request'),
             headers: await _headers(),
-            body: jsonEncode(body?.toJson() ?? <String, dynamic>{}),
+            body: jsonEncode(const <String, dynamic>{}),
           )
           .timeout(ApiConfig.timeout);
       return MoveInCase.fromJson(_extractData(response));

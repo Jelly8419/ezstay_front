@@ -60,7 +60,8 @@ class MoveInRoomRequest {
 
 /// 입주 준비 등록(케이스) 생성 요청 (POST /api/host/move-in/cases)
 ///
-/// 청소 신청은 별도 호출 (POST /cases/:id/cleaning/request) — Q5 결정.
+/// 청소 신청은 별도 호출 (POST /cases/:id/cleaning/request) 로 상태 전환만 수행.
+/// 청소 희망 일자/시간은 케이스 생성 시점에 함께 저장 ([cleaningDate]+[cleaningTime]).
 class MoveInCaseCreateRequest {
   final int moveInRoomId;
   final String checkInDate;
@@ -72,6 +73,12 @@ class MoveInCaseCreateRequest {
   /// 자동 발송 체크박스 (Q3-A — 기본 ON)
   final bool sendGuestPaymentRequest;
 
+  /// 청소 희망 일자 'YYYY-MM-DD' — [cleaningTime]과 함께 전송하거나 함께 비워야 함.
+  final String? cleaningDate;
+
+  /// 청소 희망 시작 시각 'HH:mm' (30분 단위, 09:00~18:00).
+  final String? cleaningTime;
+
   const MoveInCaseCreateRequest({
     required this.moveInRoomId,
     required this.checkInDate,
@@ -80,6 +87,8 @@ class MoveInCaseCreateRequest {
     required this.guestPhone,
     this.requestMemo,
     this.sendGuestPaymentRequest = true,
+    this.cleaningDate,
+    this.cleaningTime,
   });
 
   Map<String, dynamic> toJson() {
@@ -94,6 +103,8 @@ class MoveInCaseCreateRequest {
     if (requestMemo != null && requestMemo!.isNotEmpty) {
       map['requestMemo'] = requestMemo;
     }
+    if (cleaningDate != null) map['cleaningDate'] = cleaningDate;
+    if (cleaningTime != null) map['cleaningTime'] = cleaningTime;
     return map;
   }
 }
@@ -108,6 +119,8 @@ class MoveInCaseUpdateRequest {
   final String? guestName;
   final String? guestPhone;
   final String? requestMemo;
+  final String? cleaningDate;
+  final String? cleaningTime;
 
   const MoveInCaseUpdateRequest({
     this.checkInDate,
@@ -115,6 +128,8 @@ class MoveInCaseUpdateRequest {
     this.guestName,
     this.guestPhone,
     this.requestMemo,
+    this.cleaningDate,
+    this.cleaningTime,
   });
 
   Map<String, dynamic> toJson() {
@@ -124,27 +139,12 @@ class MoveInCaseUpdateRequest {
     if (guestName != null) map['guestName'] = guestName;
     if (guestPhone != null) map['guestPhone'] = guestPhone;
     if (requestMemo != null) map['requestMemo'] = requestMemo;
+    if (cleaningDate != null) map['cleaningDate'] = cleaningDate;
+    if (cleaningTime != null) map['cleaningTime'] = cleaningTime;
     return map;
   }
 
   bool get isEmpty => toJson().isEmpty;
-}
-
-/// 청소 신청 요청 (POST /api/host/move-in/cases/:caseId/cleaning/request)
-///
-/// [Q2] 청소 희망일은 이미지 ② 폼에 추가됨.
-class CleaningRequestBody {
-  final String? cleaningRequestedDate; // 청소 희망일 'YYYY-MM-DD'
-
-  const CleaningRequestBody({this.cleaningRequestedDate});
-
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    if (cleaningRequestedDate != null) {
-      map['cleaningRequestedDate'] = cleaningRequestedDate;
-    }
-    return map;
-  }
 }
 
 /// 청소 결제 승인 요청 (POST /cleaning/payment/confirm)

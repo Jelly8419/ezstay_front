@@ -333,7 +333,7 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
                       ),
                     )
                   : Text(
-                      '선택한 상품 결제하기',
+                      '결제하기',
                       style: AppTextStyles.bodyLarge.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,

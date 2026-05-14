@@ -2,6 +2,7 @@
 // `import 'package:building_map_app/models/move_in/move_in.dart';` 한 줄로 전체 사용.
 export 'bed_info.dart';
 export 'move_in_case.dart';
+export 'move_in_deadline_policy.dart';
 export 'move_in_enums.dart';
 export 'move_in_error.dart';
 export 'move_in_requests.dart';
