@@ -140,10 +140,11 @@ enum GuestOptionCategory {
   }
 }
 
-/// 주문 라인 상태 (취소된 라인 구분)
+/// 주문 라인 상태 (취소/반품요청 라인 구분)
 enum OrderItemStatus {
   active('ACTIVE'),
-  cancelled('CANCELLED');
+  cancelled('CANCELLED'),
+  returnRequested('RETURN_REQUESTED');
 
   final String code;
   const OrderItemStatus(this.code);

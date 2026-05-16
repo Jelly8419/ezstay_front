@@ -3,6 +3,7 @@
 export 'bed_info.dart';
 export 'move_in_case.dart';
 export 'move_in_deadline_policy.dart';
+export 'move_in_refund_policy.dart';
 export 'move_in_enums.dart';
 export 'move_in_error.dart';
 export 'move_in_requests.dart';

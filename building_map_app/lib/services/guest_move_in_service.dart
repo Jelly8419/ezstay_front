@@ -290,6 +290,56 @@ class GuestMoveInService {
   }
 
   // ============================================================
+  // 5-1. 환불 / 반품 (결제 완료 주문)
+  // ============================================================
+
+  /// POST /orders/:orderDbId/cancel — 옵션 취소 (즉시 환불)
+  ///
+  /// 결제완료~D-5 전액 / D-5~입주일 배송 전만 / 입주 후 불가 (서버 최종 판정).
+  Future<GuestOrderRefundResponse> cancelPaidOrder(
+    int orderDbId, {
+    String? reason,
+  }) async {
+    return _call(() async {
+      final body = jsonEncode({
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      });
+      final response = await http
+          .post(
+            _uri('/orders/$orderDbId/cancel'),
+            headers: await _headers(),
+            body: body,
+          )
+          .timeout(ApiConfig.timeout);
+      final data = _extractData(response);
+      return GuestOrderRefundResponse.fromJson(data);
+    });
+  }
+
+  /// POST /orders/:orderDbId/return — 반품 요청 (관리자 승인 대상)
+  ///
+  /// 입주일~퇴실일 + deliveryStatus=DELIVERED 만. 케이스당 PENDING 반품 1건 제한.
+  Future<GuestReturnRequestResponse> requestReturn(
+    int orderDbId, {
+    String? reason,
+  }) async {
+    return _call(() async {
+      final body = jsonEncode({
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      });
+      final response = await http
+          .post(
+            _uri('/orders/$orderDbId/return'),
+            headers: await _headers(),
+            body: body,
+          )
+          .timeout(ApiConfig.timeout);
+      final data = _extractData(response);
+      return GuestReturnRequestResponse.fromJson(data);
+    });
+  }
+
+  // ============================================================
   // 6. 결제 결과 조회
   // ============================================================
 

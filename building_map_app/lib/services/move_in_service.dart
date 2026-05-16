@@ -267,6 +267,29 @@ class MoveInService {
     });
   }
 
+  /// POST /cases/:caseId/cleaning/refund — 청소 결제 환불 (셀프 즉시)
+  ///
+  /// `cleaningStatus=PAID` 건 전용. 3구간 정책(서버 최종 판정):
+  /// D-2까지 전액 / D-1~당일 1만원 차감 / 희망 1시간 전부터 불가(4813).
+  Future<CleaningRefundResponse> refundCleaning(
+    int caseId, {
+    String? reason,
+  }) async {
+    return _call(() async {
+      final body = jsonEncode({
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      });
+      final response = await http
+          .post(
+            _uri('/cases/$caseId/cleaning/refund'),
+            headers: await _headers(),
+            body: body,
+          )
+          .timeout(ApiConfig.timeout);
+      return CleaningRefundResponse.fromJson(_extractData(response));
+    });
+  }
+
   /// POST /cases/:caseId/cleaning/payment/init — PG 결제 시작
   Future<CleaningPaymentInitResponse> initCleaningPayment(int caseId) async {
     return _call(() async {

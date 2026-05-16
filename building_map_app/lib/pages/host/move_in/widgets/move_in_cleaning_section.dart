@@ -19,6 +19,7 @@ class MoveInCleaningSection extends StatelessWidget {
   final VoidCallback onRequest;
   final VoidCallback onPay;
   final VoidCallback onCancel;
+  final VoidCallback onRefund;
 
   const MoveInCleaningSection({
     super.key,
@@ -27,6 +28,7 @@ class MoveInCleaningSection extends StatelessWidget {
     required this.onRequest,
     required this.onPay,
     required this.onCancel,
+    required this.onRefund,
   });
 
   @override
@@ -164,7 +166,116 @@ class MoveInCleaningSection extends StatelessWidget {
           ],
         );
       case CleaningStatus.paid:
-        return const SizedBox.shrink();
+        return _buildRefundAction(c);
+    }
+  }
+
+  /// PAID 상태 — 청소 결제 환불 (3구간 정책 안내 + 버튼)
+  Widget _buildRefundAction(MoveInCase c) {
+    // 청소 희망 일시가 없으면 시점 가드 불가 → 백엔드가 전액 환불 허용.
+    final cleaningDateTime = _composeCleaningDateTime(c);
+
+    CleaningRefundTier? tier;
+    int? estimated;
+    if (cleaningDateTime != null) {
+      tier = MoveInRefundPolicy.cleaningRefundTier(
+        cleaningDateTime: cleaningDateTime,
+      );
+      if (c.cleaningFee != null) {
+        estimated = MoveInRefundPolicy.estimatedCleaningRefund(
+          cleaningFee: c.cleaningFee!,
+          tier: tier,
+        );
+      }
+    }
+
+    final notAllowed = tier == CleaningRefundTier.notAllowed;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: notAllowed
+                ? AppColors.neutral100
+                : AppColors.primary50,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '환불 정책',
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                '· 청소 희망일 2일 전까지: 전액 환불\n'
+                '· 희망일 1일 전 ~ 당일: 10,000원 차감 후 환불\n'
+                '· 희망 시간 1시간 전부터: 환불 불가',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              if (tier != null && !notAllowed && estimated != null) ...[
+                SizedBox(height: AppSpacing.xs),
+                Text(
+                  tier == CleaningRefundTier.full
+                      ? '현재 환불 시 전액 ${_money(estimated)} 환불됩니다.'
+                      : '현재 환불 시 10,000원 차감 후 ${_money(estimated)} 환불됩니다.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.primary700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              if (notAllowed) ...[
+                SizedBox(height: AppSpacing.xs),
+                Text(
+                  '청소 희망 시간이 임박해 환불할 수 없습니다.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.error700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        SizedBox(height: AppSpacing.sm),
+        Align(
+          alignment: Alignment.centerRight,
+          child: OutlinedButton(
+            onPressed: (isMutating || notAllowed) ? null : onRefund,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error600,
+              side: BorderSide(
+                color: AppColors.error500.withValues(alpha: 0.5),
+              ),
+            ),
+            child: const Text('청소 결제 환불'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// `cleaningDate`('YYYY-MM-DD') + `cleaningTime`('HH:mm[:ss]') → DateTime.
+  /// 둘 중 하나라도 없으면 null (시점 가드 불가 → 전액 환불 허용).
+  DateTime? _composeCleaningDateTime(MoveInCase c) {
+    final d = c.cleaningDate;
+    final t = c.cleaningTime;
+    if (d == null || d.isEmpty) return null;
+    final hhmm = (t == null || t.isEmpty) ? '00:00' : t;
+    try {
+      return DateTime.parse('$d ${hhmm.length >= 5 ? hhmm.substring(0, 5) : hhmm}');
+    } catch (_) {
+      return null;
     }
   }
 

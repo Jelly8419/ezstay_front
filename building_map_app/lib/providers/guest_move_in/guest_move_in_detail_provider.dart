@@ -67,11 +67,67 @@ class GuestMoveInDetailProvider extends ChangeNotifier {
     if (_caseId != null) await loadDetail(_caseId!);
   }
 
+  // ----- 환불 / 반품 액션 -----
+  bool _isMutating = false;
+  bool get isMutating => _isMutating;
+
+  /// 옵션 취소 (즉시 환불). 성공 시 상세 재조회로 주문 상태 동기화.
+  Future<GuestOrderRefundResponse?> cancelPaidOrder(
+    int orderDbId, {
+    String? reason,
+  }) async {
+    if (_isMutating || _caseId == null) return null;
+    _isMutating = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final result =
+          await _service.cancelPaidOrder(orderDbId, reason: reason);
+      _detail = await _service.getRequestDetail(_caseId!);
+      return result;
+    } on GuestMoveInException catch (e) {
+      _error = e;
+      return null;
+    } catch (e) {
+      _error = GuestMoveInException.network(e);
+      return null;
+    } finally {
+      _isMutating = false;
+      notifyListeners();
+    }
+  }
+
+  /// 반품 요청 (관리자 승인 대상). 성공 시 상세 재조회.
+  Future<GuestReturnRequestResponse?> requestReturn(
+    int orderDbId, {
+    String? reason,
+  }) async {
+    if (_isMutating || _caseId == null) return null;
+    _isMutating = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final result = await _service.requestReturn(orderDbId, reason: reason);
+      _detail = await _service.getRequestDetail(_caseId!);
+      return result;
+    } on GuestMoveInException catch (e) {
+      _error = e;
+      return null;
+    } catch (e) {
+      _error = GuestMoveInException.network(e);
+      return null;
+    } finally {
+      _isMutating = false;
+      notifyListeners();
+    }
+  }
+
   void reset() {
     _caseId = null;
     _detail = null;
     _optionsContext = null;
     _error = null;
+    _isMutating = false;
     notifyListeners();
   }
 }

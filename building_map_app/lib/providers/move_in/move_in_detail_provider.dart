@@ -70,6 +70,27 @@ class MoveInDetailProvider extends ChangeNotifier {
     return _runCleaningAction(() => _service.cancelCleaningRequest(caseId));
   }
 
+  /// 청소 결제 환불 (PAID 건 전용). 성공 시 환불 결과를 반환하고
+  /// 케이스를 재조회해 cleaningStatus(PAID→CANCELLED) 동기화.
+  Future<CleaningRefundResponse?> refundCleaning({String? reason}) async {
+    if (_isMutating) return null;
+    _isMutating = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final result = await _service.refundCleaning(caseId, reason: reason);
+      _case = await _service.getMoveInCase(caseId);
+      return result;
+    } on MoveInException catch (e) {
+      _error = e;
+      return null;
+    } finally {
+      _isMutating = false;
+      notifyListeners();
+    }
+  }
+
   // ============================================================
   // 임차인 결제 요청 액션
   // ============================================================

@@ -7,6 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../models/guest_move_in/guest_move_in.dart';
 import '../../../providers/guest_move_in/guest_move_in_detail_provider.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
+import 'utils/guest_move_in_format.dart';
 import 'widgets/guest_move_in_info_banner.dart';
 import 'widgets/guest_move_in_order_card.dart';
 import 'widgets/guest_move_in_room_header.dart';
@@ -32,6 +33,120 @@ class _GuestMoveInDetailPageState extends State<GuestMoveInDetailPage> {
       if (!mounted) return;
       context.read<GuestMoveInDetailProvider>().loadDetail(widget.caseId);
     });
+  }
+
+  /// 사유 입력 + 확인 다이얼로그. 확인 시 trimmed reason(빈 문자열이면 ''),
+  /// 취소 시 null 반환.
+  Future<String?> _askReason({
+    required String title,
+    required String body,
+    required String confirmLabel,
+    Color? confirmColor,
+  }) async {
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(body),
+            SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: ctrl,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: '사유 (선택)',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('닫기'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: confirmColor ?? AppColors.primary500,
+            ),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: Text(confirmLabel),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return null;
+    return ctrl.text.trim();
+  }
+
+  Future<void> _onCancelOrder(GuestMoveInOrder order) async {
+    final reason = await _askReason(
+      title: '주문을 취소하시겠습니까?',
+      body: '결제 완료된 옵션 주문을 취소하고 환불을 진행합니다.\n'
+          '입주일 5일 전까지는 전액, 이후 배송 전이면 부분 취소가 가능합니다.',
+      confirmLabel: '주문 취소',
+      confirmColor: AppColors.error500,
+    );
+    if (reason == null || !mounted) return;
+
+    final provider = context.read<GuestMoveInDetailProvider>();
+    final result = await provider.cancelPaidOrder(
+      order.orderDbId,
+      reason: reason.isEmpty ? null : reason,
+    );
+    if (!mounted) return;
+    if (result != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '주문이 취소되어 ${GuestMoveInFormat.formatPrice(result.refundAmount)} 환불 처리되었습니다.',
+          ),
+        ),
+      );
+    } else {
+      _showActionError(provider.error);
+    }
+  }
+
+  Future<void> _onReturnOrder(GuestMoveInOrder order) async {
+    final reason = await _askReason(
+      title: '반품을 요청하시겠습니까?',
+      body: '배송 완료된 주문에 대해 반품을 요청합니다.\n'
+          '관리자 승인 후 왕복배송비(7,000원)를 차감하고 환불됩니다.',
+      confirmLabel: '반품 요청',
+    );
+    if (reason == null || !mounted) return;
+
+    final provider = context.read<GuestMoveInDetailProvider>();
+    final result = await provider.requestReturn(
+      order.orderDbId,
+      reason: reason.isEmpty ? null : reason,
+    );
+    if (!mounted) return;
+    if (result != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('반품 요청이 접수되었습니다. 관리자 승인 후 환불 처리됩니다.'),
+        ),
+      );
+    } else {
+      _showActionError(provider.error);
+    }
+  }
+
+  void _showActionError(GuestMoveInException? error) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          error?.message ?? '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.',
+        ),
+      ),
+    );
   }
 
   @override
@@ -105,7 +220,16 @@ class _GuestMoveInDetailPageState extends State<GuestMoveInDetailPage> {
             ...detail.orders.map(
               (o) => Padding(
                 padding: EdgeInsets.only(bottom: AppSpacing.sm),
-                child: GuestMoveInOrderCard(order: o),
+                child: GuestMoveInOrderCard(
+                  order: o,
+                  checkInDate: detail.checkInDate,
+                  checkOutDate: detail.checkOutDate,
+                  isMutating: context
+                      .watch<GuestMoveInDetailProvider>()
+                      .isMutating,
+                  onCancel: (order) => _onCancelOrder(order),
+                  onReturn: (order) => _onReturnOrder(order),
+                ),
               ),
             ),
             SizedBox(height: AppSpacing.lg),

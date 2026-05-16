@@ -184,6 +184,62 @@ class GuestPaymentResult {
   }
 }
 
+/// `POST /orders/:orderDbId/cancel` 응답 — 결제 완료 주문 즉시 환불
+class GuestOrderRefundResponse {
+  final int orderDbId;
+  final String orderId;
+  final GuestOrderStatus status;
+  final int refundAmount;
+  final int shippingDeduction;
+
+  const GuestOrderRefundResponse({
+    required this.orderDbId,
+    required this.orderId,
+    required this.status,
+    required this.refundAmount,
+    required this.shippingDeduction,
+  });
+
+  factory GuestOrderRefundResponse.fromJson(dynamic raw) {
+    final json = _asMap(raw);
+    return GuestOrderRefundResponse(
+      orderDbId: (json['orderDbId'] as num? ?? 0).toInt(),
+      orderId: json['orderId']?.toString() ?? '',
+      status: GuestOrderStatus.fromCode(json['status']?.toString()),
+      refundAmount: (json['refundAmount'] as num? ?? 0).toInt(),
+      shippingDeduction: (json['shippingDeduction'] as num? ?? 0).toInt(),
+    );
+  }
+}
+
+/// `POST /orders/:orderDbId/return` 응답 — 반품 요청(관리자 승인 대상)
+class GuestReturnRequestResponse {
+  final int refundRequestId;
+  final int orderDbId;
+  final String orderId;
+  final String status; // 반품요청 상태 (PENDING 등)
+  final int itemTotalAmount;
+
+  const GuestReturnRequestResponse({
+    required this.refundRequestId,
+    required this.orderDbId,
+    required this.orderId,
+    required this.status,
+    required this.itemTotalAmount,
+  });
+
+  factory GuestReturnRequestResponse.fromJson(dynamic raw) {
+    final json = _asMap(raw);
+    return GuestReturnRequestResponse(
+      refundRequestId: (json['refundRequestId'] as num? ?? 0).toInt(),
+      orderDbId: (json['orderDbId'] as num? ?? 0).toInt(),
+      orderId: json['orderId']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      itemTotalAmount: (json['itemTotalAmount'] as num? ?? 0).toInt(),
+    );
+  }
+}
+
 /// `DELETE /orders/:orderId` 응답
 class GuestOrderCancelResponse {
   final int orderDbId;

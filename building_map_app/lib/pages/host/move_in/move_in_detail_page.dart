@@ -152,6 +152,7 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
       onRequest: () => _onRequestCleaning(),
       onPay: () => _onPayCleaning(),
       onCancel: () => _onCancelCleaning(),
+      onRefund: () => _onRefundCleaning(),
     );
     final paymentRequest = MoveInPaymentRequestSection(
       moveInCase: c,
@@ -295,6 +296,77 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
     } else {
       _showProviderError();
     }
+  }
+
+  Future<void> _onRefundCleaning() async {
+    final reasonCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('청소 결제를 환불하시겠습니까?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '환불 금액은 청소 희망일 기준 정책에 따라 산정됩니다.\n'
+              '· 희망일 2일 전까지: 전액\n'
+              '· 1일 전~당일: 10,000원 차감\n'
+              '· 희망 시간 1시간 전부터: 환불 불가',
+            ),
+            SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: reasonCtrl,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: '환불 사유 (선택)',
+                hintText: '예: 일정 취소',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('닫기'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error500),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('환불하기'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    final reason = reasonCtrl.text.trim();
+    final provider = context.read<MoveInDetailProvider>();
+    final result =
+        await provider.refundCleaning(reason: reason.isEmpty ? null : reason);
+    if (!mounted) return;
+    if (result != null) {
+      final msg = result.deduction > 0
+          ? '청소 결제가 환불되었습니다. (${_won(result.deduction)} 차감 후 ${_won(result.refundAmount)} 환불)'
+          : '청소 결제가 전액 환불되었습니다. (${_won(result.refundAmount)})';
+      CustomToast.success(context, msg);
+      final updated = provider.moveInCase;
+      if (updated != null) _syncListProvider(updated);
+    } else {
+      _showProviderError();
+    }
+  }
+
+  String _won(int amount) {
+    final s = amount.toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return '$buf원';
   }
 
   Future<void> _onPayCleaning() async {

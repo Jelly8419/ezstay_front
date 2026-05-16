@@ -43,7 +43,8 @@ class GuestMoveInOrderItem {
 
 /// 주문 (INITIAL / ADDITIONAL)
 class GuestMoveInOrder {
-  final String orderId;          // "270701-G0001"
+  final int orderDbId;           // DB PK (정수) — 환불/반품 API path 인자
+  final String orderId;          // "270701-G0001" (표시용 주문번호)
   final OrderType orderType;
   final GuestOrderStatus status;
   final DeliveryStatus deliveryStatus;
@@ -56,6 +57,7 @@ class GuestMoveInOrder {
   final List<GuestMoveInOrderItem> items;
 
   const GuestMoveInOrder({
+    required this.orderDbId,
     required this.orderId,
     required this.orderType,
     required this.status,
@@ -73,6 +75,7 @@ class GuestMoveInOrder {
     final json = _asMap(raw);
     final itemsRaw = (json['items'] as List?) ?? const [];
     return GuestMoveInOrder(
+      orderDbId: (json['orderDbId'] as num? ?? 0).toInt(),
       orderId: json['orderId']?.toString() ?? '',
       orderType: OrderType.fromCode(json['orderType']?.toString()),
       status: GuestOrderStatus.fromCode(json['status']?.toString()),

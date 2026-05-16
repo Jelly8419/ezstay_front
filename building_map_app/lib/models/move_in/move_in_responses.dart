@@ -209,6 +209,32 @@ class CleaningPaymentConfirmResponse {
   }
 }
 
+/// 청소 결제 환불 응답 (POST /cases/:caseId/cleaning/refund)
+class CleaningRefundResponse {
+  final int caseId;
+  final CleaningStatus cleaningStatus; // CANCELLED
+  final int refundAmount;
+  final int deduction;
+
+  const CleaningRefundResponse({
+    required this.caseId,
+    required this.cleaningStatus,
+    required this.refundAmount,
+    required this.deduction,
+  });
+
+  factory CleaningRefundResponse.fromJson(dynamic raw) {
+    final json = _asMap(raw);
+    return CleaningRefundResponse(
+      caseId: (json['caseId'] ?? 0).toInt(),
+      cleaningStatus:
+          CleaningStatus.fromCode(json['cleaningStatus']?.toString()),
+      refundAmount: (json['refundAmount'] ?? 0).toInt(),
+      deduction: (json['deduction'] ?? 0).toInt(),
+    );
+  }
+}
+
 /// 임차인 결제 요청 발송 응답 (send / resend / link)
 class PaymentRequestSendResponse {
   final int caseId;

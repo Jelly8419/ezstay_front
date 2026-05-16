@@ -15,6 +15,11 @@ enum MoveInErrorCode {
   paymentNotAvailable(4602, '지금은 결제할 수 없는 상태입니다.'),
   paymentConfirmationFailed(4605, '결제 승인에 실패했습니다. 다시 시도해주세요.'),
   moveInRoomNotApproved(4795, '심사 승인된 방만 사용할 수 있습니다.'),
+  // 청소 결제 환불 (2026-05-16)
+  cleaningRefundNotAllowed(
+      4813, '청소 희망 시간 1시간 전부터는 환불할 수 없습니다.'),
+  pgCancelFailed(4900, 'PG 결제 취소에 실패했습니다. 잠시 후 다시 시도해주세요.'),
+  pgAlreadyCancelled(4901, '이미 취소 완료된 결제입니다.'),
   unknown(0, '알 수 없는 오류가 발생했습니다.');
 
   final int code;
@@ -75,6 +80,11 @@ class MoveInException implements Exception {
   bool get isConflict => errorCode == MoveInErrorCode.conflictWithContract;
   bool get isUnauthorized => errorCode == MoveInErrorCode.unauthorized;
   bool get isValidation => errorCode == MoveInErrorCode.validationError;
+  bool get isCleaningRefundNotAllowed =>
+      errorCode == MoveInErrorCode.cleaningRefundNotAllowed;
+  bool get isPgCancelFailed => errorCode == MoveInErrorCode.pgCancelFailed;
+  bool get isPgAlreadyCancelled =>
+      errorCode == MoveInErrorCode.pgAlreadyCancelled;
 
   @override
   String toString() => 'MoveInException($errorCode, http=$httpStatus): $message';

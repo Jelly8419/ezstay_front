@@ -32,6 +32,14 @@ enum GuestMoveInErrorCode {
       '결제 대기 중인 주문이 있습니다. 기존 주문을 결제하거나 취소해주세요.'),
   paymentNotFound(4794, '결제를 찾을 수 없습니다.'),
 
+  // 환불/취소/반품 (2026-05-16)
+  refundNotAllowed(4799, '현재 시점 또는 배송 상태에서는 취소/반품할 수 없습니다.'),
+  returnAlreadyRequested(4810, '이미 처리 중인 반품 요청이 있습니다.'),
+  cleaningRefundNotAllowed(
+      4813, '청소 희망 시간 1시간 전부터는 환불할 수 없습니다.'),
+  pgCancelFailed(4900, 'PG 결제 취소에 실패했습니다. 잠시 후 다시 시도해주세요.'),
+  pgAlreadyCancelled(4901, '이미 취소 완료된 결제입니다.'),
+
   unknown(0, '알 수 없는 오류가 발생했습니다.');
 
   final int code;
@@ -96,6 +104,14 @@ class GuestMoveInException implements Exception {
   bool get isStockInsufficient =>
       errorCode == GuestMoveInErrorCode.stockInsufficient;
   bool get isAmountMismatch => errorCode == GuestMoveInErrorCode.amountMismatch;
+  bool get isRefundNotAllowed =>
+      errorCode == GuestMoveInErrorCode.refundNotAllowed;
+  bool get isReturnAlreadyRequested =>
+      errorCode == GuestMoveInErrorCode.returnAlreadyRequested;
+  bool get isPgCancelFailed =>
+      errorCode == GuestMoveInErrorCode.pgCancelFailed;
+  bool get isPgAlreadyCancelled =>
+      errorCode == GuestMoveInErrorCode.pgAlreadyCancelled;
 
   @override
   String toString() =>
