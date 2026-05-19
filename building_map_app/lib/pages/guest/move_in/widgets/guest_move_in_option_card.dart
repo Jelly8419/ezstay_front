@@ -21,6 +21,11 @@ class GuestMoveInOptionCard extends StatelessWidget {
   final ValueChanged<bool>? onToggle;
   final ValueChanged<int>? onQuantityChange;
 
+  /// 추가 결제 가능 잔여 수량 — 기보유 수량을 차감한 값.
+  /// null/미지정 시 기본 [kGuestMoveInMaxQuantityPerItem](=5)로 동작.
+  /// 0 이면 카드 전체 비활성(이미 5개 보유 상태 안내).
+  final int? maxQuantity;
+
   const GuestMoveInOptionCard({
     super.key,
     required this.option,
@@ -29,14 +34,22 @@ class GuestMoveInOptionCard extends StatelessWidget {
     this.selectable = true,
     this.onToggle,
     this.onQuantityChange,
+    this.maxQuantity,
   });
+
+  int get _effectiveMax =>
+      maxQuantity ?? kGuestMoveInMaxQuantityPerItem;
+
+  bool get _exhausted => selectable && _effectiveMax <= 0;
 
   @override
   Widget build(BuildContext context) {
     final unavailable = !option.available;
+    final exhausted = _exhausted;
+    final dimmed = unavailable || exhausted;
 
     return Opacity(
-      opacity: unavailable ? 0.5 : 1.0,
+      opacity: dimmed ? 0.5 : 1.0,
       child: Container(
         padding: EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
@@ -53,7 +66,7 @@ class GuestMoveInOptionCard extends StatelessWidget {
             if (selectable)
               Checkbox(
                 value: selected,
-                onChanged: unavailable
+                onChanged: (unavailable || exhausted)
                     ? null
                     : (v) => onToggle?.call(v ?? false),
                 activeColor: AppColors.primary500,
@@ -87,7 +100,12 @@ class GuestMoveInOptionCard extends StatelessWidget {
                         ),
                       ),
                       if (unavailable)
-                        _Tag(text: '품절', color: AppColors.error500),
+                        _Tag(text: '품절', color: AppColors.error500)
+                      else if (exhausted)
+                        _Tag(
+                          text: '보유 한도 ($kGuestMoveInMaxQuantityPerItem개)',
+                          color: AppColors.neutral500,
+                        ),
                     ],
                   ),
                   if (option.description != null &&
@@ -113,10 +131,11 @@ class GuestMoveInOptionCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (selectable && selected && !unavailable) ...[
+            if (selectable && selected && !unavailable && !exhausted) ...[
               SizedBox(width: AppSpacing.sm),
               _QuantityStepper(
                 quantity: quantity,
+                max: _effectiveMax,
                 onChange: (v) => onQuantityChange?.call(v),
               ),
             ],
@@ -144,9 +163,14 @@ class GuestMoveInOptionCard extends StatelessWidget {
 
 class _QuantityStepper extends StatelessWidget {
   final int quantity;
+  final int max;
   final ValueChanged<int> onChange;
 
-  const _QuantityStepper({required this.quantity, required this.onChange});
+  const _QuantityStepper({
+    required this.quantity,
+    required this.max,
+    required this.onChange,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +193,7 @@ class _QuantityStepper extends StatelessWidget {
           ),
           _StepperButton(
             icon: Icons.add,
-            onTap: quantity < kGuestMoveInMaxQuantityPerItem
+            onTap: quantity < max
                 ? () => onChange(quantity + 1)
                 : null,
           ),

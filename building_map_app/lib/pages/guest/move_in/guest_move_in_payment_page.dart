@@ -41,11 +41,17 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // 옵션 카탈로그만 로드 — 백엔드가 옵션별 ownedQuantity /
+      // remainingQuantity / maxPerOption 을 동봉해주므로 주문 내역 별도 조회 불필요.
       context.read<GuestMoveInDetailProvider>().loadOptions(widget.caseId);
     });
   }
 
   void _toggleOption(GuestMoveInOption option, bool selected) {
+    if (selected) {
+      // 보유 한도 도달 옵션은 선택 차단 (카드 UI 가 이미 잠그지만 안전망)
+      if (_remainingForOption(option.optionId) <= 0) return;
+    }
     setState(() {
       if (selected) {
         _selectedQuantities[option.optionId] = 1;
@@ -56,9 +62,14 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
   }
 
   void _changeQuantity(GuestMoveInOption option, int quantity) {
-    // 품목당 최대 5개 (입주용품 구매 / 침구류 대여 공통)
-    final clamped =
-        quantity.clamp(1, kGuestMoveInMaxQuantityPerItem);
+    // 품목당 최대 5개 (입주용품 구매 / 침구류 대여 공통).
+    // 추가 결제는 기보유 수량을 반영한 잔여 만큼만 허용.
+    final remaining = _remainingForOption(option.optionId);
+    if (remaining <= 0) {
+      setState(() => _selectedQuantities.remove(option.optionId));
+      return;
+    }
+    final clamped = quantity.clamp(1, remaining);
     setState(() {
       _selectedQuantities[option.optionId] = clamped;
     });
@@ -71,6 +82,29 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
         .fold<int>(0, (sum, e) => sum + (priceById[e.key] ?? 0) * e.value);
   }
 
+  /// 옵션 카탈로그 응답에서 옵션별 정보를 조회 (백엔드가 ownedQuantity /
+  /// remainingQuantity / maxPerOption 을 동봉).
+  GuestMoveInOption? _findOption(int optionId) {
+    final ctx = context.read<GuestMoveInDetailProvider>().optionsContext;
+    if (ctx == null) return null;
+    for (final o in ctx.options) {
+      if (o.optionId == optionId) return o;
+    }
+    return null;
+  }
+
+  /// 옵션별 추가 결제 가능 잔여 수량. 옵션 미발견 시 0 (안전).
+  int _remainingForOption(int optionId) =>
+      _findOption(optionId)?.remainingQuantity ?? 0;
+
+  /// 옵션별 기보유 수량 (에러 안내·로그용).
+  int _ownedForOption(int optionId) =>
+      _findOption(optionId)?.ownedQuantity ?? 0;
+
+  /// 케이스 내 PAID/PARTIAL_REFUND ACTIVE 보유가 하나라도 있으면 추가 결제로 간주.
+  bool _hasAnyOwned(GuestMoveInOptionsResponse ctx) =>
+      ctx.options.any((o) => o.ownedQuantity > 0);
+
   /// 결제 시작 — INITIAL/ADDITIONAL 분기는 detail 의 hasPaidInitial 로 판단
   Future<void> _onPayPressed() async {
     final items = _selectedQuantities.entries
@@ -79,22 +113,33 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
         .toList();
     if (items.isEmpty) return;
 
-    // 품목당 최대 5개 가드 (안전망 — 스테퍼 우회 대비)
-    if (items.any((i) => i.quantity > kGuestMoveInMaxQuantityPerItem)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('품목당 최대 5개까지만 선택할 수 있습니다.'),
-        ),
-      );
-      return;
+    // 품목당 최대 5개 가드 — 옵션 응답의 remainingQuantity 기반 (서버 4816 동일 정책).
+    for (final i in items) {
+      final remaining = _remainingForOption(i.optionId);
+      if (i.quantity > remaining) {
+        final ownedQty = _ownedForOption(i.optionId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ownedQty > 0
+                  ? '이미 보유한 수량($ownedQty개)을 포함해 품목당 최대 $kGuestMoveInMaxQuantityPerItem개까지만 가능합니다.'
+                  : '품목당 최대 $kGuestMoveInMaxQuantityPerItem개까지만 선택할 수 있습니다.',
+            ),
+          ),
+        );
+        return;
+      }
     }
 
     final ctx = context.read<GuestMoveInDetailProvider>().optionsContext;
     if (ctx == null) return;
     final totalAmount = _calcTotalAmount(ctx);
 
-    // 최소 금액 가드 (PG 정책 — 옵션 상품 합계 10,000원 이상)
-    if (PriceCalculator.isInvalidRentalAmount(totalAmount)) {
+    // INITIAL 최소 금액 가드 — 추가 결제(ADDITIONAL)는 면제.
+    // (이미 결제 이력이 있는 케이스라 PG 최소금액 정책 재적용 불필요)
+    final isAdditional = _hasAnyOwned(ctx);
+    if (!isAdditional &&
+        PriceCalculator.isInvalidRentalAmount(totalAmount)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(PriceCalculator.rentalAmountErrorMessage(
@@ -114,10 +159,6 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
 
     setState(() => _paying = true);
     try {
-      // 추가 결제 여부 — 상세 응답이 있으면 그걸 보고 판단
-      final detail = context.read<GuestMoveInDetailProvider>().detail;
-      final isAdditional = detail?.hasPaidInitial ?? false;
-
       // buyerName/customerPhone 은 백엔드 pgPayload 에서 채워 내려옴
       final result = isAdditional
           ? await _controller.payAdditional(
@@ -273,7 +314,12 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
   Widget _buildBody(GuestMoveInOptionsResponse ctx) {
     final hasSelection = _selectedQuantities.values.any((v) => v > 0);
     final totalAmount = _calcTotalAmount(ctx);
-    final isBelowMinimum = PriceCalculator.isInvalidRentalAmount(totalAmount);
+    // 추가 결제 여부 판정 — 옵션 응답의 ownedQuantity(PAID/PARTIAL_REFUND
+    // ACTIVE 라인 합산, 백엔드 동봉)가 0보다 크면 이미 결제 이력 있음.
+    final isAdditional = _hasAnyOwned(ctx);
+    // 추가 결제(ADDITIONAL) 는 PG 최소금액 가드 면제 — 기존 결제 이력 있음.
+    final isBelowMinimum =
+        !isAdditional && PriceCalculator.isInvalidRentalAmount(totalAmount);
     final ctaEnabled = ctx.canPay && hasSelection && !isBelowMinimum && !_paying;
 
     return Padding(
@@ -301,12 +347,14 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
           SizedBox(height: AppSpacing.md),
           ...ctx.options.map((option) {
             final qty = _selectedQuantities[option.optionId] ?? 0;
+            final remaining = _remainingForOption(option.optionId);
             return Padding(
               padding: EdgeInsets.only(bottom: AppSpacing.sm),
               child: GuestMoveInOptionCard(
                 option: option,
                 quantity: qty == 0 ? 1 : qty,
                 selected: qty > 0,
+                maxQuantity: remaining,
                 onToggle: (v) => _toggleOption(option, v),
                 onQuantityChange: (q) => _changeQuantity(option, q),
               ),
