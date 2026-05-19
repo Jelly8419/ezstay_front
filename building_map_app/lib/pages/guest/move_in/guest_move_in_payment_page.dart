@@ -56,8 +56,11 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
   }
 
   void _changeQuantity(GuestMoveInOption option, int quantity) {
+    // 품목당 최대 5개 (입주용품 구매 / 침구류 대여 공통)
+    final clamped =
+        quantity.clamp(1, kGuestMoveInMaxQuantityPerItem);
     setState(() {
-      _selectedQuantities[option.optionId] = quantity;
+      _selectedQuantities[option.optionId] = clamped;
     });
   }
 
@@ -75,6 +78,16 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
         .map((e) => GuestSelectedItem(optionId: e.key, quantity: e.value))
         .toList();
     if (items.isEmpty) return;
+
+    // 품목당 최대 5개 가드 (안전망 — 스테퍼 우회 대비)
+    if (items.any((i) => i.quantity > kGuestMoveInMaxQuantityPerItem)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('품목당 최대 5개까지만 선택할 수 있습니다.'),
+        ),
+      );
+      return;
+    }
 
     final ctx = context.read<GuestMoveInDetailProvider>().optionsContext;
     if (ctx == null) return;
@@ -167,6 +180,27 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
     }
   }
 
+  /// 4816 응답 details([{name, max, alreadyOwned, requested}, ...])를
+  /// 사람이 읽는 안내 문구로 변환. 형식이 다르면 null.
+  String? _optionQtyExceededDetail(GuestMoveInException error) {
+    final d = error.details;
+    if (d is! List || d.isEmpty) return null;
+    final lines = <String>[];
+    for (final e in d) {
+      if (e is! Map) continue;
+      final name = e['name']?.toString() ?? '옵션';
+      final max = (e['max'] as num?)?.toInt() ?? 5;
+      final owned = (e['alreadyOwned'] as num?)?.toInt();
+      final requested = (e['requested'] as num?)?.toInt();
+      if (owned != null && requested != null) {
+        lines.add('· $name: 보유 $owned개 + 요청 $requested개 (최대 $max개)');
+      } else {
+        lines.add('· $name (최대 $max개)');
+      }
+    }
+    return lines.isEmpty ? null : lines.join('\n');
+  }
+
   Future<void> _showInitErrorDialog(GuestMoveInException error) async {
     String? actionLabel;
     VoidCallback? action;
@@ -183,11 +217,17 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
           .loadOptions(widget.caseId);
     }
 
+    final detailText =
+        error.isOptionQtyExceeded ? _optionQtyExceededDetail(error) : null;
+    final bodyText = detailText == null
+        ? error.message
+        : '${error.message}\n\n$detailText';
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('결제를 시작할 수 없습니다'),
-        content: Text(error.message),
+        content: Text(bodyText),
         actions: [
           if (action != null && actionLabel != null)
             TextButton(

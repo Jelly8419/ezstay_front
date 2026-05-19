@@ -5,6 +5,10 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/guest_move_in/guest_move_in.dart';
 import '../utils/guest_move_in_format.dart';
 
+/// 입주용품 구매 / 침구류 대여 — 품목당 최대 선택 수량.
+/// 옵션 카드 스테퍼 상한 + 결제 페이지 검증에서 공용 사용.
+const int kGuestMoveInMaxQuantityPerItem = 5;
+
 /// 옵션 카드 — 체크박스 + 옵션명/설명/가격 + 수량 컨트롤
 ///
 /// 비로그인 미리보기와 결제 화면 공용.
@@ -165,7 +169,9 @@ class _QuantityStepper extends StatelessWidget {
           ),
           _StepperButton(
             icon: Icons.add,
-            onTap: () => onChange(quantity + 1),
+            onTap: quantity < kGuestMoveInMaxQuantityPerItem
+                ? () => onChange(quantity + 1)
+                : null,
           ),
         ],
       ),
