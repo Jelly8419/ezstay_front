@@ -20,6 +20,8 @@ enum MoveInErrorCode {
       4813, '청소 희망 시간 1시간 전부터는 환불할 수 없습니다.'),
   pgCancelFailed(4900, 'PG 결제 취소에 실패했습니다. 잠시 후 다시 시도해주세요.'),
   pgAlreadyCancelled(4901, '이미 취소 완료된 결제입니다.'),
+  pgManualCancelRequired(4903,
+      '자동 취소가 불가능한 결제입니다. 고객센터로 문의해 수동 취소를 요청해주세요.'),
   unknown(0, '알 수 없는 오류가 발생했습니다.');
 
   final int code;
@@ -85,6 +87,8 @@ class MoveInException implements Exception {
   bool get isPgCancelFailed => errorCode == MoveInErrorCode.pgCancelFailed;
   bool get isPgAlreadyCancelled =>
       errorCode == MoveInErrorCode.pgAlreadyCancelled;
+  bool get isPgManualCancelRequired =>
+      errorCode == MoveInErrorCode.pgManualCancelRequired;
 
   @override
   String toString() => 'MoveInException($errorCode, http=$httpStatus): $message';
