@@ -206,11 +206,6 @@ class _MoveInInvitePreviewPageState extends State<MoveInInvitePreviewPage> {
             checkOutDate: preview.checkOutDate,
           ),
           SizedBox(height: AppSpacing.lg),
-          GuestMoveInInfoBanner(
-            message: '청소 서비스는 임대인(호스트)이 별도로 제공하는 서비스입니다.\n'
-                '이 페이지에서는 입주용품·침구류만 선택하고 결제해주세요.',
-          ),
-          SizedBox(height: AppSpacing.lg),
           Text('옵션 선택', style: AppTextStyles.headingSmall),
           SizedBox(height: AppSpacing.md),
           if (!canSelect)

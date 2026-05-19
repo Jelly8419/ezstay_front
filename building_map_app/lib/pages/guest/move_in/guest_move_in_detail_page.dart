@@ -8,7 +8,6 @@ import '../../../models/guest_move_in/guest_move_in.dart';
 import '../../../providers/guest_move_in/guest_move_in_detail_provider.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
 import 'utils/guest_move_in_format.dart';
-import 'widgets/guest_move_in_info_banner.dart';
 import 'widgets/guest_move_in_order_card.dart';
 import 'widgets/guest_move_in_refund_modal.dart';
 import 'widgets/guest_move_in_room_header.dart';
@@ -160,11 +159,6 @@ class _GuestMoveInDetailPageState extends State<GuestMoveInDetailPage> {
             room: detail.room,
             checkInDate: detail.checkInDate,
             checkOutDate: detail.checkOutDate,
-          ),
-          SizedBox(height: AppSpacing.lg),
-          GuestMoveInInfoBanner(
-            message: '청소 서비스는 임대인(호스트)이 별도로 제공하는 서비스입니다.\n'
-                '이 페이지에서는 입주용품·침구류 결제 내역과 배송 상태만 확인할 수 있어요.',
           ),
           SizedBox(height: AppSpacing.lg),
           if (detail.status == GuestMoveInStatus.pendingPayment)
