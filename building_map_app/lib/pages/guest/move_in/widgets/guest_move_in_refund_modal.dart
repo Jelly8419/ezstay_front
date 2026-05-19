@@ -3,6 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/guest_move_in/guest_move_in.dart';
 import '../../../../models/move_in/move_in_refund_policy.dart';
+import '../../../../utils/price_calculator.dart';
 import '../utils/guest_move_in_format.dart';
 
 /// 입주용품/침구류 옵션 취소·반품 모달 (계약관리 CancelOptionModal 과 동일 UX)
@@ -96,6 +97,23 @@ class _GuestMoveInRefundModalState extends State<GuestMoveInRefundModal>
     }
     return total;
   }
+
+  /// ACTIVE 라인 전체 합계 (취소 가능 총액)
+  int get _activeTotal {
+    int total = 0;
+    for (final item in _activeItems) {
+      total += item.pricePerItem * item.quantity;
+    }
+    return total;
+  }
+
+  /// 취소 후 남는 금액 (백엔드 4815 가드와 동일 산정)
+  int get _remainingAfterCancel =>
+      _activeTotal - _selectedTotal(_cancelQty);
+
+  /// 취소 후 잔액이 1~9,999원이면 위반 (0=전량취소 허용 / 10,000+ 허용)
+  bool get _cancelRemainingInvalid =>
+      PriceCalculator.isInvalidRentalAmount(_remainingAfterCancel);
 
   @override
   Widget build(BuildContext context) {
@@ -208,12 +226,17 @@ class _GuestMoveInRefundModalState extends State<GuestMoveInRefundModal>
           total: _selectedTotal(_cancelQty),
           actionLabel: '결제 취소',
           onSubmit: _submitCancel,
+          blocked: _cancelRemainingInvalid,
+          warning: _cancelRemainingInvalid
+              ? PriceCalculator.rentalCancelRemainingErrorMessage()
+              : null,
         ),
       ],
     );
   }
 
   Future<void> _submitCancel() async {
+    if (_cancelRemainingInvalid) return; // 잔액 1~9,999원 가드 (안전망)
     final items = _cancelQty.entries
         .where((e) => e.value > 0)
         .map((e) => GuestRefundItem(itemId: e.key, cancelQuantity: e.value))
@@ -458,61 +481,86 @@ class _GuestMoveInRefundModalState extends State<GuestMoveInRefundModal>
     required String actionLabel,
     required VoidCallback onSubmit,
     String totalLabel = '환불 예정',
+    bool blocked = false,
+    String? warning,
   }) {
     final hasSelected = selectedCount > 0;
+    final canSubmit = hasSelected && !blocked && !_processing;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.neutral200)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '$selectedCount개 품목 선택됨',
-                  style: AppTextStyles.bodySmall
-                      .copyWith(color: AppColors.neutral600),
-                ),
-                if (hasSelected)
-                  Text(
-                    '$totalLabel: ${GuestMoveInFormat.formatPrice(total)}',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary600,
+          if (warning != null) ...[
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: AppColors.error50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.error500),
+              ),
+              child: Text(
+                warning,
+                style: AppTextStyles.caption
+                    .copyWith(color: AppColors.error700),
+              ),
+            ),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$selectedCount개 품목 선택됨',
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.neutral600),
                     ),
-                  ),
-              ],
-            ),
-          ),
-          OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: AppColors.neutral300),
-            ),
-            child: Text('닫기',
-                style: TextStyle(color: AppColors.neutral600)),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed:
-                (hasSelected && !_processing) ? onSubmit : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary600,
-              disabledBackgroundColor: AppColors.neutral300,
-            ),
-            child: _processing
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : Text(actionLabel,
-                    style: const TextStyle(color: Colors.white)),
+                    if (hasSelected)
+                      Text(
+                        '$totalLabel: ${GuestMoveInFormat.formatPrice(total)}',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary600,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: AppColors.neutral300),
+                ),
+                child: Text('닫기',
+                    style: TextStyle(color: AppColors.neutral600)),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: canSubmit ? onSubmit : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary600,
+                  disabledBackgroundColor: AppColors.neutral300,
+                ),
+                child: _processing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(actionLabel,
+                        style: const TextStyle(color: Colors.white)),
+              ),
+            ],
           ),
         ],
       ),

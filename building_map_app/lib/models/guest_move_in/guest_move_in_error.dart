@@ -38,6 +38,8 @@ enum GuestMoveInErrorCode {
   cleaningRefundNotAllowed(
       4813, '청소 희망 시간 1시간 전부터는 환불할 수 없습니다.'),
   cancelQtyInvalid(4814, '취소/반품 수량이 올바르지 않습니다. 다시 선택해주세요.'),
+  cancelRemainingInvalid(4815,
+      '취소 후 남은 옵션 금액이 10,000원 미만입니다. 전체 취소하거나 10,000원 이상 남도록 선택해주세요.'),
   pgCancelFailed(4900, 'PG 결제 취소에 실패했습니다. 잠시 후 다시 시도해주세요.'),
   pgAlreadyCancelled(4901, '이미 취소 완료된 결제입니다.'),
   pgManualCancelRequired(4903,
@@ -119,6 +121,8 @@ class GuestMoveInException implements Exception {
       errorCode == GuestMoveInErrorCode.pgManualCancelRequired;
   bool get isCancelQtyInvalid =>
       errorCode == GuestMoveInErrorCode.cancelQtyInvalid;
+  bool get isCancelRemainingInvalid =>
+      errorCode == GuestMoveInErrorCode.cancelRemainingInvalid;
 
   @override
   String toString() =>
