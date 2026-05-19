@@ -184,6 +184,38 @@ class GuestPaymentResult {
   }
 }
 
+/// 부분 취소 요청 아이템 — `POST /orders/:orderDbId/cancel` body.items[]
+class GuestRefundItem {
+  final int itemId;
+  final int cancelQuantity;
+
+  const GuestRefundItem({
+    required this.itemId,
+    required this.cancelQuantity,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'itemId': itemId,
+        'cancelQuantity': cancelQuantity,
+      };
+}
+
+/// 부분 반품 요청 아이템 — `POST /orders/:orderDbId/return` body.items[]
+class GuestReturnItem {
+  final int itemId;
+  final int returnQuantity;
+
+  const GuestReturnItem({
+    required this.itemId,
+    required this.returnQuantity,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'itemId': itemId,
+        'returnQuantity': returnQuantity,
+      };
+}
+
 /// `POST /orders/:orderDbId/cancel` 응답 — 결제 완료 주문 즉시 환불
 class GuestOrderRefundResponse {
   final int orderDbId;
@@ -192,12 +224,16 @@ class GuestOrderRefundResponse {
   final int refundAmount;
   final int shippingDeduction;
 
+  /// true 면 일부 수량만 취소(PARTIAL_REFUND), false 면 전량 취소
+  final bool partial;
+
   const GuestOrderRefundResponse({
     required this.orderDbId,
     required this.orderId,
     required this.status,
     required this.refundAmount,
     required this.shippingDeduction,
+    required this.partial,
   });
 
   factory GuestOrderRefundResponse.fromJson(dynamic raw) {
@@ -208,6 +244,7 @@ class GuestOrderRefundResponse {
       status: GuestOrderStatus.fromCode(json['status']?.toString()),
       refundAmount: (json['refundAmount'] as num? ?? 0).toInt(),
       shippingDeduction: (json['shippingDeduction'] as num? ?? 0).toInt(),
+      partial: (json['partial'] as bool?) ?? false,
     );
   }
 }
@@ -220,12 +257,16 @@ class GuestReturnRequestResponse {
   final String status; // 반품요청 상태 (PENDING 등)
   final int itemTotalAmount;
 
+  /// true 면 일부 수량만 반품 요청, false 면 전량 반품 요청
+  final bool partial;
+
   const GuestReturnRequestResponse({
     required this.refundRequestId,
     required this.orderDbId,
     required this.orderId,
     required this.status,
     required this.itemTotalAmount,
+    required this.partial,
   });
 
   factory GuestReturnRequestResponse.fromJson(dynamic raw) {
@@ -236,6 +277,7 @@ class GuestReturnRequestResponse {
       orderId: json['orderId']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
       itemTotalAmount: (json['itemTotalAmount'] as num? ?? 0).toInt(),
+      partial: (json['partial'] as bool?) ?? false,
     );
   }
 }

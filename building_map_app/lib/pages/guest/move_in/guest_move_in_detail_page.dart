@@ -10,6 +10,7 @@ import '../../../widgets/common/responsive_page_layout.dart';
 import 'utils/guest_move_in_format.dart';
 import 'widgets/guest_move_in_info_banner.dart';
 import 'widgets/guest_move_in_order_card.dart';
+import 'widgets/guest_move_in_refund_modal.dart';
 import 'widgets/guest_move_in_room_header.dart';
 import 'widgets/guest_move_in_status_chip.dart';
 
@@ -35,100 +36,59 @@ class _GuestMoveInDetailPageState extends State<GuestMoveInDetailPage> {
     });
   }
 
-  /// 사유 입력 + 확인 다이얼로그. 확인 시 trimmed reason(빈 문자열이면 ''),
-  /// 취소 시 null 반환.
-  Future<String?> _askReason({
-    required String title,
-    required String body,
-    required String confirmLabel,
-    Color? confirmColor,
-  }) async {
-    final ctrl = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: Text(title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(body),
-            SizedBox(height: AppSpacing.md),
-            TextField(
-              controller: ctrl,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: '사유 (선택)',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: const Text('닫기'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: confirmColor ?? AppColors.primary500,
-            ),
-            onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: Text(confirmLabel),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return null;
-    return ctrl.text.trim();
-  }
-
-  Future<void> _onCancelOrder(GuestMoveInOrder order) async {
-    final reason = await _askReason(
-      title: '주문을 취소하시겠습니까?',
-      body: '결제 완료된 옵션 주문을 취소하고 환불을 진행합니다.\n'
-          '입주일 5일 전까지는 전액, 이후 배송 전이면 부분 취소가 가능합니다.',
-      confirmLabel: '주문 취소',
-      confirmColor: AppColors.error500,
-    );
-    if (reason == null || !mounted) return;
+  /// 취소/반품 통합 모달 오픈. 모달이 콜백으로 provider 액션을 호출하고,
+  /// 성공 시 true 를 pop → 여기서 결과 토스트 표시.
+  Future<void> _onManageOrder(
+    GuestMoveInOrder order,
+    GuestMoveInRequestDetail detail,
+  ) async {
+    final checkIn = DateTime.tryParse(detail.checkInDate);
+    final checkOut = DateTime.tryParse(detail.checkOutDate);
+    if (checkIn == null || checkOut == null) return;
 
     final provider = context.read<GuestMoveInDetailProvider>();
-    final result = await provider.cancelPaidOrder(
-      order.orderDbId,
-      reason: reason.isEmpty ? null : reason,
+    GuestOrderRefundResponse? cancelResult;
+    GuestReturnRequestResponse? returnResult;
+
+    final done = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => GuestMoveInRefundModal(
+        order: order,
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
+        onCancel: (orderDbId, reason, items) async {
+          cancelResult = await provider.cancelPaidOrder(
+            orderDbId,
+            reason: reason.isEmpty ? null : reason,
+            items: items,
+          );
+          return cancelResult;
+        },
+        onReturn: (orderDbId, reason, items) async {
+          returnResult = await provider.requestReturn(
+            orderDbId,
+            reason: reason.isEmpty ? null : reason,
+            items: items,
+          );
+          return returnResult;
+        },
+      ),
     );
-    if (!mounted) return;
-    if (result != null) {
+    if (done != true || !mounted) return;
+
+    if (cancelResult != null) {
+      final r = cancelResult!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '주문이 취소되어 ${GuestMoveInFormat.formatPrice(result.refundAmount)} 환불 처리되었습니다.',
+            r.partial
+                ? '선택한 옵션이 부분 취소되어 ${GuestMoveInFormat.formatPrice(r.refundAmount)} 환불 처리되었습니다.'
+                : '주문이 취소되어 ${GuestMoveInFormat.formatPrice(r.refundAmount)} 환불 처리되었습니다.',
           ),
         ),
       );
-    } else {
-      _showActionError(provider.error);
-    }
-  }
-
-  Future<void> _onReturnOrder(GuestMoveInOrder order) async {
-    final reason = await _askReason(
-      title: '반품을 요청하시겠습니까?',
-      body: '배송 완료된 주문에 대해 반품을 요청합니다.\n'
-          '관리자 승인 후 왕복배송비(7,000원)를 차감하고 환불됩니다.',
-      confirmLabel: '반품 요청',
-    );
-    if (reason == null || !mounted) return;
-
-    final provider = context.read<GuestMoveInDetailProvider>();
-    final result = await provider.requestReturn(
-      order.orderDbId,
-      reason: reason.isEmpty ? null : reason,
-    );
-    if (!mounted) return;
-    if (result != null) {
+    } else if (returnResult != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('반품 요청이 접수되었습니다. 관리자 승인 후 환불 처리됩니다.'),
@@ -227,8 +187,7 @@ class _GuestMoveInDetailPageState extends State<GuestMoveInDetailPage> {
                   isMutating: context
                       .watch<GuestMoveInDetailProvider>()
                       .isMutating,
-                  onCancel: (order) => _onCancelOrder(order),
-                  onReturn: (order) => _onReturnOrder(order),
+                  onManage: (order) => _onManageOrder(order, detail),
                 ),
               ),
             ),

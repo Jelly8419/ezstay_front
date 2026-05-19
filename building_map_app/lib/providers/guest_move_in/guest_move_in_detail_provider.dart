@@ -71,18 +71,23 @@ class GuestMoveInDetailProvider extends ChangeNotifier {
   bool _isMutating = false;
   bool get isMutating => _isMutating;
 
-  /// 옵션 취소 (즉시 환불). 성공 시 상세 재조회로 주문 상태 동기화.
+  /// 옵션 취소 (즉시 환불). [items] 미지정 시 전체 취소.
+  /// 성공 시 상세 재조회로 주문 상태 동기화.
   Future<GuestOrderRefundResponse?> cancelPaidOrder(
     int orderDbId, {
     String? reason,
+    List<GuestRefundItem>? items,
   }) async {
     if (_isMutating || _caseId == null) return null;
     _isMutating = true;
     _error = null;
     notifyListeners();
     try {
-      final result =
-          await _service.cancelPaidOrder(orderDbId, reason: reason);
+      final result = await _service.cancelPaidOrder(
+        orderDbId,
+        reason: reason,
+        items: items,
+      );
       _detail = await _service.getRequestDetail(_caseId!);
       return result;
     } on GuestMoveInException catch (e) {
@@ -97,17 +102,23 @@ class GuestMoveInDetailProvider extends ChangeNotifier {
     }
   }
 
-  /// 반품 요청 (관리자 승인 대상). 성공 시 상세 재조회.
+  /// 반품 요청 (관리자 승인 대상). [items] 미지정 시 전체 반품.
+  /// 성공 시 상세 재조회.
   Future<GuestReturnRequestResponse?> requestReturn(
     int orderDbId, {
     String? reason,
+    List<GuestReturnItem>? items,
   }) async {
     if (_isMutating || _caseId == null) return null;
     _isMutating = true;
     _error = null;
     notifyListeners();
     try {
-      final result = await _service.requestReturn(orderDbId, reason: reason);
+      final result = await _service.requestReturn(
+        orderDbId,
+        reason: reason,
+        items: items,
+      );
       _detail = await _service.getRequestDetail(_caseId!);
       return result;
     } on GuestMoveInException catch (e) {

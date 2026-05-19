@@ -15,11 +15,8 @@ class GuestMoveInOrderCard extends StatelessWidget {
   final String? checkInDate;
   final String? checkOutDate;
 
-  /// 옵션 취소(즉시 환불) 콜백 — null 이면 버튼 미노출
-  final ValueChanged<GuestMoveInOrder>? onCancel;
-
-  /// 반품 요청 콜백 — null 이면 버튼 미노출
-  final ValueChanged<GuestMoveInOrder>? onReturn;
+  /// 취소/반품 모달 열기 콜백 — null 이면 버튼 미노출(완료 화면 등)
+  final ValueChanged<GuestMoveInOrder>? onManage;
 
   /// 액션 진행 중 — 버튼 비활성
   final bool isMutating;
@@ -29,8 +26,7 @@ class GuestMoveInOrderCard extends StatelessWidget {
     required this.order,
     this.checkInDate,
     this.checkOutDate,
-    this.onCancel,
-    this.onReturn,
+    this.onManage,
     this.isMutating = false,
   });
 
@@ -134,15 +130,54 @@ class GuestMoveInOrderCard extends StatelessWidget {
               ],
             ),
           ],
+          if (order.hasPendingReturn) _buildPendingReturnNotice(),
           _buildActions(),
         ],
       ),
     );
   }
 
-  /// 취소/반품 액션 영역 — 정책상 가능할 때만 버튼 노출
+  /// 진행 중(PENDING) 반품요청 안내 배지
+  Widget _buildPendingReturnNotice() {
+    final totalQty = order.refundRequests
+        .expand((r) => r.targetItems.values)
+        .fold<int>(0, (s, q) => s + q);
+    return Padding(
+      padding: EdgeInsets.only(top: AppSpacing.md),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: AppColors.neutral100,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.assignment_return_outlined,
+                size: 16, color: AppColors.textSecondary),
+            SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Text(
+                totalQty > 0
+                    ? '반품 요청 $totalQty개 진행 중 — 관리자 승인 후 환불 처리됩니다.'
+                    : '반품 요청이 접수되었습니다. 관리자 승인 후 환불 처리됩니다.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 취소/반품 액션 영역 — 정책상 취소·반품 중 하나라도 가능하면
+  /// 단일 버튼 노출, 클릭 시 부모가 취소/반품 모달을 띄움.
   Widget _buildActions() {
-    // 이미 환불/취소된 주문은 액션 없음
+    if (onManage == null) return const SizedBox.shrink();
+    // 이미 전량 환불/취소된 주문은 액션 없음 (PARTIAL_REFUND 는 재취소 가능)
     if (order.status == GuestOrderStatus.fullyRefunded ||
         order.status == GuestOrderStatus.cancelled) {
       return const SizedBox.shrink();
@@ -153,78 +188,36 @@ class GuestMoveInOrderCard extends StatelessWidget {
 
     final hasActiveItem =
         order.items.any((i) => i.status == OrderItemStatus.active);
-    final hasReturnRequested =
-        order.items.any((i) => i.status == OrderItemStatus.returnRequested);
+    if (!hasActiveItem) return const SizedBox.shrink();
 
-    final canCancel = onCancel != null &&
-        hasActiveItem &&
-        MoveInRefundPolicy.canCancelOrder(
-          checkInDate: checkIn,
-          isPaid: order.status == GuestOrderStatus.paid ||
-              order.status == GuestOrderStatus.partialRefund,
-          isDeliveryPending:
-              order.deliveryStatus == DeliveryStatus.pending,
-        );
+    final isPaid = order.status == GuestOrderStatus.paid ||
+        order.status == GuestOrderStatus.partialRefund;
 
-    final canReturn = onReturn != null &&
-        hasActiveItem &&
-        !hasReturnRequested &&
-        MoveInRefundPolicy.canRequestReturn(
-          checkInDate: checkIn,
-          checkOutDate: checkOut,
-          isDelivered: order.deliveryStatus == DeliveryStatus.delivered,
-        );
-
-    if (hasReturnRequested) {
-      return Padding(
-        padding: EdgeInsets.only(top: AppSpacing.md),
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: AppColors.neutral100,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            '반품 요청이 접수되었습니다. 관리자 승인 후 환불 처리됩니다.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      );
-    }
+    final canCancel = MoveInRefundPolicy.canCancelOrder(
+      checkInDate: checkIn,
+      isPaid: isPaid,
+      isDeliveryPending: order.deliveryStatus == DeliveryStatus.pending,
+    );
+    final canReturn = MoveInRefundPolicy.canRequestReturn(
+      checkInDate: checkIn,
+      checkOutDate: checkOut,
+      isDelivered: order.deliveryStatus == DeliveryStatus.delivered,
+    );
 
     if (!canCancel && !canReturn) return const SizedBox.shrink();
 
     return Padding(
       padding: EdgeInsets.only(top: AppSpacing.md),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          if (canReturn)
-            OutlinedButton(
-              onPressed: isMutating ? null : () => onReturn!(order),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textPrimary,
-                side: BorderSide(color: AppColors.border),
-              ),
-              child: const Text('반품 요청'),
-            ),
-          if (canReturn && canCancel) SizedBox(width: AppSpacing.sm),
-          if (canCancel)
-            OutlinedButton(
-              onPressed: isMutating ? null : () => onCancel!(order),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error600,
-                side: BorderSide(
-                  color: AppColors.error500.withValues(alpha: 0.5),
-                ),
-              ),
-              child: const Text('주문 취소'),
-            ),
-        ],
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: OutlinedButton(
+          onPressed: isMutating ? null : () => onManage!(order),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.textPrimary,
+            side: BorderSide(color: AppColors.border),
+          ),
+          child: const Text('취소 / 반품'),
+        ),
       ),
     );
   }

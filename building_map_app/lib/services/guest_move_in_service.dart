@@ -296,13 +296,17 @@ class GuestMoveInService {
   /// POST /orders/:orderDbId/cancel — 옵션 취소 (즉시 환불)
   ///
   /// 결제완료~D-5 전액 / D-5~입주일 배송 전만 / 입주 후 불가 (서버 최종 판정).
+  /// [items] 미지정 → 주문 전체 취소(하위호환), 지정 → 수량 단위 부분 취소.
   Future<GuestOrderRefundResponse> cancelPaidOrder(
     int orderDbId, {
     String? reason,
+    List<GuestRefundItem>? items,
   }) async {
     return _call(() async {
       final body = jsonEncode({
         if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+        if (items != null && items.isNotEmpty)
+          'items': items.map((e) => e.toJson()).toList(),
       });
       final response = await http
           .post(
@@ -319,13 +323,17 @@ class GuestMoveInService {
   /// POST /orders/:orderDbId/return — 반품 요청 (관리자 승인 대상)
   ///
   /// 입주일~퇴실일 + deliveryStatus=DELIVERED 만. 케이스당 PENDING 반품 1건 제한.
+  /// [items] 미지정 → 전체 반품(하위호환), 지정 → 수량 단위 부분 반품.
   Future<GuestReturnRequestResponse> requestReturn(
     int orderDbId, {
     String? reason,
+    List<GuestReturnItem>? items,
   }) async {
     return _call(() async {
       final body = jsonEncode({
         if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+        if (items != null && items.isNotEmpty)
+          'items': items.map((e) => e.toJson()).toList(),
       });
       final response = await http
           .post(

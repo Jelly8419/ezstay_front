@@ -17,6 +17,10 @@ class GuestMoveInOrderItem {
   final int totalPrice;
   final OrderItemStatus status;
 
+  /// 라인별 반품 요청 중(미승인 PENDING) 수량 — 부분 반품 남은수량 가드용.
+  /// 백엔드 미include 시 0.
+  final int pendingReturnQuantity;
+
   const GuestMoveInOrderItem({
     required this.itemId,
     required this.optionId,
@@ -25,7 +29,14 @@ class GuestMoveInOrderItem {
     required this.pricePerItem,
     required this.totalPrice,
     required this.status,
+    this.pendingReturnQuantity = 0,
   });
+
+  /// 아직 반품 요청 가능한 잔여 수량 (전체 - 진행 중 반품요청 수량)
+  int get returnableQuantity {
+    final r = quantity - pendingReturnQuantity;
+    return r < 0 ? 0 : r;
+  }
 
   factory GuestMoveInOrderItem.fromJson(dynamic raw) {
     final json = _asMap(raw);
@@ -37,6 +48,49 @@ class GuestMoveInOrderItem {
       pricePerItem: (json['pricePerItem'] as num? ?? 0).toInt(),
       totalPrice: (json['totalPrice'] as num? ?? 0).toInt(),
       status: OrderItemStatus.fromCode(json['status']?.toString()),
+      pendingReturnQuantity:
+          (json['pendingReturnQuantity'] as num? ?? 0).toInt(),
+    );
+  }
+}
+
+/// 진행 중(PENDING) 반품요청 요약 — 주문 상세 응답 동봉
+class GuestRefundRequestSummary {
+  final int id;
+  final String status; // PENDING
+  final int itemTotalAmount;
+  final String? returnReason;
+
+  /// 반품 대상 라인·수량 스냅샷 (itemId → quantity)
+  final Map<int, int> targetItems;
+  final String? createdAt;
+
+  const GuestRefundRequestSummary({
+    required this.id,
+    required this.status,
+    required this.itemTotalAmount,
+    this.returnReason,
+    required this.targetItems,
+    this.createdAt,
+  });
+
+  factory GuestRefundRequestSummary.fromJson(dynamic raw) {
+    final json = _asMap(raw);
+    final tiRaw = (json['targetItems'] as List?) ?? const [];
+    final ti = <int, int>{};
+    for (final e in tiRaw) {
+      final m = _asMap(e);
+      final id = (m['itemId'] as num?)?.toInt();
+      final qty = (m['quantity'] as num?)?.toInt();
+      if (id != null && qty != null) ti[id] = qty;
+    }
+    return GuestRefundRequestSummary(
+      id: (json['id'] as num? ?? 0).toInt(),
+      status: json['status']?.toString() ?? '',
+      itemTotalAmount: (json['itemTotalAmount'] as num? ?? 0).toInt(),
+      returnReason: json['returnReason']?.toString(),
+      targetItems: ti,
+      createdAt: json['createdAt']?.toString(),
     );
   }
 }
@@ -56,6 +110,9 @@ class GuestMoveInOrder {
   final String? createdAt;
   final List<GuestMoveInOrderItem> items;
 
+  /// 진행 중(PENDING) 반품요청 목록 — 백엔드 미include 시 빈 배열
+  final List<GuestRefundRequestSummary> refundRequests;
+
   const GuestMoveInOrder({
     required this.orderDbId,
     required this.orderId,
@@ -69,11 +126,13 @@ class GuestMoveInOrder {
     this.deliveredAt,
     this.createdAt,
     required this.items,
+    this.refundRequests = const [],
   });
 
   factory GuestMoveInOrder.fromJson(dynamic raw) {
     final json = _asMap(raw);
     final itemsRaw = (json['items'] as List?) ?? const [];
+    final rrRaw = (json['refundRequests'] as List?) ?? const [];
     return GuestMoveInOrder(
       orderDbId: (json['orderDbId'] as num? ?? 0).toInt(),
       orderId: json['orderId']?.toString() ?? '',
@@ -88,8 +147,17 @@ class GuestMoveInOrder {
       deliveredAt: json['deliveredAt']?.toString(),
       createdAt: json['createdAt']?.toString(),
       items: itemsRaw.map(GuestMoveInOrderItem.fromJson).toList(),
+      refundRequests:
+          rrRaw.map(GuestRefundRequestSummary.fromJson).toList(),
     );
   }
 
   bool get isCancellable => status == GuestOrderStatus.pending;
+
+  /// 진행 중 반품요청이 하나라도 있는지
+  bool get hasPendingReturn => refundRequests.isNotEmpty;
+
+  /// 반품 가능한(잔여 수량 1 이상) ACTIVE 라인이 하나라도 있는지
+  bool get hasReturnableItem => items.any((i) =>
+      i.status == OrderItemStatus.active && i.returnableQuantity > 0);
 }
