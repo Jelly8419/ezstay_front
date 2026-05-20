@@ -37,14 +37,7 @@ class _GuestMoveInDetailPageState extends State<GuestMoveInDetailPage> {
 
   /// 취소/반품 통합 모달 오픈. 모달이 콜백으로 provider 액션을 호출하고,
   /// 성공 시 true 를 pop → 여기서 결과 토스트 표시.
-  Future<void> _onManageOrder(
-    GuestMoveInOrder order,
-    GuestMoveInRequestDetail detail,
-  ) async {
-    final checkIn = DateTime.tryParse(detail.checkInDate);
-    final checkOut = DateTime.tryParse(detail.checkOutDate);
-    if (checkIn == null || checkOut == null) return;
-
+  Future<void> _onManageOrder(GuestMoveInOrder order) async {
     final provider = context.read<GuestMoveInDetailProvider>();
     GuestOrderRefundResponse? cancelResult;
     GuestReturnRequestResponse? returnResult;
@@ -54,8 +47,6 @@ class _GuestMoveInDetailPageState extends State<GuestMoveInDetailPage> {
       barrierDismissible: false,
       builder: (_) => GuestMoveInRefundModal(
         order: order,
-        checkInDate: checkIn,
-        checkOutDate: checkOut,
         onCancel: (orderDbId, reason, items) async {
           cancelResult = await provider.cancelPaidOrder(
             orderDbId,
@@ -176,12 +167,10 @@ class _GuestMoveInDetailPageState extends State<GuestMoveInDetailPage> {
                 padding: EdgeInsets.only(bottom: AppSpacing.sm),
                 child: GuestMoveInOrderCard(
                   order: o,
-                  checkInDate: detail.checkInDate,
-                  checkOutDate: detail.checkOutDate,
                   isMutating: context
                       .watch<GuestMoveInDetailProvider>()
                       .isMutating,
-                  onManage: (order) => _onManageOrder(order, detail),
+                  onManage: (order) => _onManageOrder(order),
                 ),
               ),
             ),

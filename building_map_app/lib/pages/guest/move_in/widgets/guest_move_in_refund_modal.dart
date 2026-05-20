@@ -15,10 +15,6 @@ import '../utils/guest_move_in_format.dart';
 class GuestMoveInRefundModal extends StatefulWidget {
   final GuestMoveInOrder order;
 
-  /// 케이스 입주/퇴실일 — 정책 시점 판정용 ('YYYY-MM-DD')
-  final DateTime checkInDate;
-  final DateTime checkOutDate;
-
   /// (orderDbId, items) → 취소 결과. null 이면 실패(부모가 에러 표시).
   final Future<GuestOrderRefundResponse?> Function(
     int orderDbId,
@@ -36,8 +32,6 @@ class GuestMoveInRefundModal extends StatefulWidget {
   const GuestMoveInRefundModal({
     super.key,
     required this.order,
-    required this.checkInDate,
-    required this.checkOutDate,
     required this.onCancel,
     required this.onReturn,
   });
@@ -61,20 +55,10 @@ class _GuestMoveInRefundModalState extends State<GuestMoveInRefundModal>
       .where((i) => i.status == OrderItemStatus.active)
       .toList();
 
-  bool get _cancelEnabled => MoveInRefundPolicy.canCancelOrder(
-        checkInDate: widget.checkInDate,
-        isPaid: _order.status == GuestOrderStatus.paid ||
-            _order.status == GuestOrderStatus.partialRefund,
-        isDeliveryPending:
-            _order.deliveryStatus == DeliveryStatus.pending,
-      );
-
-  bool get _returnEnabled => MoveInRefundPolicy.canRequestReturn(
-        checkInDate: widget.checkInDate,
-        checkOutDate: widget.checkOutDate,
-        isDelivered:
-            _order.deliveryStatus == DeliveryStatus.delivered,
-      );
+  // 탭 노출은 서버 정책 평가 결과(canCancel/canReturn)만 보고 결정.
+  // 프론트가 deliveryStatus·시점을 직접 검사하지 않음 (가이드 2.4).
+  bool get _cancelEnabled => _order.canCancel;
+  bool get _returnEnabled => _order.canReturn;
 
   @override
   void initState() {

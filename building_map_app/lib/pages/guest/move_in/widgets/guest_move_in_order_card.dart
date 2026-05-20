@@ -3,17 +3,11 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/guest_move_in/guest_move_in.dart';
-import '../../../../models/move_in/move_in_refund_policy.dart';
 import '../utils/guest_move_in_format.dart';
 
 /// 상세 화면용 주문 카드 (옵션 라인 + 배송 상태 + 금액 + 취소/반품 액션)
 class GuestMoveInOrderCard extends StatelessWidget {
   final GuestMoveInOrder order;
-
-  /// 케이스 입주/퇴실일 — 취소/반품 시점 가드 판정용 ('YYYY-MM-DD').
-  /// 액션을 노출하지 않는 화면(결제 완료 등)에서는 생략 가능.
-  final String? checkInDate;
-  final String? checkOutDate;
 
   /// 취소/반품 모달 열기 콜백 — null 이면 버튼 미노출(완료 화면 등)
   final ValueChanged<GuestMoveInOrder>? onManage;
@@ -24,13 +18,9 @@ class GuestMoveInOrderCard extends StatelessWidget {
   const GuestMoveInOrderCard({
     super.key,
     required this.order,
-    this.checkInDate,
-    this.checkOutDate,
     this.onManage,
     this.isMutating = false,
   });
-
-  DateTime? _parseDate(String? s) => s == null ? null : DateTime.tryParse(s);
 
   @override
   Widget build(BuildContext context) {
@@ -173,39 +163,14 @@ class GuestMoveInOrderCard extends StatelessWidget {
     );
   }
 
-  /// 취소/반품 액션 영역 — 정책상 취소·반품 중 하나라도 가능하면
-  /// 단일 버튼 노출, 클릭 시 부모가 취소/반품 모달을 띄움.
+  /// 취소/반품 액션 영역 — 서버 정책 평가(`order.canCancel`/`canReturn`)
+  /// 중 하나라도 true 면 단일 버튼 노출, 클릭 시 부모가 모달을 띄움.
+  /// 프론트는 deliveryStatus·시점을 직접 검사하지 않음 (가이드 2.4).
   Widget _buildActions() {
     if (onManage == null) return const SizedBox.shrink();
-    // 이미 전량 환불/취소된 주문은 액션 없음 (PARTIAL_REFUND 는 재취소 가능)
-    if (order.status == GuestOrderStatus.fullyRefunded ||
-        order.status == GuestOrderStatus.cancelled) {
+    if (!order.canCancel && !order.canReturn) {
       return const SizedBox.shrink();
     }
-    final checkIn = _parseDate(checkInDate);
-    final checkOut = _parseDate(checkOutDate);
-    if (checkIn == null || checkOut == null) return const SizedBox.shrink();
-
-    final hasActiveItem =
-        order.items.any((i) => i.status == OrderItemStatus.active);
-    if (!hasActiveItem) return const SizedBox.shrink();
-
-    final isPaid = order.status == GuestOrderStatus.paid ||
-        order.status == GuestOrderStatus.partialRefund;
-
-    final canCancel = MoveInRefundPolicy.canCancelOrder(
-      checkInDate: checkIn,
-      isPaid: isPaid,
-      isDeliveryPending: order.deliveryStatus == DeliveryStatus.pending,
-    );
-    final canReturn = MoveInRefundPolicy.canRequestReturn(
-      checkInDate: checkIn,
-      checkOutDate: checkOut,
-      isDelivered: order.deliveryStatus == DeliveryStatus.delivered,
-    );
-
-    if (!canCancel && !canReturn) return const SizedBox.shrink();
-
     return Padding(
       padding: EdgeInsets.only(top: AppSpacing.md),
       child: Align(

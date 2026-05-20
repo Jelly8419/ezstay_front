@@ -113,6 +113,14 @@ class GuestMoveInOrder {
   /// 진행 중(PENDING) 반품요청 목록 — 백엔드 미include 시 빈 배열
   final List<GuestRefundRequestSummary> refundRequests;
 
+  /// 결제 취소 가능 여부 — 서버 정책 평가 결과(`evaluateGuestCancel`)를
+  /// 그대로 노출. 프론트는 deliveryStatus·시점을 직접 검사하지 말고
+  /// 이 플래그만 보고 탭/버튼 노출을 결정.
+  final bool canCancel;
+
+  /// 반품 요청 가능 여부 — 서버 정책 평가 결과(`evaluateGuestReturn`).
+  final bool canReturn;
+
   const GuestMoveInOrder({
     required this.orderDbId,
     required this.orderId,
@@ -127,6 +135,8 @@ class GuestMoveInOrder {
     this.createdAt,
     required this.items,
     this.refundRequests = const [],
+    this.canCancel = false,
+    this.canReturn = false,
   });
 
   factory GuestMoveInOrder.fromJson(dynamic raw) {
@@ -149,6 +159,8 @@ class GuestMoveInOrder {
       items: itemsRaw.map(GuestMoveInOrderItem.fromJson).toList(),
       refundRequests:
           rrRaw.map(GuestRefundRequestSummary.fromJson).toList(),
+      canCancel: (json['canCancel'] as bool?) ?? false,
+      canReturn: (json['canReturn'] as bool?) ?? false,
     );
   }
 
