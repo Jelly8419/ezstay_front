@@ -27,8 +27,9 @@ class _GuestMoveInHomePageState extends State<GuestMoveInHomePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final provider = context.read<GuestMoveInListProvider>();
-      if (!provider.hasLoadedOnce) provider.load();
+      // 페이지 진입 시 항상 최신 목록 로드.
+      // (결제 완료 후 메인으로 복귀해도 결제 대기 배지로 남는 문제 방지)
+      context.read<GuestMoveInListProvider>().load();
     });
   }
 
