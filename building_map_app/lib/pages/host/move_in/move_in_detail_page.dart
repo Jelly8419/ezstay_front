@@ -315,9 +315,7 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
     }
 
     final reasonCtrl = TextEditingController();
-    final estimateText = quote.deduction > 0
-        ? '${_won(quote.deduction)} 차감 후 ${_won(quote.refundAmount)} 환불 예정'
-        : '전액 ${_won(quote.refundAmount)} 환불 예정';
+    final cleaningFee = provider.moveInCase?.cleaningFee ?? 0;
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -326,12 +324,54 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('환불 금액은 청소 희망일 기준 정책에 따라 산정됩니다.\n$estimateText'),
-            SizedBox(height: AppSpacing.sm),
-            const Text(
+            Text(
+              '환불 금액은 청소 희망일 기준 정책에 따라 산정됩니다.',
+              style: AppTextStyles.bodySmall
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+            SizedBox(height: AppSpacing.md),
+            // 영수증 스타일 산정 내역
+            Container(
+              padding: EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.neutral50,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _refundRow('결제 금액', _won(cleaningFee)),
+                  if (quote.deduction > 0) ...[
+                    SizedBox(height: AppSpacing.xs),
+                    _refundRow(
+                      '차감',
+                      '- ${_won(quote.deduction)}',
+                      valueColor: AppColors.error600,
+                    ),
+                  ],
+                  Padding(
+                    padding:
+                        EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    child: Divider(height: 1, color: AppColors.border),
+                  ),
+                  _refundRow(
+                    '환불 금액',
+                    _won(quote.refundAmount),
+                    labelBold: true,
+                    valueColor: AppColors.primary600,
+                    valueLarge: true,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: AppSpacing.md),
+            Text(
               '· 희망일 2일 전까지: 전액\n'
               '· 1일 전~당일: 10,000원 차감\n'
               '· 희망 시간 1시간 전부터: 환불 불가',
+              style: AppTextStyles.bodySmall
+                  .copyWith(color: AppColors.textSecondary),
             ),
             SizedBox(height: AppSpacing.md),
             TextField(
@@ -385,6 +425,37 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
       buf.write(s[i]);
     }
     return '$buf원';
+  }
+
+  /// 환불 다이얼로그 영수증 행 (라벨 좌, 금액 우)
+  Widget _refundRow(
+    String label,
+    String value, {
+    bool labelBold = false,
+    Color? valueColor,
+    bool valueLarge = false,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: labelBold ? FontWeight.w700 : FontWeight.w400,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: (valueLarge ? AppTextStyles.headingSmall : AppTextStyles.bodyMedium)
+              .copyWith(
+            fontWeight: FontWeight.w700,
+            color: valueColor ?? AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _onPayCleaning() async {
