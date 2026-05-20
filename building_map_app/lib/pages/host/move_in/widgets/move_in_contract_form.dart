@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/move_in/move_in_deadline_policy.dart';
+import '../../../../models/room.dart' show UnavailablePeriod;
 import '../../../../widgets/common/custom_text_field.dart';
 import '../../../../widgets/common/date_range_picker.dart' show DateRangePicker, SingleDatePicker;
 
@@ -16,10 +17,16 @@ class MoveInContractForm extends StatefulWidget {
   final bool cleaningSuppliesAvailable;
   final MoveInContractFormController controller;
 
+  /// 캘린더에 비활성 표시할 점유 구간 — 백엔드 [`/rooms/:roomId/occupied-ranges`]
+  /// 응답을 호출 측이 변환해 전달. 점유 판정은 서버와 동일 반열림 구간
+  /// `[checkInDate, checkOutDate)` 이므로 endDate 는 `checkOutDate - 1일` 권장.
+  final List<UnavailablePeriod> unavailablePeriods;
+
   const MoveInContractForm({
     super.key,
     required this.cleaningSuppliesAvailable,
     required this.controller,
+    this.unavailablePeriods = const [],
   });
 
   @override
@@ -129,6 +136,7 @@ class _MoveInContractFormState extends State<MoveInContractForm> {
               minContractDays: 1,
               placeholderText: '입주일 - 퇴실일 선택',
               customHelperText: '외부 플랫폼 계약의 입주일과 퇴실일을 선택해주세요.',
+              unavailablePeriods: widget.unavailablePeriods,
               onDateSelected: (checkIn, checkOut) {
                 setState(() {
                   _checkInDate = checkIn;

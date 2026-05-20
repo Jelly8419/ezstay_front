@@ -262,3 +262,47 @@ class PaymentRequestSendResponse {
     );
   }
 }
+
+/// 방 점유 구간 응답 (GET /rooms/:roomId/occupied-ranges)
+///
+/// 점유 판정 — 서버와 동일하게 반열림 구간 `[checkInDate, checkOutDate)`.
+/// checkOutDate 당일은 비점유 (다음 임차인 체크인 가능).
+class RoomOccupiedRange {
+  final int caseId;
+  final String checkInDate;  // YYYY-MM-DD
+  final String checkOutDate; // YYYY-MM-DD
+
+  const RoomOccupiedRange({
+    required this.caseId,
+    required this.checkInDate,
+    required this.checkOutDate,
+  });
+
+  factory RoomOccupiedRange.fromJson(dynamic raw) {
+    final json = _asMap(raw);
+    return RoomOccupiedRange(
+      caseId: (json['caseId'] ?? 0).toInt(),
+      checkInDate: (json['checkInDate'] ?? '').toString(),
+      checkOutDate: (json['checkOutDate'] ?? '').toString(),
+    );
+  }
+}
+
+class RoomOccupiedRangesResponse {
+  final int moveInRoomId;
+  final List<RoomOccupiedRange> ranges;
+
+  const RoomOccupiedRangesResponse({
+    required this.moveInRoomId,
+    required this.ranges,
+  });
+
+  factory RoomOccupiedRangesResponse.fromJson(dynamic raw) {
+    final json = _asMap(raw);
+    final list = (json['ranges'] as List?) ?? const [];
+    return RoomOccupiedRangesResponse(
+      moveInRoomId: (json['moveInRoomId'] ?? 0).toInt(),
+      ranges: list.map(RoomOccupiedRange.fromJson).toList(),
+    );
+  }
+}

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/move_in/move_in.dart';
+import '../../../../models/room.dart' show UnavailablePeriod;
 import '../../../../providers/move_in/move_in_list_provider.dart';
 import '../../../../services/move_in_service.dart';
 import '../../../../widgets/common/custom_toast.dart';
@@ -53,6 +54,14 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
   MoveInRoom? _selectedRoom;
   bool _isSaving = false;
 
+  /// 선택된 방의 점유 구간 → 캘린더 비활성화 입력.
+  /// 점유 판정은 반열림 `[checkInDate, checkOutDate)` 이므로 endDate 는
+  /// `checkOutDate - 1일` 로 보정 (당일 체크아웃·다음 손님 체크인 허용).
+  List<UnavailablePeriod> _unavailablePeriods = const [];
+
+  /// 현재 fetch 중인 방 id — 다른 방으로 빠르게 전환 시 오래된 응답 무시
+  int? _rangesFetchRoomId;
+
   /// 방 id 별 GlobalKey — 하이라이트 자동 스크롤에 사용
   final Map<int, GlobalKey> _roomKeys = {};
 
@@ -64,6 +73,48 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
     super.initState();
     _applyInitialSelection();
     _maybeScheduleHighlight();
+    if (_selectedRoom != null) _fetchOccupiedRanges(_selectedRoom!.id);
+  }
+
+  /// 방 선택 시 호출 — 점유 구간 fetch + 캘린더 반영.
+  Future<void> _fetchOccupiedRanges(int roomId) async {
+    _rangesFetchRoomId = roomId;
+    try {
+      final today = DateTime.now();
+      final from = '${today.year.toString().padLeft(4, '0')}-'
+          '${today.month.toString().padLeft(2, '0')}-'
+          '${today.day.toString().padLeft(2, '0')}';
+      final resp = await _service.getRoomOccupiedRanges(roomId, from: from);
+      if (!mounted || _rangesFetchRoomId != roomId) return;
+      setState(() {
+        _unavailablePeriods = _toUnavailablePeriods(resp.ranges);
+      });
+    } on MoveInException {
+      // ranges 조회 실패는 사용자 흐름 막지 않음 — 빈 배열 폴백 (서버 409 가 최종 안전망)
+      if (!mounted || _rangesFetchRoomId != roomId) return;
+      setState(() => _unavailablePeriods = const []);
+    }
+  }
+
+  /// 백엔드 ranges → 캘린더 위젯 입력 변환.
+  /// 점유 판정 [checkIn, checkOut) — checkOut 당일은 비점유이므로
+  /// UnavailablePeriod.endDate 를 (checkOutDate - 1일) 로 보정.
+  List<UnavailablePeriod> _toUnavailablePeriods(List<RoomOccupiedRange> ranges) {
+    final result = <UnavailablePeriod>[];
+    for (final r in ranges) {
+      final start = DateTime.tryParse(r.checkInDate);
+      final out = DateTime.tryParse(r.checkOutDate);
+      if (start == null || out == null) continue;
+      final end = out.subtract(const Duration(days: 1));
+      // 같은 날 체크인·체크아웃(end < start) 케이스는 비점유 — 스킵.
+      if (end.isBefore(start)) continue;
+      result.add(UnavailablePeriod(
+        startDate: start,
+        endDate: end,
+        type: 'contract',
+      ));
+    }
+    return result;
   }
 
   @override
@@ -233,6 +284,10 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
     } on MoveInException catch (e) {
       if (!mounted) return;
       if (e.isConflict) {
+        // 다른 디바이스/탭 동시 등록으로 ranges 가 stale 일 수 있음 → 재조회.
+        if (_selectedRoom != null) {
+          _fetchOccupiedRanges(_selectedRoom!.id);
+        }
         final caseId = parseConflictCaseId(message: e.message, details: e.details);
         final goExisting = await showMoveInConflictDialog(
           context,
@@ -283,7 +338,14 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
                 MoveInRoomPicker(
                   rooms: widget.rooms,
                   selectedRoomId: _selectedRoom?.id,
-                  onSelected: (room) => setState(() => _selectedRoom = room),
+                  onSelected: (room) {
+                    setState(() {
+                      _selectedRoom = room;
+                      // 새 방으로 전환 시 이전 점유 구간 초기화 (응답 도착 전 stale 안내 방지)
+                      _unavailablePeriods = const [];
+                    });
+                    _fetchOccupiedRanges(room.id);
+                  },
                   onEditTap: _onEditRoom,
                   onDeleteTap: _onDeleteRoom,
                   isLoading: widget.isLoadingRooms,
@@ -295,6 +357,7 @@ class _MoveInCreateExistingTabState extends State<MoveInCreateExistingTab> {
                   MoveInContractForm(
                     cleaningSuppliesAvailable: _selectedRoom!.cleaningSuppliesAvailable,
                     controller: _contractFormController,
+                    unavailablePeriods: _unavailablePeriods,
                   ),
                 ],
               ],

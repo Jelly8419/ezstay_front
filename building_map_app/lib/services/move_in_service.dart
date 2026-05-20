@@ -143,6 +143,28 @@ class MoveInService {
     });
   }
 
+  /// GET /rooms/:roomId/occupied-ranges — 방의 점유 구간 조회
+  ///
+  /// 신규 케이스 등록 캘린더에서 이미 점유된 날짜 비활성화용.
+  /// 점유 판정은 반열림 구간 `[checkInDate, checkOutDate)` — checkOutDate
+  /// 당일은 다음 임차인 체크인 가능. 서버 충돌 판정과 동일 규칙.
+  /// [from] 지정 시 `checkOutDate > from` 인 케이스만 반환 (과거 제외).
+  Future<RoomOccupiedRangesResponse> getRoomOccupiedRanges(
+    int roomId, {
+    String? from,
+  }) async {
+    return _call(() async {
+      final query = from != null ? '?from=$from' : '';
+      final response = await http
+          .get(
+            _uri('/rooms/$roomId/occupied-ranges$query'),
+            headers: await _headers(jsonBody: false),
+          )
+          .timeout(ApiConfig.timeout);
+      return RoomOccupiedRangesResponse.fromJson(_extractData(response));
+    });
+  }
+
   // ============================================================
   // 2. 케이스 (Cases) — 4개
   // ============================================================
