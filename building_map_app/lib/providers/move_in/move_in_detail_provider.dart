@@ -72,6 +72,18 @@ class MoveInDetailProvider extends ChangeNotifier {
 
   /// 청소 결제 환불 (PAID 건 전용). 성공 시 환불 결과를 반환하고
   /// 케이스를 재조회해 cleaningStatus(PAID→CANCELLED) 동기화.
+  /// 환불 모달 진입 직전 정책 재평가 견적 조회.
+  /// 실패 시 null 반환 — 호출 측이 케이스 상세의 cleaningRefund 로 폴백 가능.
+  Future<CleaningRefundQuote?> fetchCleaningRefundQuote() async {
+    try {
+      return await _service.getCleaningRefundQuote(caseId);
+    } on MoveInException catch (e) {
+      _error = e;
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<CleaningRefundResponse?> refundCleaning({String? reason}) async {
     if (_isMutating) return null;
     _isMutating = true;

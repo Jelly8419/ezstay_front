@@ -267,6 +267,23 @@ class MoveInService {
     });
   }
 
+  /// GET /cases/:caseId/cleaning/refund/quote — 청소 환불 견적 (DB 변경 X)
+  ///
+  /// 환불 모달 진입 시점에 최신 정책 평가 결과를 다시 받기 위한 용도.
+  /// 케이스 상세에 동일 정보(`cleaningRefund`)가 이미 있지만, 시간이
+  /// 지나면서 정책 구간이 바뀔 수 있어 모달 열기 직전 재확인.
+  Future<CleaningRefundQuote> getCleaningRefundQuote(int caseId) async {
+    return _call(() async {
+      final response = await http
+          .get(
+            _uri('/cases/$caseId/cleaning/refund/quote'),
+            headers: await _headers(jsonBody: false),
+          )
+          .timeout(ApiConfig.timeout);
+      return CleaningRefundQuote.fromJson(_extractData(response));
+    });
+  }
+
   /// POST /cases/:caseId/cleaning/refund — 청소 결제 환불 (셀프 즉시)
   ///
   /// `cleaningStatus=PAID` 건 전용. 3구간 정책(서버 최종 판정):

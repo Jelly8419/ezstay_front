@@ -299,7 +299,25 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
   }
 
   Future<void> _onRefundCleaning() async {
+    final provider = context.read<MoveInDetailProvider>();
+    // 모달 열기 직전 정책 재평가 (단일 진실 원천: evaluateCleaningRefund).
+    // quote 실패 시 케이스 상세에 동봉된 cleaningRefund 로 폴백.
+    final quote = await provider.fetchCleaningRefundQuote() ??
+        provider.moveInCase?.cleaningRefund;
+    if (!mounted) return;
+
+    if (quote == null || !quote.canRefund) {
+      CustomToast.warning(
+        context,
+        quote?.reason ?? '현재 환불할 수 없습니다.',
+      );
+      return;
+    }
+
     final reasonCtrl = TextEditingController();
+    final estimateText = quote.deduction > 0
+        ? '${_won(quote.deduction)} 차감 후 ${_won(quote.refundAmount)} 환불 예정'
+        : '전액 ${_won(quote.refundAmount)} 환불 예정';
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -308,8 +326,9 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text('환불 금액은 청소 희망일 기준 정책에 따라 산정됩니다.\n$estimateText'),
+            SizedBox(height: AppSpacing.sm),
             const Text(
-              '환불 금액은 청소 희망일 기준 정책에 따라 산정됩니다.\n'
               '· 희망일 2일 전까지: 전액\n'
               '· 1일 전~당일: 10,000원 차감\n'
               '· 희망 시간 1시간 전부터: 환불 불가',
@@ -343,7 +362,6 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
     if (ok != true || !mounted) return;
 
     final reason = reasonCtrl.text.trim();
-    final provider = context.read<MoveInDetailProvider>();
     final result =
         await provider.refundCleaning(reason: reason.isEmpty ? null : reason);
     if (!mounted) return;

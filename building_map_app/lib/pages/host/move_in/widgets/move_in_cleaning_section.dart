@@ -101,9 +101,7 @@ class MoveInCleaningSection extends StatelessWidget {
           children: [
             _row('신청 상태', '신청 완료'),
             if (c.cleaningDate != null)
-              _row('희망 청소일', _formatDate(c.cleaningDate!)),
-            if (c.cleaningTime != null)
-              _row('희망 청소 시간', _formatTime(c.cleaningTime!)),
+              _row('청소 희망 일시', _formatCleaningDateTime(c)),
             _row('청소용품 구비', _suppliesText(c.roomSnapshot)),
             _row('청소 금액', _money(c.cleaningFee)),
             SizedBox(height: AppSpacing.sm),
@@ -122,9 +120,7 @@ class MoveInCleaningSection extends StatelessWidget {
           children: [
             _row('신청 상태', '결제 완료'),
             if (c.cleaningDate != null)
-              _row('희망 청소일', _formatDate(c.cleaningDate!)),
-            if (c.cleaningTime != null)
-              _row('희망 청소 시간', _formatTime(c.cleaningTime!)),
+              _row('청소 희망 일시', _formatCleaningDateTime(c)),
             _row('청소용품 구비', _suppliesText(c.roomSnapshot)),
             _row('결제 일시', _formatDateTime(c.cleaningPaidAt)),
             _row('결제 금액', _money(c.cleaningFee)),
@@ -170,26 +166,13 @@ class MoveInCleaningSection extends StatelessWidget {
     }
   }
 
-  /// PAID 상태 — 청소 결제 환불 (3구간 정책 안내 + 버튼)
+  /// PAID 상태 — 청소 결제 환불 (서버 산정 견적 + 버튼)
+  ///
+  /// 정책 수치(차감액·D-2·1시간)는 서버가 단일 진실 원천(`evaluateCleaningRefund`)이며
+  /// 프론트는 `c.cleaningRefund` 값만 표시. 클라이언트 산정 없음.
   Widget _buildRefundAction(MoveInCase c) {
-    // 청소 희망 일시가 없으면 시점 가드 불가 → 백엔드가 전액 환불 허용.
-    final cleaningDateTime = _composeCleaningDateTime(c);
-
-    CleaningRefundTier? tier;
-    int? estimated;
-    if (cleaningDateTime != null) {
-      tier = MoveInRefundPolicy.cleaningRefundTier(
-        cleaningDateTime: cleaningDateTime,
-      );
-      if (c.cleaningFee != null) {
-        estimated = MoveInRefundPolicy.estimatedCleaningRefund(
-          cleaningFee: c.cleaningFee!,
-          tier: tier,
-        );
-      }
-    }
-
-    final notAllowed = tier == CleaningRefundTier.notAllowed;
+    final quote = c.cleaningRefund;
+    final notAllowed = !quote.canRefund;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,22 +205,21 @@ class MoveInCleaningSection extends StatelessWidget {
                   color: AppColors.textSecondary,
                 ),
               ),
-              if (tier != null && !notAllowed && estimated != null) ...[
+              if (!notAllowed) ...[
                 SizedBox(height: AppSpacing.xs),
                 Text(
-                  tier == CleaningRefundTier.full
-                      ? '현재 환불 시 전액 ${_money(estimated)} 환불됩니다.'
-                      : '현재 환불 시 10,000원 차감 후 ${_money(estimated)} 환불됩니다.',
+                  quote.deduction > 0
+                      ? '현재 환불 시 ${_money(quote.deduction)} 차감 후 ${_money(quote.refundAmount)} 환불됩니다.'
+                      : '현재 환불 시 전액 ${_money(quote.refundAmount)} 환불됩니다.',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.primary700,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-              if (notAllowed) ...[
+              ] else ...[
                 SizedBox(height: AppSpacing.xs),
                 Text(
-                  '청소 희망 시간이 임박해 환불할 수 없습니다.',
+                  quote.reason ?? '현재 환불할 수 없습니다.',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.error700,
                     fontWeight: FontWeight.w600,
@@ -263,20 +245,6 @@ class MoveInCleaningSection extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  /// `cleaningDate`('YYYY-MM-DD') + `cleaningTime`('HH:mm[:ss]') → DateTime.
-  /// 둘 중 하나라도 없으면 null (시점 가드 불가 → 전액 환불 허용).
-  DateTime? _composeCleaningDateTime(MoveInCase c) {
-    final d = c.cleaningDate;
-    final t = c.cleaningTime;
-    if (d == null || d.isEmpty) return null;
-    final hhmm = (t == null || t.isEmpty) ? '00:00' : t;
-    try {
-      return DateTime.parse('$d ${hhmm.length >= 5 ? hhmm.substring(0, 5) : hhmm}');
-    } catch (_) {
-      return null;
-    }
   }
 
   Widget _row(String label, String value) {
@@ -312,17 +280,22 @@ class MoveInCleaningSection extends StatelessWidget {
     return '$formatted원';
   }
 
-  String _formatDate(String yyyymmdd) {
+  /// 청소 희망 일시를 'yyyy.MM.dd HH:mm' 한 줄로 포맷.
+  /// cleaningDate('YYYY-MM-DD') + cleaningTime('HH:mm[:ss]') 결합.
+  /// 날짜만 있으면 'yyyy.MM.dd', 둘 다 비면 '-'.
+  String _formatCleaningDateTime(MoveInCase c) {
+    final d = c.cleaningDate;
+    if (d == null || d.isEmpty) return '-';
+    String datePart;
     try {
-      return DateFormat('yyyy.MM.dd').format(DateTime.parse(yyyymmdd));
+      datePart = DateFormat('yyyy.MM.dd').format(DateTime.parse(d));
     } catch (_) {
-      return yyyymmdd;
+      datePart = d;
     }
-  }
-
-  /// 'HH:mm:ss' 또는 'HH:mm' → 'HH:mm' 표시용 (DB TIME 컬럼은 SS까지 반환).
-  String _formatTime(String raw) {
-    return raw.length >= 5 ? raw.substring(0, 5) : raw;
+    final t = c.cleaningTime;
+    if (t == null || t.isEmpty) return datePart;
+    final hhmm = t.length >= 5 ? t.substring(0, 5) : t;
+    return '$datePart $hhmm';
   }
 
   String _formatDateTime(String? iso) {

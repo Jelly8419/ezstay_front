@@ -8,6 +8,49 @@ Map<String, dynamic> _asMap(dynamic value) {
   return <String, dynamic>{};
 }
 
+/// 청소 환불 견적 — 서버 정책 평가 결과 (단일 진실 원천: evaluateCleaningRefund).
+///
+/// 케이스 상세 응답의 `cleaningRefund` 와 `GET .../cleaning/refund/quote`
+/// 응답이 동일 구조. 프론트는 정책 수치(차감액·D-2·1시간 등)를 직접
+/// 알 필요 없이 이 객체의 산정값만 표시.
+class CleaningRefundQuote {
+  /// 현재 시점에 환불 가능 여부
+  final bool canRefund;
+
+  /// 환불될 금액 (차감 적용 후)
+  final int refundAmount;
+
+  /// 차감액 (D-1~당일 구간 10,000원, 그 외 0)
+  final int deduction;
+
+  /// canRefund=false 일 때 사용자에게 보여줄 거부 사유
+  final String? reason;
+
+  const CleaningRefundQuote({
+    required this.canRefund,
+    required this.refundAmount,
+    required this.deduction,
+    this.reason,
+  });
+
+  static const CleaningRefundQuote unavailable = CleaningRefundQuote(
+    canRefund: false,
+    refundAmount: 0,
+    deduction: 0,
+  );
+
+  factory CleaningRefundQuote.fromJson(dynamic raw) {
+    if (raw is! Map) return unavailable;
+    final json = raw.map((k, v) => MapEntry(k.toString(), v));
+    return CleaningRefundQuote(
+      canRefund: (json['canRefund'] as bool?) ?? false,
+      refundAmount: (json['refundAmount'] as num? ?? 0).toInt(),
+      deduction: (json['deduction'] as num? ?? 0).toInt(),
+      reason: json['reason']?.toString(),
+    );
+  }
+}
+
 /// 임차인 결제 요청 발송 요약 정보 (케이스 내장)
 class MoveInPaymentRequestSummary {
   final PaymentRequestStatus status;
@@ -61,6 +104,10 @@ class MoveInCase {
 
   final String? cleaningPaidAt;
 
+  /// 청소 환불 견적 — 서버 정책 평가 결과.
+  /// cleaningStatus=PAID 일 때만 의미 있는 값. 그 외엔 canRefund=false.
+  final CleaningRefundQuote cleaningRefund;
+
   /// 결제 마감 시각 (KST) — 백엔드가 입주일 기준 계산하여 응답에 포함
   final String? cleaningPaymentDeadline;
   final String? optionPaymentDeadline;
@@ -85,6 +132,7 @@ class MoveInCase {
     this.cleaningDate,
     this.cleaningTime,
     this.cleaningPaidAt,
+    this.cleaningRefund = CleaningRefundQuote.unavailable,
     this.cleaningPaymentDeadline,
     this.optionPaymentDeadline,
     required this.roomSnapshot,
@@ -109,6 +157,7 @@ class MoveInCase {
       cleaningDate: json['cleaningDate']?.toString(),
       cleaningTime: json['cleaningTime']?.toString(),
       cleaningPaidAt: json['cleaningPaidAt']?.toString(),
+      cleaningRefund: CleaningRefundQuote.fromJson(json['cleaningRefund']),
       cleaningPaymentDeadline: json['cleaningPaymentDeadline']?.toString(),
       optionPaymentDeadline: json['optionPaymentDeadline']?.toString(),
       roomSnapshot: MoveInRoom.fromJson(json['roomSnapshot']),
