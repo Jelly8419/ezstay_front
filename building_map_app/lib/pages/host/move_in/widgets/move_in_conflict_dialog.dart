@@ -15,7 +15,7 @@ Future<bool?> showMoveInConflictDialog(
 }) {
   return showDialog<bool>(
     context: context,
-    builder: (_) => AlertDialog(
+    builder: (dialogCtx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMd),
       icon: Icon(Icons.event_busy_outlined, color: AppColors.warning700, size: 32),
       title: const Text('날짜가 겹치는 등록이 있습니다'),
@@ -36,12 +36,15 @@ Future<bool?> showMoveInConflictDialog(
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
+          // dialogCtx 를 써야 GoRouter 하위 Navigator 에서도 정확히
+          // 다이얼로그 라우트만 pop. 외부 context 는 root navigator 를 가리켜
+          // 닫기가 동작하지 않을 수 있음.
+          onPressed: () => Navigator.of(dialogCtx).pop(false),
           child: const Text('닫기'),
         ),
         if (existingCaseId != null)
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
             child: const Text('기존 등록 보기'),
           ),
       ],
