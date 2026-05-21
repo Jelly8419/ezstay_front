@@ -112,6 +112,8 @@ class MoveInCleaningSection extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            SizedBox(height: AppSpacing.sm),
+            _refundPolicyNotice(),
           ],
         );
       case CleaningStatus.paid:
@@ -177,37 +179,10 @@ class MoveInCleaningSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: notAllowed
-                ? AppColors.neutral100
-                : AppColors.primary50,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '환불 정책',
-                style: AppTextStyles.bodySmall.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              SizedBox(height: 2),
-              Text(
-                '· 청소 희망일 2일 전까지: 전액 환불\n'
-                '· 희망일 1일 전 ~ 당일: 10,000원 차감 후 환불\n'
-                '· 희망 시간 1시간 전부터: 환불 불가',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              if (!notAllowed) ...[
-                SizedBox(height: AppSpacing.xs),
-                Text(
+        _refundPolicyNotice(
+          highlighted: !notAllowed,
+          trailing: !notAllowed
+              ? Text(
                   quote.deduction > 0
                       ? '현재 환불 시 ${_money(quote.deduction)} 차감 후 ${_money(quote.refundAmount)} 환불됩니다.'
                       : '현재 환불 시 전액 ${_money(quote.refundAmount)} 환불됩니다.',
@@ -215,19 +190,14 @@ class MoveInCleaningSection extends StatelessWidget {
                     color: AppColors.primary700,
                     fontWeight: FontWeight.w600,
                   ),
-                ),
-              ] else ...[
-                SizedBox(height: AppSpacing.xs),
-                Text(
+                )
+              : Text(
                   quote.reason ?? '현재 환불할 수 없습니다.',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.error700,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ],
-          ),
         ),
         SizedBox(height: AppSpacing.sm),
         Align(
@@ -244,6 +214,46 @@ class MoveInCleaningSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// 청소 환불 정책 안내 박스 — 결제 대기/완료 양쪽에서 공용.
+  ///
+  /// [highlighted] true 면 primary 배경(환불 가능), false 면 회색 배경.
+  /// [trailing] 정책 문구 아래에 붙는 현재 시점 산정 안내(선택).
+  Widget _refundPolicyNotice({bool highlighted = false, Widget? trailing}) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: highlighted ? AppColors.primary50 : AppColors.neutral100,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '환불 정책',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: 2),
+          Text(
+            '· 청소 희망일 2일 전까지: 전액 환불\n'
+            '· 희망일 1일 전 ~ 당일: 10,000원 차감 후 환불\n'
+            '· 희망 시간 1시간 전부터: 환불 불가',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          if (trailing != null) ...[
+            SizedBox(height: AppSpacing.xs),
+            trailing,
+          ],
+        ],
+      ),
     );
   }
 
