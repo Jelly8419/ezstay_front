@@ -92,7 +92,8 @@ class _MoveInRoomFormState extends State<MoveInRoomForm> {
   /// 메인 탭(`/host/move-in`)으로 빠져버린다.
   /// → pop은 Daum 위젯에 위임하고, 결과는 외부 변수에 저장.
   ///
-  /// 입주 준비 서비스는 PRD에 서울 지역 제한이 명시되지 않으므로 sido 검사 생략.
+  /// 호스트 방 등록과 동일 정책 — 서울 지역만 등록 가능.
+  /// Daum API sido 필드는 축약형 '서울'.
   Future<void> _openAddressSearch() async {
     Map<String, String>? captured;
     await Navigator.of(context).push<void>(
@@ -108,6 +109,28 @@ class _MoveInRoomFormState extends State<MoveInRoomForm> {
     if (!mounted || captured == null || captured!.isEmpty) return;
 
     final result = captured!;
+
+    // 서울 지역 제한 — 비서울이면 즉시 안내 + 주소 미반영
+    final sido = result['sido'] ?? '';
+    if (sido.isNotEmpty && sido != '서울') {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          title: const Text('서비스 지역 안내'),
+          content: const Text(
+            '현재 서울 지역만 방 등록이 가능합니다.\n서비스 지역은 추후 확대될 예정입니다.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: const Text('확인'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final road = result['roadAddress'] ?? '';
     final jibun = result['jibunAddress'] ?? '';
     final raw = result['address'] ?? '';
@@ -178,7 +201,7 @@ class _MoveInRoomFormState extends State<MoveInRoomForm> {
             _AddressSearchField(
               controller: _addressCtrl,
               onSearchTap: _openAddressSearch,
-              validator: _required('주소'),
+              validator: _addressValidator,
             ),
             SizedBox(height: AppSpacing.sm),
             CustomTextField(
@@ -251,15 +274,21 @@ class _MoveInRoomFormState extends State<MoveInRoomForm> {
               ],
             ],
           ]),
-          _section('보안 / 출입 정보 (선택)', [
+          _section('보안 / 출입 정보', [
             CustomTextField(
-              label: '공동현관 비밀번호',
+              label: '공동현관 비밀번호 (선택)',
               controller: _commonPwCtrl,
             ),
             SizedBox(height: AppSpacing.sm),
             CustomTextField(
               label: '도어락 비밀번호',
               controller: _doorPwCtrl,
+              validator: _required('도어락 비밀번호'),
+            ),
+            SizedBox(height: AppSpacing.xs),
+            Text(
+              '도어락 비밀번호는 필수입니다. 열쇠로만 출입하는 집은 청소 서비스를 제공할 수 없습니다.',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
           ]),
           _section('청소용품 구비 여부', [
@@ -324,6 +353,14 @@ class _MoveInRoomFormState extends State<MoveInRoomForm> {
 
   String? Function(String?) _required(String label) {
     return (v) => (v == null || v.trim().isEmpty) ? '$label을(를) 입력해주세요.' : null;
+  }
+
+  /// 주소 검증 — 필수 + 서울 지역만 허용 (기존 호스트 방 등록 정책과 동일)
+  String? _addressValidator(String? v) {
+    final value = v?.trim() ?? '';
+    if (value.isEmpty) return '주소을(를) 입력해주세요.';
+    if (!value.startsWith('서울')) return '현재 서울 지역만 방 등록이 가능합니다.';
+    return null;
   }
 
   String? Function(String?) _positiveNumber(String label) {
