@@ -11,7 +11,9 @@ import '../../../utils/price_calculator.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
 import '../../../widgets/payment_method_modal.dart';
 import 'widgets/guest_move_in_deadline_banner.dart';
+import 'widgets/guest_move_in_info_banner.dart';
 import 'widgets/guest_move_in_option_card.dart';
+import 'widgets/guest_move_in_refund_notice.dart';
 import 'widgets/guest_move_in_room_header.dart';
 import 'widgets/guest_move_in_summary_box.dart';
 
@@ -333,6 +335,10 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
             checkOutDate: ctx.checkOutDate,
           ),
           SizedBox(height: AppSpacing.lg),
+          const GuestMoveInInfoBanner(
+            message: '옵션 상품은 입주할 주소로 입주일에 사용하실 수 있도록 배송해드립니다.',
+          ),
+          SizedBox(height: AppSpacing.md),
           Padding(
             padding: EdgeInsets.only(bottom: AppSpacing.md),
             child: GuestMoveInDeadlineBanner(
@@ -390,6 +396,8 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
               ),
             ),
           ],
+          SizedBox(height: AppSpacing.md),
+          const GuestMoveInRefundNotice(),
           SizedBox(height: AppSpacing.lg),
           SizedBox(
             width: double.infinity,

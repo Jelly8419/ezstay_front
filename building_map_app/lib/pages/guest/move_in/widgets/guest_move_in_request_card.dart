@@ -78,9 +78,13 @@ class GuestMoveInRequestCard extends StatelessWidget {
             ),
             if (item.status == GuestMoveInStatus.pendingPayment) ...[
               SizedBox(height: AppSpacing.sm),
-              GuestMoveInDeadlineBanner(
-                deadline: item.paymentDeadline,
-                expired: !item.canPay,
+              Align(
+                alignment: Alignment.centerRight,
+                child: GuestMoveInDeadlineBanner(
+                  deadline: item.paymentDeadline,
+                  expired: !item.canPay,
+                  compact: true,
+                ),
               ),
             ],
           ],

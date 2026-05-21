@@ -5,7 +5,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/guest_move_in/guest_move_in.dart';
-import '../../../models/move_in/move_in_refund_policy.dart';
 import '../../../providers/guest_move_in/guest_move_in_detail_provider.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
 import 'utils/guest_move_in_format.dart';
@@ -13,6 +12,7 @@ import 'widgets/guest_move_in_deadline_banner.dart';
 import 'widgets/guest_move_in_info_banner.dart';
 import 'widgets/guest_move_in_order_card.dart';
 import 'widgets/guest_move_in_refund_modal.dart';
+import 'widgets/guest_move_in_refund_notice.dart';
 import 'widgets/guest_move_in_room_header.dart';
 import 'widgets/guest_move_in_status_chip.dart';
 
@@ -159,7 +159,7 @@ class _GuestMoveInDetailPageState extends State<GuestMoveInDetailPage> {
             message: '옵션 상품은 입주할 주소로 입주일에 사용하실 수 있도록 배송해드립니다.',
           ),
           SizedBox(height: AppSpacing.md),
-          const _RefundReturnNotice(),
+          const GuestMoveInRefundNotice(),
           SizedBox(height: AppSpacing.lg),
           if (detail.status == GuestMoveInStatus.pendingPayment) ...[
             GuestMoveInDeadlineBanner(
@@ -273,66 +273,6 @@ class _PendingPaymentCta extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// 환불/반품 안내 박스 — 결제 완료된 케이스 상세 하단에 노출.
-///
-/// 왕복배송비 수치는 [MoveInRefundPolicy.returnShippingFee] 단일 출처를 사용.
-class _RefundReturnNotice extends StatelessWidget {
-  const _RefundReturnNotice();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '환불/반품 안내',
-            style: AppTextStyles.bodyLarge
-                .copyWith(fontWeight: FontWeight.w600),
-          ),
-          SizedBox(height: AppSpacing.sm),
-          _bullet('배송 전 취소 시 전액 환불됩니다.'),
-          SizedBox(height: AppSpacing.xs),
-          _bullet(
-            '배송이 시작된 이후 반품 요청을 접수할 수 있으며, 승인되면 '
-            '왕복배송비 ${GuestMoveInFormat.formatPrice(MoveInRefundPolicy.returnShippingFee)}'
-            '가 차감됩니다.',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _bullet(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '· ',
-          style: AppTextStyles.bodySmall
-              .copyWith(color: AppColors.textSecondary),
-        ),
-        Expanded(
-          child: Text(
-            text,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
