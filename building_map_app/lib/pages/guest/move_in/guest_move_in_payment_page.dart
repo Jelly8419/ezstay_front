@@ -10,8 +10,7 @@ import '../../../services/guest_move_in_payment_controller.dart';
 import '../../../utils/price_calculator.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
 import '../../../widgets/payment_method_modal.dart';
-import 'utils/guest_move_in_format.dart';
-import 'widgets/guest_move_in_info_banner.dart';
+import 'widgets/guest_move_in_deadline_banner.dart';
 import 'widgets/guest_move_in_option_card.dart';
 import 'widgets/guest_move_in_room_header.dart';
 import 'widgets/guest_move_in_summary_box.dart';
@@ -334,15 +333,13 @@ class _GuestMoveInPaymentPageState extends State<GuestMoveInPaymentPage> {
             checkOutDate: ctx.checkOutDate,
           ),
           SizedBox(height: AppSpacing.lg),
-          if (!ctx.canPay)
-            Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.md),
-              child: GuestMoveInInfoBanner(
-                icon: Icons.warning_amber_outlined,
-                message: '입주일 5일 전까지만 결제할 수 있습니다.\n'
-                    '결제 마감: ${GuestMoveInFormat.formatDate(ctx.paymentDeadline)}',
-              ),
+          Padding(
+            padding: EdgeInsets.only(bottom: AppSpacing.md),
+            child: GuestMoveInDeadlineBanner(
+              deadline: ctx.paymentDeadline,
+              expired: !ctx.canPay,
             ),
+          ),
           Text('옵션 선택', style: AppTextStyles.headingSmall),
           SizedBox(height: AppSpacing.md),
           ...ctx.options.map((option) {

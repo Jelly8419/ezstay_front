@@ -4,6 +4,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/guest_move_in/guest_move_in.dart';
 import '../utils/guest_move_in_format.dart';
+import 'guest_move_in_deadline_banner.dart';
 import 'guest_move_in_status_chip.dart';
 
 /// 목록 화면용 케이스 카드
@@ -75,14 +76,11 @@ class GuestMoveInRequestCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (item.status == GuestMoveInStatus.pendingPayment &&
-                !item.canPay) ...[
+            if (item.status == GuestMoveInStatus.pendingPayment) ...[
               SizedBox(height: AppSpacing.sm),
-              Text(
-                '입주일 5일 전 결제 마감 (${GuestMoveInFormat.formatDate(item.paymentDeadline)})',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.error500,
-                ),
+              GuestMoveInDeadlineBanner(
+                deadline: item.paymentDeadline,
+                expired: !item.canPay,
               ),
             ],
           ],

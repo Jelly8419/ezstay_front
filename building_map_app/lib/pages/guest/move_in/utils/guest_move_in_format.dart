@@ -28,6 +28,19 @@ class GuestMoveInFormat {
     }
   }
 
+  /// 날짜 + 요일 + 시간: "2027.08.10 (화) 15:23"
+  ///
+  /// 결제 마감 기한 표시용. 파싱 실패 시 원본 반환.
+  static String formatDeadline(String? raw) {
+    if (raw == null || raw.isEmpty) return '-';
+    try {
+      final dt = DateTime.parse(raw).toLocal();
+      return DateFormat('yyyy.MM.dd (E) HH:mm', 'ko_KR').format(dt);
+    } catch (_) {
+      return raw;
+    }
+  }
+
   /// 1234567 → "1,234,567원"
   static String formatPrice(int value) {
     final formatter = NumberFormat('#,###');
