@@ -142,11 +142,23 @@ class _DesktopRow extends StatelessWidget {
           children: [
             Expanded(flex: 4, child: _RoomInfoCell(moveInCase: c)),
             Expanded(flex: 3, child: _DateRangeCell(moveInCase: c)),
-            Expanded(flex: 2, child: CleaningStatusChip(status: c.cleaningStatus)),
+            // 칩은 텍스트 너비에 맞춤 — Align 으로 셀 내 좌측 정렬,
+            // 셀 자체 폭(flex)은 유지해 헤더 컬럼과 정렬을 맞춘다.
             Expanded(
               flex: 2,
-              child: PaymentRequestStatusChip(
-                status: c.paymentRequest?.status ?? PaymentRequestStatus.notSent,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: CleaningStatusChip(status: c.cleaningStatus),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: PaymentRequestStatusChip(
+                  status: c.paymentRequest?.status ??
+                      PaymentRequestStatus.notSent,
+                ),
               ),
             ),
             SizedBox(width: 180, child: _ActionCell(
