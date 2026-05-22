@@ -408,7 +408,8 @@ class _AppGNBState extends State<AppGNB> {
                       if (!ok || !context.mounted) return;
                       final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
                       if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid, userMode: 'host');
-                      context.go('/host');
+                      // 임대인 전환 시 입주 준비 서비스를 디폴트 페이지로 노출
+                      context.go('/host/move-in');
                     } on SwitchModeRequiresBankException {
                       // 서버 측 403: 계좌 없음 (로컬 hasBank=true와 불일치)
                       if (context.mounted) context.go('/host/account-setup-standalone');
@@ -441,7 +442,8 @@ class _AppGNBState extends State<AppGNB> {
               final newUserMode = isCurrentlyHostMode ? 'guest' : 'host';
               final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
               if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid, userMode: newUserMode);
-              context.go(isCurrentlyHostMode ? '/' : '/host');
+              // 임대인 전환 시 디폴트 페이지는 입주 준비 서비스
+              context.go(isCurrentlyHostMode ? '/' : '/host/move-in');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary500,
