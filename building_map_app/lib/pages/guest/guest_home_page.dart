@@ -110,7 +110,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
           children: [
             // 오픈 전 배너
             _buildOpeningBanner(authService),
-            const SizedBox(height: 50),
+            // 모바일은 배너~프로모션 섹션 간격을 좁게 (기존 50 → 12)
+            const SizedBox(height: 12),
             // 입주 준비 서비스 진입 섹션 (이미 계약한 사용자용)
             _buildMoveInPromoSection(authService),
             // 히어로 섹션
@@ -1064,7 +1065,8 @@ class _GuestHomePageState extends State<GuestHomePage> {
     return HomeSection(
       backgroundColor: AppColors.background,
       maxWidth: AppSizes.contentMaxWidthWide,
-      padding: const EdgeInsets.only(bottom: 50),
+      // 모바일은 하단 여백을 줄여 다음 섹션과 밀착 (데스크탑은 기존 50 유지)
+      padding: EdgeInsets.only(bottom: isMobile ? 8 : 50),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           // 배너 높이를 기존 대비 30% 축소 (400 → 280)
