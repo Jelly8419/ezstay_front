@@ -720,3 +720,394 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }
+
+// ============================================================
+// SingleDatePicker — DateRangePicker와 동일 디자인의 단일 날짜 선택
+// ============================================================
+
+/// 단일 날짜 선택 위젯 ([DateRangePicker]와 동일한 디자인 토큰을 따른다).
+///
+/// 범위 전용 기능(최소/최대 계약일, unavailablePeriods)은 제외하고
+/// 한 날짜만 선택해 [onDateSelected]로 반환한다.
+class SingleDatePicker extends StatelessWidget {
+  final DateTime? selectedDate;
+  final ValueChanged<DateTime> onDateSelected;
+  final VoidCallback? onDateCleared;
+  final String placeholderText;
+  final String? helperText;
+  final DateTime? minDate;
+  final DateTime? maxDate;
+
+  const SingleDatePicker({
+    super.key,
+    this.selectedDate,
+    required this.onDateSelected,
+    this.onDateCleared,
+    this.placeholderText = '날짜 선택',
+    this.helperText,
+    this.minDate,
+    this.maxDate,
+  });
+
+  String _formatLabel() {
+    final d = selectedDate;
+    if (d == null) return placeholderText;
+    return '${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => _showPicker(context),
+          borderRadius: AppRadius.radiusMd,
+          child: Container(
+            padding: EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.border, width: 1),
+              borderRadius: AppRadius.radiusMd,
+              color: AppColors.surface,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 20,
+                  color: selectedDate != null
+                      ? AppColors.primary600
+                      : AppColors.textSecondary,
+                ),
+                SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    _formatLabel(),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: selectedDate != null
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                      fontWeight: selectedDate != null
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (helperText != null) ...[
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            helperText!,
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showPicker(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => _SingleDatePickerDialog(
+        initialDate: selectedDate,
+        minDate: minDate,
+        maxDate: maxDate,
+        onDateSelected: (d) {
+          onDateSelected(d);
+        },
+        onDateCleared: onDateCleared,
+      ),
+    );
+  }
+}
+
+class _SingleDatePickerDialog extends StatefulWidget {
+  final DateTime? initialDate;
+  final DateTime? minDate;
+  final DateTime? maxDate;
+  final ValueChanged<DateTime> onDateSelected;
+  final VoidCallback? onDateCleared;
+
+  const _SingleDatePickerDialog({
+    this.initialDate,
+    this.minDate,
+    this.maxDate,
+    required this.onDateSelected,
+    this.onDateCleared,
+  });
+
+  @override
+  State<_SingleDatePickerDialog> createState() =>
+      _SingleDatePickerDialogState();
+}
+
+class _SingleDatePickerDialogState extends State<_SingleDatePickerDialog> {
+  late DateTime _focusedMonth;
+  DateTime? _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusedMonth = widget.initialDate ?? DateTime.now();
+    _selected = widget.initialDate;
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  DateTime _normalize(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  bool _isDisabled(DateTime date) {
+    final today = DateTime.now();
+    final todayNorm = DateTime(today.year, today.month, today.day);
+    final min = widget.minDate ?? todayNorm;
+    if (date.isBefore(_normalize(min))) return true;
+    if (widget.maxDate != null && date.isAfter(_normalize(widget.maxDate!))) {
+      return true;
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusLg),
+      child: Container(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('날짜 선택', style: AppTextStyles.headingMedium),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                  color: AppColors.textPrimary,
+                ),
+              ],
+            ),
+            SizedBox(height: AppSpacing.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _focusedMonth = DateTime(
+                        _focusedMonth.year,
+                        _focusedMonth.month - 1,
+                      );
+                    });
+                  },
+                  icon: const Icon(Icons.chevron_left, size: 20),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.neutral100,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                Text(
+                  '${_focusedMonth.year}년 ${_focusedMonth.month}월',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _focusedMonth = DateTime(
+                        _focusedMonth.year,
+                        _focusedMonth.month + 1,
+                      );
+                    });
+                  },
+                  icon: const Icon(Icons.chevron_right, size: 20),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.neutral100,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: ['일', '월', '화', '수', '목', '금', '토']
+                  .asMap()
+                  .entries
+                  .map((entry) {
+                final index = entry.key;
+                final day = entry.value;
+                return SizedBox(
+                  width: 36,
+                  child: Text(
+                    day,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.caption.copyWith(
+                      color: index == 0
+                          ? AppColors.error500
+                          : index == 6
+                              ? AppColors.primary600
+                              : AppColors.textSecondary,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 8),
+            _buildDateGrid(),
+            const Divider(height: 32),
+            Row(
+              children: [
+                if (_selected != null)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        setState(() => _selected = null);
+                        widget.onDateCleared?.call();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        side: BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadius.radiusMd,
+                        ),
+                      ),
+                      child: Text(
+                        '초기화',
+                        style: AppTextStyles.buttonText.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (_selected != null) SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: _selected == null
+                        ? null
+                        : () {
+                            widget.onDateSelected(_selected!);
+                            Navigator.pop(context);
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary600,
+                      foregroundColor: AppColors.textOnPrimary,
+                      disabledBackgroundColor: AppColors.neutral200,
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusMd,
+                      ),
+                    ),
+                    child: Text('선택 완료', style: AppTextStyles.buttonText),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateGrid() {
+    final firstDayOfMonth =
+        DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+    final lastDayOfMonth =
+        DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
+    final firstWeekday = firstDayOfMonth.weekday % 7;
+    final daysInMonth = lastDayOfMonth.day;
+
+    final List<DateTime?> dateList = [];
+    for (int i = 0; i < firstWeekday; i++) {
+      dateList.add(null);
+    }
+    for (int day = 1; day <= daysInMonth; day++) {
+      dateList.add(DateTime(_focusedMonth.year, _focusedMonth.month, day));
+    }
+    while (dateList.length < 42) {
+      dateList.add(null);
+    }
+
+    return Column(
+      children: List.generate(6, (weekIndex) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(7, (dayIndex) {
+              final index = weekIndex * 7 + dayIndex;
+              final date = dateList[index];
+              if (date == null) {
+                return const SizedBox(width: 36, height: 36);
+              }
+              return _buildDateCell(date);
+            }),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildDateCell(DateTime date) {
+    final today = DateTime.now();
+    final isToday = _isSameDay(date, today);
+    final isSelected = _selected != null && _isSameDay(date, _selected!);
+    final isDisabled = _isDisabled(date);
+
+    Color? backgroundColor;
+    Color? textColor;
+    FontWeight fontWeight = FontWeight.normal;
+
+    if (isSelected) {
+      backgroundColor = AppColors.primary600;
+      textColor = AppColors.textOnPrimary;
+      fontWeight = FontWeight.w600;
+    } else if (isToday) {
+      backgroundColor = AppColors.primary50.withValues(alpha: 0.5);
+      textColor = AppColors.primary600;
+      fontWeight = FontWeight.w600;
+    } else if (isDisabled) {
+      textColor = AppColors.textDisabled;
+    } else {
+      textColor = AppColors.textPrimary;
+    }
+
+    return InkWell(
+      onTap: isDisabled
+          ? null
+          : () => setState(() => _selected = _normalize(date)),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: 36,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          shape: BoxShape.circle,
+        ),
+        child: Text(
+          '${date.day}',
+          style: AppTextStyles.caption.copyWith(
+            fontWeight: fontWeight,
+            color: textColor,
+          ),
+        ),
+      ),
+    );
+  }
+}

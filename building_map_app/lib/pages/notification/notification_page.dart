@@ -171,7 +171,21 @@ class _NotificationPageState extends State<NotificationPage> {
       return;
     }
 
-    // 6. deeplink 필드 기반 네비게이션 (폴백)
+    // 6. 게스트 입주 준비 결제 요청/완료 — 케이스 또는 결제 상세로 이동
+    if (notification.type == NotificationType.moveInPaymentRequest ||
+        notification.type == NotificationType.moveInPaymentCompleted) {
+      _navigateToGuestMoveIn(notification);
+      return;
+    }
+
+    // 6-1. 호스트 입주 준비 — 방 심사 결과 → 케이스 등록 화면으로 이동
+    //     해당 방을 자동 선택/스크롤할 수 있도록 highlightRoomId 쿼리 전달
+    if (notification.type == NotificationType.moveInRoomReviewResult) {
+      _navigateToMoveInRoomReview(notification);
+      return;
+    }
+
+    // 7. deeplink 필드 기반 네비게이션 (폴백)
     switch (notification.deeplink) {
       case DeeplinkType.contract:
         _navigateToContract(notification, isHostMode);
@@ -191,6 +205,14 @@ class _NotificationPageState extends State<NotificationPage> {
 
       case DeeplinkType.room:
         _navigateToRoom(notification);
+        break;
+
+      case DeeplinkType.moveIn:
+        _navigateToGuestMoveIn(notification);
+        break;
+
+      case DeeplinkType.moveInRoom:
+        _navigateToMoveInRoomReview(notification);
         break;
 
       case DeeplinkType.home:
@@ -279,6 +301,38 @@ class _NotificationPageState extends State<NotificationPage> {
     } else {
       context.push('/host/room-management');
     }
+  }
+
+  /// 입주 준비 — 방 심사 결과 알림 → 케이스 등록 화면 (해당 방 자동 선택/스크롤)
+  ///
+  /// 가이드 §1.5 — `metadata.moveInRoomId` 를 highlightRoomId 쿼리로 전달.
+  /// 페이로드가 빠진 경우 케이스 등록 화면 기본 진입.
+  void _navigateToMoveInRoomReview(NotificationItem notification) {
+    final metadata = notification.metadata ?? const {};
+    final moveInRoomId = (metadata['moveInRoomId'] as num?)?.toInt();
+    if (moveInRoomId != null) {
+      context.push('/host/move-in/new?tab=existing&highlightRoomId=$moveInRoomId');
+    } else {
+      context.push('/host/move-in/new?tab=existing');
+    }
+  }
+
+  /// 게스트 입주 준비 페이지로 이동 (metadata.caseId / metadata.paymentId 우선)
+  void _navigateToGuestMoveIn(NotificationItem notification) {
+    final metadata = notification.metadata ?? const {};
+    final caseId = (metadata['caseId'] as num?)?.toInt();
+    final paymentId = (metadata['paymentId'] as num?)?.toInt();
+
+    if (notification.type == NotificationType.moveInPaymentCompleted &&
+        paymentId != null) {
+      context.push('/guest/move-in/payments/$paymentId/complete');
+      return;
+    }
+    if (caseId != null) {
+      context.push('/guest/move-in/requests/$caseId');
+      return;
+    }
+    context.push('/guest/move-in');
   }
 
   @override

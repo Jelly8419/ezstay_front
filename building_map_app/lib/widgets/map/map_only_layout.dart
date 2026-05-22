@@ -28,9 +28,6 @@ class MapOnlyLayout extends StatelessWidget {
   /// 지도 마커 선택 해제 콜백
   final VoidCallback onDeselectMarker;
 
-  /// 방이 없을 때 지도 위 overlay 안내 카드 (optional)
-  final Widget? openingNoticeWidget;
-
   const MapOnlyLayout({
     super.key,
     required this.mapWidget,
@@ -44,7 +41,6 @@ class MapOnlyLayout extends StatelessWidget {
     required this.onPageChanged,
     required this.onSaveMapState,
     required this.onDeselectMarker,
-    this.openingNoticeWidget,
   });
 
   @override
@@ -209,12 +205,8 @@ class MapOnlyLayout extends StatelessWidget {
             ),
           ),
 
-        // 오픈 전 안내 overlay 카드 (방 없을 때 — 런칭 전까지 결과 없음 메시지 대체)
-        if (filteredRooms.isEmpty && openingNoticeWidget != null)
-          Positioned.fill(child: Center(child: openingNoticeWidget!)),
-
-        // 결과 없음 메시지 (런칭 후에만 노출)
-        if (filteredRooms.isEmpty && openingNoticeWidget == null)
+        // 결과 없음 메시지
+        if (filteredRooms.isEmpty)
           Center(
             child: Container(
               padding: const EdgeInsets.all(24),

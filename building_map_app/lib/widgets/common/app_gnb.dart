@@ -72,10 +72,13 @@ class _AppGNBState extends State<AppGNB> {
                     // 로고
                     _buildLogo(context),
 
-                    // 중앙 메뉴 (호스트 모드에서만 표시)
+                    // 중앙 메뉴 (모드별 분기)
                     if (isLoggedIn && isHostMode) ...[
                       SizedBox(width: AppSpacing.xl),
                       _buildHostCenterMenu(context),
+                    ] else if (isLoggedIn && !isHostMode) ...[
+                      SizedBox(width: AppSpacing.xl),
+                      _buildGuestCenterMenu(context),
                     ],
 
                     Spacer(),
@@ -104,7 +107,8 @@ class _AppGNBState extends State<AppGNB> {
       onTap: () {
         final authService = context.read<AuthService>();
         final isHostMode = authService.currentUser?.mode == UserMode.host;
-        context.go(isHostMode ? '/host' : '/');
+        // 임대인 모드 홈은 입주 준비 서비스를 디폴트 페이지로 노출
+        context.go(isHostMode ? '/host/move-in' : '/');
       },
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -127,10 +131,47 @@ class _AppGNBState extends State<AppGNB> {
     );
   }
 
-  /// 호스트 모드 중앙 메뉴 (방 관리, 계약, 정산)
+  /// 게스트 모드 중앙 메뉴 (홈, 지도, 계약 | 입주 준비 서비스)
+  Widget _buildGuestCenterMenu(BuildContext context) {
+    return Row(
+      children: [
+        _buildTextButton(
+          context,
+          label: '홈',
+          onPressed: () => context.go('/guest'),
+        ),
+        SizedBox(width: AppSpacing.md),
+        _buildTextButton(
+          context,
+          label: '지도',
+          onPressed: () => context.go('/map'),
+        ),
+        SizedBox(width: AppSpacing.md),
+        _buildTextButton(
+          context,
+          label: '계약',
+          onPressed: () => context.go('/guest/contracts'),
+        ),
+        _buildMenuDivider(),
+        _buildTextButton(
+          context,
+          label: '입주 준비 서비스',
+          onPressed: () => context.go('/guest/move-in'),
+        ),
+      ],
+    );
+  }
+
+  /// 호스트 모드 중앙 메뉴 (입주 준비 서비스 | 방 관리, 계약, 정산)
   Widget _buildHostCenterMenu(BuildContext context) {
     return Row(
       children: [
+        _buildTextButton(
+          context,
+          label: '입주 준비 서비스',
+          onPressed: () => context.go('/host/move-in'),
+        ),
+        _buildMenuDivider(),
         _buildTextButton(
           context,
           label: '방 관리',
@@ -149,6 +190,18 @@ class _AppGNBState extends State<AppGNB> {
           onPressed: () => context.go('/host/settlement'),
         ),
       ],
+    );
+  }
+
+  /// 메뉴 그룹 사이 세로 구분선
+  Widget _buildMenuDivider() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Container(
+        width: 1,
+        height: 20,
+        color: AppColors.border,
+      ),
     );
   }
 
@@ -356,7 +409,8 @@ class _AppGNBState extends State<AppGNB> {
                       if (!ok || !context.mounted) return;
                       final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
                       if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid, userMode: 'host');
-                      context.go('/host');
+                      // 임대인 전환 시 입주 준비 서비스를 디폴트 페이지로 노출
+                      context.go('/host/move-in');
                     } on SwitchModeRequiresBankException {
                       // 서버 측 403: 계좌 없음 (로컬 hasBank=true와 불일치)
                       if (context.mounted) context.go('/host/account-setup-standalone');
@@ -389,7 +443,8 @@ class _AppGNBState extends State<AppGNB> {
               final newUserMode = isCurrentlyHostMode ? 'guest' : 'host';
               final uid = int.tryParse(authService.currentUser?.id ?? '0') ?? 0;
               if (uid != 0) context.read<GNBProvider>().startChatUnreadWatch(uid, userMode: newUserMode);
-              context.go(isCurrentlyHostMode ? '/' : '/host');
+              // 임대인 전환 시 디폴트 페이지는 입주 준비 서비스
+              context.go(isCurrentlyHostMode ? '/' : '/host/move-in');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary500,

@@ -40,6 +40,21 @@ import '../pages/chat/auto_message_management_page.dart'
 import '../pages/host/room_management_page.dart' deferred as room_management;
 import '../pages/host/room_schedule_page.dart'; // 즉시 로딩으로 변경 (Focus 에러 방지)
 import '../pages/host/host_my_page.dart' deferred as host_my_page;
+import '../pages/host/host_more_page.dart' deferred as host_more_page;
+import '../pages/host/move_in/move_in_home_page.dart' deferred as move_in_home;
+import '../pages/host/move_in/move_in_create_page.dart' deferred as move_in_create;
+import '../pages/host/move_in/move_in_detail_page.dart' deferred as move_in_detail;
+import '../pages/guest/guest_more_page.dart' deferred as guest_more_page;
+import '../pages/guest/move_in/move_in_invite_preview_page.dart'
+    deferred as guest_invite_preview;
+import '../pages/guest/move_in/guest_move_in_home_page.dart'
+    deferred as guest_move_in_home;
+import '../pages/guest/move_in/guest_move_in_detail_page.dart'
+    deferred as guest_move_in_detail;
+import '../pages/guest/move_in/guest_move_in_payment_page.dart'
+    deferred as guest_move_in_payment;
+import '../pages/guest/move_in/guest_move_in_complete_page.dart'
+    deferred as guest_move_in_complete;
 import '../pages/payment/payment_callback_page.dart' deferred as payment_callback;
 import '../pages/payment/rental_payment_callback_page.dart'
     deferred as rental_payment_callback;
@@ -317,8 +332,15 @@ class AppRouter {
           return '/guest';
         }
 
-        // 로그인된 상태에서 로그인 페이지 접근 시 모드에 따라 홈으로 리다이렉트
+        // 로그인된 상태에서 로그인 페이지 접근 시 returnUrl 우선, 없으면 모드별 홈
         if (isLoggedIn && isGoingToLogin) {
+          final rawReturn = state.uri.queryParameters['returnUrl'];
+          if (rawReturn != null && rawReturn.isNotEmpty) {
+            final decoded = Uri.decodeComponent(rawReturn);
+            if (decoded.startsWith('/') && !decoded.startsWith('//')) {
+              return decoded;
+            }
+          }
           if (authService.currentUser?.mode == UserMode.host) {
             return '/host';
           }
@@ -326,6 +348,7 @@ class AppRouter {
         }
 
         // 로그인 안 된 상태에서 보호된 페이지 접근 시 로그인 페이지로 리다이렉트
+        // /move-in/payment/:token 은 비로그인 미리보기 허용 (게스트 입주 준비)
         if (!isLoggedIn &&
             !isGoingToLogin &&
             !isGoingToGuest &&
@@ -335,8 +358,11 @@ class AppRouter {
                 state.matchedLocation.contains('/contracts') ||
                 state.matchedLocation.contains('/chat') ||
                 state.matchedLocation.contains('/notifications') ||
-                state.matchedLocation.contains('/mypage'))) {
-          return '/login';
+                state.matchedLocation.contains('/mypage') ||
+                state.matchedLocation.startsWith('/guest/move-in') ||
+                state.matchedLocation.startsWith('/guest/more') ||
+                state.matchedLocation.startsWith('/guest/my-page'))) {
+          return '/login?returnUrl=${Uri.encodeComponent(state.matchedLocation)}';
         }
 
         return null;
@@ -353,6 +379,21 @@ class AppRouter {
               path: '/login',
               name: 'login',
               builder: (context, state) => const LoginPage(),
+            ),
+            // 게스트 - 입주 준비 비로그인 미리보기 (optionalAuth)
+            GoRoute(
+              path: '/move-in/payment/:token',
+              name: 'guest-move-in-invite',
+              builder: (context, state) {
+                final token = state.pathParameters['token'] ?? '';
+                return _deferredShellWidget(
+                  guest_invite_preview.loadLibrary,
+                  () => guest_invite_preview.MoveInInvitePreviewPage(
+                    key: ValueKey('guest-move-in-invite-$token'),
+                    token: token,
+                  ),
+                );
+              },
             ),
             GoRoute(
               path: '/reset-password',
@@ -516,6 +557,158 @@ class AppRouter {
                       host_contract_detail.loadLibrary,
                       () => host_contract_detail.HostContractDetailPage(
                         contractId: int.parse(contractId),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            // 호스트 - 입주 준비 서비스
+            GoRoute(
+              path: '/host/move-in',
+              name: 'host-move-in',
+              builder: (context, state) => _deferredShellWidget(
+                move_in_home.loadLibrary,
+                () => move_in_home.MoveInHomePage(),
+              ),
+              routes: [
+                GoRoute(
+                  path: 'new',
+                  name: 'host-move-in-create',
+                  builder: (context, state) {
+                    final tab = state.uri.queryParameters['tab'];
+                    final highlightRoomId = _parseIntParameter(
+                      state.uri.queryParameters['highlightRoomId'],
+                    );
+                    return _deferredShellWidget(
+                      move_in_create.loadLibrary,
+                      () => move_in_create.MoveInCreatePage(
+                        initialTab: tab,
+                        highlightRoomId: highlightRoomId,
+                      ),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: ':caseId',
+                  name: 'host-move-in-detail',
+                  builder: (context, state) {
+                    final caseId = _parseIntParameter(state.pathParameters['caseId']);
+                    if (caseId == null) {
+                      return _buildShellInvalidAccessWidget(
+                        context,
+                        message: '잘못된 접근입니다.',
+                        buttonText: '입주 준비 서비스로 돌아가기',
+                        redirectPath: '/host/move-in',
+                      );
+                    }
+                    final action = state.uri.queryParameters['action'];
+                    return _deferredShellWidget(
+                      move_in_detail.loadLibrary,
+                      () => move_in_detail.MoveInDetailPage(
+                        key: ValueKey('move-in-detail-$caseId'),
+                        caseId: caseId,
+                        initialAction: action,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            // 호스트 - 더보기 (모바일 GNB 5번째 탭)
+            GoRoute(
+              path: '/host/more',
+              name: 'host-more',
+              builder: (context, state) => _deferredShellWidget(
+                host_more_page.loadLibrary,
+                () => host_more_page.HostMorePage(),
+              ),
+            ),
+            // 게스트 - 더보기 (모바일 GNB 5번째 탭)
+            GoRoute(
+              path: '/guest/more',
+              name: 'guest-more',
+              builder: (context, state) => _deferredShellWidget(
+                guest_more_page.loadLibrary,
+                () => guest_more_page.GuestMorePage(),
+              ),
+            ),
+            // 게스트 - 입주 준비 서비스
+            GoRoute(
+              path: '/guest/move-in',
+              name: 'guest-move-in',
+              builder: (context, state) => _deferredShellWidget(
+                guest_move_in_home.loadLibrary,
+                () => guest_move_in_home.GuestMoveInHomePage(),
+              ),
+              routes: [
+                GoRoute(
+                  path: 'requests/:caseId',
+                  name: 'guest-move-in-detail',
+                  builder: (context, state) {
+                    final caseId =
+                        _parseIntParameter(state.pathParameters['caseId']);
+                    if (caseId == null) {
+                      return _buildShellInvalidAccessWidget(
+                        context,
+                        message: '잘못된 접근입니다.',
+                        buttonText: '입주 준비 서비스로 돌아가기',
+                        redirectPath: '/guest/move-in',
+                      );
+                    }
+                    return _deferredShellWidget(
+                      guest_move_in_detail.loadLibrary,
+                      () => guest_move_in_detail.GuestMoveInDetailPage(
+                        key: ValueKey('guest-move-in-detail-$caseId'),
+                        caseId: caseId,
+                      ),
+                    );
+                  },
+                  routes: [
+                    GoRoute(
+                      path: 'payment',
+                      name: 'guest-move-in-payment',
+                      builder: (context, state) {
+                        final caseId =
+                            _parseIntParameter(state.pathParameters['caseId']);
+                        if (caseId == null) {
+                          return _buildShellInvalidAccessWidget(
+                            context,
+                            message: '잘못된 접근입니다.',
+                            buttonText: '입주 준비 서비스로 돌아가기',
+                            redirectPath: '/guest/move-in',
+                          );
+                        }
+                        return _deferredShellWidget(
+                          guest_move_in_payment.loadLibrary,
+                          () => guest_move_in_payment.GuestMoveInPaymentPage(
+                            key: ValueKey('guest-move-in-payment-$caseId'),
+                            caseId: caseId,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                GoRoute(
+                  path: 'payments/:paymentId/complete',
+                  name: 'guest-move-in-complete',
+                  builder: (context, state) {
+                    final paymentId =
+                        _parseIntParameter(state.pathParameters['paymentId']);
+                    if (paymentId == null) {
+                      return _buildShellInvalidAccessWidget(
+                        context,
+                        message: '잘못된 접근입니다.',
+                        buttonText: '입주 준비 서비스로 돌아가기',
+                        redirectPath: '/guest/move-in',
+                      );
+                    }
+                    return _deferredShellWidget(
+                      guest_move_in_complete.loadLibrary,
+                      () => guest_move_in_complete.GuestMoveInCompletePage(
+                        key: ValueKey('guest-move-in-complete-$paymentId'),
+                        paymentId: paymentId,
                       ),
                     );
                   },

@@ -1268,8 +1268,9 @@ class _GuestMyPageState extends State<GuestMyPage> {
                       userMode: 'host',
                     );
                   }
+                  // 임대인 전환 시 입주 준비 서비스를 디폴트 페이지로 노출
                   // ignore: use_build_context_synchronously
-                  context.go('/host');
+                  context.go('/host/move-in');
                 } on SwitchModeRequiresBankException {
                   if (mounted) {
                     // ignore: use_build_context_synchronously

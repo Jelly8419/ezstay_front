@@ -17,16 +17,10 @@ import '../../core/theme/app_text_styles.dart';
 import '../../utils/responsive_util.dart';
 import '../../widgets/common/app_gnb.dart';
 import '../../widgets/common/mobile_bottom_nav.dart';
-import '../../services/auth_service.dart';
-import '../../services/launch_status_service.dart';
 import '../../services/map_interaction_coordinator.dart';
-import '../../services/region_alert_service.dart';
 import '../../widgets/map/kakao_map_section.dart';
 import '../../widgets/map/map_only_layout.dart';
-import '../../widgets/map/opening_notice_card.dart';
 import '../../widgets/map/property_list_panel.dart';
-import '../../widgets/common/custom_toast.dart';
-import '../../widgets/modals/region_alert_modal.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/seo_helper.dart';
 
@@ -79,13 +73,6 @@ class _MapScreenState extends State<MapScreen> {
 
   // 지도 초기화 후 localStorage 복원 여부 (onBoundsChanged 최초 1회)
   bool _mapRestoreAttempted = false;
-
-  // 🚧 PRE-LAUNCH: LaunchStatusService에서 실시간 조회 (GET /api/system/launch-status).
-  //    true: 지도 bounds API 요청 차단 + OpeningNoticeCard 항상 표시
-  //    false: 정상 동작
-  //    조회 실패 시 true 폴백 (검색 차단 유지).
-  LaunchStatusService? _launchStatus;
-  bool get _isPreLaunch => _launchStatus?.isPrelaunch ?? true;
 
   // 캐시된 반응형 값 (JS 콜백에서 안전하게 사용)
   bool _isMobile = false;
@@ -162,12 +149,6 @@ class _MapScreenState extends State<MapScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // 런칭 상태 Provider 구독 (플래그 변경 시 rebuild)
-    final launchStatus = context.watch<LaunchStatusService>();
-    _launchStatus = launchStatus;
-    // 캐시 stale 시 백엔드 재조회 (메서드 내부에서 중복 요청 방지)
-    launchStatus.ensureLoaded();
-
     // 반응형 값 캐시 (JS 콜백에서 context 접근 없이 사용)
     _isMobile = ResponsiveUtil.isMobile(context);
     _isDesktop = ResponsiveUtil.isDesktop(context);
@@ -219,11 +200,6 @@ class _MapScreenState extends State<MapScreen> {
     int? zoom,
     bool forceRefresh = false,
   }) async {
-    // 🚧 PRE-LAUNCH: API 요청 차단
-    if (_isPreLaunch) {
-      setState(() => _isLoading = false);
-      return;
-    }
     try {
       // 줌 레벨 6 이상이면 리스트 비우기
       if (zoom != null && zoom >= 6) {
@@ -635,7 +611,7 @@ class _MapScreenState extends State<MapScreen> {
               _buildMap(),
 
               // 결과 없음 메시지 (줌 레벨에 따라 다른 메시지 표시)
-              if (!_isPreLaunch && _roomsForMap.isEmpty)
+              if (_roomsForMap.isEmpty)
                 Positioned.fill(
                   child: Center(
                     child: _buildEmptyMessage(
@@ -647,22 +623,11 @@ class _MapScreenState extends State<MapScreen> {
                 ),
 
               // 필터링 결과 없음 메시지
-              if (!_isPreLaunch &&
-                  !_isLoading &&
+              if (!_isLoading &&
                   filteredRooms.isEmpty &&
                   _roomsForMap.isNotEmpty)
                 Positioned.fill(
                   child: Center(child: _buildEmptyMessage('일치하는 조건의 방이 없습니다')),
-                ),
-
-              // 오픈 전 안내 overlay 카드 (런칭 전 한정, _buildEmptyMessage 대체)
-              if (_isPreLaunch && _roomsForMap.isEmpty)
-                Positioned.fill(
-                  child: Center(
-                    child: OpeningNoticeCard(
-                      onAlertTap: _handleMapAlertRequest,
-                    ),
-                  ),
                 ),
             ],
           ),
@@ -740,26 +705,6 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /// 오픈 알림 신청 (지도 화면용)
-  Future<void> _handleMapAlertRequest() async {
-    // 로그인 상태 확인
-    final authService = Provider.of<AuthService>(context, listen: false);
-    if (!authService.isLoggedIn) {
-      context.go('/login');
-      return;
-    }
-    final result = await RegionAlertService().requestAlert();
-    if (!mounted) return;
-    if (result == null) {
-      CustomToast.error(context, '알림 신청에 실패했습니다. 다시 시도해주세요.');
-      return;
-    }
-    await RegionAlertModal.show(
-      context,
-      alreadyRegistered: result.alreadyRegistered,
-    );
-  }
-
   /// 지도만 표시 (모바일/태블릿용)
   Widget _buildMapOnly() {
     return MapOnlyLayout(
@@ -770,9 +715,6 @@ class _MapScreenState extends State<MapScreen> {
       currentMobileCardIndex: _currentMobileCardIndex,
       currentZoomLevel: _currentZoomLevel,
       mobileCardController: _mobileCardController,
-      openingNoticeWidget: (_isPreLaunch && _roomsForMap.isEmpty)
-          ? OpeningNoticeCard(onAlertTap: _handleMapAlertRequest)
-          : null,
       onBadgeTap: () {
         setState(() {
           _showMobileCardList = !_showMobileCardList;

@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/refund_policy.dart';
 import '../../../../services/refund_policy_service.dart';
+import '../../../../widgets/common/password_keypad_field.dart';
 import '../components/form_section.dart';
 import '../components/option_toggle.dart';
 
@@ -44,9 +45,6 @@ class _PricingStepState extends State<PricingStep> {
   late final FocusNode _cleaningFeeFocus;
   late final FocusNode _longTermDiscountPercentFocus;
   late final FocusNode _earlyCheckInDiscountAmountFocus;
-
-  // 청소 서비스 비밀번호 키패드 표시 여부
-  bool _showServicePasswordKeypad = false;
 
   // 관리비 포함 항목
   static const List<String> _maintenanceOptions = ['수도세', '전기세', '가스비', '인터넷'];
@@ -393,159 +391,13 @@ class _PricingStepState extends State<PricingStep> {
     );
   }
 
-  // 비밀번호 입력 섹션
+  // 비밀번호 입력 섹션 — 공용 키패드 위젯 (도어락 비밀번호는 숫자만)
   Widget _buildServicePasswordSection() {
-    final password = _servicePassword;
-
-    return Column(
-      children: [
-        InkWell(
-          onTap: () {
-            setState(() {
-              _showServicePasswordKeypad = !_showServicePasswordKeypad;
-            });
-          },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppColors.gray300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              password.isEmpty ? '비밀번호를 입력하세요' : password,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: password.isEmpty ? Colors.grey[400] : Colors.black,
-              ),
-            ),
-          ),
-        ),
-        if (_showServicePasswordKeypad) ...[
-          const SizedBox(height: 16),
-          _buildKeypad(password),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildKeypad(String password) {
-    const double buttonHeight = 48.0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.gray50,
-        border: Border.all(color: AppColors.gray200),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: 3,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 2.5,
-            physics: const NeverScrollableScrollPhysics(),
-            children:
-                ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
-                    .map(
-                      (digit) => _buildKeypadButton(
-                        digit,
-                        onTap: () {
-                          _updateFormData('servicePassword', password + digit);
-                        },
-                        height: buttonHeight,
-                      ),
-                    )
-                    .toList(),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: buttonHeight,
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      _updateFormData('servicePassword', '');
-                    },
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: AppColors.error50,
-                      side: const BorderSide(color: AppColors.error500),
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Text('전체 삭제'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      if (password.isNotEmpty) {
-                        _updateFormData(
-                          'servicePassword',
-                          password.substring(0, password.length - 1),
-                        );
-                      }
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.gray300),
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Text('삭제'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _showServicePasswordKeypad = false;
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary600,
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Text('완료'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKeypadButton(
-    String label, {
-    required VoidCallback onTap,
-    double fontSize = 16,
-    double? height,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        height: height,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.gray300),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.labelLarge.copyWith(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
-        ),
-      ),
+    return PasswordKeypadField(
+      value: _servicePassword,
+      hint: '비밀번호를 입력하세요',
+      showIconKeys: false,
+      onChanged: (v) => _updateFormData('servicePassword', v),
     );
   }
 

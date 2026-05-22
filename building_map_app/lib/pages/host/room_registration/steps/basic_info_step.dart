@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../widgets/common/password_keypad_field.dart';
 import '../../../../widgets/daum_postcode_widget.dart';
 import '../components/form_section.dart';
 
@@ -30,8 +31,6 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
   late TextEditingController _floorController;
   late TextEditingController _areaController;
   late TextEditingController _parkingInfoController;
-
-  bool _showEntrancePasswordKeypad = false;
 
   @override
   void initState() {
@@ -661,7 +660,12 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
         ),
         if (password.isNotEmpty) ...[
           const SizedBox(height: 16),
-          _buildPasswordInput(password),
+          PasswordKeypadField(
+            value: password.trim(),
+            hint: '비밀번호를 입력하세요',
+            hasError: _hasError('공동현관 비밀번호'),
+            onChanged: (v) => _updateFormData('entrancePassword', v),
+          ),
         ],
       ],
     );
@@ -696,204 +700,4 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
     );
   }
 
-  Widget _buildPasswordInput(String password) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: () {
-            setState(() {
-              _showEntrancePasswordKeypad = !_showEntrancePasswordKeypad;
-            });
-          },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: _hasError('공동현관 비밀번호') ? AppColors.error50 : Colors.white,
-              border: Border.all(
-                color: _hasError('공동현관 비밀번호')
-                    ? AppColors.error500
-                    : AppColors.gray300,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              password.isEmpty ? '비밀번호를 입력하세요' : password,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: password.isEmpty
-                    ? (_hasError('공동현관 비밀번호')
-                          ? AppColors.error500
-                          : Colors.grey[400])
-                    : Colors.black,
-              ),
-            ),
-          ),
-        ),
-        if (_showEntrancePasswordKeypad) ...[
-          const SizedBox(height: 16),
-          _buildKeypad(password),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildKeypad(String password) {
-    const double buttonHeight = 48.0; // 모든 버튼의 통일된 높이
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.gray50,
-        border: Border.all(color: AppColors.gray200),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          // Icon buttons
-          Row(
-            children: [
-              Expanded(
-                child: _buildKeypadButton(
-                  '🔑',
-                  onTap: () {
-                    _updateFormData('entrancePassword', '$password🔑');
-                  },
-                  fontSize: 32,
-                  height: buttonHeight,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildKeypadButton(
-                  '🔔',
-                  onTap: () {
-                    _updateFormData('entrancePassword', '$password🔔');
-                  },
-                  fontSize: 32,
-                  height: buttonHeight,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildKeypadButton(
-                  '🛡',
-                  onTap: () {
-                    _updateFormData('entrancePassword', '$password🛡');
-                  },
-                  fontSize: 32,
-                  height: buttonHeight,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Number buttons
-          GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: 3,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 2.5,
-            physics: const NeverScrollableScrollPhysics(),
-            children:
-                ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
-                    .map(
-                      (num) => _buildKeypadButton(
-                        num,
-                        onTap: () {
-                          _updateFormData('entrancePassword', password + num);
-                        },
-                        height: buttonHeight,
-                      ),
-                    )
-                    .toList(),
-          ),
-          const SizedBox(height: 12),
-          // Control buttons (높이를 아이콘/숫자 버튼과 동일하게)
-          SizedBox(
-            height: buttonHeight,
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      _updateFormData('entrancePassword', '');
-                    },
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: AppColors.error50,
-                      side: const BorderSide(color: AppColors.error500),
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Text('전체 삭제'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      if (password.isNotEmpty) {
-                        _updateFormData(
-                          'entrancePassword',
-                          password.substring(0, password.length - 1),
-                        );
-                      }
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.gray300),
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Text('삭제'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _showEntrancePasswordKeypad = false;
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary600,
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Text('완료'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKeypadButton(
-    String label, {
-    required VoidCallback onTap,
-    double fontSize = 16,
-    double? height,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        height: height,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.gray300),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.labelLarge.copyWith(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
-        ),
-      ),
-    );
-  }
 }

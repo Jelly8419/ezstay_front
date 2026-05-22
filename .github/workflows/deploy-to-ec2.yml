@@ -57,6 +57,9 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          # Flutter 3.44+ 의 final class IconData 변경으로 lucide_icons 0.257.0
+          # 컴파일이 깨짐 — 로컬 검증 버전(3.35.6)으로 고정.
+          flutter-version: '3.35.6'
           cache: true
 
       - name: Create .env for build
