@@ -467,7 +467,9 @@ class _MoveInDetailBodyState extends State<_MoveInDetailBody> {
     if (!c.canPayCleaning) {
       CustomToast.warning(
         context,
-        '지금은 결제할 수 없는 상태입니다. 청소 신청 상태와 청소용품 구비 여부를 확인해주세요.',
+        c.isCleaningDeadlinePassed
+            ? '결제 마감 기한이 지나 청소 결제를 진행할 수 없습니다.'
+            : '지금은 결제할 수 없는 상태입니다. 청소 신청 상태와 청소용품 구비 여부를 확인해주세요.',
       );
       return;
     }

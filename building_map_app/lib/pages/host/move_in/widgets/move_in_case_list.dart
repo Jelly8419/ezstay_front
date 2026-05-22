@@ -148,7 +148,7 @@ class _DesktopRow extends StatelessWidget {
               flex: 2,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: CleaningStatusChip(status: c.cleaningStatus),
+                child: _CleaningStatusCell(moveInCase: c),
               ),
             ),
             Expanded(
@@ -209,10 +209,10 @@ class MoveInCaseCard extends StatelessWidget {
             SizedBox(height: AppSpacing.sm),
             _DateRangeCell(moveInCase: c),
             SizedBox(height: AppSpacing.sm),
+            _CleaningStatusCell(moveInCase: c),
+            SizedBox(height: AppSpacing.xs),
             Row(
               children: [
-                CleaningStatusChip(status: c.cleaningStatus),
-                SizedBox(width: AppSpacing.xs),
                 PaymentRequestStatusChip(
                   status: c.paymentRequest?.status ?? PaymentRequestStatus.notSent,
                 ),
@@ -300,6 +300,51 @@ class _DateRangeCell extends StatelessWidget {
       return DateFormat('yyyy.MM.dd').format(date);
     } catch (_) {
       return yyyymmdd;
+    }
+  }
+}
+
+/// 청소 서비스 상태 셀 — 상태 칩 + 결제 대기 시 결제 마감 기한 안내.
+///
+/// 결제 대기(paymentPending) 상태에서만 마감 기한을 노출하며,
+/// 마감이 지났으면 더 강한 경고 문구로 전환한다.
+class _CleaningStatusCell extends StatelessWidget {
+  final MoveInCase moveInCase;
+  const _CleaningStatusCell({required this.moveInCase});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = moveInCase;
+    final showDeadline =
+        c.cleaningStatus == CleaningStatus.paymentPending &&
+        (c.cleaningPaymentDeadline?.isNotEmpty ?? false);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CleaningStatusChip(status: c.cleaningStatus),
+        if (showDeadline) ...[
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            c.isCleaningDeadlinePassed
+                ? '결제 마감 종료'
+                : '마감 ${_formatDeadline(c.cleaningPaymentDeadline!)} 까지',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.error600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _formatDeadline(String iso) {
+    try {
+      return DateFormat('yyyy.MM.dd HH:mm').format(DateTime.parse(iso));
+    } catch (_) {
+      return iso;
     }
   }
 }

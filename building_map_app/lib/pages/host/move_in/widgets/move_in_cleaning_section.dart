@@ -96,6 +96,7 @@ class MoveInCleaningSection extends StatelessWidget {
           style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
         );
       case CleaningStatus.paymentPending:
+        final deadlinePassed = c.isCleaningDeadlinePassed;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -104,11 +105,17 @@ class MoveInCleaningSection extends StatelessWidget {
               _row('청소 희망 일시', _formatCleaningDateTime(c)),
             _row('청소용품 구비', _suppliesText(c.roomSnapshot)),
             _row('청소 금액', _money(c.cleaningFee)),
+            if (c.cleaningPaymentDeadline?.isNotEmpty ?? false)
+              _deadlineRow(c.cleaningPaymentDeadline!, deadlinePassed),
             SizedBox(height: AppSpacing.sm),
             Text(
-              '결제를 진행하면 청소 일정이 예약됩니다.',
+              deadlinePassed
+                  ? '결제 마감 기한이 지나 결제할 수 없습니다.'
+                  : '결제를 진행하면 청소 일정이 예약됩니다.',
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+                color: deadlinePassed
+                    ? AppColors.error600
+                    : AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -158,7 +165,9 @@ class MoveInCleaningSection extends StatelessWidget {
             ),
             SizedBox(width: AppSpacing.sm),
             FilledButton(
-              onPressed: isMutating ? null : onPay,
+              // 결제 마감 기한이 지나면 결제 불가
+              onPressed:
+                  (isMutating || c.isCleaningDeadlinePassed) ? null : onPay,
               child: const Text('결제하기'),
             ),
           ],
@@ -276,6 +285,47 @@ class MoveInCleaningSection extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// 청소 결제 마감 기한 행 — 값을 빨간색으로 강조, 마감 종료 시 문구 전환.
+  Widget _deadlineRow(String deadlineIso, bool passed) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 88,
+            child: Text(
+              '청소 결제 마감기한',
+              style: AppTextStyles.bodySmall
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              passed
+                  ? '마감 종료'
+                  : '${_formatDeadline(deadlineIso)} 까지',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.error600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 결제 마감 시각을 'yyyy.MM.dd (E) HH:mm' 으로 포맷.
+  String _formatDeadline(String iso) {
+    try {
+      final d = DateTime.parse(iso).toLocal();
+      return DateFormat('yyyy.MM.dd (E) HH:mm', 'ko_KR').format(d);
+    } catch (_) {
+      return iso;
+    }
   }
 
   String _suppliesText(MoveInRoom room) {

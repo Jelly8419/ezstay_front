@@ -169,10 +169,22 @@ class MoveInCase {
     );
   }
 
+  /// 청소 결제 마감 기한이 지났는지 — 마감 시각이 없으면 false(미초과 취급).
+  /// 앱은 KST 디바이스 가정 — 로컬 시각으로 비교.
+  bool get isCleaningDeadlinePassed {
+    final raw = cleaningPaymentDeadline;
+    if (raw == null || raw.isEmpty) return false;
+    final deadline = DateTime.tryParse(raw);
+    if (deadline == null) return false;
+    return DateTime.now().isAfter(deadline);
+  }
+
   /// 청소 결제 가능 여부 (PRD 7.1)
+  /// 결제 마감 기한이 지나면 결제 불가.
   bool get canPayCleaning =>
       cleaningStatus == CleaningStatus.paymentPending &&
-      roomSnapshot.cleaningSuppliesAvailable;
+      roomSnapshot.cleaningSuppliesAvailable &&
+      !isCleaningDeadlinePassed;
 
   /// 임차인 결제 요청을 한 번이라도 보냈는지
   bool get isPaymentRequestSent =>
