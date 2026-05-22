@@ -26,7 +26,9 @@ class GuestMoveInRefundNotice extends StatelessWidget {
         children: [
           Text(
             '환불/반품 안내',
-            style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           SizedBox(height: AppSpacing.sm),
           _bullet('배송 전 취소 시 전액 환불됩니다.'),
@@ -34,7 +36,7 @@ class GuestMoveInRefundNotice extends StatelessWidget {
           _bullet(
             '배송이 시작된 이후 반품 요청을 접수할 수 있으며, 승인되면 '
             '왕복배송비 ${GuestMoveInFormat.formatPrice(MoveInRefundPolicy.returnShippingFee)}'
-            '가 차감됩니다.',
+            '이 차감됩니다.',
           ),
         ],
       ),
@@ -47,8 +49,9 @@ class GuestMoveInRefundNotice extends StatelessWidget {
       children: [
         Text(
           '· ',
-          style:
-              AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
         Expanded(
           child: Text(
