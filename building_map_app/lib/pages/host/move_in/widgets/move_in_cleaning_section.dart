@@ -266,6 +266,9 @@ class MoveInCleaningSection extends StatelessWidget {
     );
   }
 
+  /// 행 라벨 고정 너비 — '청소 결제 마감기한' 이 한 줄에 들어가도록 산정.
+  static const double _rowLabelWidth = 120;
+
   Widget _row(String label, String value) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 2),
@@ -273,9 +276,11 @@ class MoveInCleaningSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 88,
+            width: _rowLabelWidth,
             child: Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
           ),
@@ -295,9 +300,11 @@ class MoveInCleaningSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 88,
+            width: _rowLabelWidth,
             child: Text(
               '청소 결제 마감기한',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTextStyles.bodySmall
                   .copyWith(color: AppColors.textSecondary),
             ),
