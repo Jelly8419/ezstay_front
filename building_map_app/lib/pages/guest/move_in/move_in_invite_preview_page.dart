@@ -7,8 +7,10 @@ import '../../../models/guest_move_in/guest_move_in.dart';
 import '../../../services/guest_move_in_service.dart';
 import '../../../services/guest_move_in_session_storage.dart';
 import '../../../widgets/common/responsive_page_layout.dart';
+import 'widgets/guest_move_in_deadline_banner.dart';
 import 'widgets/guest_move_in_info_banner.dart';
 import 'widgets/guest_move_in_option_card.dart';
+import 'widgets/guest_move_in_refund_notice.dart';
 import 'widgets/guest_move_in_room_header.dart';
 import 'widgets/guest_move_in_summary_box.dart';
 
@@ -206,6 +208,15 @@ class _MoveInInvitePreviewPageState extends State<MoveInInvitePreviewPage> {
             checkOutDate: preview.checkOutDate,
           ),
           SizedBox(height: AppSpacing.lg),
+          const GuestMoveInInfoBanner(
+            message: '옵션 상품은 입주할 주소로 입주일에 사용하실 수 있도록 배송해드립니다.',
+          ),
+          SizedBox(height: AppSpacing.md),
+          GuestMoveInDeadlineBanner(
+            deadline: preview.paymentDeadline,
+            expired: !eligibility.canPay,
+          ),
+          SizedBox(height: AppSpacing.lg),
           Text('옵션 선택', style: AppTextStyles.headingSmall),
           SizedBox(height: AppSpacing.md),
           if (!canSelect)
@@ -240,6 +251,8 @@ class _MoveInInvitePreviewPageState extends State<MoveInInvitePreviewPage> {
             options: preview.options,
             selectedQuantities: _selectedQuantities,
           ),
+          SizedBox(height: AppSpacing.md),
+          const GuestMoveInRefundNotice(),
           SizedBox(height: AppSpacing.lg),
           if (eligibility.loggedIn && !eligibility.phoneMatched)
             Padding(
