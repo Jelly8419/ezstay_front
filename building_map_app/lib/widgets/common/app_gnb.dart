@@ -107,7 +107,8 @@ class _AppGNBState extends State<AppGNB> {
       onTap: () {
         final authService = context.read<AuthService>();
         final isHostMode = authService.currentUser?.mode == UserMode.host;
-        context.go(isHostMode ? '/host' : '/');
+        // 임대인 모드 홈은 입주 준비 서비스를 디폴트 페이지로 노출
+        context.go(isHostMode ? '/host/move-in' : '/');
       },
       child: Row(
         mainAxisSize: MainAxisSize.min,
