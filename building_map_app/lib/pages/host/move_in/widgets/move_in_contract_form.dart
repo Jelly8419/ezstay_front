@@ -383,7 +383,7 @@ class _CleaningToggle extends StatelessWidget {
   }
 }
 
-/// 결제 마감 기한 안내 카드 (청소 D-2, 입주용품/침구류 D-5)
+/// 결제 마감 기한 안내 카드 (청소 D-3, 입주용품/침구류 D-5)
 ///
 /// 마감 정의: 입주일의 D-N **23:59:59** 까지.
 /// 마감 시각이 현재보다 과거이면 회색 칩 + "사용 불가" 표시로 안내.
@@ -456,7 +456,7 @@ class _PaymentDeadlineNotice extends StatelessWidget {
               SizedBox(width: AppSpacing.xs),
               Expanded(
                 child: Text(
-                  '결제 마감 기한은 청소 서비스 - 입주일 2일 전, '
+                  '결제 마감 기한은 청소 서비스 - 입주일 3일 전, '
                   '입주 용품/침구류 - 입주일 5일 전까지 입니다. '
                   '마감 기한 이후에는 결제 요청 또는 결제가 제한될 수 있습니다.',
                   style: AppTextStyles.bodySmall.copyWith(
