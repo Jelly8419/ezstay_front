@@ -113,7 +113,7 @@ class _PasswordKeypadFieldState extends State<PasswordKeypadField> {
           if (widget.showIconKeys) ...[
             Row(
               children: [
-                for (final icon in const ['🔑', '🔔', '🛡']) ...[
+                for (final icon in const ['🔑', '🔔', '👮']) ...[
                   if (icon != '🔑') const SizedBox(width: 8),
                   Expanded(
                     child: _keypadButton(
