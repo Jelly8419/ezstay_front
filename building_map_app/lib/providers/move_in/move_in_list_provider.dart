@@ -88,7 +88,11 @@ class MoveInListProvider extends ChangeNotifier {
     final newList = List<MoveInCase>.from(_cases);
     newList[index] = updated;
     _cases = newList;
-    _counts = MoveInCaseCounts.fromCases(_cases);
+    // 카운트는 필터/검색이 없는 '전체' 목록일 때만 재집계.
+    // 필터가 걸린 부분 목록으로 집계하면 total 이 잘못된다.
+    if (_requestStatus == null && _cleaningStatus == null && _search.isEmpty) {
+      _counts = MoveInCaseCounts.fromCases(_cases);
+    }
     notifyListeners();
   }
 
@@ -110,7 +114,19 @@ class MoveInListProvider extends ChangeNotifier {
       _limit = response.limit;
       _total = response.total;
       _totalPages = response.totalPages;
-      _counts = response.counts ?? MoveInCaseCounts.fromCases(_cases);
+
+      // 요약 카드 카운트는 항상 '전체' 기준이어야 함.
+      // - 서버가 counts 를 주면 (전체 집계) 그대로 사용
+      // - 안 주면: 필터/검색이 없을 때만 현재 목록으로 집계.
+      //   필터가 걸린 응답으로 집계하면 total 이 필터 개수로 잘못 바뀐다.
+      if (response.counts != null) {
+        _counts = response.counts!;
+      } else if (_requestStatus == null &&
+          _cleaningStatus == null &&
+          _search.isEmpty) {
+        _counts = MoveInCaseCounts.fromCases(_cases);
+      }
+      // 필터가 걸린 상태이고 서버 counts 도 없으면 이전 전체 집계값 유지.
     } on MoveInException catch (e) {
       _error = e;
     } finally {
