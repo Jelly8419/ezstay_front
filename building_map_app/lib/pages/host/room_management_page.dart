@@ -188,6 +188,27 @@ class _RoomManagementPageState extends State<RoomManagementPage> {
                     color: AppColors.textPrimary,  // text-gray-900
                   ),
                 ),
+                const SizedBox(height: 4),
+                // 입주 준비 서비스와 혼동하지 않도록 안내 — 괄호 안내는 파랑 강조
+                Text.rich(
+                  TextSpan(
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    children: [
+                      const TextSpan(
+                        text: '방 등록 시, 임차인이 임대 계약을 할 수 있어요. ',
+                      ),
+                      TextSpan(
+                        text: '(외부 계약은 입주 준비 서비스 메뉴를 이용해주세요)',
+                        style: TextStyle(
+                          color: AppColors.primary600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),  // py-4
               ],
 
