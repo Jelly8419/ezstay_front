@@ -5,6 +5,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/move_in/move_in.dart';
 import '../../../../widgets/common/custom_text_field.dart';
+import '../../../../widgets/common/password_keypad_field.dart';
 import '../../../../widgets/daum_postcode_widget.dart';
 
 /// 간편 방 정보 폼 — PRD 5.4 / 가이드 4.1 / 이미지 ② 우측 탭
@@ -45,6 +46,10 @@ class _MoveInRoomFormState extends State<MoveInRoomForm> {
   int _bedCount = 0;
   List<BedSize> _bedSizes = [];
   bool _cleaningSuppliesAvailable = true;
+
+  /// 도어락 비밀번호 미입력 검증 실패 표시 — 키패드 필드는 FormField 가
+  /// 아니므로 _validate() 에서 수동 검증 후 이 플래그로 에러를 표시한다.
+  bool _doorPwError = false;
 
   static const _digitsOnly = TextInputType.number;
 
@@ -156,8 +161,15 @@ class _MoveInRoomFormState extends State<MoveInRoomForm> {
   }
 
   bool _validate() {
-    final ok = _formKey.currentState?.validate() ?? false;
-    if (!ok) return false;
+    final formOk = _formKey.currentState?.validate() ?? false;
+
+    // 도어락 비밀번호 필수 — 키패드 필드는 FormField 가 아니라 별도 검증.
+    final doorPwEmpty = _doorPwCtrl.text.trim().isEmpty;
+    if (doorPwEmpty != _doorPwError) {
+      setState(() => _doorPwError = doorPwEmpty);
+    }
+
+    if (!formOk || doorPwEmpty) return false;
     if (_bedCount > 0 && _bedSizes.length != _bedCount) return false;
     if (_cleaningSuppliesAvailable && _suppliesLocationCtrl.text.trim().isEmpty) {
       return false;
@@ -275,16 +287,36 @@ class _MoveInRoomFormState extends State<MoveInRoomForm> {
             ],
           ]),
           _section('보안 / 출입 정보', [
-            CustomTextField(
-              label: '공동현관 비밀번호 (선택)',
-              controller: _commonPwCtrl,
+            _pwFieldLabel('공동현관 비밀번호 (선택)'),
+            SizedBox(height: AppSpacing.xs),
+            PasswordKeypadField(
+              value: _commonPwCtrl.text,
+              hint: '공동현관 비밀번호를 입력하세요',
+              onChanged: (v) => setState(() => _commonPwCtrl.text = v),
             ),
             SizedBox(height: AppSpacing.sm),
-            CustomTextField(
-              label: '도어락 비밀번호',
-              controller: _doorPwCtrl,
-              validator: _required('도어락 비밀번호'),
+            _pwFieldLabel('도어락 비밀번호'),
+            SizedBox(height: AppSpacing.xs),
+            PasswordKeypadField(
+              value: _doorPwCtrl.text,
+              hint: '도어락 비밀번호를 입력하세요',
+              hasError: _doorPwError,
+              onChanged: (v) {
+                setState(() {
+                  _doorPwCtrl.text = v;
+                  if (_doorPwError && v.trim().isNotEmpty) {
+                    _doorPwError = false;
+                  }
+                });
+              },
             ),
+            if (_doorPwError) ...[
+              SizedBox(height: AppSpacing.xs),
+              Text(
+                '도어락 비밀번호을(를) 입력해주세요.',
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.error500),
+              ),
+            ],
             SizedBox(height: AppSpacing.xs),
             Text(
               '도어락 비밀번호는 필수입니다. 열쇠로만 출입하는 집은 청소 서비스를 제공할 수 없습니다.',
@@ -334,6 +366,14 @@ class _MoveInRoomFormState extends State<MoveInRoomForm> {
           ]),
         ],
       ),
+    );
+  }
+
+  /// 키패드 비밀번호 필드용 상단 라벨 — CustomTextField 의 내장 라벨 대체.
+  Widget _pwFieldLabel(String text) {
+    return Text(
+      text,
+      style: AppTextStyles.labelMedium.copyWith(color: AppColors.textSecondary),
     );
   }
 
