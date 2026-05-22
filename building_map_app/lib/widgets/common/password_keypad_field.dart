@@ -128,13 +128,13 @@ class _PasswordKeypadFieldState extends State<PasswordKeypadField> {
             ),
             const SizedBox(height: 12),
           ],
-          // 숫자/특수문자 키
+          // 숫자/특수문자 키 — 가로:세로 비를 키워 버튼 높이를 절반으로
           GridView.count(
             shrinkWrap: true,
             crossAxisCount: 3,
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
-            childAspectRatio: 2.5,
+            childAspectRatio: 5.0,
             physics: const NeverScrollableScrollPhysics(),
             children:
                 ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
@@ -187,6 +187,7 @@ class _PasswordKeypadFieldState extends State<PasswordKeypadField> {
                     onPressed: () => setState(() => _showKeypad = false),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary600,
+                      foregroundColor: Colors.white,
                       padding: EdgeInsets.zero,
                     ),
                     child: const Text('완료'),
