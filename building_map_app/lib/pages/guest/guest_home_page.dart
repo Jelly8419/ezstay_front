@@ -381,7 +381,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
-            '이미 단기임대 계약을 하셨나요?',
+            '이미 다른곳에서 단기임대 계약을 하셨나요?',
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.primary700,
               fontWeight: FontWeight.w600,
@@ -1067,12 +1067,14 @@ class _GuestHomePageState extends State<GuestHomePage> {
       padding: const EdgeInsets.only(bottom: 50),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: isMobile ? double.infinity : 400,
+          // 배너 높이를 기존 대비 30% 축소 (400 → 280)
+          maxHeight: isMobile ? double.infinity : 280,
         ),
         child: ClipRRect(
           borderRadius: isMobile ? BorderRadius.zero : AppRadius.radiusLg,
           child: AspectRatio(
-            aspectRatio: isMobile ? 800 / 600 : 1920 / 500,
+            // 세로를 30% 줄인 비율 (모바일 600→420, 데스크탑 500→350)
+            aspectRatio: isMobile ? 800 / 420 : 1920 / 350,
             child: Stack(
               fit: StackFit.expand,
               children: [
