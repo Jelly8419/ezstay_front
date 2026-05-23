@@ -9,5 +9,42 @@ Disallow: /user/
 Disallow: /payment/
 Disallow: /contract/
 
+# 네이버 검색로봇 (Yeti) 명시 허용
+User-agent: Yeti
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /user/
+Disallow: /payment/
+Disallow: /contract/
+Crawl-delay: 1
+
+# 구글 검색로봇 명시 허용
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /user/
+Disallow: /payment/
+Disallow: /contract/
+
+# 다음 검색로봇 (Daum) 명시 허용
+User-agent: Daumoa
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /user/
+Disallow: /payment/
+Disallow: /contract/
+
+# 빙 검색로봇 명시 허용
+User-agent: bingbot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /user/
+Disallow: /payment/
+Disallow: /contract/
+
 # Sitemap
 Sitemap: https://ezstay.io/sitemap.xml
