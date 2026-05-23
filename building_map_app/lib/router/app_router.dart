@@ -325,9 +325,10 @@ class AppRouter {
         }
 
         // 루트 경로(/) 접근 시 로그인 모드에 따라 홈으로 리다이렉트
+        // 임대인 로그인 시 입주 준비 서비스를 디폴트 페이지로 노출
         if (isGoingToRoot) {
           if (isLoggedIn && authService.currentUser?.mode == UserMode.host) {
-            return '/host';
+            return '/host/move-in';
           }
           return '/guest';
         }
@@ -342,7 +343,7 @@ class AppRouter {
             }
           }
           if (authService.currentUser?.mode == UserMode.host) {
-            return '/host';
+            return '/host/move-in';
           }
           return '/guest';
         }
@@ -1019,8 +1020,9 @@ class AppRouter {
                   final user = authService.currentUser;
                   if (user != null) {
                     // 사용자 모드에 따라 적절한 페이지로 리다이렉트
+                    // 임대인은 입주 준비 서비스를 디폴트 페이지로 노출
                     if (user.mode == UserMode.host) {
-                      context.go('/host');
+                      context.go('/host/move-in');
                     } else {
                       context.go('/guest');
                     }
@@ -1437,9 +1439,10 @@ class AppRouter {
 
     if (success && context.mounted) {
       // 로그인 성공 시 사용자 모드에 따라 리다이렉트
+      // 임대인은 입주 준비 서비스를 디폴트 페이지로 노출
       final userMode = authService.currentUser?.mode;
       if (userMode == UserMode.host) {
-        context.go('/host');
+        context.go('/host/move-in');
       } else {
         context.go('/guest');
       }

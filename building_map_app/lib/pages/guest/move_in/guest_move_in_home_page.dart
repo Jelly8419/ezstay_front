@@ -213,7 +213,7 @@ class _EmptyBlock extends StatelessWidget {
             ),
             SizedBox(height: AppSpacing.xs),
             Text(
-              '임대인이 보낸 링크를 클릭하면 자동으로 연결돼요.',
+              '임대인이 입주 준비 서비스를 요청하면 자동으로 연결돼요.',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
