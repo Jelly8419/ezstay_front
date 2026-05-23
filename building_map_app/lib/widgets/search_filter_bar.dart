@@ -151,11 +151,11 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
       ),
       child: Row(
         children: [
-          // 장소 검색창
-          if (widget.mapController != null) ...[
-            _buildPlaceSearchField(),
-            const SizedBox(width: 12),
-          ],
+          // 장소 검색창 — 일시 비활성화. 추후 복구 시 아래 주석 해제.
+          // if (widget.mapController != null) ...[
+          //   _buildPlaceSearchField(),
+          //   const SizedBox(width: 12),
+          // ],
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -289,6 +289,8 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
     );
   }
 
+  // 일시 비활성화 — 호출부 주석 처리. 추후 복구 가능하도록 메서드는 보존.
+  // ignore: unused_element
   Widget _buildPlaceSearchField() {
     final isMobile = ResponsiveUtil.isMobile(context);
     return SizedBox(
