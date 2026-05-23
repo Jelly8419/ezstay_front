@@ -18,7 +18,6 @@ import '../../widgets/home/info_card.dart';
 import '../../widgets/home/section_header.dart';
 import '../../widgets/home/step_card.dart';
 import '../../widgets/home/step_guide_grid.dart';
-import '../../widgets/modals/opening_event_modal.dart';
 import '../../features/web/web_layout.dart';
 import '../../widgets/common/app_footer.dart';
 import '../../core/utils/seo_helper.dart';
@@ -67,17 +66,10 @@ class _GuestHomePageState extends State<GuestHomePage> {
         return;
       }
 
-      // 프로모션 이벤트 로드 완료 후에만 모달 노출 (호스트 이벤트 없으면 미노출)
+      // 프로모션 이벤트는 배너로만 노출 (홈 진입 팝업은 제거됨).
+      // _buildOpeningBanner 가 watch 로 자동 갱신하므로 여기서는 로드만 트리거.
       final promotion = context.read<PromotionProvider>();
       await promotion.loadActivePromotions();
-      if (!mounted) return;
-      if (promotion.hostEvent == null) return;
-      final authService = context.read<AuthService>();
-
-      OpeningEventModal.maybeShow(
-        context,
-        onHostRedirect: () => _handleHostRedirect(authService),
-      );
     });
   }
 
