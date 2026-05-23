@@ -63,7 +63,7 @@ class GuestMoveInOptionCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (selectable)
+            if (selectable) ...[
               Checkbox(
                 value: selected,
                 onChanged: (unavailable || exhausted)
@@ -71,20 +71,8 @@ class GuestMoveInOptionCard extends StatelessWidget {
                     : (v) => onToggle?.call(v ?? false),
                 activeColor: AppColors.primary500,
               ),
-            if (option.imageUrl != null && option.imageUrl!.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  option.imageUrl!,
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholderIcon(),
-                ),
-              )
-            else
-              _placeholderIcon(),
-            SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.sm),
+            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,20 +133,6 @@ class GuestMoveInOptionCard extends StatelessWidget {
     );
   }
 
-  Widget _placeholderIcon() {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: AppColors.neutral100,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(
-        Icons.inventory_2_outlined,
-        color: AppColors.textSecondary,
-      ),
-    );
-  }
 }
 
 class _QuantityStepper extends StatelessWidget {
