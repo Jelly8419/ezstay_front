@@ -1001,8 +1001,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
         if (success) {
           // 회원가입 성공 → 홈으로 이동
+          // 임대인은 입주 준비 서비스를 디폴트 페이지로 노출
           if (widget.mode == UserMode.host) {
-            context.go('/host');
+            context.go('/host/move-in');
           } else {
             context.go('/guest');
           }
