@@ -69,4 +69,32 @@
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
+
+  <!-- 이용약관 (E-A-T 신뢰도 신호) -->
+  <url>
+    <loc>https://ezstay.io/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- 개인정보 처리방침 -->
+  <url>
+    <loc>https://ezstay.io/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- 개인정보 수집·이용 동의 -->
+  <url>
+    <loc>https://ezstay.io/privacy-collection-consent</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- 마케팅 정보 수신 동의 -->
+  <url>
+    <loc>https://ezstay.io/marketing-consent</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
 </urlset>
