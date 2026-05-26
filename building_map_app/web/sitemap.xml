@@ -21,6 +21,13 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- 입주 준비 서비스 (청소·침구류·입주용품) -->
+  <url>
+    <loc>https://ezstay.io/move-in-service</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
   <!-- 임대인 모집 랜딩 -->
   <url>
     <loc>https://ezstay.io/for-hosts</loc>
