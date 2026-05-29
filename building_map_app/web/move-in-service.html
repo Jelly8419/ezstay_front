@@ -4,6 +4,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Google Analytics 4 (ezstay-prod) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-HL0JJSF99W"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-HL0JJSF99W', { page_title: 'landing_move-in-service' });
+
+    // 랜딩 → 홈/앱 이동 클릭 전환 추적 (이벤트 위임)
+    document.addEventListener('DOMContentLoaded', function () {
+      document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href^="/"]');
+        if (!a) return;
+        var href = a.getAttribute('href');
+        // 같은 도메인 정적 랜딩(.html)으로의 이동은 전환에서 제외
+        if (/\.html(\?|#|$)/.test(href)) return;
+        gtag('event', 'cta_click', {
+          landing: 'move-in-service',
+          link_text: (a.innerText || '').trim().slice(0, 40),
+          target: href
+        });
+      });
+    });
+  </script>
+
   <title>입주 준비 서비스 | 단기임대 청소·침구류·입주용품 | 이지스테이(EZstay)</title>
   <meta name="description"
     content="이지스테이 입주 준비 서비스 — 단기임대 청소 신청, 침구류 대여, 입주용품을 한 번에. 임대인이 청소를 신청하면 임차인이 필요한 상품을 결제하고, 입주일에 맞춰 배송됩니다. 외부에서 계약한 방도 이용 가능.">
