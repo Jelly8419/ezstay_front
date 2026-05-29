@@ -3,6 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Google Analytics 4 (ezstay-prod) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-HL0JJSF99W"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-HL0JJSF99W', { page_title: 'landing_seoul' });
+
+    // 랜딩 → 홈/앱 이동 클릭 전환 추적 (이벤트 위임)
+    document.addEventListener('DOMContentLoaded', function () {
+      document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href^="/"]');
+        if (!a) return;
+        var href = a.getAttribute('href');
+        if (/\.html(\?|#|$)/.test(href)) return;
+        gtag('event', 'cta_click', {
+          landing: 'seoul',
+          link_text: (a.innerText || '').trim().slice(0, 40),
+          target: href
+        });
+      });
+    });
+  </script>
+
+  <!-- 네이버 애널리틱스 -->
+  <script type="text/javascript" src="//wcs.naver.net/wcslog.js"></script>
+  <script type="text/javascript">
+    if (!wcs_add) var wcs_add = {};
+    wcs_add["wa"] = "1ce673573c3a100";
+    if (window.wcs) {
+      wcs_do();
+    }
+  </script>
+
   <title>서울 단기임대 | 강남·홍대·종로 1주~3개월 원룸/오피스텔 | 이지스테이(EZstay)</title>
   <meta name="description" content="서울 단기임대 플랫폼 이지스테이(EZstay). 강남·홍대·종로·건대·강서 등 서울 전역 1주~90일 단기 계약. 원룸·오피스텔·아파트 주·월 단위 임대.">
   <meta name="keywords" content="서울 단기임대, 서울 주단위 월세, 서울 1개월 숙소, 서울 3개월 단기, 서울 단기 오피스텔, 강남 단기임대, 홍대 단기숙소, 종로 단기임대, 건대 단기숙소, 서울 한달살기, 이지스테이">

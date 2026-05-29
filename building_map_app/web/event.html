@@ -3,6 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Google Analytics 4 (ezstay-prod) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-HL0JJSF99W"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-HL0JJSF99W', { page_title: 'landing_event' });
+
+    // 랜딩 → 홈/앱 이동 클릭 전환 추적 (이벤트 위임)
+    document.addEventListener('DOMContentLoaded', function () {
+      document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href^="/"]');
+        if (!a) return;
+        var href = a.getAttribute('href');
+        if (/\.html(\?|#|$)/.test(href)) return;
+        gtag('event', 'cta_click', {
+          landing: 'event',
+          link_text: (a.innerText || '').trim().slice(0, 40),
+          target: href
+        });
+      });
+    });
+  </script>
+
+  <!-- 네이버 애널리틱스 -->
+  <script type="text/javascript" src="//wcs.naver.net/wcslog.js"></script>
+  <script type="text/javascript">
+    if (!wcs_add) var wcs_add = {};
+    wcs_add["wa"] = "1ce673573c3a100";
+    if (window.wcs) {
+      wcs_do();
+    }
+  </script>
+
   <title>이지스테이(EZstay) 임대인 혜택 | 8월까지 정산 수수료 무료</title>
   <meta name="description" content="이지스테이(EZstay) 임대인 방 등록 혜택. 방 등록 후 임대 계약 시 2026년 8월 31일까지 정산 수수료 무료. 9월부터 정상 수수료 적용.">
   <meta name="keywords" content="이지스테이, EZstay, 임대인 모집, 8월까지 정산 수수료 무료, 단기임대 임대인, 방 등록 혜택, 서울 단기임대">
