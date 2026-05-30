@@ -182,7 +182,7 @@ class _HostAccountStepState extends State<HostAccountStep> {
               'Authorization': 'Bearer $token',
             },
             body: jsonEncode({
-              'bank_code': _selectedBank!,
+              'bank_code': _getBankCode(_selectedBank!),
               'account_num': _accountController.text,
               'account_holder_name': _accountHolderController.text,
             }),
