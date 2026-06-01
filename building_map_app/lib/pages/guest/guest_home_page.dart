@@ -592,7 +592,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
           title,
           SizedBox(height: AppSpacing.md),
           AspectRatio(
-            aspectRatio: 1.1,
+            aspectRatio: 0.95,
             child: Center(
               child: Transform.scale(
                 scale: data.imageScale,
