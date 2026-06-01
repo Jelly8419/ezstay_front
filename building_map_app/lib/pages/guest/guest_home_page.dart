@@ -432,7 +432,7 @@ class _GuestHomePageState extends State<GuestHomePage> {
       highlight: '배송해드립니다',
       roleLabel: '이지스테이',
       roleIcon: LucideIcons.package,
-      imageScale: 1.5, // 트럭 일러스트가 다른 이미지보다 작아 50% 확대
+      imageScale: 1.7, // 트럭 일러스트가 가로형이라 영역 내에서 확대 보정
     ),
   ];
 
@@ -550,16 +550,17 @@ class _GuestHomePageState extends State<GuestHomePage> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // 이미지 좌측 (작게)
+                // 이미지 좌측: 박스는 고정 크기(여백 방지), 작은 트럭만 scale로
+                // 박스 내 확대(가로형이라 세로 침범 없음).
                 SizedBox(
-                  width: 96,
-                  height: 80,
+                  width: 100,
+                  height: 110,
                   child: Transform.scale(
                     scale: data.imageScale,
                     child: Image.asset(
                       data.imagePath,
                       fit: BoxFit.contain,
-                      filterQuality: FilterQuality.medium,
+                      filterQuality: FilterQuality.high,
                     ),
                   ),
                 ),
@@ -591,20 +592,24 @@ class _GuestHomePageState extends State<GuestHomePage> {
           SizedBox(height: AppSpacing.sm),
           title,
           SizedBox(height: AppSpacing.md),
+          // AspectRatio가 이미지 영역(레이아웃 공간)을 실제로 차지 → contain된
+          // 이미지가 영역 안에 담겨 아래 설명 텍스트를 침범하지 않음.
+          // 세로로 긴 비율(0.72)이라 폰(2·3)이 크게 들어가 내부 텍스트 가독성 확보.
+          // 가로형(노트북·트럭)은 폭에 맞춰지므로 작은 트럭만 imageScale로 영역 내 확대.
           AspectRatio(
-            aspectRatio: 0.95,
+            aspectRatio: 0.72,
             child: Center(
               child: Transform.scale(
                 scale: data.imageScale,
                 child: Image.asset(
                   data.imagePath,
                   fit: BoxFit.contain,
-                  filterQuality: FilterQuality.medium,
+                  filterQuality: FilterQuality.high,
                 ),
               ),
             ),
           ),
-          SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.lg),
           _buildStepDescription(data),
           // 설명 줄 수가 카드마다 달라도 칩을 카드 바닥에 통일 정렬
           SizedBox(height: AppSpacing.md),
@@ -1261,7 +1266,7 @@ class _MoveInStepData {
     required this.highlight,
     required this.roleLabel,
     required this.roleIcon,
-    this.imageScale = 1.0,
+    this.imageScale = 1.0, // 폰·노트북은 AspectRatio(0.72) 영역에 꽉 차므로 1.0
   });
 
   final int step;
