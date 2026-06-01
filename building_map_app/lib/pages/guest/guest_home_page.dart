@@ -318,39 +318,14 @@ class _GuestHomePageState extends State<GuestHomePage> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isDesktop = AppBreakpoints.isDesktop(context);
-            if (isDesktop) {
-              return Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 5,
-                        child: _buildMoveInPromoIntro(authService),
-                      ),
-                      SizedBox(width: AppSpacing.xl),
-                      Expanded(
-                        flex: 7,
-                        child: _buildMoveInPromoCards(horizontal: true),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: AppSpacing.xl),
-                  _buildMoveInPromoButtons(authService, stacked: false),
-                ],
-              );
-            }
-
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildMoveInPromoIntro(authService),
                 SizedBox(height: AppSpacing.xl),
-                _buildMoveInPromoCards(
-                  horizontal: !AppBreakpoints.isMobile(context),
-                ),
+                _buildMoveInPromoSteps(horizontal: isDesktop),
                 SizedBox(height: AppSpacing.xl),
-                _buildMoveInPromoButtons(authService, stacked: true),
+                _buildMoveInPromoButtons(authService, stacked: !isDesktop),
               ],
             );
           },
@@ -382,212 +357,326 @@ class _GuestHomePageState extends State<GuestHomePage> {
           ),
         ),
         SizedBox(height: AppSpacing.lg),
-        Text(
-          '입주 준비 서비스만\n따로 이용할 수 있어요!',
-          style: AppTextStyles.headingLarge.copyWith(
-            fontSize: AppTextStyles.responsiveFontSize(
-              context,
-              mobile: 24,
-              desktop: 32,
+        // 제목: "입주 서비스만" (검정) + "따로 이용할 수 있어요!" (파랑)
+        RichText(
+          text: TextSpan(
+            style: AppTextStyles.headingLarge.copyWith(
+              fontSize: AppTextStyles.responsiveFontSize(
+                context,
+                mobile: 24,
+                desktop: 32,
+              ),
+              fontWeight: FontWeight.w700,
+              height: 1.3,
+              color: AppColors.textPrimary,
             ),
-            fontWeight: FontWeight.w700,
-            height: 1.3,
+            children: [
+              const TextSpan(text: '입주 서비스만 '),
+              TextSpan(
+                text: '따로 이용할 수 있어요!',
+                style: TextStyle(color: AppColors.primary600),
+              ),
+            ],
           ),
         ),
         SizedBox(height: AppSpacing.md),
         Text(
-          '임대인은 입주 준비 서비스를 통해 청소를 신청하고,\n임차인에게 입주용품 결제 요청을 보낼 수 있어요.',
+          '임대인은 한 번만 입력하면 끝! 이후 임차인 안내는 이지스테이가 알아서 진행합니다.',
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textSecondary,
             height: 1.5,
           ),
         ),
-        SizedBox(height: AppSpacing.xl),
-        // Feature item: 필요한 옵션만 선택
-        _buildMoveInPromoFeature(
-          icon: LucideIcons.shoppingBag,
-          iconBg: AppColors.primary50,
-          iconColor: AppColors.primary600,
-          title: '필요한 옵션만 선택',
-          description: '입주용품, 침구류, 청소 등 필요한 서비스만 골라보세요.',
-        ),
-        SizedBox(height: AppSpacing.md),
-        Divider(color: AppColors.divider, height: 1),
-        SizedBox(height: AppSpacing.md),
-        _buildMoveInPromoFeature(
-          icon: LucideIcons.calendar,
-          iconBg: AppColors.primary50,
-          iconColor: AppColors.primary600,
-          title: '입주 일정에 맞춰 제공',
-          description: '원하는 날짜에 맞춰 배송·준비가 진행돼요.',
-        ),
       ],
     );
   }
 
-  Widget _buildMoveInPromoFeature({
-    required IconData icon,
-    required Color iconBg,
-    required Color iconColor,
-    required String title,
-    required String description,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: iconBg,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: Icon(icon, size: 20, color: iconColor),
-        ),
-        SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AppTextStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(height: AppSpacing.xs),
-              Text(
-                description,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  // 4단계 입주 준비 서비스 진행 스텝 데이터
+  static const List<_MoveInStepData> _moveInSteps = [
+    _MoveInStepData(
+      step: 1,
+      accent: Color(0xFF2563EB), // blue-600
+      title: '예약 정보 등록',
+      imagePath: 'assets/images/move_in_step1_register.png',
+      description: '임대인은 다른 플랫폼에서\n계약한 정보를 입력하고\n신청하면 끝',
+      highlight: '입력하고\n신청하면 끝',
+      roleLabel: '임대인',
+      roleIcon: LucideIcons.user,
+    ),
+    _MoveInStepData(
+      step: 2,
+      accent: Color(0xFF059669), // emerald-600
+      title: '자동 안내',
+      imagePath: 'assets/images/move_in_step2_notify.png',
+      description: '이지스테이가 임차인에게\n입주 준비를 안내합니다.',
+      highlight: '안내',
+      roleLabel: '이지스테이',
+      roleIcon: LucideIcons.messageCircle,
+    ),
+    _MoveInStepData(
+      step: 3,
+      accent: Color(0xFFEA580C), // orange-600
+      title: '항목 선택',
+      imagePath: 'assets/images/move_in_step3_select.png',
+      description: '임차인이 필요한\n침구·수건·입주 생활용품을\n직접 선택하고 결제합니다.',
+      highlight: '선택하고 결제',
+      roleLabel: '임차인',
+      roleIcon: LucideIcons.user,
+    ),
+    _MoveInStepData(
+      step: 4,
+      accent: Color(0xFF7C3AED), // violet-600
+      title: '입주일에 맞춰 배송',
+      imagePath: 'assets/images/move_in_step4_delivery.png',
+      description: '선택한 상품을\n입주일에 맞춰 배송해드립니다.',
+      highlight: '배송해드립니다',
+      roleLabel: '이지스테이',
+      roleIcon: LucideIcons.package,
+      imageScale: 1.7, // 트럭 일러스트가 가로형이라 영역 내에서 확대 보정
+    ),
+  ];
 
-  Widget _buildMoveInPromoCards({required bool horizontal}) {
-    final cards = const [
-      _MoveInPromoCardData(
-        icon: LucideIcons.shoppingBag,
-        iconColor: Color(0xFF2563EB), // blue-600
-        bgColor: Color(0xFFEFF6FF), // blue-50
-        title: '입주용품 세트',
-        description: '구매하기 번거로운 생활용품을\n입주일에 맞춰 준비해드려요.',
-        imagePath: 'assets/images/move_in_supplies.webp',
-      ),
-      _MoveInPromoCardData(
-        icon: LucideIcons.bed,
-        iconColor: Color(0xFF059669), // emerald-600
-        bgColor: Color(0xFFECFDF5), // emerald-50
-        title: '침구류 대여',
-        description: '침구를 직접 챙기지 않아도\n입주일에 맞춰 준비해드려요.',
-        imagePath: 'assets/images/move_in_bedding.webp',
-      ),
-      _MoveInPromoCardData(
-        icon: LucideIcons.sprayCan,
-        iconColor: Color(0xFFEA580C), // orange-600
-        bgColor: Color(0xFFFFF7ED), // orange-50
-        title: '청소 서비스',
-        description: '퇴실 후 청소가 필요할 때\n간편하게 신청하세요.',
-        imagePath: 'assets/images/move_in_cleaning.webp',
-      ),
-    ];
-
+  Widget _buildMoveInPromoSteps({required bool horizontal}) {
     if (horizontal) {
       return IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (var i = 0; i < cards.length; i++) ...[
-              Expanded(child: _buildMoveInPromoCard(cards[i])),
-              if (i != cards.length - 1) SizedBox(width: AppSpacing.md),
+            for (var i = 0; i < _moveInSteps.length; i++) ...[
+              Expanded(child: _buildMoveInStepCard(_moveInSteps[i])),
+              if (i != _moveInSteps.length - 1)
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                  child: Center(child: _buildStepArrow(horizontal: true)),
+                ),
             ],
           ],
         ),
       );
     }
 
+    // 모바일: 컴팩트 카드(역할칩 제거, 이미지 높이 제한)로 세로 길이 단축
     return Column(
       children: [
-        for (var i = 0; i < cards.length; i++) ...[
-          _buildMoveInPromoCard(cards[i]),
-          if (i != cards.length - 1) SizedBox(height: AppSpacing.md),
+        for (var i = 0; i < _moveInSteps.length; i++) ...[
+          _buildMoveInStepCard(_moveInSteps[i], compact: true),
+          if (i != _moveInSteps.length - 1)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: _buildStepArrow(horizontal: false),
+            ),
         ],
       ],
     );
   }
 
-  Widget _buildMoveInPromoCard(_MoveInPromoCardData data) {
+  // 스텝 사이 점선 화살표 ( ···> )
+  Widget _buildStepArrow({required bool horizontal}) {
+    final color = AppColors.primary600;
+    if (horizontal) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '···',
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              letterSpacing: 1,
+            ),
+          ),
+          Icon(LucideIcons.chevronRight, size: 16, color: color),
+        ],
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '⋮',
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w900,
+            fontSize: 16,
+          ),
+        ),
+        Icon(LucideIcons.chevronDown, size: 16, color: color),
+      ],
+    );
+  }
+
+  Widget _buildMoveInStepCard(_MoveInStepData data, {bool compact = false}) {
+    // 단계 배지
+    final badge = Container(
+      width: 28,
+      height: 28,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: data.accent, shape: BoxShape.circle),
+      child: Text(
+        '${data.step}',
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+    final title = Text(
+      data.title,
+      style: AppTextStyles.headingSmall.copyWith(fontWeight: FontWeight.w700),
+    );
+
+    if (compact) {
+      // 모바일: 번호+제목 한 줄 + 이미지(좌)·설명(우) 가로 배치 → 세로 길이 최소화
+      return Container(
+        padding: EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.divider),
+          boxShadow: AppShadows.cardDefault,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                badge,
+                SizedBox(width: AppSpacing.sm),
+                title,
+              ],
+            ),
+            SizedBox(height: AppSpacing.sm),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 이미지 좌측: 박스는 고정 크기(여백 방지), 작은 트럭만 scale로
+                // 박스 내 확대(가로형이라 세로 침범 없음).
+                SizedBox(
+                  width: 100,
+                  height: 110,
+                  child: Transform.scale(
+                    scale: data.imageScale,
+                    child: Image.asset(
+                      data.imagePath,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                    ),
+                  ),
+                ),
+                SizedBox(width: AppSpacing.md),
+                // 설명 우측 (autoWrap: 좁은 폭에 맞춰 자동 줄바꿈)
+                Expanded(
+                  child: _buildStepDescription(data, center: false, autoWrap: true),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 데스크탑: 세로 카드 (배지→제목→이미지→설명→역할칩)
     return Container(
       padding: EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: data.bgColor,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.divider),
+        boxShadow: AppShadows.cardDefault,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 우측 상단 아이콘 뱃지
-          Align(
-            alignment: Alignment.topLeft,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                shape: BoxShape.circle,
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
+          badge,
+          SizedBox(height: AppSpacing.sm),
+          title,
+          SizedBox(height: AppSpacing.md),
+          // AspectRatio가 이미지 영역(레이아웃 공간)을 실제로 차지 → contain된
+          // 이미지가 영역 안에 담겨 아래 설명 텍스트를 침범하지 않음.
+          // 세로로 긴 비율(0.72)이라 폰(2·3)이 크게 들어가 내부 텍스트 가독성 확보.
+          // 가로형(노트북·트럭)은 폭에 맞춰지므로 작은 트럭만 imageScale로 영역 내 확대.
+          AspectRatio(
+            aspectRatio: 0.72,
+            child: Center(
+              child: Transform.scale(
+                scale: data.imageScale,
+                child: Image.asset(
+                  data.imagePath,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
               ),
-              child: Icon(data.icon, size: 18, color: data.iconColor),
             ),
           ),
           SizedBox(height: AppSpacing.lg),
-          // 일러스트 영역
-          AspectRatio(
-            aspectRatio: 1.2,
-            child: Center(
-              child: Image.asset(
-                data.imagePath,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.medium,
-              ),
+          _buildStepDescription(data),
+          // 설명 줄 수가 카드마다 달라도 칩을 카드 바닥에 통일 정렬
+          SizedBox(height: AppSpacing.md),
+          const Spacer(),
+          // 하단 역할 칩
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: data.accent.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(data.roleIcon, size: 16, color: data.accent),
+                SizedBox(width: AppSpacing.xs),
+                Text(
+                  data.roleLabel,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: data.accent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
-          SizedBox(height: AppSpacing.md),
-          Text(
-            data.title,
-            style: AppTextStyles.headingSmall.copyWith(
+        ],
+      ),
+    );
+  }
+
+  // 설명문에서 highlight 부분만 accent 색으로 강조
+  // center: 중앙 정렬 여부 / autoWrap: true면 \n을 공백으로 치환해 폭에 맞춰 자동 줄바꿈
+  Widget _buildStepDescription(
+    _MoveInStepData data, {
+    bool center = true,
+    bool autoWrap = false,
+  }) {
+    final align = center ? TextAlign.center : TextAlign.start;
+    final base = AppTextStyles.bodySmall.copyWith(
+      color: AppColors.textSecondary,
+      height: 1.5,
+      fontSize: 14, // bodySmall(12) 대비 +2
+    );
+    final description =
+        autoWrap ? data.description.replaceAll('\n', ' ') : data.description;
+    final highlight =
+        autoWrap ? data.highlight.replaceAll('\n', ' ') : data.highlight;
+    final idx = description.indexOf(highlight);
+    if (idx < 0) {
+      return Text(description, textAlign: align, style: base);
+    }
+    return RichText(
+      textAlign: align,
+      text: TextSpan(
+        style: base,
+        children: [
+          TextSpan(text: description.substring(0, idx)),
+          TextSpan(
+            text: highlight,
+            style: base.copyWith(
+              color: data.accent,
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: AppSpacing.xs),
-          Container(
-            width: 24,
-            height: 2,
-            decoration: BoxDecoration(
-              color: data.iconColor,
-              borderRadius: BorderRadius.circular(1),
-            ),
-          ),
-          SizedBox(height: AppSpacing.sm),
-          Text(
-            data.description,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
+          TextSpan(text: description.substring(idx + highlight.length)),
         ],
       ),
     );
@@ -1166,21 +1255,27 @@ class _GuestHomePageState extends State<GuestHomePage> {
   }
 }
 
-/// 입주 준비 서비스 프로모 카드 데이터.
-class _MoveInPromoCardData {
-  const _MoveInPromoCardData({
-    required this.icon,
-    required this.iconColor,
-    required this.bgColor,
+/// 입주 준비 서비스 4단계 진행 스텝 데이터.
+class _MoveInStepData {
+  const _MoveInStepData({
+    required this.step,
+    required this.accent,
     required this.title,
-    required this.description,
     required this.imagePath,
+    required this.description,
+    required this.highlight,
+    required this.roleLabel,
+    required this.roleIcon,
+    this.imageScale = 1.0, // 폰·노트북은 AspectRatio(0.72) 영역에 꽉 차므로 1.0
   });
 
-  final IconData icon;
-  final Color iconColor;
-  final Color bgColor;
+  final int step;
+  final Color accent;
   final String title;
-  final String description;
   final String imagePath;
+  final String description;
+  final String highlight;
+  final String roleLabel;
+  final IconData roleIcon;
+  final double imageScale; // 일러스트 개별 크기 배율 (트럭 등 작은 이미지 보정)
 }
